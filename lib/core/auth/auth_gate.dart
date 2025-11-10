@@ -98,6 +98,6 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
       );
     }
 
-    return const BiometricAuthWrapper(child: MainScreen());
+    return BiometricAuthWrapper(child: MainScreen());
   }
 }

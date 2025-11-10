@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../../theme/app_spacing.dart';
 
-/// Modern Balance Display Card - Revolut-inspired
-/// Features: Gradient background, glassmorphism, large typography
 class ModernBalanceCard extends StatelessWidget {
   final String title;
   final double amount;
@@ -28,7 +25,9 @@ class ModernBalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gradient = gradientColors ?? AppColors.blueGradient;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final gradient = gradientColors ?? [colorScheme.primary, colorScheme.primaryContainer];
 
     return GestureDetector(
       onTap: onTap,
@@ -52,31 +51,27 @@ class ModernBalanceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   title,
                   style: AppTypography.bodyMedium.copyWith(
-                    color: Colors.white.withOpacity(0.9),
+                    color: colorScheme.onPrimary.withOpacity(0.9),
                     letterSpacing: 0.5,
                   ),
                 ),
                 if (trailing != null) trailing!,
               ],
             ),
-
             const SizedBox(height: AppSpacing.lg),
-
-            // Amount
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   currency,
                   style: AppTypography.headlineMedium.copyWith(
-                    color: Colors.white,
+                    color: colorScheme.onPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -84,23 +79,18 @@ class ModernBalanceCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     _formatAmount(amount),
-                    style: AppTypography.currencyLarge.copyWith(
-                      color: Colors.white,
-                    ),
+                    style: AppTypography.currencyLarge.copyWith(color: colorScheme.onPrimary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-
             if (subtitle != null) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(
                 subtitle!,
-                style: AppTypography.bodySmall.copyWith(
-                  color: Colors.white.withOpacity(0.8),
-                ),
+                style: AppTypography.bodySmall.copyWith(color: colorScheme.onPrimary.withOpacity(0.8)),
               ),
             ],
           ],
@@ -110,56 +100,35 @@ class ModernBalanceCard extends StatelessWidget {
   }
 
   String _formatAmount(double amount) {
-    if (amount.abs() >= 1000000) {
-      return '${(amount / 1000000).toStringAsFixed(2)}M';
-    } else if (amount.abs() >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(2)}K';
-    } else {
-      return amount.toStringAsFixed(2);
-    }
+    if (amount.abs() >= 1000000) return '${(amount / 1000000).toStringAsFixed(2)}M';
+    if (amount.abs() >= 1000) return '${(amount / 1000).toStringAsFixed(2)}K';
+    return amount.toStringAsFixed(2);
   }
 }
 
-/// Glass Card - Modern glassmorphic card
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final double? borderRadius;
   final VoidCallback? onTap;
 
-  const GlassCard({
-    super.key,
-    required this.child,
-    this.padding,
-    this.borderRadius,
-    this.onTap,
-  });
+  const GlassCard({super.key, required this.child, this.padding, this.borderRadius, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(
-          borderRadius ?? AppSpacing.radiusLg,
-        ),
+        borderRadius: BorderRadius.circular(borderRadius ?? AppSpacing.radiusLg),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             padding: padding ?? AppSpacing.cardPaddingMd,
             decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.glassBackgroundDark
-                  : AppColors.glassBackground,
-              borderRadius: BorderRadius.circular(
-                borderRadius ?? AppSpacing.radiusLg,
-              ),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.1),
-                width: 1,
-              ),
+              color: colorScheme.surfaceVariant.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(borderRadius ?? AppSpacing.radiusLg),
+              border: Border.all(color: colorScheme.onSurface.withOpacity(0.1), width: 1),
             ),
             child: child,
           ),
@@ -169,7 +138,6 @@ class GlassCard extends StatelessWidget {
   }
 }
 
-/// Modern Action Button - Rounded button with icon
 class ModernActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -188,8 +156,10 @@ class ModernActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = backgroundColor ?? AppColors.cardDark;
-    final iColor = iconColor ?? Colors.white;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final bgColor = backgroundColor ?? colorScheme.surfaceVariant;
+    final iColor = iconColor ?? colorScheme.onSurfaceVariant;
 
     return GestureDetector(
       onTap: onTap,
@@ -202,22 +172,13 @@ class ModernActionButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: bgColor,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: bgColor.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
             ),
             child: Icon(icon, color: iColor, size: AppSpacing.iconLg),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             label,
-            style: AppTypography.labelSmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+            style: AppTypography.labelSmall.copyWith(color: colorScheme.onSurface),
             textAlign: TextAlign.center,
           ),
         ],
@@ -226,7 +187,6 @@ class ModernActionButton extends StatelessWidget {
   }
 }
 
-/// Account List Item - Modern list tile for accounts
 class ModernAccountTile extends StatelessWidget {
   final String name;
   final String balance;
@@ -247,20 +207,18 @@ class ModernAccountTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: AppSpacing.cardPaddingMd,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-          ),
+          border: Border.all(color: colorScheme.onSurface.withOpacity(0.1)),
         ),
         child: Row(
           children: [
-            // Icon
             Container(
               width: 48,
               height: 48,
@@ -270,50 +228,22 @@ class ModernAccountTile extends StatelessWidget {
               ),
               child: Icon(icon, color: iconColor, size: AppSpacing.iconMd),
             ),
-
             const SizedBox(width: AppSpacing.lg),
-
-            // Content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    name,
-                    style: AppTypography.titleSmall.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
+                  Text(name, style: AppTypography.titleSmall.copyWith(color: colorScheme.onSurface)),
                   if (percentage != null) ...[
                     const SizedBox(height: 4),
-                    Text(
-                      percentage!,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                    ),
+                    Text(percentage!, style: AppTypography.bodySmall.copyWith(color: colorScheme.onSurface.withOpacity(0.6))),
                   ],
                 ],
               ),
             ),
-
-            // Balance
-            Text(
-              balance,
-              style: AppTypography.titleMedium.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-
+            Text(balance, style: AppTypography.titleMedium.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600)),
             const SizedBox(width: AppSpacing.sm),
-            Icon(
-              Icons.chevron_right,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-              size: 20,
-            ),
+            Icon(Icons.chevron_right, color: colorScheme.onSurface.withOpacity(0.3), size: 20),
           ],
         ),
       ),
@@ -321,7 +251,6 @@ class ModernAccountTile extends StatelessWidget {
   }
 }
 
-/// Transaction List Item - Modern transaction tile
 class ModernTransactionTile extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -344,22 +273,22 @@ class ModernTransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final amountColor = isIncome ? AppColors.success : AppColors.textPrimary;
-    final displayIcon =
-        icon ?? (isIncome ? Icons.arrow_downward : Icons.arrow_upward);
-    final displayIconColor =
-        iconColor ?? (isIncome ? AppColors.success : AppColors.error);
+    final colorScheme = Theme.of(context).colorScheme;
+    final amountColor = isIncome ? Colors.green : colorScheme.onSurface;
+    final displayIcon = icon ?? (isIncome ? Icons.arrow_downward : Icons.arrow_upward);
+    final displayIconColor = iconColor ?? (isIncome ? Colors.green : colorScheme.error);
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          border: Border.all(color: colorScheme.onSurface.withOpacity(0.1)),
         ),
         child: Row(
           children: [
-            // Icon
             Container(
               width: 40,
               height: 40,
@@ -369,40 +298,20 @@ class ModernTransactionTile extends StatelessWidget {
               ),
               child: Icon(displayIcon, color: displayIconColor, size: 20),
             ),
-
             const SizedBox(width: AppSpacing.lg),
-
-            // Content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: AppTypography.titleSmall.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
+                  Text(title, style: AppTypography.titleSmall.copyWith(color: colorScheme.onSurface)),
                   const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: AppTypography.bodySmall.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
+                  Text(subtitle, style: AppTypography.bodySmall.copyWith(color: colorScheme.onSurface.withOpacity(0.6))),
                 ],
               ),
             ),
-
-            // Amount
             Text(
               '${isIncome ? '+' : '-'}$amount',
-              style: AppTypography.titleMedium.copyWith(
-                color: amountColor,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTypography.titleMedium.copyWith(color: amountColor, fontWeight: FontWeight.w600),
             ),
           ],
         ),
