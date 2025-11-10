@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "217588531616",
+    "project_id": "nexus-ccef7",
+    "storage_bucket": "nexus-ccef7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:217588531616:android:07b4c36553187dc67364c5",
+        "android_client_info": {
+          "package_name": "com.mahanadhi.nexus"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "217588531616-h7ophm0n9qnb5emumdvmifq330h1cq9f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mahanadhi.nexus",
+            "certificate_hash": "0c4ce0b430547b0ed2c3925384af72c25a1789cd"
+          }
+        },
+        {
+          "client_id": "217588531616-vac0sturbdi7ojbqj12jvdcf040dm730.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCSrv4g36SqfbiXaovxkIyBHf6SUNhSH5A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "217588531616-vac0sturbdi7ojbqj12jvdcf040dm730.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "217588531616-3kl1rr4gvt6avgdl66g2nakurnvimatc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mahanadhi.nexusTemp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
