@@ -1,88 +1,83 @@
+import 'package:intl/intl.dart';
 import '../models/detected_transaction.dart';
 
 class SmsParser {
-  static final RegExp _amountRe = RegExp(
-    r'(?:INR|Rs\.?|Rs|₹)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)',
-    caseSensitive: false,
-  );
+  // CORRECTED: All regexes have been fixed with proper escaping.
+  static final _amountRegex = RegExp(r'\b(?:inr|rs\.?|₹)\s*([\d,]+\.?\d*)\b', caseSensitive: false);
+  static final _debitRegex = RegExp(r'\b(debited|spent|paid|payment|charged|sent|withdrawn)\b', caseSensitive: false);
+  static final _creditRegex = RegExp(r'\b(credited|received|deposit|refund)\b', caseSensitive: false);
+  static final _definitiveRegex = RegExp(r'\b(sent|debited|credited|confirmed|paid|spent|successful|txnid|trxn|ref)\b', caseSensitive: false);
+  static final _requestRegex = RegExp(r'\b(request|requested|approve|approves|pending|waiting|due|bill|invoice)\b', caseSensitive: false);
+  static final _accountRegex = RegExp(r'(?:a/c|acct|account)\s\S*(\d{4,})', caseSensitive: false);
 
-  static final RegExp _debitHints = RegExp(
-    r'(debited|spent|purchase|pos|upi|withdrawn|payment|paid)',
-    caseSensitive: false,
-  );
+  static DetectedTransaction? parse(String body, String? sender, DateTime date) {
+    final amountMatch = _amountRegex.firstMatch(body);
+    if (amountMatch == null) return null;
 
-  static final RegExp _creditHints = RegExp(
-    r'(credited|received|deposit|refund)',
-    caseSensitive: false,
-  );
+    final amount = double.tryParse(amountMatch.group(1)!.replaceAll(',', ''));
+    if (amount == null || amount == 0) return null;
 
-  static DetectedTransaction? parse({
-    required String body,
-    String? address,
-    DateTime? date,
-    String idPrefix = 'sms',
-  }) {
-    final match = _amountRe.firstMatch(body);
-    if (match == null) return null;
+    final type = _determineTransactionType(body);
+    final isDefinitive = _definitiveRegex.hasMatch(body) && !_requestRegex.hasMatch(body);
 
-    final amountStr = match.group(1) ?? '';
-    final normalized = amountStr.replaceAll(',', '');
-    final amount = double.tryParse(normalized);
-    if (amount == null) return null;
-
-    final isCredit = _creditHints.hasMatch(body) && !_debitHints.hasMatch(body);
-    final sign = isCredit ? 1.0 : -1.0;
-    final when = date ?? DateTime.now();
-    final src = address ?? 'SMS';
-
-    final title = isCredit ? 'Money Received' : 'Payment Made';
-    final preview = body.length > 60 ? '${body.substring(0, 60)}…' : body;
-    
-    // Auto-detect category from SMS body
-    final category = _detectCategory(body);
-
-    // Create unique ID based on SMS content hash to prevent duplicates
-    final contentHash = body.hashCode.abs();
-    final timeHash = when.millisecondsSinceEpoch;
-    
     return DetectedTransaction(
-      id: '$idPrefix-$timeHash-$contentHash',
-      title: title,
-      subtitle: preview,
-      amount: amount * sign,
-      date: when,
-      source: src,
+      id: 'sms_${date.millisecondsSinceEpoch}_${body.hashCode}',
+      amount: amount,
+      title: _extractTitle(body) ?? (type == 'income' ? 'Income' : 'Expense'),
+      subtitle: sender ?? 'Unknown Sender',
+      date: date,
+      type: type,
+      category: _autoCategorize(body),
       smsBody: body,
-      category: category,
+      source: sender ?? 'SMS',
+      isDefinitive: isDefinitive,
     );
   }
 
-  static String? _detectCategory(String body) {
+  static String _determineTransactionType(String body) {
     final lowerBody = body.toLowerCase();
-    
-    if (lowerBody.contains('atm') || lowerBody.contains('withdraw')) {
-      return 'Cash Withdrawal';
+    if (_creditRegex.hasMatch(lowerBody) && !_debitRegex.hasMatch(lowerBody)) return 'income';
+    if (_debitRegex.hasMatch(lowerBody) && !_creditRegex.hasMatch(lowerBody)) return 'expense';
+    if (lowerBody.contains('request for') || lowerBody.contains('bill generated')) return 'expense';
+    return 'expense';
+  }
+
+  static String? _extractTitle(String body) {
+    final lowerBody = body.toLowerCase();
+    // CORRECTED: Regex patterns are now correctly escaped.
+    final patterns = {
+      'UPI': RegExp(r'to\s([\w\s]+)@', caseSensitive: false),
+      'Card': RegExp(r'at\s([\w\s]+)\.', caseSensitive: false),
+      'Purchase': RegExp(r'purchase\sof.+at\s(.+?)\.', caseSensitive: false),
+      'Paid To': RegExp(r'paid to\s([\w\s]+?)(?:\b|\son|\sfor)', caseSensitive: false),
+      'Received From': RegExp(r'received from\s([\w\s]+?)(?:\b|\son|\sfor)', caseSensitive: false),
+    };
+
+    for (var entry in patterns.entries) {
+      final match = entry.value.firstMatch(lowerBody);
+      if (match != null && match.group(1) != null) {
+        return match.group(1)!.trim();
+      }
     }
-    if (lowerBody.contains('swiggy') || lowerBody.contains('zomato') || 
-        lowerBody.contains('food') || lowerBody.contains('restaurant')) {
-      return 'Food & Dining';
-    }
-    if (lowerBody.contains('uber') || lowerBody.contains('ola') || 
-        lowerBody.contains('fuel') || lowerBody.contains('petrol')) {
-      return 'Transportation';
-    }
-    if (lowerBody.contains('amazon') || lowerBody.contains('flipkart') || 
-        lowerBody.contains('shopping') || lowerBody.contains('myntra')) {
-      return 'Shopping';
-    }
-    if (lowerBody.contains('electricity') || lowerBody.contains('water') || 
-        lowerBody.contains('bill') || lowerBody.contains('recharge')) {
-      return 'Bills';
-    }
-    if (lowerBody.contains('salary') || lowerBody.contains('credited to your account')) {
-      return 'Salary';
-    }
-    
     return null;
+  }
+
+  static String _autoCategorize(String body) {
+    final lowerBody = body.toLowerCase();
+    if (lowerBody.contains('salary')) return 'Salary';
+    if (lowerBody.contains('rent')) return 'Rent';
+    if (lowerBody.contains('zomato') || lowerBody.contains('swiggy') || lowerBody.contains('food') || lowerBody.contains('restaurant')) return 'Food & Dining';
+    if (lowerBody.contains('ola') || lowerBody.contains('uber') || lowerBody.contains('fuel') || lowerBody.contains('petrol') || lowerBody.contains('travel')) return 'Transportation';
+    if (lowerBody.contains('amazon') || lowerBody.contains('flipkart') || lowerBody.contains('shopping') || lowerBody.contains('myntra') || lowerBody.contains('store')) return 'Shopping';
+    if (lowerBody.contains('electricity') || lowerBody.contains('water') || lowerBody.contains('bill') || lowerBody.contains('recharge') || lowerBody.contains('utility')) return 'Bills & Utilities';
+    if (lowerBody.contains('emi') || lowerBody.contains('loan')) return 'Loan Payment';
+    if (lowerBody.contains('withdrawal') || lowerBody.contains('atm')) return 'Cash Withdrawal';
+    if (lowerBody.contains('invest') || lowerBody.contains('sip') || lowerBody.contains('mutual fund')) return 'Investments';
+    if (lowerBody.contains('insurance')) return 'Insurance';
+    if (lowerBody.contains('health') || lowerBody.contains('hospital') || lowerBody.contains('pharmacy')) return 'Healthcare';
+    if (lowerBody.contains('education') || lowerBody.contains('school') || lowerBody.contains('college')) return 'Education';
+    if (lowerBody.contains('transfer')) return 'Transfer';
+    
+    return 'Other Expense';
   }
 }

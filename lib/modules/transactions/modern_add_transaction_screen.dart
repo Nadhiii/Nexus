@@ -8,16 +8,21 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/models/transaction.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../../core/providers/account_provider.dart';
+import '../../models/detected_sms_transaction.dart';
+import '../../core/providers/new_nbox_provider.dart';
 
-/// Modern Add Transaction Screen - Revolut-inspired design
 class ModernAddTransactionScreen extends StatefulWidget {
+  final Transaction? transaction;
   final String? accountId;
   final TransactionType? initialType;
+  final DetectedSmsTransaction? detectedSmsTransaction;
 
   const ModernAddTransactionScreen({
     super.key,
+    this.transaction,
     this.accountId,
     this.initialType,
+    this.detectedSmsTransaction,
   });
 
   @override
@@ -34,6 +39,7 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
   String? _selectedCategory;
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
+  bool get _isEditMode => widget.transaction != null;
 
   final List<Map<String, dynamic>> _categories = [
     {'name': 'Food & Dining', 'icon': Icons.restaurant, 'color': AppColors.error},
@@ -50,8 +56,26 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
   @override
   void initState() {
     super.initState();
-    _selectedType = widget.initialType ?? TransactionType.expense;
-    _selectedAccountId = widget.accountId;
+    if (_isEditMode) {
+      final transaction = widget.transaction!;
+      _amountController.text = transaction.amount.toStringAsFixed(2);
+      _descriptionController.text = transaction.description ?? '';
+      _selectedType = transaction.type;
+      _selectedAccountId = transaction.accountId;
+      _selectedCategory = transaction.categoryId;
+      _selectedDate = transaction.date;
+    } else {
+      _selectedType = widget.initialType ?? TransactionType.expense;
+      _selectedAccountId = widget.accountId;
+
+      if (widget.detectedSmsTransaction != null) {
+        final detected = widget.detectedSmsTransaction!;
+        _amountController.text = detected.amount.toStringAsFixed(2);
+        _descriptionController.text = detected.merchant;
+        _selectedDate = detected.date;
+        _selectedType = detected.type == 'income' ? TransactionType.income : TransactionType.expense;
+      }
+    }
   }
 
   @override
@@ -63,12 +87,13 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
 
   @override
   Widget build(BuildContext context) {
+    final title = _isEditMode ? 'Edit Transaction' : (widget.detectedSmsTransaction != null ? 'Approve Transaction' : 'New Transaction');
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Gradient Background
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -79,14 +104,11 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
             ),
           ),
           
-          // Content
           SafeArea(
             child: Column(
               children: [
-                // App Bar
                 _buildAppBar(context),
                 
-                // Form
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(AppSpacing.xl),
@@ -96,7 +118,7 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'New Transaction',
+                            title,
                             style: AppTypography.displaySmall.copyWith(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.bold,
@@ -104,11 +126,9 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
                           ),
                           const SizedBox(height: AppSpacing.xl2),
                           
-                          // Transaction Type Toggle
                           _buildTypeToggle(),
                           const SizedBox(height: AppSpacing.xl2),
                           
-                          // Amount
                           Text(
                             'Amount',
                             style: AppTypography.titleSmall.copyWith(
@@ -119,7 +139,7 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
                           const SizedBox(height: AppSpacing.sm),
                           TextFormField(
                             controller: _amountController,
-                            autofocus: true,
+                            autofocus: !_isEditMode && widget.detectedSmsTransaction == null,
                             style: AppTypography.displayMedium.copyWith(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.bold,
@@ -156,7 +176,6 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
                           ),
                           const SizedBox(height: AppSpacing.xl2),
                           
-                          // Account Selection
                           Consumer<AccountProvider>(
                             builder: (context, provider, child) {
                               if (provider.accounts.isEmpty) {
@@ -194,7 +213,7 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
                                       borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                                     ),
                                     child: DropdownButtonFormField<String>(
-                                      initialValue: _selectedAccountId,
+                                      value: _selectedAccountId,
                                       dropdownColor: AppColors.cardDarkElevated,
                                       style: AppTypography.bodyLarge.copyWith(
                                         color: AppColors.textPrimary,
@@ -257,7 +276,6 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
                           ),
                           const SizedBox(height: AppSpacing.xl2),
                           
-                          // Category
                           Text(
                             'Category',
                             style: AppTypography.titleSmall.copyWith(
@@ -322,7 +340,6 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
                           ),
                           const SizedBox(height: AppSpacing.xl2),
                           
-                          // Description
                           Text(
                             'Description (Optional)',
                             style: AppTypography.titleSmall.copyWith(
@@ -352,7 +369,6 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
                           ),
                           const SizedBox(height: AppSpacing.xl2),
                           
-                          // Date
                           Text(
                             'Date',
                             style: AppTypography.titleSmall.copyWith(
@@ -397,7 +413,6 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
                           ),
                           const SizedBox(height: AppSpacing.xl2),
                           
-                          // Save Button
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
@@ -422,7 +437,7 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
                                       ),
                                     )
                                   : Text(
-                                      'Save Transaction',
+                                      _isEditMode ? 'Save Changes' : 'Save Transaction',
                                       style: AppTypography.titleSmall.copyWith(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -597,7 +612,7 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
       final transaction = Transaction(
-        id: '',
+        id: _isEditMode ? widget.transaction!.id : '',
         userId: userId,
         type: _selectedType,
         amount: amount,
@@ -607,16 +622,26 @@ class _ModernAddTransactionScreenState extends State<ModernAddTransactionScreen>
         categoryId: _selectedCategory,
         accountId: _selectedAccountId!,
         date: _selectedDate,
-        createdAt: now,
+        createdAt: _isEditMode ? widget.transaction!.createdAt : now,
         updatedAt: now,
       );
 
-      final success = await context.read<TransactionProvider>().addTransaction(transaction);
+      final provider = context.read<TransactionProvider>();
+      final success = _isEditMode
+          ? await provider.updateTransaction(transaction, widget.transaction!)
+          : await provider.addTransaction(transaction);
 
       if (success && mounted) {
+        // If this was an NBox transaction, mark it as approved
+        if (widget.detectedSmsTransaction != null && mounted) {
+          context.read<NewNboxProvider>().markAsApproved(widget.detectedSmsTransaction!.smsId);
+          Navigator.of(context).pop(true); // Pop with success for NBox
+          return; // Prevent double pop
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Transaction saved successfully!'),
+            content: Text('Transaction ${_isEditMode ? 'updated' : 'saved'} successfully!'),
             backgroundColor: AppColors.success,
           ),
         );

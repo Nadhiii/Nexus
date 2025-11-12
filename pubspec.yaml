@@ -59,3 +59,22 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Asset declaration to include the font directories
+  assets:
+    - assets/fonts/Rammetto_One/
+    - assets/fonts/Inter/static/
+
+  fonts:
+    - family: RammettoOne
+      fonts:
+        - asset: assets/fonts/Rammetto_One/RammettoOne-Regular.ttf
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter/static/Inter_18pt-Regular.ttf
+        - asset: assets/fonts/Inter/static/Inter_18pt-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter/static/Inter_18pt-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter/static/Inter_18pt-Bold.ttf
+          weight: 700

@@ -7,7 +7,7 @@ import 'core/theme/app_theme.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/account_provider.dart';
 import 'core/providers/transaction_provider.dart';
-import 'core/providers/nbox_provider.dart';
+import 'core/providers/new_nbox_provider.dart'; 
 import 'core/providers/debt_provider.dart';
 import 'core/providers/backup_provider.dart';
 import 'core/providers/investment_provider.dart';
@@ -21,7 +21,6 @@ import 'core/auth/auth_gate.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(const NexusApp());
@@ -34,15 +33,15 @@ class NexusApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
-        ChangeNotifierProvider<AccountProvider>(
-          create: (_) => AccountProvider(),
-        ),
-        ChangeNotifierProvider<TransactionProvider>(
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => AccountProvider()),
+        ChangeNotifierProxyProvider<AccountProvider, TransactionProvider>(
           create: (_) => TransactionProvider(),
+          update: (_, accounts, transactions) => transactions!..initialize(),
         ),
-        ChangeNotifierProvider(create: (_) => NBoxProvider()),
+        // CORRECTED: Simplified the NBox provider initialization.
+        ChangeNotifierProvider(create: (_) => NewNboxProvider()),
         ChangeNotifierProvider(create: (_) => DebtProvider()),
         ChangeNotifierProvider(create: (_) => BackupProvider()),
         ChangeNotifierProvider(create: (_) => InvestmentProvider()),

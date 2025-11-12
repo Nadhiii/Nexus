@@ -1,159 +1,82 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_typography.dart';
-import '../budgets/budgets_screen.dart';
-import '../investments/investment_portfolio_screen.dart';
-import '../goals/goals_screen.dart';
-import '../subscriptions/subscription_screen.dart';
-import '../debts/debts_screen.dart';
 
-class FinanceHubScreen extends StatelessWidget {
+// Import the new, modern screens
+import '../budgets/modern_budgets_screen.dart';
+import '../investments/modern_investment_portfolio_screen.dart';
+import '../goals/modern_goals_screen.dart';
+import '../subscriptions/modern_subscription_screen.dart';
+import '../debts/modern_debts_screen.dart';
+
+class FinanceHubScreen extends StatefulWidget {
   const FinanceHubScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
-      appBar: AppBar(
-        title: Text(
-          'Finance Hub',
-          style: AppTypography.headlineLarge.copyWith(
-            color: Theme.of(context).colorScheme.onBackground,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Your Financial Tools',
-                style: AppTypography.titleLarge.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                crossAxisSpacing: AppSpacing.md,
-                mainAxisSpacing: AppSpacing.md,
-                children: [
-                  _buildFeatureCard(
-                    context,
-                    title: 'Budgets',
-                    icon: Icons.pie_chart_rounded,
-                    color: Theme.of(context).colorScheme.primary,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const BudgetsScreen()),
-                      );
-                    },
-                  ),
-                  _buildFeatureCard(
-                    context,
-                    title: 'Investments',
-                    icon: Icons.trending_up_rounded,
-                    color: Theme.of(context).colorScheme.secondary,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const InvestmentPortfolioScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildFeatureCard(
-                    context,
-                    title: 'Goals',
-                    icon: Icons.flag_rounded,
-                    color: Theme.of(context).colorScheme.tertiary,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const GoalsScreen()),
-                      );
-                    },
-                  ),
-                  _buildFeatureCard(
-                    context,
-                    title: 'Subscriptions',
-                    icon: Icons.subscriptions_rounded,
-                    color: Theme.of(context).colorScheme.surfaceVariant,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SubscriptionScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildFeatureCard(
-                    context,
-                    title: 'Debts',
-                    icon: Icons.money_off_rounded,
-                    color: Theme.of(context).colorScheme.error,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const DebtsScreen()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  State<FinanceHubScreen> createState() => _FinanceHubScreenState();
+}
+
+class _FinanceHubScreenState extends State<FinanceHubScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 5, vsync: this);
   }
 
-  Widget _buildFeatureCard(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: color.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                icon,
-                size: 32,
-                color: color,
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: colorScheme.background,
+      appBar: AppBar(
+        title: Text('Finance Hub', style: textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.onBackground)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(kToolbarHeight),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              indicator: ShapeDecoration(
+                shape: const StadiumBorder(),
+                color: colorScheme.primaryContainer,
               ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                title,
-                style: AppTypography.titleMedium.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelColor: colorScheme.onPrimaryContainer,
+              unselectedLabelColor: colorScheme.onSurfaceVariant,
+              labelStyle: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              unselectedLabelStyle: textTheme.titleSmall,
+              dividerColor: Colors.transparent,
+              tabs: const [
+                Tab(text: 'Budgets'),
+                Tab(text: 'Investments'),
+                Tab(text: 'Goals'),
+                Tab(text: 'Subscriptions'),
+                Tab(text: 'Debts'),
+              ],
+            ),
           ),
         ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: const [
+          ModernBudgetsScreen(),
+          ModernInvestmentPortfolioScreen(),
+          ModernGoalsScreen(),
+          ModernSubscriptionScreen(),
+          ModernDebtsScreen(),
+        ],
       ),
     );
   }

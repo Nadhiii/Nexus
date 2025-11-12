@@ -8,7 +8,9 @@ import '../../../core/providers/budget_provider.dart';
 import '../../../core/models/budget.dart';
 
 class AddBudgetModal extends StatefulWidget {
-  const AddBudgetModal({super.key});
+  final Budget? budget; // Make budget optional for create/edit
+
+  const AddBudgetModal({super.key, this.budget});
 
   @override
   State<AddBudgetModal> createState() => _AddBudgetModalState();
@@ -136,7 +138,10 @@ class _AddBudgetModalState extends State<AddBudgetModal>
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(28),
-                            child: AddBudgetForm(onDismiss: _dismissModal),
+                            child: AddBudgetForm(
+                              onDismiss: _dismissModal,
+                              budget: widget.budget, // Pass budget to form
+                            ),
                           ),
                         ),
                       ),
@@ -154,8 +159,9 @@ class _AddBudgetModalState extends State<AddBudgetModal>
 
 class AddBudgetForm extends StatefulWidget {
   final VoidCallback onDismiss;
+  final Budget? budget;
 
-  const AddBudgetForm({super.key, required this.onDismiss});
+  const AddBudgetForm({super.key, required this.onDismiss, this.budget});
 
   @override
   State<AddBudgetForm> createState() => _AddBudgetFormState();
@@ -176,6 +182,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
     0,
   );
   bool _isLoading = false;
+  bool get _isEditMode => widget.budget != null;
 
   final List<Map<String, dynamic>> _predefinedCategories = [
     {
@@ -262,7 +269,19 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
   @override
   void initState() {
     super.initState();
-    _updateCategoryName();
+    if (_isEditMode) {
+      // Pre-fill form for editing
+      final budget = widget.budget!;
+      _selectedCategoryId = budget.categoryId;
+      _categoryNameController.text = budget.categoryName;
+      _allocatedAmountController.text = budget.allocatedAmount.toString();
+      _selectedPeriod = budget.period;
+      _startDate = budget.startDate;
+      _endDate = budget.endDate;
+      _notesController.text = budget.metadata?['notes'] ?? '';
+    } else {
+      _updateCategoryName();
+    }
   }
 
   @override
@@ -280,7 +299,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
     );
 
     if (_selectedCategoryId == 'custom') {
-      // Clear the text field for custom input
       if (_categoryNameController.text == 'Custom') {
         _categoryNameController.clear();
       }
@@ -305,7 +323,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
         _endDate = DateTime(now.year + 1, 1, 0);
         break;
       case 'custom':
-        // Keep current dates for custom period
         break;
     }
   }
@@ -319,7 +336,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         title: Text(
-          'Add Budget',
+          _isEditMode ? 'Edit Budget' : 'Add Budget',
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurface,
             fontSize: 20,
@@ -336,7 +353,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(), // Prevent over-scrolling
+            physics: const ClampingScrollPhysics(),
             padding: EdgeInsets.only(
               left: 16,
               right: 16,
@@ -349,7 +366,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Category Selection
                 Text(
                   'Budget Category',
                   style: Theme.of(
@@ -369,7 +385,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                   child: Column(
                     children: [
                       SizedBox(
-                        height: 140, // Increased height for 3 rows
+                        height: 140,
                         child: GridView.builder(
                           padding: const EdgeInsets.all(8),
                           gridDelegate:
@@ -450,7 +466,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                 ),
                 const SizedBox(height: 24),
 
-                // Category Name
                 Text(
                   'Category Name',
                   style: Theme.of(
@@ -462,7 +477,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                   controller: _categoryNameController,
                   enabled:
                       _selectedCategoryId ==
-                      'custom', // Only enable for custom category
+                      'custom',
                   decoration: InputDecoration(
                     hintText: _selectedCategoryId == 'custom'
                         ? 'Enter custom category name'
@@ -485,7 +500,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                 ),
                 const SizedBox(height: 24),
 
-                // Allocated Amount
                 Text(
                   'Budget Amount',
                   style: Theme.of(
@@ -520,7 +534,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                 ),
                 const SizedBox(height: 24),
 
-                // Period Selection
                 Text(
                   'Budget Period',
                   style: Theme.of(
@@ -529,7 +542,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  initialValue: _selectedPeriod,
+                  value: _selectedPeriod,
                   decoration: InputDecoration(
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -554,7 +567,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                 ),
                 const SizedBox(height: 24),
 
-                // Date Range (for custom period)
                 if (_selectedPeriod == 'custom') ...[
                   Text(
                     'Custom Period',
@@ -589,7 +601,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                   const SizedBox(height: 24),
                 ],
 
-                // Notes (Optional)
                 Text(
                   'Notes (Optional)',
                   style: Theme.of(
@@ -613,19 +624,17 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                 ),
                 const SizedBox(height: 32),
 
-                // Create Budget Button
                 FilledButton(
-                  onPressed: _isLoading ? null : _createBudget,
+                  onPressed: _isLoading ? null : _saveBudget,
                   child: _isLoading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Create Budget'),
+                      : Text(_isEditMode ? 'Save Changes' : 'Create Budget'),
                 ),
 
-                // Add some bottom padding to ensure button is always visible
                 const SizedBox(height: 32),
               ],
             ),
@@ -666,7 +675,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
     }
   }
 
-  Future<void> _createBudget() async {
+  Future<void> _saveBudget() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_endDate.isBefore(_startDate)) {
@@ -685,31 +694,35 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
 
     try {
       final budget = Budget(
-        id: '', // Will be generated by service
+        id: _isEditMode ? widget.budget!.id : '',
         categoryId: _selectedCategoryId,
         categoryName: _categoryNameController.text.trim(),
         allocatedAmount: double.parse(_allocatedAmountController.text),
-        spentAmount: 0.0,
+        spentAmount: _isEditMode ? widget.budget!.spentAmount : 0.0,
         period: _selectedPeriod,
         startDate: _startDate,
         endDate: _endDate,
-        accountId: 'default', // Will be updated by service if needed
+        accountId: _isEditMode ? widget.budget!.accountId : 'default',
         isActive: true,
         metadata: _notesController.text.trim().isNotEmpty
             ? {'notes': _notesController.text.trim()}
             : null,
-        createdAt: DateTime.now(),
+        createdAt: _isEditMode ? widget.budget!.createdAt : DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
       final provider = Provider.of<BudgetProvider>(context, listen: false);
-      await provider.createBudget(budget);
+      if (_isEditMode) {
+        await provider.updateBudget(budget);
+      } else {
+        await provider.createBudget(budget);
+      }
 
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Budget created successfully!'),
+          SnackBar(
+            content: Text('Budget ${_isEditMode ? 'updated' : 'created'} successfully!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -718,7 +731,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error creating budget: $e'),
+            content: Text('Error saving budget: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -978,7 +991,7 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(), // Prevent over-scrolling
+            physics: const ClampingScrollPhysics(),
             padding: EdgeInsets.only(
               left: 16,
               right: 16,
@@ -991,7 +1004,6 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -1031,7 +1043,6 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
                 ),
                 const SizedBox(height: 24),
 
-                // Monthly Income Input
                 Text(
                   'Monthly Income',
                   style: Theme.of(
@@ -1066,7 +1077,6 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
                 ),
                 const SizedBox(height: 24),
 
-                // Budget Method Selection
                 Text(
                   'Choose Budget Method',
                   style: Theme.of(
@@ -1110,7 +1120,6 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
 
                 const SizedBox(height: 32),
 
-                // Create Budgets Button
                 FilledButton(
                   onPressed: _isLoading ? null : _createBudgets,
                   child: _isLoading
@@ -1122,7 +1131,6 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
                       : const Text('Create Budgets'),
                 ),
 
-                // Add some bottom padding to ensure button is always visible
                 const SizedBox(height: 32),
               ],
             ),
@@ -1144,7 +1152,6 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
       final selectedRule = _budgetRules[_selectedBudgetRule]!;
       final categories = selectedRule['categories'] as Map<String, dynamic>;
 
-      // Create budgets for each category
       for (final entry in categories.entries) {
         final categoryId = entry.key;
         final categoryData = entry.value as Map<String, dynamic>;
@@ -1154,7 +1161,7 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
         final allocatedAmount = (monthlyIncome * percentage) / 100;
 
         final budget = Budget(
-          id: '', // Will be generated by service
+          id: '',
           categoryId: categoryId,
           categoryName: categoryName,
           allocatedAmount: allocatedAmount,
@@ -1162,7 +1169,7 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
           period: 'monthly',
           startDate: DateTime.now(),
           endDate: DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
-          accountId: 'default', // Will be updated by service if needed
+          accountId: 'default',
           isActive: true,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
@@ -1199,13 +1206,13 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
   }
 }
 
-Future<void> showAddBudgetModal(BuildContext context) {
+Future<void> showAddBudgetModal(BuildContext context, {Budget? budget}) {
   return Navigator.of(context).push(
     PageRouteBuilder(
       opaque: false,
       barrierDismissible: false,
       pageBuilder: (context, animation, _) {
-        return const AddBudgetModal();
+        return AddBudgetModal(budget: budget);
       },
       transitionDuration: const Duration(milliseconds: 400),
       reverseTransitionDuration: const Duration(milliseconds: 300),

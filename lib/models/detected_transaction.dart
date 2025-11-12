@@ -4,9 +4,11 @@ class DetectedTransaction {
   final String subtitle;
   final double amount;
   final DateTime date;
-  final String source; // e.g., bank/SMS sender
-  final String smsBody; // Full SMS body for reference
-  final String? category; // Auto-detected category
+  final String source;
+  final String smsBody;
+  final String? category;
+  final String type;
+  final bool isDefinitive;
 
   const DetectedTransaction({
     required this.id,
@@ -17,6 +19,8 @@ class DetectedTransaction {
     required this.source,
     required this.smsBody,
     this.category,
+    required this.type,
+    this.isDefinitive = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -29,6 +33,8 @@ class DetectedTransaction {
       'source': source,
       'smsBody': smsBody,
       'category': category,
+      'type': type,
+      'isDefinitive': isDefinitive,
     };
   }
 
@@ -40,8 +46,10 @@ class DetectedTransaction {
       amount: map['amount'].toDouble(),
       date: DateTime.parse(map['date']),
       source: map['source'],
-      smsBody: map['smsBody'] ?? map['subtitle'], // Fallback to subtitle for old data
+      smsBody: map['smsBody'] ?? map['subtitle'],
       category: map['category'],
+      type: map['type'] ?? 'expense',
+      isDefinitive: map['isDefinitive'] ?? false,
     );
   }
 }

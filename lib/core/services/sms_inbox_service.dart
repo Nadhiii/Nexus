@@ -10,24 +10,25 @@ class SmsInboxService {
     final since = now.subtract(Duration(days: days));
     final messages = await _query.querySms(
       kinds: [SmsQueryKind.inbox],
-      count: 200,
+      count: 200, // Look at a larger batch of recent messages
     );
-    return messages.where((m) => (m.date ?? now).isAfter(since)).toList();
+    return messages.where((m) => m.date != null && m.date!.isAfter(since)).toList();
   }
 
-  Future<List<DetectedTransaction>> detectTransactions({int days = 7}) async {
-    final msgs = await getRecentMessages(days: days);
-    final results = <DetectedTransaction>[];
-    for (final m in msgs) {
-      final body = m.body ?? '';
-      if (body.isEmpty) continue;
-      final parsed = SmsParser.parse(
-        body: body,
-        address: m.address,
-        date: m.date,
-      );
-      if (parsed != null) results.add(parsed);
+  Future<List<DetectedTransaction>> detectTransactions({int days = 14}) async {
+    final messages = await getRecentMessages(days: days);
+    final detectedTransactions = <DetectedTransaction>[];
+
+    for (final message in messages) {
+      if (message.body == null) continue;
+
+      final transaction = SmsParser.parse(message.body!, message.address, message.date ?? DateTime.now());
+
+      if (transaction != null) {
+        detectedTransactions.add(transaction);
+      }
     }
-    return results;
+
+    return detectedTransactions;
   }
 }

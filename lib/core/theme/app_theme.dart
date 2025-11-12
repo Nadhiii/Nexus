@@ -6,7 +6,7 @@ import 'app_spacing.dart';
 import 'package:animations/animations.dart';
 
 class AppTheme {
-  // Spacing system (compatible with both old and new)
+  // Spacing system
   static const double spacing4 = AppSpacing.xs;
   static const double spacing8 = AppSpacing.sm;
   static const double spacing12 = AppSpacing.md;
@@ -53,11 +53,35 @@ class AppTheme {
     secondaryContainer: AppColors.accentTeal,
   );
 
-  static ThemeData getTheme(ColorScheme colorScheme) {
+  static TextTheme _getTextTheme(ColorScheme colorScheme, TextTheme baseTextTheme) {
+    return baseTextTheme.copyWith(
+      displayLarge: baseTextTheme.displayLarge?.copyWith(fontFamily: 'RammettoOne'),
+      displayMedium: baseTextTheme.displayMedium?.copyWith(fontFamily: 'RammettoOne'),
+      displaySmall: baseTextTheme.displaySmall?.copyWith(fontFamily: 'RammettoOne'),
+      headlineLarge: baseTextTheme.headlineLarge?.copyWith(fontFamily: 'RammettoOne'),
+      headlineMedium: baseTextTheme.headlineMedium?.copyWith(fontFamily: 'RammettoOne'),
+      headlineSmall: baseTextTheme.headlineSmall?.copyWith(fontFamily: 'RammettoOne'),
+      titleLarge: baseTextTheme.titleLarge?.copyWith(fontFamily: 'Inter'),
+      titleMedium: baseTextTheme.titleMedium?.copyWith(fontFamily: 'Inter'),
+      titleSmall: baseTextTheme.titleSmall?.copyWith(fontFamily: 'Inter'),
+      bodyLarge: baseTextTheme.bodyLarge?.copyWith(fontFamily: 'Inter'),
+      bodyMedium: baseTextTheme.bodyMedium?.copyWith(fontFamily: 'Inter'),
+      bodySmall: baseTextTheme.bodySmall?.copyWith(fontFamily: 'Inter'),
+      labelLarge: baseTextTheme.labelLarge?.copyWith(fontFamily: 'Inter'),
+      labelMedium: baseTextTheme.labelMedium?.copyWith(fontFamily: 'Inter'),
+      labelSmall: baseTextTheme.labelSmall?.copyWith(fontFamily: 'Inter'),
+    ).apply(
+      bodyColor: colorScheme.onSurface,
+      displayColor: colorScheme.onSurface,
+    );
+  }
+
+  static ThemeData _getThemeData(ColorScheme colorScheme, TextTheme baseTextTheme) {
+    final textTheme = _getTextTheme(colorScheme, baseTextTheme);
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      fontFamily: AppTypography.fontFamily,
+      textTheme: textTheme,
       scaffoldBackgroundColor: colorScheme.background,
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -82,6 +106,7 @@ class AppTheme {
             horizontal: spacing20,
             vertical: spacing16,
           ),
+          textStyle: textTheme.labelLarge,
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -94,6 +119,7 @@ class AppTheme {
             horizontal: spacing20,
             vertical: spacing16,
           ),
+          textStyle: textTheme.labelLarge,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -105,6 +131,7 @@ class AppTheme {
             horizontal: spacing20,
             vertical: spacing16,
           ),
+          textStyle: textTheme.labelLarge,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -117,6 +144,7 @@ class AppTheme {
             horizontal: spacing16,
             vertical: spacing12,
           ),
+          textStyle: textTheme.labelLarge,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -138,6 +166,8 @@ class AppTheme {
           horizontal: spacing16,
           vertical: spacing16,
         ),
+        labelStyle: textTheme.bodyLarge,
+        hintStyle: textTheme.bodyLarge?.copyWith(color: colorScheme.onSurface.withOpacity(0.5)),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: colorScheme.surface,
@@ -145,6 +175,8 @@ class AppTheme {
         unselectedItemColor: colorScheme.onSurface.withOpacity(0.6),
         type: BottomNavigationBarType.fixed,
         elevation: 0,
+        selectedLabelStyle: textTheme.labelSmall,
+        unselectedLabelStyle: textTheme.labelSmall,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -154,11 +186,7 @@ class AppTheme {
         systemOverlayStyle: colorScheme.brightness == Brightness.light
             ? SystemUiOverlayStyle.dark
             : SystemUiOverlayStyle.light,
-        titleTextStyle: TextStyle(
-          color: colorScheme.onSurface,
-          fontSize: 34,
-          fontWeight: FontWeight.bold,
-        ),
+        titleTextStyle: textTheme.headlineSmall,
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: colorScheme.primary,
@@ -171,7 +199,7 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: colorScheme.secondaryContainer,
         selectedColor: colorScheme.primary.withOpacity(0.1),
-        labelStyle: TextStyle(color: colorScheme.onSecondaryContainer),
+        labelStyle: textTheme.labelSmall,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
         ),
@@ -188,6 +216,8 @@ class AppTheme {
     );
   }
 
-  static ThemeData get lightTheme => getTheme(_appLightColorScheme);
-  static ThemeData get darkTheme => getTheme(_appDarkColorScheme);
+  static ThemeData get lightTheme => _getThemeData(_appLightColorScheme, AppTypography.textThemeLight);
+  static ThemeData get darkTheme => _getThemeData(_appDarkColorScheme, AppTypography.textThemeDark);
+
+  static ThemeData getTheme(ColorScheme colorScheme) => colorScheme.brightness == Brightness.light ? lightTheme : darkTheme;
 }

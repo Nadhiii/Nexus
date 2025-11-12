@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui'; // Required for the blur effect (ImageFilter)
+import 'package:animations/animations.dart'; // Required for PageTransitionSwitcher
 
-import '../core/providers/nbox_provider.dart';
+import '../core/providers/new_nbox_provider.dart';
 import '../modules/dashboard/modern_dashboard_screen.dart';
 import '../modules/finance/modern_finance_screen.dart';
 import '../modules/insights/modern_insights_screen.dart';
 import '../modules/more/modern_more_screen.dart';
-import '../modern_nbox_screen.dart';
+import 'new_modern_nbox_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -16,95 +17,55 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateMixin {
-  late PageController _pageController;
-  int _financeScreenInitialTab = 0;
+class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController();
-    _pageController.addListener(() {
-      if (_pageController.page?.round() != _currentIndex) {
-        setState(() {
-          _currentIndex = _pageController.page!.round();
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
+  int _financeScreenInitialTab = 0;
 
   void _navigateToScreen(int index, {int? financeTab}) {
     setState(() {
       _financeScreenInitialTab = financeTab ?? 0;
+      _currentIndex = index;
     });
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.fastOutSlowIn,
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final pendingNbox = context.watch<NBoxProvider>().pendingCount;
+    final pendingNbox = context.watch<NewNboxProvider>().pendingTransactions.length;
 
     final screens = [
       ModernDashboardScreen(onNavigate: _navigateToScreen),
       ModernFinanceScreen(initialTabIndex: _financeScreenInitialTab),
       const ModernInsightsScreen(),
-      const ModernNBoxScreen(),
+      const NewModernNBoxScreen(),
       const ModernMoreScreen(),
     ];
 
     return Scaffold(
       body: Stack(
         children: [
-          PageView.builder(
-            controller: _pageController,
-            physics: const NeverScrollableScrollPhysics(), // Disable swiping
-            itemCount: screens.length,
-            itemBuilder: (context, index) {
-              return AnimatedBuilder(
-                animation: _pageController,
-                builder: (context, child) {
-                  double pageOffset = 0;
-                  if (_pageController.position.hasContentDimensions) {
-                    pageOffset = _pageController.page! - index;
-                  }
-
-                  double scale = 1.0 - (pageOffset.abs() * 0.1);
-                  double opacity = 1.0 - pageOffset.abs().clamp(0.0, 1.0);
-
-                  return Transform.scale(
-                    scale: scale,
-                    child: Opacity(
-                      opacity: opacity,
-                      child: screens[index],
-                    ),
-                  );
-                },
+          // IMPROVED: Using PageTransitionSwitcher for smooth fade-through animations
+          PageTransitionSwitcher(
+            transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
+              return FadeThroughTransition(
+                animation: primaryAnimation,
+                secondaryAnimation: secondaryAnimation,
+                child: child,
               );
             },
+            child: screens[_currentIndex],
           ),
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            child: _buildBottomNavBar(context, _pageController, pendingNbox),
+            child: _buildBottomNavBar(context, _currentIndex, pendingNbox),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBottomNavBar(BuildContext context, PageController pageController, int pendingNbox) {
+  Widget _buildBottomNavBar(BuildContext context, int currentIndex, int pendingNbox) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -133,7 +94,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: _buildNavItems(context, pageController, pendingNbox),
+              children: _buildNavItems(context, currentIndex, pendingNbox),
             ),
           ),
         ),
@@ -141,7 +102,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
     );
   }
 
-  List<Widget> _buildNavItems(BuildContext context, PageController pageController, int pendingNbox) {
+  List<Widget> _buildNavItems(BuildContext context, int currentIndex, int pendingNbox) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final items = [
@@ -154,51 +115,40 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
 
     return items.map((item) {
       final index = item['index'] as int;
+      final isSelected = currentIndex == index;
       final badgeCount = item['badgeCount'] as int? ?? 0;
 
       return Expanded(
         child: GestureDetector(
           onTap: () => _navigateToScreen(index),
-          child: AnimatedBuilder(
-            animation: pageController,
-            builder: (context, child) {
-              double selectedness = 1.0;
-              if (pageController.page != null) {
-                selectedness = 1.0 - (pageController.page! - index).abs().clamp(0.0, 1.0);
-              }
-              final isSelected = selectedness > 0.5;
-
-              return Container(
-                height: 70,
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer.withOpacity(isSelected ? 0.3 * selectedness : 0),
-                  borderRadius: BorderRadius.circular(12),
+          child: Container(
+            height: 70,
+            color: Colors.transparent, // Make the container tappable
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                AnimatedScale(
+                  scale: isSelected ? 1.1 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.fastOutSlowIn,
+                  child: Icon(
+                    isSelected ? item['selectedIcon'] as IconData : item['icon'] as IconData,
+                    color: isSelected ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.7),
+                    size: 28,
+                  ),
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Transform.scale(
-                      scale: 1 + (selectedness * 0.1),
-                      child: Icon(
-                        isSelected ? item['selectedIcon'] as IconData : item['icon'] as IconData,
-                        color: Color.lerp(colorScheme.onSurface.withOpacity(0.7), colorScheme.primary, selectedness),
-                        size: 28,
-                      ),
+                if (badgeCount > 0)
+                  Positioned(
+                    right: 18,
+                    top: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      decoration: BoxDecoration(color: colorScheme.error, borderRadius: BorderRadius.circular(8)),
+                      child: Text('$badgeCount', style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
-                    if (badgeCount > 0)
-                      Positioned(
-                        right: 18,
-                        top: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                          decoration: BoxDecoration(color: colorScheme.error, borderRadius: BorderRadius.circular(8)),
-                          child: Text('$badgeCount', style: TextStyle(fontSize: 10, color: colorScheme.onError, fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            },
+                  ),
+              ],
+            ),
           ),
         ),
       );

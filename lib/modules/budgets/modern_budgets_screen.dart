@@ -276,7 +276,32 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
             final budget = provider.budgets[index];
             return Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: _buildBudgetCard(context, budget, provider),
+              child: Dismissible(
+                key: ValueKey(budget.id),
+                direction: DismissDirection.endToStart,
+                onDismissed: (direction) {
+                  provider.deleteBudget(budget.id);
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      SnackBar(content: Text('${budget.categoryName} budget deleted')),
+                    );
+                },
+                background: Container(
+                  padding: const EdgeInsets.only(right: 20.0),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  ),
+                  alignment: Alignment.centerRight,
+                  child: const Icon(Icons.delete, color: Colors.white),
+                ),
+                child: InkWell(
+                  onTap: () => showAddBudgetModal(context, budget: budget),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  child: _buildBudgetCard(context, budget, provider),
+                ),
+              ),
             );
           },
           childCount: provider.budgets.length,

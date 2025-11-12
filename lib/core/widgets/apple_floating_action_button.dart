@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
 
 class AppleFloatingActionButton extends StatefulWidget {
   final VoidCallback onPressed;
@@ -67,6 +66,8 @@ class _AppleFloatingActionButtonState extends State<AppleFloatingActionButton>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       margin: EdgeInsets.only(
         bottom: MediaQuery.of(context).padding.bottom + 80,
@@ -83,8 +84,9 @@ class _AppleFloatingActionButtonState extends State<AppleFloatingActionButton>
               child: FloatingActionButton(
                 heroTag: widget.heroTag,
                 onPressed: null, // Handled by GestureDetector
-                backgroundColor: AppTheme.iosBluePrimary,
-                foregroundColor: Colors.white,
+                // CORRECTED: Used the theme's primary color to fix the crash
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
                 elevation: _isPressed ? 4 : 8,
                 child: const Icon(
                   Icons.add,
