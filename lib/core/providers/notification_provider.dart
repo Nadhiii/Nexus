@@ -4,59 +4,90 @@ import 'dart:convert';
 import '../models/notification.dart';
 
 class NotificationProvider extends ChangeNotifier {
+  static const _notificationsStorageKey = 'app_notifications';
+  static const _migrationKey = 'notifications_migrated_v1';
+
+  // Settings keys
+  static const _budgetAlertsKey = 'notifications_budget_alerts';
+  static const _subscriptionRemindersKey = 'notifications_subscription_reminders';
+  static const _largeTransactionAlertsKey = 'notifications_large_transactions';
+
   List<AppNotification> _notifications = [];
   bool _isLoading = false;
 
+  // Notification Settings
+  bool _budgetAlertsEnabled = true;
+  bool _subscriptionRemindersEnabled = true;
+  bool _largeTransactionAlertsEnabled = true;
+
+  // Getters
   List<AppNotification> get notifications => _notifications;
-  List<AppNotification> get unreadNotifications => 
-      _notifications.where((n) => !n.isRead).toList();
-  int get unreadCount => unreadNotifications.length;
   bool get isLoading => _isLoading;
+  int get unreadCount => _notifications.where((n) => !n.isRead).length;
   bool get hasUnread => unreadCount > 0;
+  bool get budgetAlertsEnabled => _budgetAlertsEnabled;
+  bool get subscriptionRemindersEnabled => _subscriptionRemindersEnabled;
+  bool get largeTransactionAlertsEnabled => _largeTransactionAlertsEnabled;
 
   NotificationProvider() {
-    _loadNotifications();
-    _generateSampleNotifications();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await _loadSettings();
+    await _runMigration();
+    await _loadNotifications();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    _budgetAlertsEnabled = prefs.getBool(_budgetAlertsKey) ?? true;
+    _subscriptionRemindersEnabled = prefs.getBool(_subscriptionRemindersKey) ?? true;
+    _largeTransactionAlertsEnabled = prefs.getBool(_largeTransactionAlertsKey) ?? true;
+    notifyListeners();
+  }
+
+  Future<void> updateNotificationSetting(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+    await _loadSettings(); // Reload all settings to ensure consistency
+  }
+
+  Future<void> _runMigration() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!(prefs.getBool(_migrationKey) ?? false)) {
+      await prefs.remove(_notificationsStorageKey);
+      await prefs.setBool(_migrationKey, true);
+    }
   }
 
   Future<void> _loadNotifications() async {
     _isLoading = true;
     notifyListeners();
-
     try {
       final prefs = await SharedPreferences.getInstance();
-      final notificationsJson = prefs.getString('app_notifications');
-      
-      if (notificationsJson != null) {
-        final List<dynamic> notificationsList = jsonDecode(notificationsJson);
-        _notifications = notificationsList
-            .map((json) => AppNotification.fromMap(json))
+      final json = prefs.getString(_notificationsStorageKey);
+      if (json != null) {
+        _notifications = (jsonDecode(json) as List)
+            .map((item) => AppNotification.fromMap(item))
             .toList();
-        
-        // Sort by creation date (newest first)
         _notifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       }
     } catch (e) {
-      debugPrint('Error loading notifications: $e');
+      _notifications = [];
+      await _saveNotifications();
     }
-
     _isLoading = false;
     notifyListeners();
   }
 
   Future<void> _saveNotifications() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final notificationsJson = jsonEncode(
-        _notifications.map((notification) => notification.toMap()).toList(),
-      );
-      await prefs.setString('app_notifications', notificationsJson);
-    } catch (e) {
-      debugPrint('Error saving notifications: $e');
-    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_notificationsStorageKey, jsonEncode(_notifications.map((n) => n.toMap()).toList()));
   }
 
   void addNotification(AppNotification notification) {
+    if (_notifications.any((n) => n.id == notification.id)) return;
     _notifications.insert(0, notification);
     _saveNotifications();
     notifyListeners();
@@ -72,15 +103,7 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   void markAllAsRead() {
-    _notifications = _notifications
-        .map((notification) => notification.copyWith(isRead: true))
-        .toList();
-    _saveNotifications();
-    notifyListeners();
-  }
-
-  void deleteNotification(String notificationId) {
-    _notifications.removeWhere((n) => n.id == notificationId);
+    _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
     _saveNotifications();
     notifyListeners();
   }
@@ -90,86 +113,41 @@ class NotificationProvider extends ChangeNotifier {
     _saveNotifications();
     notifyListeners();
   }
+  
+  void sendTestNotification() {
+    addNotification(
+      AppNotification(
+        id: 'test_${DateTime.now().millisecondsSinceEpoch}',
+        type: NotificationType.systemUpdate,
+        title: 'Test Notification',
+        message: 'If you see this, your notifications are working correctly!',
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
 
-  void _generateSampleNotifications() {
-    // Only generate if no notifications exist
-    if (_notifications.isEmpty) {
-      final sampleNotifications = [
-        AppNotification.billReminder(
-          billName: 'Electricity Bill',
-          dueDate: DateTime.now().add(const Duration(days: 3)),
-          amount: 2500.0,
-        ),
-        AppNotification.goalProgress(
-          goalName: 'Emergency Fund',
-          currentAmount: 75000.0,
-          targetAmount: 100000.0,
-          progressPercentage: 75.0,
-        ),
-        AppNotification.transactionAlert(
-          description: 'Salary Credit',
-          amount: 85000.0,
-          isIncome: true,
-        ),
-        AppNotification.unusualSpending(
-          amount: 8500.0,
-          category: 'Entertainment',
-        ),
-        AppNotification(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: NotificationType.systemUpdate,
-          title: 'Welcome to Nexus!',
-          message: 'Start tracking your finances with our powerful tools.',
-          createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-          actionText: 'Get Started',
-          actionRoute: '/dashboard',
-        ),
-      ];
-
-      _notifications.addAll(sampleNotifications);
-      _saveNotifications();
-      notifyListeners();
+  void notifyTransaction(String description, double amount, bool isIncome, {double threshold = 10000}) {
+    if (_largeTransactionAlertsEnabled && amount.abs() > threshold) {
+      addNotification(AppNotification.transactionAlert(description: description, amount: amount, isIncome: isIncome));
     }
   }
 
-  // Helper methods to trigger notifications
-  void notifyBillDue(String billName, DateTime dueDate, double amount) {
-    addNotification(AppNotification.billReminder(
-      billName: billName,
-      dueDate: dueDate,
-      amount: amount,
-    ));
+  void checkBudgetThresholds(double totalSpent, double budgetAmount, String budgetCategory, String budgetCycle) {
+    if (_budgetAlertsEnabled) {
+        final threshold = budgetAmount * 0.9;
+        if (totalSpent >= threshold && totalSpent < budgetAmount) {
+          addNotification(AppNotification.budgetWarning(category: budgetCategory, cycle: budgetCycle, spentAmount: totalSpent, budgetAmount: budgetAmount));
+        }
+    }
   }
 
-  void notifyGoalAchieved(String goalName, double targetAmount) {
-    addNotification(AppNotification.goalAchievement(
-      goalName: goalName,
-      targetAmount: targetAmount,
-    ));
-  }
-
-  void notifyUnusualSpending(double amount, String category) {
-    addNotification(AppNotification.unusualSpending(
-      amount: amount,
-      category: category,
-    ));
-  }
-
-  void notifyTransaction(String description, double amount, bool isIncome) {
-    addNotification(AppNotification.transactionAlert(
-      description: description,
-      amount: amount,
-      isIncome: isIncome,
-    ));
-  }
-
-  void notifyGoalProgress(String goalName, double currentAmount, 
-                         double targetAmount, double progressPercentage) {
-    addNotification(AppNotification.goalProgress(
-      goalName: goalName,
-      currentAmount: currentAmount,
-      targetAmount: targetAmount,
-      progressPercentage: progressPercentage,
-    ));
+  void checkSubscriptionReminders(String subscriptionName, DateTime nextPaymentDate) {
+    if (_subscriptionRemindersEnabled) {
+        final reminderDays = 3;
+        final reminderDate = nextPaymentDate.subtract(Duration(days: reminderDays));
+        if (DateTime.now().isAfter(reminderDate) && DateTime.now().isBefore(nextPaymentDate)) {
+          addNotification(AppNotification.subscriptionReminder(subscriptionName: subscriptionName, dueDate: nextPaymentDate));
+        }
+    }
   }
 }

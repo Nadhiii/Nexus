@@ -29,26 +29,38 @@ void main() async {
 class NexusApp extends StatelessWidget {
   const NexusApp({super.key});
 
-  @override
+  @override 
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => AccountProvider()),
-        ChangeNotifierProxyProvider<AccountProvider, TransactionProvider>(
-          create: (_) => TransactionProvider(),
-          update: (_, accounts, transactions) => transactions!..initialize(),
-        ),
-        // CORRECTED: Simplified the NBox provider initialization.
-        ChangeNotifierProvider(create: (_) => NewNboxProvider()),
+        ChangeNotifierProvider(create: (_) => NewNboxProvider()), 
         ChangeNotifierProvider(create: (_) => DebtProvider()),
         ChangeNotifierProvider(create: (_) => BackupProvider()),
         ChangeNotifierProvider(create: (_) => InvestmentProvider()),
         ChangeNotifierProvider(create: (_) => BiometricProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
-        ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
-        ChangeNotifierProvider(create: (_) => BudgetProvider()),
+
+        ChangeNotifierProxyProvider<NotificationProvider, SubscriptionProvider>(
+          create: (context) => SubscriptionProvider(),
+          update: (context, notificationProvider, subscriptionProvider) => 
+              SubscriptionProvider(notificationProvider: notificationProvider),
+        ),
+        ChangeNotifierProxyProvider<NotificationProvider, BudgetProvider>(
+          create: (context) => BudgetProvider(),
+          update: (context, notificationProvider, budgetProvider) => 
+              BudgetProvider(notificationProvider: notificationProvider),
+        ),
+        ChangeNotifierProxyProvider2<NotificationProvider, BudgetProvider, TransactionProvider>(
+          create: (context) => TransactionProvider(),
+          update: (context, notificationProvider, budgetProvider, transactionProvider) => 
+              TransactionProvider(
+                notificationProvider: notificationProvider,
+                budgetProvider: budgetProvider,
+              ),
+        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

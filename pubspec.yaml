@@ -50,7 +50,11 @@ dependencies:
 
   # Icons
   cupertino_icons: ^1.0.8
+  
+  # Google APIs
   google_sign_in: ^6.2.1
+  googleapis: ^15.0.0
+  googleapis_auth: ^1.6.0
 
 dev_dependencies:
   flutter_test:

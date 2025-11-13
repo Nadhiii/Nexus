@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import 'package:provider/provider.dart';
 import '../models/transaction.dart';
 import '../services/transaction_service.dart';
 import '../../models/detected_transaction.dart';
+import 'notification_provider.dart';
+import 'budget_provider.dart';
 
 class TransactionProvider with ChangeNotifier {
   final TransactionService _transactionService = TransactionService();
+  NotificationProvider? notificationProvider;
+  BudgetProvider? budgetProvider;
 
   List<Transaction> _transactions = [];
   bool _isLoading = false;
   String? _error;
   bool _isInitialized = false;
 
-  TransactionProvider();
+  TransactionProvider({this.notificationProvider, this.budgetProvider});
 
   List<Transaction> get transactions => List.unmodifiable(_transactions);
   bool get isLoading => _isLoading;
@@ -30,17 +35,12 @@ class TransactionProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void _clearError() {
-    _error = null;
-  }
-
   Future<void> initialize() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
       _setLoading(true);
-      _clearError();
       await loadTransactions();
       _isInitialized = true;
     } catch (e) {
@@ -69,50 +69,6 @@ class TransactionProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> addTransactionFromDetected(
-    DetectedTransaction detected, {
-    required String accountId,
-    required String category,
-    required TransactionType type,
-  }) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _setError('User not authenticated');
-      return false;
-    }
-
-    try {
-      _setLoading(true);
-      _clearError();
-
-      final transaction = Transaction(
-        id: '',
-        userId: user.uid,
-        accountId: accountId,
-        amount: detected.amount,
-        type: type,
-        categoryId: category,
-        description: detected.title,
-        date: detected.date,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        metadata: {
-          'source': 'nbox',
-          'smsBody': detected.smsBody,
-        },
-      );
-
-      await addTransaction(transaction);
-
-      _setLoading(false);
-      return true;
-    } catch (e) {
-      _setError('Failed to add transaction from detected: $e');
-      _setLoading(false);
-      return false;
-    }
-  }
-
   Future<bool> addTransaction(Transaction transaction) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -122,10 +78,21 @@ class TransactionProvider with ChangeNotifier {
 
     try {
       _setLoading(true);
-      _clearError();
 
       await _transactionService.createTransaction(user.uid, transaction);
       await _updateAccountBalance(transaction.accountId, transaction.amount, transaction.type);
+
+      // Notification Logic
+      notificationProvider?.notifyTransaction(
+        transaction.description ?? 'New Transaction',
+        transaction.amount,
+        transaction.type == TransactionType.income,
+      );
+
+      // Budget Check Logic
+      if (transaction.type == TransactionType.expense && budgetProvider != null) {
+        await budgetProvider!.checkBudgetForTransaction(transaction);
+      }
 
       _setLoading(false);
       return true;
@@ -145,7 +112,6 @@ class TransactionProvider with ChangeNotifier {
 
     try {
       _setLoading(true);
-      _clearError();
 
       await _transactionService.updateTransaction(user.uid, transaction);
       await _reverseTransactionOnAccount(originalTransaction);
@@ -169,7 +135,6 @@ class TransactionProvider with ChangeNotifier {
 
     try {
       _setLoading(true);
-      _clearError();
 
       final transaction = _transactions.firstWhere((t) => t.id == transactionId);
       await _transactionService.deleteTransaction(user.uid, transactionId);
@@ -181,7 +146,7 @@ class TransactionProvider with ChangeNotifier {
       _setError('Failed to delete transaction: $e');
       _setLoading(false);
       return false;
-    }
+    } 
   }
 
   Future<void> _updateAccountBalance(String accountId, double amount, TransactionType type) async {

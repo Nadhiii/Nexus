@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import '../models/subscription.dart';
 import '../services/subscription_service.dart';
+import 'notification_provider.dart';
 
 class SubscriptionProvider extends ChangeNotifier {
   final SubscriptionService _subscriptionService = SubscriptionService();
+  NotificationProvider? notificationProvider;
 
   List<Subscription> _subscriptions = [];
   List<Subscription> _dueToday = [];
   bool _isLoading = false;
   String? _error;
   String _filterFrequency = 'all';
+
+  SubscriptionProvider({this.notificationProvider});
 
   // Getters
   List<Subscription> get subscriptions => _subscriptions;
@@ -60,20 +64,19 @@ class SubscriptionProvider extends ChangeNotifier {
   String get formattedTotalMonthlyCost => '₹${totalMonthlyCost.toStringAsFixed(2)}';
   String get formattedTotalYearlyCost => '₹${totalYearlyCost.toStringAsFixed(2)}';
 
-  /// Initialize and start listening to subscriptions
+
   void initialize() {
     _loadSubscriptions();
     _loadDueToday();
   }
 
-  /// Load all subscriptions from Firestore
   void _loadSubscriptions() {
     _setLoading(true);
     _subscriptionService.watchActiveSubscriptions().listen(
       (subscriptions) {
         _subscriptions = subscriptions;
+        _checkSubscriptionReminders();
         _setLoading(false);
-        _clearError();
         notifyListeners();
       },
       onError: (error) {
@@ -83,7 +86,6 @@ class SubscriptionProvider extends ChangeNotifier {
     );
   }
 
-  /// Load subscriptions due today
   void _loadDueToday() {
     _subscriptionService.watchDueToday().listen(
       (subscriptions) {
@@ -96,12 +98,16 @@ class SubscriptionProvider extends ChangeNotifier {
     );
   }
 
-  /// Add a new subscription
+  void _checkSubscriptionReminders() {
+    for (final sub in _subscriptions) {
+      notificationProvider?.checkSubscriptionReminders(sub.name, sub.nextDueDate);
+    }
+  }
+
   Future<void> addSubscription(Subscription subscription) async {
     try {
       _setLoading(true);
       await _subscriptionService.addSubscription(subscription);
-      _clearError();
     } catch (e) {
       _setError('Failed to add subscription: $e');
     } finally {
@@ -109,12 +115,10 @@ class SubscriptionProvider extends ChangeNotifier {
     }
   }
 
-  /// Update an existing subscription
   Future<void> updateSubscription(Subscription subscription) async {
     try {
       _setLoading(true);
       await _subscriptionService.updateSubscription(subscription);
-      _clearError();
     } catch (e) {
       _setError('Failed to update subscription: $e');
     } finally {
@@ -122,12 +126,10 @@ class SubscriptionProvider extends ChangeNotifier {
     }
   }
 
-  /// Delete a subscription
   Future<void> deleteSubscription(String subscriptionId) async {
     try {
       _setLoading(true);
       await _subscriptionService.deleteSubscription(subscriptionId);
-      _clearError();
     } catch (e) {
       _setError('Failed to delete subscription: $e');
     } finally {
@@ -135,99 +137,27 @@ class SubscriptionProvider extends ChangeNotifier {
     }
   }
 
-  /// Mark subscription as paid and update next due date
-  Future<void> markAsPaid(String subscriptionId) async {
-    try {
-      await _subscriptionService.updateNextDueDate(subscriptionId);
-      _clearError();
-    } catch (e) {
-      _setError('Failed to mark as paid: $e');
-    }
-  }
-
-  /// Toggle subscription active status
-  Future<void> toggleSubscriptionStatus(String subscriptionId) async {
-    try {
-      await _subscriptionService.toggleSubscriptionStatus(subscriptionId);
-      _clearError();
-    } catch (e) {
-      _setError('Failed to toggle subscription: $e');
-    }
-  }
-
-  /// Set frequency filter
   void setFrequencyFilter(String frequency) {
     _filterFrequency = frequency;
     notifyListeners();
   }
 
-  /// Get subscription by ID
-  Subscription? getSubscriptionById(String id) {
-    try {
-      return _subscriptions.firstWhere((subscription) => subscription.id == id);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /// Get subscriptions by frequency
-  List<Subscription> getSubscriptionsByFrequency(String frequency) {
-    return _subscriptions.where((sub) => sub.frequency == frequency && sub.isActive).toList();
-  }
-
-  /// Get subscription distribution
-  Map<String, int> getFrequencyDistribution() {
-    Map<String, int> distribution = {
-      'daily': 0,
-      'weekly': 0,
-      'monthly': 0,
-      'yearly': 0,
-    };
-
-    for (var subscription in _subscriptions.where((s) => s.isActive)) {
-      distribution[subscription.frequency] = 
-          (distribution[subscription.frequency] ?? 0) + 1;
-    }
-
-    return distribution;
-  }
-
-  /// Get upcoming subscriptions (next 7 days)
-  List<Subscription> getUpcomingSubscriptions() {
-    final now = DateTime.now();
-    final nextWeek = now.add(const Duration(days: 7));
-    
-    return _subscriptions
-        .where((sub) => 
-            sub.isActive && 
-            sub.nextDueDate.isAfter(now) && 
-            sub.nextDueDate.isBefore(nextWeek))
-        .toList()
-      ..sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
-  }
-
-  /// Get most expensive subscriptions
-  List<Subscription> getMostExpensive({int limit = 5}) {
-    final sortedSubscriptions = List<Subscription>.from(
-      _subscriptions.where((s) => s.isActive)
-    );
-    sortedSubscriptions.sort((a, b) => b.amount.compareTo(a.amount));
-    return sortedSubscriptions.take(limit).toList();
-  }
-
-  // Helper methods
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
   }
 
-  void _setError(String error) {
+  void _setError(String? error) {
     _error = error;
     notifyListeners();
   }
 
-  void _clearError() {
+  void reset() {
+    _subscriptions = [];
+    _dueToday = [];
+    _isLoading = false;
     _error = null;
+    _filterFrequency = 'all';
     notifyListeners();
   }
 }

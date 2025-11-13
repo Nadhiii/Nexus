@@ -1,394 +1,183 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../core/services/backup_service.dart';
-import '../../core/widgets/translucent_app_bar.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import '../../core/providers/backup_provider.dart';
+import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_spacing.dart';
 
-class BackupSettingsScreen extends StatefulWidget {
+class BackupSettingsScreen extends StatelessWidget {
   const BackupSettingsScreen({super.key});
 
   @override
-  State<BackupSettingsScreen> createState() => _BackupSettingsScreenState();
-}
+  Widget build(BuildContext context) {
+    final provider = context.watch<BackupProvider>();
+    final theme = Theme.of(context);
 
-class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
-  final BackupService _backupService = BackupService();
-  bool _isLoading = false;
-  Map<String, dynamic>? _backupStatus;
-  List<Map<String, dynamic>> _backupHistory = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBackupStatus();
-    _loadBackupHistory();
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Backup & Restore', style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.bold)),
+        backgroundColor: theme.colorScheme.background,
+      ),
+      backgroundColor: theme.colorScheme.background,
+      body: _buildBody(context, provider),
+    );
   }
 
-  Future<void> _loadBackupStatus() async {
-    try {
-      final status = await _backupService.getBackupStatus();
-      setState(() {
-        _backupStatus = status;
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading backup status: $e')),
-        );
-      }
+  Widget _buildBody(BuildContext context, BackupProvider provider) {
+    if (provider.state == BackupState.Uninitialized) {
+      return const Center(child: CircularProgressIndicator());
     }
-  }
 
-  Future<void> _loadBackupHistory() async {
-    try {
-      final history = await _backupService.getBackupHistory();
-      setState(() {
-        _backupHistory = history;
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading backup history: $e')),
-        );
-      }
+    if (provider.state == BackupState.LoggedOut) {
+      return _buildLoggedOutView(context, provider);
     }
+
+    return _buildLoggedInView(context, provider);
   }
 
-  Future<void> _createBackup() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await _backupService.createBackup();
-      await _backupService.cleanupOldBackups();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Backup created successfully!')),
-        );
-      }
-
-      // Reload data
-      await _loadBackupStatus();
-      await _loadBackupHistory();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error creating backup: $e')));
-      }
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _syncData() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await _backupService.syncData();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Data synced successfully!')),
-        );
-      }
-
-      // Reload data
-      await _loadBackupStatus();
-      await _loadBackupHistory();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error syncing data: $e')));
-      }
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _restoreBackup(String backupId) async {
-    // Show confirmation dialog
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Restore Backup'),
-        content: const Text(
-          'This will replace all your current data with the selected backup. '
-          'This action cannot be undone. Are you sure?',
+  Widget _buildLoggedOutView(BuildContext context, BackupProvider provider) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.cloud_off, size: 80, color: Colors.grey),
+            const SizedBox(height: AppSpacing.lg),
+            Text('Sign In to Backup', style: AppTypography.headlineSmall),
+            const SizedBox(height: AppSpacing.md),
+            const Text(
+              'Sign in with your Google account to back up and restore your Nexus data.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.login),
+              label: const Text('Sign In with Google'),
+              onPressed: () => provider.signIn(),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLoggedInView(BuildContext context, BackupProvider provider) {
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      children: [
+        _buildStatusCard(context, provider),
+        const SizedBox(height: AppSpacing.lg),
+        _buildActionsCard(context, provider),
+        const SizedBox(height: AppSpacing.lg),
+        _buildInfoCard(context),
+      ],
+    );
+  }
+
+  Widget _buildStatusCard(BuildContext context, BackupProvider provider) {
+    final lastBackup = provider.lastBackupTime;
+    final statusText = lastBackup != null
+        ? 'Last backup: ${DateFormat.yMMMd().add_jms().format(lastBackup)}'
+        : 'No backups found.';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.cloud_done, color: Colors.green, size: 32),
+                const SizedBox(width: AppSpacing.md),
+                Text('Backup Enabled', style: AppTypography.titleLarge),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(statusText, style: AppTypography.bodyMedium),
+            if (provider.state == BackupState.InProgress)
+              const Padding(
+                padding: EdgeInsets.only(top: AppSpacing.md),
+                child: LinearProgressIndicator(),
+              ),
+            if (provider.state == BackupState.Error)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.md),
+                child: Text(provider.error ?? 'An unknown error occurred', style: const TextStyle(color: Colors.red)),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionsCard(BuildContext context, BackupProvider provider) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          children: [
+            ElevatedButton.icon(
+              icon: const Icon(Icons.backup),
+              label: const Text('Backup Now'),
+              onPressed: provider.state == BackupState.InProgress ? null : () => provider.backupNow(),
+              style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.restore),
+              label: const Text('Restore from Backup'),
+              onPressed: provider.state == BackupState.InProgress ? null : () => _confirmRestore(context, provider),
+              style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+            ),
+             const SizedBox(height: AppSpacing.md),
+            TextButton.icon(
+              icon: const Icon(Icons.logout, color: Colors.red),
+              label: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+              onPressed: () => provider.signOut(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmRestore(BuildContext context, BackupProvider provider) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Confirm Restore'),
+        content: const Text('Restoring from a backup will overwrite all current data. This action cannot be undone.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Restore'),
-          ),
+          TextButton(child: const Text('Cancel'), onPressed: () => Navigator.of(dialogContext).pop()),
+          FilledButton(child: const Text('Restore'), onPressed: () {
+            Navigator.of(dialogContext).pop();
+            provider.restoreNow();
+          }),
         ],
       ),
     );
-
-    if (confirmed != true) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await _backupService.restoreFromBackup(backupId);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Backup restored successfully!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error restoring backup: $e')));
-      }
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
   }
 
-  String _formatTimestamp(dynamic timestamp) {
-    if (timestamp == null) return 'Never';
-
-    try {
-      final DateTime dateTime = timestamp.toDate();
-      return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } catch (e) {
-      return 'Unknown';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: const TranslucentAppBar(title: Text('Backup & Sync')),
-      body: _backupStatus == null
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: () async {
-                await _loadBackupStatus();
-                await _loadBackupHistory();
-              },
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  MediaQuery.of(context).padding.top + kToolbarHeight + 16,
-                  16,
-                  MediaQuery.of(context).padding.bottom + 16,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Status Card
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  _backupStatus!['isLoggedIn']
-                                      ? Icons.cloud_done
-                                      : Icons.cloud_off,
-                                  color: _backupStatus!['isLoggedIn']
-                                      ? Colors.green
-                                      : Colors.red,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Backup Status',
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            if (!_backupStatus!['isLoggedIn']) ...[
-                              const Text(
-                                'You need to sign in to use backup & sync features.',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ] else ...[
-                              Text('Account: ${user?.email ?? 'Anonymous'}'),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Last Backup: ${_formatTimestamp(_backupStatus!['lastBackup'])}',
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Total Backups: ${_backupStatus!['totalBackups']}',
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Actions Card
-                    if (_backupStatus!['isLoggedIn']) ...[
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Actions',
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
-                              const SizedBox(height: 16),
-                              SizedBox(
-                                width: double.infinity,
-                                child: FilledButton.icon(
-                                  onPressed: _isLoading ? null : _createBackup,
-                                  icon: _isLoading
-                                      ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : const Icon(Icons.backup),
-                                  label: Text(
-                                    _isLoading
-                                        ? 'Creating Backup...'
-                                        : 'Create Backup',
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  onPressed: _isLoading ? null : _syncData,
-                                  icon: const Icon(Icons.sync),
-                                  label: const Text('Sync Data'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Backup History
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Backup History',
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
-                              const SizedBox(height: 16),
-                              if (_backupHistory.isEmpty) ...[
-                                const Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(32),
-                                    child: Text('No backups found'),
-                                  ),
-                                ),
-                              ] else ...[
-                                ListView.separated(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: _backupHistory.length,
-                                  separatorBuilder: (context, index) =>
-                                      const Divider(),
-                                  itemBuilder: (context, index) {
-                                    final backup = _backupHistory[index];
-                                    return ListTile(
-                                      leading: const Icon(Icons.folder_zip),
-                                      title: Text(
-                                        'Backup ${_formatTimestamp(backup['timestamp'])}',
-                                      ),
-                                      subtitle: Text(
-                                        'Accounts: ${backup['accountsCount']}, '
-                                        'Transactions: ${backup['transactionsCount']}, '
-                                        'Debts: ${backup['debtsCount']}, '
-                                        'Goals: ${backup['goalsCount']}, '
-                                        'Subscriptions: ${backup['subscriptionsCount']}, '
-                                        'Investments: ${backup['investmentsCount']}, '
-                                        'Budgets: ${backup['budgetsCount']}'
-                                        '${backup['hasUserProfile'] == true ? ', Profile ✓' : ''}',
-                                      ),
-                                      trailing: IconButton(
-                                        icon: const Icon(Icons.restore),
-                                        onPressed: _isLoading
-                                            ? null
-                                            : () =>
-                                                  _restoreBackup(backup['id']),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: 16),
-
-                    // Information Card
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'About Backup & Sync',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              '• Your data is automatically synced when you\'re signed in\n'
-                              '• Backups include ALL your data:\n'
-                              '  - Accounts & Transactions\n'
-                              '  - Goals & Debts\n'
-                              '  - Subscriptions & Budgets\n'
-                              '  - Investments & User Profile\n'
-                              '• Only the 5 most recent backups are kept\n'
-                              '• Restoring a backup replaces all current data\n'
-                              '• Data is securely stored in your Firebase account',
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+  Widget _buildInfoCard(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('How Backup Works', style: AppTypography.titleLarge),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              '• Backups are performed automatically every 24 hours.\n'
+              '• Your data is securely stored in your personal Google Drive.\n'
+              '• Restoring will replace all local data with the backup.',
+              style: AppTypography.bodyMedium,
             ),
+          ],
+        ),
+      ),
     );
   }
 }

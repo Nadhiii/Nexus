@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/budget.dart';
+import '../models/transaction.dart';
 import '../services/budget_service.dart';
+import 'notification_provider.dart';
 
 class BudgetProvider extends ChangeNotifier {
   final BudgetService _budgetService = BudgetService();
+  NotificationProvider? notificationProvider;
 
   List<Budget> _budgets = [];
   Map<String, dynamic> _analytics = {};
@@ -12,6 +15,8 @@ class BudgetProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   String _selectedPeriod = 'monthly';
+
+  BudgetProvider({this.notificationProvider});
 
   // Getters
   List<Budget> get budgets => _budgets;
@@ -45,7 +50,6 @@ class BudgetProvider extends ChangeNotifier {
   String get formattedTotalRemaining => '₹${totalRemaining.toStringAsFixed(2)}';
   String get formattedProjectedSpending => '₹${projectedTotalSpending.toStringAsFixed(2)}';
 
-  /// Initialize and start listening to budgets
   void initialize() {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -53,21 +57,18 @@ class BudgetProvider extends ChangeNotifier {
     }
   }
 
-  /// Setup budget streams for a specific user
   void _setupBudgetStreams(String userId) {
     _loadBudgets(userId);
     _loadAnalytics(userId);
     _loadRecommendations(userId);
   }
 
-  /// Load budgets from Firestore
   void _loadBudgets(String userId) {
     _setLoading(true);
     _budgetService.watchCurrentPeriodBudgets(userId).listen(
       (budgets) {
         _budgets = budgets;
         _setLoading(false);
-        _clearError();
         notifyListeners();
       },
       onError: (error) {
@@ -77,7 +78,6 @@ class BudgetProvider extends ChangeNotifier {
     );
   }
 
-  /// Load analytics
   void _loadAnalytics(String userId) {
     _budgetService.watchBudgetAnalytics(userId).listen(
       (analytics) {
@@ -90,7 +90,6 @@ class BudgetProvider extends ChangeNotifier {
     );
   }
 
-  /// Load recommendations
   void _loadRecommendations(String userId) async {
     try {
       _recommendations = await _budgetService.getBudgetRecommendations(userId);
@@ -100,19 +99,14 @@ class BudgetProvider extends ChangeNotifier {
     }
   }
 
-  /// Create a new budget
   Future<void> createBudget(Budget budget) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _setError('User not authenticated');
-      return;
-    }
+    if (user == null) return;
 
     try {
       _setLoading(true);
       await _budgetService.createBudget(user.uid, budget);
-      await refresh(); // Refresh data to show the new budget
-      _clearError();
+      await refresh();
     } catch (e) {
       _setError('Failed to create budget: $e');
     } finally {
@@ -120,18 +114,13 @@ class BudgetProvider extends ChangeNotifier {
     }
   }
 
-  /// Update an existing budget
   Future<void> updateBudget(Budget budget) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _setError('User not authenticated');
-      return;
-    }
+    if (user == null) return;
 
     try {
       _setLoading(true);
       await _budgetService.updateBudget(user.uid, budget);
-      _clearError();
     } catch (e) {
       _setError('Failed to update budget: $e');
     } finally {
@@ -139,18 +128,13 @@ class BudgetProvider extends ChangeNotifier {
     }
   }
 
-  /// Delete a budget
   Future<void> deleteBudget(String budgetId) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _setError('User not authenticated');
-      return;
-    }
+    if (user == null) return;
 
     try {
       _setLoading(true);
       await _budgetService.deleteBudget(user.uid, budgetId);
-      _clearError();
     } catch (e) {
       _setError('Failed to delete budget: $e');
     } finally {
@@ -158,163 +142,21 @@ class BudgetProvider extends ChangeNotifier {
     }
   }
 
-  /// Create monthly budgets based on income
-  Future<void> createMonthlyBudgets(double monthlyIncome, DateTime startDate) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _setError('User not authenticated');
-      return;
-    }
-
+  Future<void> checkBudgetForTransaction(Transaction transaction) async {
     try {
-      _setLoading(true);
-      await _budgetService.createMonthlyBudgets(user.uid, monthlyIncome, startDate);
-      _clearError();
+      final budget = _budgets.firstWhere((b) => b.categoryId == transaction.categoryId);
+      final newSpentAmount = budget.spentAmount + transaction.amount;
+      notificationProvider?.checkBudgetThresholds(
+        newSpentAmount,
+        budget.allocatedAmount,
+        budget.categoryName,
+        budget.period,
+      );
     } catch (e) {
-      _setError('Failed to create monthly budgets: $e');
-    } finally {
-      _setLoading(false);
+      // No budget found for this category, which is fine.
     }
   }
 
-  /// Update all spent amounts
-  Future<void> updateAllSpentAmounts() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _setError('User not authenticated');
-      return;
-    }
-
-    try {
-      await _budgetService.updateAllSpentAmounts(user.uid);
-      _clearError();
-    } catch (e) {
-      _setError('Failed to update spent amounts: $e');
-    }
-  }
-
-  /// Clone budgets from previous period
-  Future<void> cloneBudgetsFromPreviousPeriod(DateTime newStartDate, String period) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _setError('User not authenticated');
-      return;
-    }
-
-    try {
-      _setLoading(true);
-      await _budgetService.cloneBudgetsFromPreviousPeriod(user.uid, newStartDate, period);
-      _clearError();
-    } catch (e) {
-      _setError('Failed to clone budgets: $e');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  /// Set period filter
-  void setPeriodFilter(String period) {
-    if (_selectedPeriod != period) {
-      _selectedPeriod = period;
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        _loadBudgetsByPeriod(user.uid);
-      }
-      notifyListeners();
-    }
-  }
-
-  /// Load budgets by period
-  void _loadBudgetsByPeriod(String userId) {
-    _setLoading(true);
-    _budgetService.watchBudgetsByPeriod(userId, _selectedPeriod).listen(
-      (budgets) {
-        _budgets = budgets;
-        _setLoading(false);
-        _clearError();
-        notifyListeners();
-      },
-      onError: (error) {
-        _setError('Failed to load budgets: $error');
-        _setLoading(false);
-      },
-    );
-  }
-
-  /// Get budget by ID
-  Budget? getBudgetById(String id) {
-    try {
-      return _budgets.firstWhere((budget) => budget.id == id);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /// Get budgets by category
-  List<Budget> getBudgetsByCategory(String categoryId) {
-    return _budgets.where((budget) => budget.categoryId == categoryId).toList();
-  }
-
-  /// Get essential budgets (housing, food, transportation)
-  List<Budget> get essentialBudgets {
-    return _budgets.where((budget) => 
-        budget.metadata?['isEssential'] == true).toList();
-  }
-
-  /// Get lifestyle budgets (entertainment, shopping, etc.)
-  List<Budget> get lifestyleBudgets {
-    return _budgets.where((budget) => 
-        budget.metadata?['isEssential'] != true).toList();
-  }
-
-  /// Calculate budget distribution
-  Map<String, double> getBudgetDistribution() {
-    Map<String, double> distribution = {};
-    
-    for (var budget in _budgets) {
-      distribution[budget.categoryName] = budget.allocatedAmount;
-    }
-    
-    return distribution;
-  }
-
-  /// Calculate spending distribution
-  Map<String, double> getSpendingDistribution() {
-    Map<String, double> distribution = {};
-    
-    for (var budget in _budgets) {
-      distribution[budget.categoryName] = budget.spentAmount;
-    }
-    
-    return distribution;
-  }
-
-  /// Get budget efficiency (how well allocated vs spent)
-  List<Map<String, dynamic>> getBudgetEfficiency() {
-    return _budgets.map((budget) => {
-      'category': budget.categoryName,
-      'allocated': budget.allocatedAmount,
-      'spent': budget.spentAmount,
-      'efficiency': budget.allocatedAmount > 0 
-          ? (budget.spentAmount / budget.allocatedAmount) 
-          : 0.0,
-      'status': budget.statusDescription,
-    }).toList()..sort((a, b) => (b['efficiency'] as double).compareTo(a['efficiency'] as double));
-  }
-
-  /// Get spending trends
-  List<Map<String, dynamic>> getSpendingTrends() {
-    return _budgets.map((budget) => {
-      'category': budget.categoryName,
-      'current': budget.spentAmount,
-      'projected': budget.projectedSpending,
-      'trend': budget.spendingTrend.toString().split('.').last,
-      'daysRemaining': budget.daysRemaining,
-      'recommendedDaily': budget.recommendedDailySpending,
-    }).toList();
-  }
-
-  /// Refresh data
   Future<void> refresh() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -322,23 +164,16 @@ class BudgetProvider extends ChangeNotifier {
     }
   }
 
-  // Helper methods
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
   }
 
-  void _setError(String error) {
+  void _setError(String? error) {
     _error = error;
     notifyListeners();
   }
 
-  void _clearError() {
-    _error = null;
-    notifyListeners();
-  }
-
-  /// Reset provider state (for logout)
   void reset() {
     _budgets = [];
     _analytics = {};

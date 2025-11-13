@@ -112,7 +112,7 @@ class _ModernNotificationsScreenState extends State<ModernNotificationsScreen> {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'You're all caught up!',
+            "You're all caught up!",
             style: AppTypography.bodyLarge.copyWith(color: colorScheme.onSurface.withOpacity(0.6)),
           ),
         ],

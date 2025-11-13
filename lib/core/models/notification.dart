@@ -5,6 +5,8 @@ enum NotificationType {
   transactionAlert,
   systemUpdate,
   goalProgress,
+  budgetWarning,
+  subscriptionReminder,
 }
 
 class AppNotification {
@@ -14,7 +16,7 @@ class AppNotification {
   final String message;
   final DateTime createdAt;
   final bool isRead;
-  final Map<String, dynamic>? data; // Additional data for navigation or actions
+  final Map<String, dynamic>? data;
   final String? actionText;
   final String? actionRoute;
 
@@ -85,7 +87,45 @@ class AppNotification {
     );
   }
 
-  // Helper methods for different notification types
+  static AppNotification budgetWarning({
+    required String category,
+    required String cycle,
+    required double spentAmount,
+    required double budgetAmount,
+  }) {
+    final percentage = (spentAmount / budgetAmount * 100).toStringAsFixed(0);
+    return AppNotification(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      type: NotificationType.budgetWarning,
+      title: 'Budget Warning',
+      message: 'You have spent $percentage% of your $cycle budget for $category.',
+      createdAt: DateTime.now(),
+      actionText: 'View Budget',
+      actionRoute: '/budgets',
+      data: {
+        'category': category,
+      },
+    );
+  }
+
+  static AppNotification subscriptionReminder({
+    required String subscriptionName,
+    required DateTime dueDate,
+  }) {
+    return AppNotification(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      type: NotificationType.subscriptionReminder,
+      title: 'Subscription Reminder',
+      message: '$subscriptionName is due on ${dueDate.day}/${dueDate.month}.',
+      createdAt: DateTime.now(),
+      actionText: 'View Subscriptions',
+      actionRoute: '/subscriptions',
+      data: {
+        'subscriptionName': subscriptionName,
+      },
+    );
+  }
+
   static AppNotification billReminder({
     required String billName,
     required DateTime dueDate,
