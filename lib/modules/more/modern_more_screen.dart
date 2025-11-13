@@ -322,7 +322,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                 trailing: Switch(
                   value: themeProvider.useMaterialYou,
                   onChanged: (value) {
-                    themeProvider.toggleTheme(value);
+                    themeProvider.toggleMaterialYou();
                   },
                   activeColor: Theme.of(context).colorScheme.primary,
                 ),

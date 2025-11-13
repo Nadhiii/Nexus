@@ -51,16 +51,19 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> with SingleTi
           _buildTransactionsTab(context),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          if (_tabController.index == 0) {
-            Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ModernAddAccountScreen()));
-          } else {
-            Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ModernAddTransactionScreen()));
-          }
-        },
-        label: Text(_tabController.index == 0 ? 'New Account' : 'New Transaction'),
-        icon: const Icon(Icons.add),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 90.0),
+        child: FloatingActionButton.extended(
+          onPressed: () {
+            if (_tabController.index == 0) {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ModernAddAccountScreen()));
+            } else {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ModernAddTransactionScreen()));
+            }
+          },
+          label: Text(_tabController.index == 0 ? 'New Account' : 'New Transaction'),
+          icon: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -108,7 +111,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> with SingleTi
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 140),
           itemCount: provider.accounts.length,
           itemBuilder: (context, index) {
             final account = provider.accounts[index];
@@ -154,8 +157,8 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> with SingleTi
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          itemCount: provider.transactions.length, // Simplified for now
+          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 140),
+          itemCount: provider.transactions.length,
           itemBuilder: (context, index) {
             final transaction = provider.transactions[index];
             return Dismissible(

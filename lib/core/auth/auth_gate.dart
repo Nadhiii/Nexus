@@ -9,6 +9,7 @@ import '../providers/investment_provider.dart';
 import '../providers/debt_provider.dart';
 import '../providers/subscription_provider.dart';
 import '../providers/budget_provider.dart';
+import '../providers/biometric_provider.dart';
 import 'biometric_auth_wrapper.dart';
 
 class AuthGate extends StatelessWidget {
@@ -51,6 +52,7 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
 
   Future<void> _initializeProviders() async {
     try {
+      final biometricProvider = Provider.of<BiometricProvider>(context, listen: false);
       final accountProvider = Provider.of<AccountProvider>(context, listen: false);
       final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
       final investmentProvider = Provider.of<InvestmentProvider>(context, listen: false);
@@ -59,6 +61,7 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
       final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
 
       // Initialize providers with authenticated user
+      await biometricProvider.initialize();
       await accountProvider.initialize();
       await transactionProvider.initialize();
       investmentProvider.initialize();

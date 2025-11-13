@@ -10,6 +10,7 @@ import '../../core/services/firestore_service.dart';
 import '../../core/models/account.dart';
 import '../../core/models/transaction.dart';
 import '../transactions/modern_add_transaction_screen.dart';
+import '../notifications/modern_notifications_screen.dart';
 
 class ModernDashboardScreen extends StatefulWidget {
   final Function(int, {int? financeTab}) onNavigate;
@@ -248,7 +249,13 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                               amount: '₹${transaction.amount.toStringAsFixed(2)}',
                               isIncome: transaction.type == TransactionType.income,
                               icon: transaction.type == TransactionType.income ? Icons.arrow_downward : Icons.arrow_upward,
-                              onTap: () {},
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => ModernAddTransactionScreen(transaction: transaction),
+                                  ),
+                                );
+                              },
                             ),
                           );
                         }, childCount: snapshot.data!.length),
@@ -311,7 +318,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                 child: IconButton(
                   icon: Icon(Icons.notifications_none, color: colorScheme.onBackground),
                   onPressed: () {
-                    // Handle menu press
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ModernNotificationsScreen()));
                   },
                 ),
               );

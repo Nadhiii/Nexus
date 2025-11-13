@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/providers/biometric_provider.dart';
+import '../../core/services/auth_service.dart';
 
 class AppLockScreen extends StatefulWidget {
-  const AppLockScreen({super.key});
+  final VoidCallback onAuthenticated;
+
+  const AppLockScreen({super.key, required this.onAuthenticated});
 
   @override
   State<AppLockScreen> createState() => _AppLockScreenState();
@@ -47,7 +51,6 @@ class _AppLockScreenState extends State<AppLockScreen>
   }
 
   Future<void> _authenticateOnLoad() async {
-    // Wait for animation to complete before starting authentication
     await Future.delayed(const Duration(milliseconds: 800));
     _authenticate();
   }
@@ -67,10 +70,8 @@ class _AppLockScreenState extends State<AppLockScreen>
       final authenticated = await biometricProvider.authenticateForAppAccess();
 
       if (authenticated && mounted) {
-        // Authentication successful, close the lock screen
-        Navigator.of(context).pop(true);
+        widget.onAuthenticated();
       } else if (mounted) {
-        // Authentication failed, show error and allow retry
         _showAuthFailedDialog();
       }
     } catch (e) {
@@ -93,23 +94,25 @@ class _AppLockScreenState extends State<AppLockScreen>
       builder: (context) => AlertDialog(
         title: const Text('Authentication Failed'),
         content: const Text(
-          'Authentication was cancelled or failed. Please try again to access Nexus.',
+          'Could not verify your identity. Please try again.',
         ),
         actions: [
           TextButton(
+            onPressed: () async {
+              // This provides a safe exit if biometrics fail repeatedly.
+              await AuthService().signOut();
+              if (mounted) {
+                // No need to pop, AuthGate will handle navigation.
+              }
+            },
+            child: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+          ),
+          FilledButton(
             onPressed: () {
               Navigator.of(context).pop();
               _authenticate();
             },
             child: const Text('Try Again'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Close the app or go to login
-              Navigator.of(context).pop(false);
-            },
-            child: const Text('Cancel'),
           ),
         ],
       ),
@@ -132,13 +135,6 @@ class _AppLockScreenState extends State<AppLockScreen>
               _authenticate();
             },
             child: const Text('Try Again'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop(false);
-            },
-            child: const Text('Cancel'),
           ),
         ],
       ),
@@ -185,7 +181,6 @@ class _AppLockScreenState extends State<AppLockScreen>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // App Logo/Icon
                           Container(
                             width: 120,
                             height: 120,
@@ -208,7 +203,6 @@ class _AppLockScreenState extends State<AppLockScreen>
 
                           const SizedBox(height: 32),
 
-                          // App Name
                           Text(
                             'Nexus',
                             style: theme.textTheme.headlineLarge?.copyWith(
@@ -230,7 +224,6 @@ class _AppLockScreenState extends State<AppLockScreen>
 
                           const SizedBox(height: 48),
 
-                          // Lock Icon with Animation
                           Consumer<BiometricProvider>(
                             builder: (context, provider, child) {
                               return Container(
@@ -264,7 +257,6 @@ class _AppLockScreenState extends State<AppLockScreen>
 
                           const SizedBox(height: 24),
 
-                          // Authentication Message
                           Consumer<BiometricProvider>(
                             builder: (context, provider, child) {
                               return Column(
@@ -295,7 +287,6 @@ class _AppLockScreenState extends State<AppLockScreen>
 
                           const SizedBox(height: 48),
 
-                          // Manual Authentication Button
                           if (!_isAuthenticating)
                             SizedBox(
                               width: double.infinity,
@@ -314,25 +305,6 @@ class _AppLockScreenState extends State<AppLockScreen>
                                 ),
                               ),
                             ),
-
-                          const SizedBox(height: 16),
-
-                          // Cancel Button
-                          TextButton(
-                            onPressed: _isAuthenticating
-                                ? null
-                                : () {
-                                    Navigator.of(context).pop(false);
-                                  },
-                            child: Text(
-                              'Cancel',
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurface.withOpacity(
-                                  0.7,
-                                ),
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ),

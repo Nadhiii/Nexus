@@ -219,5 +219,5 @@ class AppTheme {
   static ThemeData get lightTheme => _getThemeData(_appLightColorScheme, AppTypography.textThemeLight);
   static ThemeData get darkTheme => _getThemeData(_appDarkColorScheme, AppTypography.textThemeDark);
 
-  static ThemeData getTheme(ColorScheme colorScheme) => colorScheme.brightness == Brightness.light ? lightTheme : darkTheme;
+  static ThemeData getTheme(ColorScheme colorScheme) => _getThemeData(colorScheme, colorScheme.brightness == Brightness.light ? AppTypography.textThemeLight : AppTypography.textThemeDark);
 }

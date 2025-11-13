@@ -126,16 +126,32 @@ class _MoreScreenState extends State<MoreScreen> {
               children: [
                 Consumer<ThemeProvider>(
                   builder: (context, themeProvider, child) {
-                    return SwitchListTile(
-                      title: const Text('Dark Mode'),
-                      subtitle: const Text(
-                        'Switch between light and dark theme',
-                      ),
-                      value: themeProvider.isDarkMode,
-                      onChanged: (value) {
-                        themeProvider.toggleTheme();
-                      },
-                      secondary: const Icon(Icons.dark_mode),
+                    return Column(
+                      children: [
+                        SwitchListTile(
+                          title: const Text('Dark Mode'),
+                          subtitle: const Text(
+                            'Switch between light and dark theme',
+                          ),
+                          value: themeProvider.isDarkMode,
+                          onChanged: (value) {
+                            themeProvider.toggleTheme();
+                          },
+                          secondary: const Icon(Icons.dark_mode),
+                        ),
+                        const Divider(height: 1),
+                        SwitchListTile(
+                          title: const Text('Material You'),
+                          subtitle: const Text(
+                            'Dynamic colors from your wallpaper (Android 12+)',
+                          ),
+                          value: themeProvider.useMaterialYou,
+                          onChanged: (value) {
+                            themeProvider.toggleMaterialYou();
+                          },
+                          secondary: const Icon(Icons.color_lens),
+                        ),
+                      ],
                     );
                   },
                 ),
