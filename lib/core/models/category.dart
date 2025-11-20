@@ -1,65 +1,40 @@
 import 'package:flutter/material.dart';
 
+/// Represents a user-defined transaction category.
 class Category {
   final String id;
   final String name;
-  final IconData icon;
+  final String emoji;
   final Color color;
-  final String type; // 'income', 'expense'
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final bool isCustom; // To distinguish from default categories
 
   Category({
     required this.id,
     required this.name,
-    required this.icon,
+    required this.emoji,
     required this.color,
-    required this.type,
-    required this.createdAt,
-    required this.updatedAt,
+    this.isCustom = true,
   });
 
-  factory Category.fromMap(Map<String, dynamic> map) {
-    return Category(
-      id: map['id'],
-      name: map['name'],
-      icon: IconData(map['iconCodePoint'], fontFamily: 'MaterialIcons'),
-      color: Color(map['colorValue']),
-      type: map['type'],
-      createdAt: DateTime.parse(map['createdAt']),
-      updatedAt: DateTime.parse(map['updatedAt']),
-    );
-  }
-
+  /// Converts a Category object into a map for Firestore.
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'name': name,
-      'iconCodePoint': icon.codePoint,
-      'colorValue': color.value,
-      'type': type,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'emoji': emoji,
+      // Store color as an integer value
+      'color_value': color.value,
+      'is_custom': isCustom,
     };
   }
 
-  Category copyWith({
-    String? id,
-    String? name,
-    IconData? icon,
-    Color? color,
-    String? type,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
+  /// Creates a Category object from a Firestore document map.
+  factory Category.fromMap(String id, Map<String, dynamic> map) {
     return Category(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      icon: icon ?? this.icon,
-      color: color ?? this.color,
-      type: type ?? this.type,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      id: id,
+      name: map['name'] as String,
+      emoji: map['emoji'] as String? ?? '❓', // Fallback to a question mark emoji
+      color: Color(map['color_value'] as int),
+      isCustom: map['is_custom'] as bool? ?? true,
     );
   }
 }

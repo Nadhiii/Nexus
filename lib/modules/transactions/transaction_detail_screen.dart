@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/widgets/translucent_app_bar.dart';
+import '../../core/widgets/top_snackbar.dart';
+import '../../core/widgets/translucent_app_bar.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
   final String transactionId;
@@ -63,7 +64,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   }
 
   void _saveTransaction() {
-    // TODO: Implement actual save functionality
     Navigator.of(context).pop({
       'id': widget.transactionId,
       'title': _titleController.text,
@@ -72,12 +72,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       'isExpense': _isExpense,
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Transaction updated successfully'),
-        backgroundColor: Colors.green,
-      ),
-    );
+    showTopSnackBar(context, 'Transaction updated successfully');
   }
 
   void _deleteTransaction() {
@@ -93,10 +88,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           ),
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
+              Navigator.of(context).pop();
               Navigator.of(
                 context,
-              ).pop('deleted'); // Return to transactions list
+              ).pop('deleted');
             },
             child: const Text('Delete'),
           ),
@@ -128,7 +123,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Transaction Icon and Amount
             Container(
               width: double.infinity,
               margin: const EdgeInsets.only(bottom: 20),
@@ -186,8 +180,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 ),
               ),
             ),
-
-            // Edit Form
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -199,8 +191,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 16),
-
-                    // Title Field
                     TextField(
                       controller: _titleController,
                       decoration: const InputDecoration(
@@ -208,10 +198,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         border: OutlineInputBorder(),
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
-                    // Amount Field
                     TextField(
                       controller: _amountController,
                       decoration: const InputDecoration(
@@ -221,10 +208,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                       ),
                       keyboardType: TextInputType.number,
                     ),
-
                     const SizedBox(height: 16),
-
-                    // Category Dropdown
                     DropdownButtonFormField<String>(
                       initialValue: _selectedCategory,
                       decoration: const InputDecoration(
@@ -243,10 +227,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         });
                       },
                     ),
-
                     const SizedBox(height: 16),
-
-                    // Transaction Type Toggle
                     Row(
                       children: [
                         const Text('Transaction Type: '),
@@ -278,10 +259,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // Save Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

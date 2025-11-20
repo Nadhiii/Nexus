@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/widgets/top_snackbar.dart';
 import '../../core/widgets/translucent_app_bar.dart';
 
 class AboutScreen extends StatelessWidget {
@@ -27,7 +28,6 @@ class AboutScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // App Logo/Icon
             Container(
               width: 120,
               height: 120,
@@ -49,8 +49,6 @@ class AboutScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-
-            // App Name
             Text(
               'Nexus',
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
@@ -59,8 +57,6 @@ class AboutScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-
-            // App Tagline
             Text(
               'Personal Finance Management',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -68,8 +64,6 @@ class AboutScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-
-            // Version
             Text(
               'Version 1.0.0',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -77,8 +71,6 @@ class AboutScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-
-            // App Description Card
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -134,8 +126,6 @@ class AboutScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Developer Info Card
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -164,8 +154,6 @@ class AboutScreen extends StatelessWidget {
                       ).textTheme.bodyLarge?.copyWith(height: 1.5),
                     ),
                     const SizedBox(height: 20),
-
-                    // Portfolio Link Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -187,8 +175,6 @@ class AboutScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Technology Stack Card
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -231,8 +217,6 @@ class AboutScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Contact & Support Card
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -286,8 +270,6 @@ class AboutScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Copyright
             Text(
               '© 2025 Mahanadhi. All rights reserved.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -372,12 +354,8 @@ class AboutScreen extends StatelessWidget {
   Future<void> _launchURL(BuildContext context, String url) async {
     try {
       final Uri uri = Uri.parse(url);
-
-      // Try to launch directly without checking canLaunchUrl first
-      // as canLaunchUrl sometimes gives false positives on Android
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e) {
-      // If direct launch fails, show fallback dialog
       if (context.mounted) {
         _showUrlFallback(context, url);
       }
@@ -425,12 +403,7 @@ class AboutScreen extends StatelessWidget {
                 Navigator.of(context).pop();
                 await Clipboard.setData(ClipboardData(text: url));
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('URL copied to clipboard!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  showTopSnackBar(context, 'URL copied to clipboard!');
                 }
               },
               icon: const Icon(Icons.copy),
@@ -441,12 +414,7 @@ class AboutScreen extends StatelessWidget {
                 await Clipboard.setData(ClipboardData(text: url));
                 if (context.mounted) {
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('URL copied to clipboard!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  showTopSnackBar(context, 'URL copied to clipboard!');
                 }
               },
               icon: const Icon(Icons.copy),
@@ -459,8 +427,6 @@ class AboutScreen extends StatelessWidget {
   }
 
   Future<void> _launchEmail(BuildContext context) async {
-    // Skip the canLaunchUrl check and go directly to fallback
-    // since mailto links are unreliable on many Android setups
     _showEmailOptions(context, 'mahanadhip@gmail.com', 'Nexus App Feedback');
   }
 
@@ -508,7 +474,6 @@ class AboutScreen extends StatelessWidget {
             ),
             TextButton.icon(
               onPressed: () async {
-                // Copy contact info instead of sharing
                 Navigator.of(context).pop();
                 await Clipboard.setData(
                   ClipboardData(
@@ -517,12 +482,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                 );
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Contact info copied to clipboard!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  showTopSnackBar(context, 'Contact info copied to clipboard!');
                 }
               },
               icon: const Icon(Icons.copy),
@@ -530,7 +490,6 @@ class AboutScreen extends StatelessWidget {
             ),
             TextButton.icon(
               onPressed: () async {
-                // Try to open Gmail web - simplified approach
                 Navigator.of(context).pop();
                 final gmailUrl =
                     'https://mail.google.com/mail/?view=cm&fs=1&to=$email&su=${Uri.encodeComponent(subject)}';
@@ -539,7 +498,6 @@ class AboutScreen extends StatelessWidget {
                   final Uri uri = Uri.parse(gmailUrl);
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
                 } catch (e) {
-                  // If Gmail web fails, copy the info instead
                   await Clipboard.setData(
                     ClipboardData(
                       text:
@@ -547,13 +505,10 @@ class AboutScreen extends StatelessWidget {
                     ),
                   );
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Gmail failed. Contact info copied to clipboard!',
-                        ),
-                        backgroundColor: Colors.orange,
-                      ),
+                    showTopSnackBar(
+                      context,
+                      'Gmail failed. Contact info copied to clipboard!',
+                      isError: true,
                     );
                   }
                 }
@@ -566,12 +521,7 @@ class AboutScreen extends StatelessWidget {
                 await Clipboard.setData(ClipboardData(text: email));
                 if (context.mounted) {
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Email address copied to clipboard!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  showTopSnackBar(context, 'Email address copied to clipboard!');
                 }
               },
               icon: const Icon(Icons.copy),

@@ -1,13 +1,12 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import '../widgets/top_snackbar.dart';
 
-/// Service for handling debt payment notifications
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  /// Check for upcoming EMI payments and show notifications
   Future<void> checkUpcomingPayments(List<dynamic> debts) async {
     final now = DateTime.now();
     final upcoming = <Map<String, dynamic>>[];
@@ -16,7 +15,6 @@ class NotificationService {
       if (debt.nextDueDate != null) {
         final daysUntilDue = debt.nextDueDate!.difference(now).inDays;
 
-        // Notify for payments due in the next 3 days
         if (daysUntilDue >= 0 && daysUntilDue <= 3) {
           upcoming.add({'debt': debt, 'daysUntilDue': daysUntilDue});
         }
@@ -46,47 +44,17 @@ class NotificationService {
       }
 
       log('Notification: $message');
-      // In a real app, you would use a proper notification plugin like:
-      // - flutter_local_notifications
-      // - firebase_messaging
-      // For now, we'll just log it
     }
   }
 
-  /// Show in-app notification for due payments
   static void showInAppNotification(
     BuildContext context,
     String title,
     String message,
   ) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 4),
-            Text(message),
-          ],
-        ),
-        backgroundColor: Colors.orange,
-        duration: const Duration(seconds: 5),
-        action: SnackBarAction(
-          label: 'OK',
-          textColor: Colors.white,
-          onPressed: () {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          },
-        ),
-      ),
-    );
+    showTopSnackBar(context, '$title: $message', isError: true);
   }
 
-  /// Get upcoming payments for display in widgets
   List<Map<String, dynamic>> getUpcomingPayments(List<dynamic> debts) {
     final now = DateTime.now();
     final upcoming = <Map<String, dynamic>>[];
@@ -95,7 +63,6 @@ class NotificationService {
       if (debt.nextDueDate != null) {
         final daysUntilDue = debt.nextDueDate!.difference(now).inDays;
 
-        // Include payments due in the next 7 days
         if (daysUntilDue >= 0 && daysUntilDue <= 7) {
           upcoming.add({
             'debt': debt,
@@ -107,13 +74,11 @@ class NotificationService {
       }
     }
 
-    // Sort by due date (closest first)
     upcoming.sort((a, b) => a['daysUntilDue'].compareTo(b['daysUntilDue']));
 
     return upcoming;
   }
 
-  /// Format due date message for display
   static String formatDueDateMessage(int daysUntilDue) {
     if (daysUntilDue == 0) {
       return 'Due Today';

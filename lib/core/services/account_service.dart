@@ -5,194 +5,93 @@ import '../models/account.dart';
 class AccountService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Collection reference - now using root-level collection
-  CollectionReference<Map<String, dynamic>> get _accountsCollection {
-    return _firestore.collection('accounts');
-  }
-
-  // Create a new account
-  Future<String> createAccount(String userId, Account account) async {
-    try {
-      final docRef = await _accountsCollection.add(account.toMap());
-
-      // Update the account with the generated ID
-      final updatedAccount = account.copyWith(id: docRef.id);
-      await docRef.update(updatedAccount.toMap());
-
-      return docRef.id;
-    } catch (e) {
-      throw Exception('Failed to create account: $e');
+  static Color getDefaultColor(AccountType type) {
+    switch (type) {
+      case AccountType.savings:
+        return Colors.blue;
+      case AccountType.salary:
+        return Colors.green;
+      case AccountType.checking:
+        return Colors.orange;
+      case AccountType.investment:
+        return Colors.purple;
+      case AccountType.cash:
+        return Colors.teal;
+      case AccountType.other:
+        return Colors.grey;
     }
   }
 
-  // Get all accounts for a user
-  Stream<List<Account>> watchUserAccounts(String userId) {
-    return _accountsCollection
-        .where('userId', isEqualTo: userId)
-        .where('isActive', isEqualTo: true)
-        .orderBy('createdAt', descending: false)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            final data = doc.data();
-            data['id'] = doc.id;
-            return Account.fromMap(data);
-          }).toList();
-        });
-  }
-
-  // Get a specific account
-  Future<Account?> getAccount(String userId, String accountId) async {
-    try {
-      final doc = await _accountsCollection.doc(accountId).get();
-      if (doc.exists && doc.data()?['userId'] == userId) {
-        final data = doc.data()!;
-        data['id'] = doc.id;
-        return Account.fromMap(data);
-      }
-      return null;
-    } catch (e) {
-      throw Exception('Failed to get account: $e');
-    }
-  }
-
-  // Update an account
-  Future<void> updateAccount(String userId, Account account) async {
-    try {
-      await _accountsCollection
-          .doc(account.id)
-          .update(account.copyWith(updatedAt: DateTime.now()).toMap());
-    } catch (e) {
-      throw Exception('Failed to update account: $e');
-    }
-  }
-
-  // Update account balance
-  Future<void> updateAccountBalance(
-    String userId,
-    String accountId,
-    double newBalance,
-  ) async {
-    try {
-      await _accountsCollection.doc(accountId).update({
-        'balance': newBalance,
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      });
-    } catch (e) {
-      throw Exception('Failed to update account balance: $e');
-    }
-  }
-
-  // Soft delete an account (mark as inactive)
-  Future<void> deleteAccount(String userId, String accountId) async {
-    try {
-      await _accountsCollection.doc(accountId).update({
-        'isActive': false,
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      });
-    } catch (e) {
-      throw Exception('Failed to delete account: $e');
-    }
-  }
-
-  // Hard delete an account (permanent removal)
-  Future<void> permanentDeleteAccount(String userId, String accountId) async {
-    try {
-      await _accountsCollection.doc(accountId).delete();
-    } catch (e) {
-      throw Exception('Failed to permanently delete account: $e');
-    }
-  }
-
-  // Get accounts by type
-  Stream<List<Account>> watchAccountsByType(
-    String userId,
-    List<AccountType> types,
-  ) {
-    return watchUserAccounts(userId).map((accounts) {
-      return accounts.where((account) => types.contains(account.type)).toList();
-    });
-  }
-
-  // Get assets (non-liability accounts)
-  Stream<List<Account>> watchAssets(String userId) {
-    return watchUserAccounts(userId).map((accounts) {
-      return accounts.where((account) => account.isAsset).toList();
-    });
-  }
-
-  // Get liabilities (credit cards, loans)
-  Stream<List<Account>> watchLiabilities(String userId) {
-    return watchUserAccounts(userId).map((accounts) {
-      return accounts.where((account) => account.isLiability).toList();
-    });
-  }
-
-  // Calculate total net worth
-  Stream<double> watchNetWorth(String userId) {
-    return watchUserAccounts(userId).map((accounts) {
-      double totalAssets = 0;
-      double totalLiabilities = 0;
-
-      for (final account in accounts) {
-        if (account.isAsset) {
-          totalAssets += account.balance;
-        } else {
-          totalLiabilities += account.balance;
-        }
-      }
-
-      return totalAssets - totalLiabilities;
-    });
-  }
-
-  // Calculate total assets
-  Stream<double> watchTotalAssets(String userId) {
-    return watchAssets(userId).map((accounts) {
-      return accounts.fold(0.0, (sum, account) => sum + account.balance);
-    });
-  }
-
-  // Calculate total liabilities
-  Stream<double> watchTotalLiabilities(String userId) {
-    return watchLiabilities(userId).map((accounts) {
-      return accounts.fold(0.0, (sum, account) => sum + account.balance);
-    });
-  }
-
-  // Get default account icons for each type
   static IconData getDefaultIcon(AccountType type) {
     switch (type) {
       case AccountType.savings:
         return Icons.savings;
       case AccountType.salary:
-        return Icons.work;
+        return Icons.account_balance_wallet;
       case AccountType.checking:
         return Icons.account_balance;
       case AccountType.investment:
         return Icons.trending_up;
       case AccountType.cash:
-        return Icons.payments;
+        return Icons.money;
       case AccountType.other:
-        return Icons.account_box;
+        return Icons.account_balance_wallet;
     }
   }
 
-  // Get default account colors for each type
-  static Color getDefaultColor(AccountType type) {
-    switch (type) {
-      case AccountType.savings:
-        return Colors.green;
-      case AccountType.salary:
-        return Colors.blue;
-      case AccountType.checking:
-        return Colors.teal;
-      case AccountType.investment:
-        return Colors.purple;
-      case AccountType.cash:
-        return Colors.orange;
-      case AccountType.other:
-        return Colors.grey;
+  CollectionReference<Map<String, dynamic>> _getAccountsCollection(
+    String userId,
+  ) {
+    return _firestore.collection('users').doc(userId).collection('accounts');
+  }
+
+  Stream<List<Account>> watchAccounts(String userId) {
+    return _getAccountsCollection(userId).snapshots().map(
+      (snapshot) =>
+          snapshot.docs.map((doc) => Account.fromFirestore(doc)).toList(),
+    );
+  }
+
+  Future<void> addAccount(String userId, Account account) async {
+    final docRef = _getAccountsCollection(userId).doc();
+    await docRef.set(account.copyWith(id: docRef.id).toMap());
+  }
+
+  Future<void> updateAccount(String userId, Account account) {
+    return _getAccountsCollection(
+      userId,
+    ).doc(account.id).update(account.toMap());
+  }
+
+  Future<void> deleteAccount(String userId, String accountId) {
+    return _getAccountsCollection(userId).doc(accountId).delete();
+  }
+
+  Future<void> updateAccountBalance(
+    String userId,
+    String accountId,
+    double newBalance,
+  ) {
+    return _getAccountsCollection(
+      userId,
+    ).doc(accountId).update({'balance': newBalance});
+  }
+
+  Future<void> clearAllAccounts(String userId) async {
+    final snapshot = await _getAccountsCollection(userId).get();
+    final batch = _firestore.batch();
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
     }
+    await batch.commit();
+  }
+
+  Future<void> restoreAccounts(String userId, List<Account> accounts) async {
+    final batch = _firestore.batch();
+    for (final account in accounts) {
+      final docRef = _getAccountsCollection(userId).doc(account.id);
+      batch.set(docRef, account.toMap());
+    }
+    await batch.commit();
   }
 }

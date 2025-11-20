@@ -1,133 +1,228 @@
-import 'dart:convert';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:googleapis/drive/v3.dart' as drive;
-import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
 
-class BackupService {
-  final GoogleSignIn _googleSignIn;
+class FirebaseBackupService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  BackupService(this._googleSignIn);
+  static const int maxBackupVersions = 5; // Keep last 5 backups
+  static const String backupVersion = '1.0.0'; // For future compatibility
 
-  Future<drive.DriveApi?> _getDriveApi() async {
-    final googleUser = _googleSignIn.currentUser;
-    if (googleUser == null) return null;
+  CollectionReference get _backupCollection => _firestore.collection('backups');
 
-    final headers = await googleUser.authHeaders;
-    final client = GoogleAuthClient(headers);
-    return drive.DriveApi(client);
-  }
+  /// Create a new backup with versioning support
+  Future<void> createBackup(String userId, Map<String, dynamic> data) async {
+    final timestamp = DateTime.now();
+    final backupId = timestamp.millisecondsSinceEpoch.toString();
 
-  Future<Map<String, dynamic>> getBackupStatus() async {
-    final driveApi = await _getDriveApi();
-    if (driveApi == null) return {'isLoggedIn': false};
+    // Calculate data checksum for integrity verification
+    final dataString = jsonEncode(data);
+    final checksum = sha256.convert(utf8.encode(dataString)).toString();
 
-    final file = await _getBackupFile(driveApi);
-    return {
-      'isLoggedIn': true,
-      'lastBackup': file?.modifiedTime,
-      'fileId': file?.id,
+    // Count items in backup
+    final itemCounts = {
+      'transactions': (data['transactions'] as List?)?.length ?? 0,
+      'accounts': (data['accounts'] as List?)?.length ?? 0,
+      'goals': (data['goals'] as List?)?.length ?? 0,
+      'subscriptions': (data['subscriptions'] as List?)?.length ?? 0,
+      'debts': (data['debts'] as List?)?.length ?? 0,
     };
+
+    final totalItems = itemCounts.values.reduce((a, b) => a + b);
+
+    // Create backup document in versioned subcollection
+    await _backupCollection
+        .doc(userId)
+        .collection('versions')
+        .doc(backupId)
+        .set({
+          'timestamp': FieldValue.serverTimestamp(),
+          'clientTimestamp': timestamp.toIso8601String(),
+          'data': data,
+          'checksum': checksum,
+          'itemCounts': itemCounts,
+          'totalItems': totalItems,
+          'version': backupVersion,
+          'deviceInfo': 'Flutter App', // Could add actual device info
+        });
+
+    // Update the main document with latest backup reference
+    await _backupCollection.doc(userId).set({
+      'latestBackupId': backupId,
+      'lastBackupTimestamp': FieldValue.serverTimestamp(),
+      'lastBackupClientTimestamp': timestamp.toIso8601String(),
+      'totalBackups': FieldValue.increment(1),
+      'itemCounts': itemCounts,
+      'totalItems': totalItems,
+    }, SetOptions(merge: true));
+
+    // Clean up old backups (keep only last maxBackupVersions)
+    await _cleanOldBackups(userId);
   }
 
-  Future<void> createBackup() async {
-    final driveApi = await _getDriveApi();
-    if (driveApi == null) throw Exception('Not signed in to Google');
+  /// Clean up old backups, keeping only the most recent ones
+  Future<void> _cleanOldBackups(String userId) async {
+    try {
+      final versions = await _backupCollection
+          .doc(userId)
+          .collection('versions')
+          .orderBy('timestamp', descending: true)
+          .get();
 
-    final backupData = await _gatherBackupData();
-    final backupJson = jsonEncode(backupData);
-    final media = drive.Media(Stream.value(utf8.encode(backupJson)), backupJson.length, contentType: 'application/json');
-
-    final file = await _getBackupFile(driveApi);
-
-    if (file != null) {
-      await driveApi.files.update(drive.File(), file.id!, uploadMedia: media);
-    } else {
-      final newFile = drive.File()
-        ..name = 'nexus_backup.json'
-        ..parents = ['appDataFolder'];
-      await driveApi.files.create(newFile, uploadMedia: media);
+      if (versions.docs.length > maxBackupVersions) {
+        // Delete oldest backups
+        for (int i = maxBackupVersions; i < versions.docs.length; i++) {
+          await versions.docs[i].reference.delete();
+        }
+      }
+    } catch (e) {
+      print('Error cleaning old backups: $e');
+      // Don't throw - this is not critical
     }
-    await cleanupOldBackups();
   }
 
-  Future<void> restoreFromBackup(String fileId) async {
-    final driveApi = await _getDriveApi();
-    if (driveApi == null) throw Exception('Not signed in to Google');
-
-    final media = await driveApi.files.get(fileId, downloadOptions: drive.DownloadOptions.fullMedia) as drive.Media;
-    final backupJson = await utf8.decodeStream(media.stream);
-    final backupData = jsonDecode(backupJson);
-
-    await _restoreData(backupData);
+  /// Restore from the latest backup
+  Future<Map<String, dynamic>?> restoreFromBackup(String userId) async {
+    return await restoreFromSpecificBackup(userId, null);
   }
 
-  Future<List<Map<String, dynamic>>> getBackupHistory() async {
-    final driveApi = await _getDriveApi();
-    if (driveApi == null) return [];
+  /// Restore from a specific backup version
+  Future<Map<String, dynamic>?> restoreFromSpecificBackup(
+    String userId,
+    String? backupId,
+  ) async {
+    try {
+      String? targetBackupId = backupId;
 
-    final fileList = await driveApi.files.list(spaces: 'appDataFolder', $fields: 'files(id, name, modifiedTime)');
-    return fileList.files?.map((f) => {'id': f.id, 'modifiedTime': f.modifiedTime}).toList() ?? [];
-  }
-
-  Future<drive.File?> _getBackupFile(drive.DriveApi driveApi) async {
-    final fileList = await driveApi.files.list(spaces: 'appDataFolder', $fields: 'files(id, name, modifiedTime)');
-    return fileList.files?.isEmpty ?? true ? null : fileList.files!.first;
-  }
-
-  Future<Map<String, dynamic>> _gatherBackupData() async {
-    final userId = FirebaseAuth.instance.currentUser!.uid;
-    final collections = ['transactions', 'accounts', 'budgets', 'subscriptions', 'goals', 'debts', 'userProfiles'];
-    final backupData = <String, dynamic>{};
-
-    for (final collection in collections) {
-      final snapshot = await FirebaseFirestore.instance.collection('users').doc(userId).collection(collection).get();
-      backupData[collection] = snapshot.docs.map((doc) => doc.data()).toList();
-    }
-    return backupData;
-  }
-
-  Future<void> _restoreData(Map<String, dynamic> backupData) async {
-    final userId = FirebaseAuth.instance.currentUser!.uid;
-    final batch = FirebaseFirestore.instance.batch();
-
-    for (final collectionName in backupData.keys) {
-      final collectionRef = FirebaseFirestore.instance.collection('users').doc(userId).collection(collectionName);
-      final existingDocs = await collectionRef.get();
-      for (final doc in existingDocs.docs) {
-        batch.delete(doc.reference);
+      // If no specific backup ID, get the latest one
+      if (targetBackupId == null) {
+        final mainDoc = await _backupCollection.doc(userId).get();
+        if (!mainDoc.exists) return null;
+        final mainData = mainDoc.data() as Map<String, dynamic>?;
+        targetBackupId = mainData?['latestBackupId'] as String?;
+        if (targetBackupId == null) return null;
       }
 
-      for (final docData in backupData[collectionName]) {
-        batch.set(collectionRef.doc(), docData);
+      // Fetch the backup version
+      final backupDoc = await _backupCollection
+          .doc(userId)
+          .collection('versions')
+          .doc(targetBackupId)
+          .get();
+
+      if (!backupDoc.exists) return null;
+
+      final backupData = backupDoc.data() as Map<String, dynamic>;
+
+      // Verify checksum if available
+      final storedChecksum = backupData['checksum'] as String?;
+      if (storedChecksum != null) {
+        final data = backupData['data'] as Map<String, dynamic>;
+        final dataString = jsonEncode(data);
+        final calculatedChecksum = sha256
+            .convert(utf8.encode(dataString))
+            .toString();
+
+        if (storedChecksum != calculatedChecksum) {
+          throw Exception(
+            'Backup data integrity check failed. Checksum mismatch.',
+          );
+        }
       }
+
+      return backupData;
+    } catch (e) {
+      print('Error restoring backup: $e');
+      rethrow;
     }
+  }
+
+  /// Get list of all available backups for a user
+  Future<List<Map<String, dynamic>>> getBackupHistory(String userId) async {
+    try {
+      final versions = await _backupCollection
+          .doc(userId)
+          .collection('versions')
+          .orderBy('timestamp', descending: true)
+          .limit(maxBackupVersions)
+          .get();
+
+      return versions.docs.map((doc) {
+        final data = doc.data();
+        final timestamp = data['timestamp'] as Timestamp?;
+        return {
+          'id': doc.id,
+          'timestamp': timestamp?.toDate(),
+          'clientTimestamp': data['clientTimestamp'],
+          'itemCounts': data['itemCounts'],
+          'totalItems': data['totalItems'],
+          'version': data['version'],
+        };
+      }).toList();
+    } catch (e) {
+      print('Error fetching backup history: $e');
+      return [];
+    }
+  }
+
+  /// Get last backup timestamp
+  Future<DateTime?> getLastBackupTimestamp(String userId) async {
+    try {
+      final doc = await _backupCollection.doc(userId).get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>?;
+        final timestamp = data?['lastBackupTimestamp'] as Timestamp?;
+        return timestamp?.toDate();
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get backup statistics
+  Future<Map<String, dynamic>?> getBackupStats(String userId) async {
+    try {
+      final doc = await _backupCollection.doc(userId).get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>?;
+        return {
+          'totalBackups': data?['totalBackups'] ?? 0,
+          'lastBackupTimestamp': (data?['lastBackupTimestamp'] as Timestamp?)
+              ?.toDate(),
+          'itemCounts': data?['itemCounts'] ?? {},
+          'totalItems': data?['totalItems'] ?? 0,
+        };
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Delete a specific backup
+  Future<void> deleteBackup(String userId, String backupId) async {
+    await _backupCollection
+        .doc(userId)
+        .collection('versions')
+        .doc(backupId)
+        .delete();
+  }
+
+  /// Delete all backups for a user
+  Future<void> deleteAllBackups(String userId) async {
+    final batch = _firestore.batch();
+
+    final versions = await _backupCollection
+        .doc(userId)
+        .collection('versions')
+        .get();
+
+    for (var doc in versions.docs) {
+      batch.delete(doc.reference);
+    }
+
+    batch.delete(_backupCollection.doc(userId));
     await batch.commit();
-  }
-
-  Future<void> cleanupOldBackups() async {
-    final driveApi = await _getDriveApi();
-    if (driveApi == null) return;
-
-    final fileList = await driveApi.files.list(spaces: 'appDataFolder', orderBy: 'modifiedTime asc');
-    if (fileList.files != null && fileList.files!.length > 5) {
-      for (var i = 0; i < fileList.files!.length - 5; i++) {
-        await driveApi.files.delete(fileList.files![i].id!);
-      }
-    }
-  }
-}
-
-class GoogleAuthClient extends http.BaseClient {
-  final Map<String, String> _headers;
-  final http.Client _client = http.Client();
-
-  GoogleAuthClient(this._headers);
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    request.headers.addAll(_headers);
-    return _client.send(request);
   }
 }

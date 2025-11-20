@@ -1,249 +1,143 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/account.dart';
-import '../models/transaction.dart';
 import '../services/account_service.dart';
-import '../services/transaction_service.dart';
 
 class AccountProvider with ChangeNotifier {
   final AccountService _accountService = AccountService();
-  final TransactionService _transactionService = TransactionService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   List<Account> _accounts = [];
-  Account? _selectedAccount;
   bool _isLoading = false;
   String? _error;
+  bool _isInitialized = false;
 
-  // Getters
-  List<Account> get accounts => List.unmodifiable(_accounts);
-  Account? get selectedAccount => _selectedAccount;
+  List<Account> get accounts => _accounts;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  bool get hasAccounts => _accounts.isNotEmpty;
+  bool get isInitialized => _isInitialized;
+  
+  double get totalBalance => _accounts.fold(0.0, (sum, account) => sum + account.balance);
+  double get netWorth => totalBalance; // Simplified for now
 
-  // Total balance across all accounts
-  double get totalBalance {
-    return _accounts.fold(0.0, (sum, account) => sum + account.balance);
+  AccountProvider() {
+    initialize();
   }
 
-  // Set loading state
-  void _setLoading(bool value) {
-    _isLoading = value;
-    notifyListeners();
-  }
-
-  // Set error state
-  void _setError(String? value) {
-    _error = value;
-    notifyListeners();
-  }
-
-  // Clear error
-  void _clearError() {
-    _error = null;
-  }
-
-  // Initialize accounts for the current user
   Future<void> initialize() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
+    if (user != null && !_isInitialized) {
+      await _loadAccounts(user.uid);
+      _isInitialized = true;
+    }
+  }
+
+  Future<void> _loadAccounts(String userId) async {
+    _setLoading(true);
+    try {
+      _accountService.watchAccounts(userId).listen((accounts) {
+        _accounts = accounts;
+        _setLoading(false);
+        notifyListeners();
+      }, onError: (e) {
+        _setError('Error loading accounts: $e');
+        _setLoading(false);
+      });
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+    }
+  }
+
+  Future<void> addAccount(Account account) async {
+    final user = _auth.currentUser;
     if (user == null) return;
 
+    _setLoading(true);
     try {
-      _setLoading(true);
-      _clearError();
-      await loadAccounts();
+      await _accountService.addAccount(user.uid, account);
     } catch (e) {
-      _setError('Failed to initialize accounts: $e');
+      _setError(e.toString());
     } finally {
       _setLoading(false);
     }
   }
 
-  // Load all accounts for the current user
-  Future<void> loadAccounts() async {
-    final user = FirebaseAuth.instance.currentUser;
+  Future<void> updateAccount(Account account) async {
+    final user = _auth.currentUser;
     if (user == null) return;
 
+    _setLoading(true);
     try {
-      // Listen to account changes
-      _accountService.watchUserAccounts(user.uid).listen(
-        (accounts) {
-          _accounts = accounts;
-          // Update selected account if it's no longer valid
-          if (_selectedAccount != null &&
-              !_accounts.any((a) => a.id == _selectedAccount!.id)) {
-            _selectedAccount = null;
-          }
-          notifyListeners();
-        },
-        onError: (error) {
-          _setError('Failed to load accounts: $error');
-        },
-      );
-    } catch (e) {
-      _setError('Failed to load accounts: $e');
-    }
-  }
-
-  // Create a new account
-  Future<bool> createAccount(Account account) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _setError('User not authenticated');
-      return false;
-    }
-
-    try {
-      _setLoading(true);
-      _clearError();
-
-      print('AccountProvider: Creating account: ${account.name}');
-      print('AccountProvider: Account balance: ${account.balance}');
-
-      // Create the account
-      final accountId = await _accountService.createAccount(user.uid, account);
-      print('AccountProvider: Account created with ID: $accountId');
-
-      // Create opening balance transaction if balance > 0
-      if (account.balance > 0) {
-        final openingTransaction = Transaction(
-          id: '', // Will be set by service
-          userId: user.uid,
-          type: TransactionType.income,
-          amount: account.balance,
-          description: 'Opening Balance',
-          categoryId: 'opening_balance',
-          accountId: accountId,
-          date: DateTime.now(),
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-
-        await _transactionService.createTransaction(user.uid, openingTransaction);
-        print('AccountProvider: Opening balance transaction created');
-      }
-
-      _setLoading(false);
-      return true;
-    } catch (e) {
-      print('AccountProvider: Error creating account: $e');
-      _setError('Failed to create account: $e');
-      _setLoading(false);
-      return false;
-    }
-  }
-
-  // Update an account
-  Future<bool> updateAccount(Account account) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _setError('User not authenticated');
-      return false;
-    }
-
-    try {
-      _setLoading(true);
-      _clearError();
-
       await _accountService.updateAccount(user.uid, account);
-      
-      // Update local state
-      final index = _accounts.indexWhere((a) => a.id == account.id);
-      if (index != -1) {
-        _accounts[index] = account;
-        if (_selectedAccount?.id == account.id) {
-          _selectedAccount = account;
-        }
-        notifyListeners();
-      }
-
-      _setLoading(false);
-      return true;
     } catch (e) {
-      _setError('Failed to update account: $e');
+      _setError(e.toString());
+    } finally {
       _setLoading(false);
-      return false;
     }
   }
 
-  // Delete an account
-  Future<bool> deleteAccount(String accountId) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _setError('User not authenticated');
-      return false;
-    }
-
+  Future<void> updateAccountBalance(String accountId, double newBalance) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
     try {
-      _setLoading(true);
-      _clearError();
+      await _accountService.updateAccountBalance(user.uid, accountId, newBalance);
+    } catch (e) {
+      _setError('Failed to update account balance: $e');
+    }
+  }
 
+
+  Future<void> deleteAccount(String accountId) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    _setLoading(true);
+    try {
       await _accountService.deleteAccount(user.uid, accountId);
-      
-      // Update local state
-      _accounts.removeWhere((a) => a.id == accountId);
-      if (_selectedAccount?.id == accountId) {
-        _selectedAccount = null;
-      }
-      notifyListeners();
-
-      _setLoading(false);
-      return true;
     } catch (e) {
-      _setError('Failed to delete account: $e');
+      _setError(e.toString());
+    } finally {
       _setLoading(false);
-      return false;
     }
   }
 
-  // Get account by ID
-  Account? getAccountById(String accountId) {
+  Account? getAccountById(String id) {
     try {
-      return _accounts.firstWhere((account) => account.id == accountId);
+      return _accounts.firstWhere((acc) => acc.id == id);
     } catch (e) {
       return null;
     }
   }
+  
+  Future<void> clearAllData() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    await _accountService.clearAllAccounts(user.uid);
+  }
 
-  // Set selected account
-  void setSelectedAccount(Account? account) {
-    _selectedAccount = account;
+  Future<void> restoreFromBackup(List<dynamic> data) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    final accounts = data.map((d) => Account.fromJson(d as Map<String, dynamic>)).toList();
+    await _accountService.restoreAccounts(user.uid, accounts);
+  }
+
+  void _setLoading(bool loading) {
+    _isLoading = loading;
     notifyListeners();
   }
 
-  // Update account balance (called by transaction operations)
-  Future<void> updateAccountBalance(String accountId, double newBalance) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    try {
-      await _accountService.updateAccountBalance(user.uid, accountId, newBalance);
-      
-      // Update local state
-      final index = _accounts.indexWhere((a) => a.id == accountId);
-      if (index != -1) {
-        _accounts[index] = _accounts[index].copyWith(
-          balance: newBalance,
-          updatedAt: DateTime.now(),
-        );
-        
-        if (_selectedAccount?.id == accountId) {
-          _selectedAccount = _accounts[index];
-        }
-        
-        notifyListeners();
-      }
-    } catch (e) {
-      print('Error updating account balance: $e');
-    }
+  void _setError(String? errorMessage) {
+    _error = errorMessage;
+    notifyListeners();
   }
 
-  // Clear all data (for logout)
   void clear() {
-    _accounts.clear();
-    _selectedAccount = null;
-    _isLoading = false;
+    _accounts = [];
+    _isInitialized = false;
     _error = null;
+    _isLoading = false;
     notifyListeners();
   }
 }

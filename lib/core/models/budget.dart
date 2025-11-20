@@ -29,6 +29,8 @@ class Budget {
     required this.updatedAt,
   });
 
+  double get progress => allocatedAmount > 0 ? (spentAmount / allocatedAmount).clamp(0.0, 1.0) : 0.0;
+
   /// Calculate the remaining budget amount
   double get remainingAmount => (allocatedAmount - spentAmount).clamp(0.0, double.infinity);
 

@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import '../models/subscription.dart';
 import '../services/subscription_service.dart';
 import 'notification_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SubscriptionProvider extends ChangeNotifier {
   final SubscriptionService _subscriptionService = SubscriptionService();
-  NotificationProvider? notificationProvider;
+  NotificationProvider? _notificationProvider;
 
   List<Subscription> _subscriptions = [];
   List<Subscription> _dueToday = [];
@@ -13,14 +14,17 @@ class SubscriptionProvider extends ChangeNotifier {
   String? _error;
   String _filterFrequency = 'all';
 
-  SubscriptionProvider({this.notificationProvider});
-
   // Getters
   List<Subscription> get subscriptions => _subscriptions;
   List<Subscription> get dueToday => _dueToday;
   bool get isLoading => _isLoading;
   String? get error => _error;
   String get filterFrequency => _filterFrequency;
+
+  void update(NotificationProvider? notification) {
+    _notificationProvider = notification;
+    _checkSubscriptionReminders();
+  }
 
   // Filtered subscriptions
   List<Subscription> get filteredSubscriptions {
@@ -66,13 +70,16 @@ class SubscriptionProvider extends ChangeNotifier {
 
 
   void initialize() {
-    _loadSubscriptions();
-    _loadDueToday();
+    final user = FirebaseAuth.instance.currentUser;
+    if(user != null) {
+          _loadSubscriptions(user.uid);
+          _loadDueToday(user.uid);
+    }
   }
 
-  void _loadSubscriptions() {
+  void _loadSubscriptions(String userId) {
     _setLoading(true);
-    _subscriptionService.watchActiveSubscriptions().listen(
+    _subscriptionService.watchActiveSubscriptions(userId).listen(
       (subscriptions) {
         _subscriptions = subscriptions;
         _checkSubscriptionReminders();
@@ -86,8 +93,8 @@ class SubscriptionProvider extends ChangeNotifier {
     );
   }
 
-  void _loadDueToday() {
-    _subscriptionService.watchDueToday().listen(
+  void _loadDueToday(String userId) {
+    _subscriptionService.watchDueToday(userId).listen(
       (subscriptions) {
         _dueToday = subscriptions;
         notifyListeners();
@@ -99,8 +106,9 @@ class SubscriptionProvider extends ChangeNotifier {
   }
 
   void _checkSubscriptionReminders() {
+    if (_notificationProvider == null) return;
     for (final sub in _subscriptions) {
-      notificationProvider?.checkSubscriptionReminders(sub.name, sub.nextDueDate);
+      _notificationProvider!.checkSubscriptionReminders(sub.name, sub.nextDueDate);
     }
   }
 
@@ -140,6 +148,19 @@ class SubscriptionProvider extends ChangeNotifier {
   void setFrequencyFilter(String frequency) {
     _filterFrequency = frequency;
     notifyListeners();
+  }
+  
+  Future<void> clearAllData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    await _subscriptionService.clearAllSubscriptions(user.uid);
+  }
+
+  Future<void> restoreFromBackup(List<dynamic> data) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final subscriptions = data.map((d) => Subscription.fromJson(d as Map<String, dynamic>)).toList();
+    await _subscriptionService.restoreSubscriptions(user.uid, subscriptions);
   }
 
   void _setLoading(bool loading) {

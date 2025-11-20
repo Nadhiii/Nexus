@@ -7,7 +7,7 @@ import 'notification_provider.dart';
 
 class BudgetProvider extends ChangeNotifier {
   final BudgetService _budgetService = BudgetService();
-  NotificationProvider? notificationProvider;
+  NotificationProvider? _notificationProvider;
 
   List<Budget> _budgets = [];
   Map<String, dynamic> _analytics = {};
@@ -16,8 +16,6 @@ class BudgetProvider extends ChangeNotifier {
   String? _error;
   String _selectedPeriod = 'monthly';
 
-  BudgetProvider({this.notificationProvider});
-
   // Getters
   List<Budget> get budgets => _budgets;
   Map<String, dynamic> get analytics => _analytics;
@@ -25,6 +23,10 @@ class BudgetProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   String get selectedPeriod => _selectedPeriod;
+
+  void update(NotificationProvider? notification) {
+    _notificationProvider = notification;
+  }
 
   // Filtered budgets
   List<Budget> get activeBudgets => _budgets.where((budget) => budget.isPeriodActive).toList();
@@ -146,7 +148,7 @@ class BudgetProvider extends ChangeNotifier {
     try {
       final budget = _budgets.firstWhere((b) => b.categoryId == transaction.categoryId);
       final newSpentAmount = budget.spentAmount + transaction.amount;
-      notificationProvider?.checkBudgetThresholds(
+      _notificationProvider?.checkBudgetThresholds(
         newSpentAmount,
         budget.allocatedAmount,
         budget.categoryName,

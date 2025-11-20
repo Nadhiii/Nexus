@@ -1,55 +1,53 @@
+import 'package:flutter/foundation.dart';
+
+@immutable
 class DetectedTransaction {
-  final String id;
-  final String title;
-  final String subtitle;
+  final String id; // Unique ID (SMS ID or Email ID)
   final double amount;
+  final String merchant;
   final DateTime date;
-  final String source;
-  final String smsBody;
-  final String? category;
-  final String type;
-  final bool isDefinitive;
+  final String type; // 'income' or 'expense'
+  final String source; // 'sms' or 'email'
+  final String? body; // Full SMS or Email body
 
   const DetectedTransaction({
     required this.id,
-    required this.title,
-    required this.subtitle,
     required this.amount,
+    required this.merchant,
     required this.date,
-    required this.source,
-    required this.smsBody,
-    this.category,
     required this.type,
-    this.isDefinitive = false,
+    required this.source,
+    this.body,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'title': title,
-      'subtitle': subtitle,
-      'amount': amount,
-      'date': date.toIso8601String(),
-      'source': source,
-      'smsBody': smsBody,
-      'category': category,
-      'type': type,
-      'isDefinitive': isDefinitive,
-    };
-  }
+  @override
+bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DetectedTransaction &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          source == other.source;
 
-  factory DetectedTransaction.fromMap(Map<String, dynamic> map) {
+  @override
+int get hashCode => id.hashCode ^ source.hashCode;
+
+  DetectedTransaction copyWith({
+    String? id,
+    double? amount,
+    String? merchant,
+    DateTime? date,
+    String? type,
+    String? source,
+    String? body,
+  }) {
     return DetectedTransaction(
-      id: map['id'],
-      title: map['title'],
-      subtitle: map['subtitle'],
-      amount: map['amount'].toDouble(),
-      date: DateTime.parse(map['date']),
-      source: map['source'],
-      smsBody: map['smsBody'] ?? map['subtitle'],
-      category: map['category'],
-      type: map['type'] ?? 'expense',
-      isDefinitive: map['isDefinitive'] ?? false,
+      id: id ?? this.id,
+      amount: amount ?? this.amount,
+      merchant: merchant ?? this.merchant,
+      date: date ?? this.date,
+      type: type ?? this.type,
+      source: source ?? this.source,
+      body: body ?? this.body,
     );
   }
 }

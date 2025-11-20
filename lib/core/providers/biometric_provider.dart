@@ -59,7 +59,7 @@ class BiometricProvider extends ChangeNotifier {
     _isAppLockEnabled = await _biometricService.isAppLockEnabled();
     _isSensitiveOperationsEnabled = await _biometricService
         .isSensitiveOperationsBiometricEnabled();
-    notifyListeners();
+    // Don't call notifyListeners here - it will be called by _setLoading(false) in initialize()
   }
 
   /// Setup biometric authentication

@@ -15,10 +15,15 @@ class BackupSettingsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Backup & Restore', style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.bold)),
-        backgroundColor: theme.colorScheme.background,
+        title: Text(
+          'Backup & Restore',
+          style: AppTypography.headlineMedium.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: theme.colorScheme.surface,
       ),
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
       body: _buildBody(context, provider),
     );
   }
@@ -104,7 +109,10 @@ class BackupSettingsScreen extends StatelessWidget {
             if (provider.state == BackupState.Error)
               Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.md),
-                child: Text(provider.error ?? 'An unknown error occurred', style: const TextStyle(color: Colors.red)),
+                child: Text(
+                  provider.error ?? 'An unknown error occurred',
+                  style: const TextStyle(color: Colors.red),
+                ),
               ),
           ],
         ),
@@ -121,20 +129,31 @@ class BackupSettingsScreen extends StatelessWidget {
             ElevatedButton.icon(
               icon: const Icon(Icons.backup),
               label: const Text('Backup Now'),
-              onPressed: provider.state == BackupState.InProgress ? null : () => provider.backupNow(),
-              style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+              onPressed: provider.state == BackupState.InProgress
+                  ? null
+                  : () => provider.backupNow(),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
             OutlinedButton.icon(
               icon: const Icon(Icons.restore),
               label: const Text('Restore from Backup'),
-              onPressed: provider.state == BackupState.InProgress ? null : () => _confirmRestore(context, provider),
-              style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+              onPressed: provider.state == BackupState.InProgress
+                  ? null
+                  : () => _confirmRestore(context, provider),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+              ),
             ),
-             const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.md),
             TextButton.icon(
               icon: const Icon(Icons.logout, color: Colors.red),
-              label: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+              label: const Text(
+                'Sign Out',
+                style: TextStyle(color: Colors.red),
+              ),
               onPressed: () => provider.signOut(),
             ),
           ],
@@ -148,13 +167,21 @@ class BackupSettingsScreen extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Confirm Restore'),
-        content: const Text('Restoring from a backup will overwrite all current data. This action cannot be undone.'),
+        content: const Text(
+          'Restoring from a backup will overwrite all current data. This action cannot be undone.',
+        ),
         actions: [
-          TextButton(child: const Text('Cancel'), onPressed: () => Navigator.of(dialogContext).pop()),
-          FilledButton(child: const Text('Restore'), onPressed: () {
-            Navigator.of(dialogContext).pop();
-            provider.restoreNow();
-          }),
+          TextButton(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+          ),
+          FilledButton(
+            child: const Text('Restore'),
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              provider.restoreNow();
+            },
+          ),
         ],
       ),
     );

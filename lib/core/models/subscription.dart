@@ -1,123 +1,184 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Subscription {
   final String id;
+  final String userId;
   final String name;
-  final String? description;
   final double amount;
-  final String frequency; // 'monthly', 'yearly', 'weekly', 'daily'
+  final String frequency;
   final DateTime nextDueDate;
+  final String categoryId;
   final String accountId;
-  final String? categoryId;
+  final String? description;
+  final String? notes;
   final bool isActive;
-  final Map<String, dynamic>? metadata; // Store additional info
+  final String color;
   final DateTime createdAt;
-  final DateTime updatedAt;
 
   Subscription({
     required this.id,
+    required this.userId,
     required this.name,
-    this.description,
     required this.amount,
     required this.frequency,
     required this.nextDueDate,
+    required this.categoryId,
     required this.accountId,
-    this.categoryId,
-    required this.isActive,
-    this.metadata,
+    this.description,
+    this.notes,
+    this.isActive = true,
+    required this.color,
     required this.createdAt,
-    required this.updatedAt,
   });
 
-  /// Calculate the next due date based on frequency
+  bool get isOverdue => isActive && nextDueDate.isBefore(DateTime.now());
+
   DateTime calculateNextDueDate() {
-    switch (frequency) {
-      case 'daily':
-        return nextDueDate.add(const Duration(days: 1));
-      case 'weekly':
-        return nextDueDate.add(const Duration(days: 7));
-      case 'monthly':
-        return DateTime(nextDueDate.year, nextDueDate.month + 1, nextDueDate.day);
-      case 'yearly':
-        return DateTime(nextDueDate.year + 1, nextDueDate.month, nextDueDate.day);
-      default:
-        return nextDueDate.add(const Duration(days: 30)); // Default to monthly
+    final now = DateTime.now();
+    DateTime nextDate = nextDueDate;
+
+    while (nextDate.isBefore(now)) {
+      switch (frequency.toLowerCase()) {
+        case 'daily':
+          nextDate = DateTime(nextDate.year, nextDate.month, nextDate.day + 1);
+          break;
+        case 'weekly':
+          nextDate = DateTime(nextDate.year, nextDate.month, nextDate.day + 7);
+          break;
+        case 'monthly':
+          nextDate = DateTime(nextDate.year, nextDate.month + 1, nextDate.day);
+          break;
+        case 'yearly':
+          nextDate = DateTime(nextDate.year + 1, nextDate.month, nextDate.day);
+          break;
+        default:
+          return nextDate;
+      }
     }
+    return nextDate;
   }
 
-  /// Check if subscription is due today
-  bool get isDueToday {
-    final today = DateTime.now();
-    return nextDueDate.year == today.year &&
-           nextDueDate.month == today.month &&
-           nextDueDate.day == today.day;
-  }
-
-  /// Check if subscription is overdue
-  bool get isOverdue => DateTime.now().isAfter(nextDueDate) && isActive;
-
-  /// Days until next payment
-  int get daysUntilDue => nextDueDate.difference(DateTime.now()).inDays;
-
-  factory Subscription.fromMap(Map<String, dynamic> map) {
+  factory Subscription.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return Subscription(
-      id: map['id'],
-      name: map['name'],
-      description: map['description'],
-      amount: map['amount'].toDouble(),
-      frequency: map['frequency'],
-      nextDueDate: DateTime.parse(map['nextDueDate']),
-      accountId: map['accountId'],
-      categoryId: map['categoryId'],
-      isActive: map['isActive'] ?? true,
-      metadata: map['metadata'] != null ? Map<String, dynamic>.from(map['metadata']) : null,
-      createdAt: DateTime.parse(map['createdAt']),
-      updatedAt: DateTime.parse(map['updatedAt']),
+      id: doc.id,
+      userId: data['userId'],
+      name: data['name'],
+      amount: (data['amount'] ?? 0).toDouble(),
+      frequency: data['frequency'],
+      nextDueDate: (data['nextDueDate'] as Timestamp).toDate(),
+      categoryId: data['categoryId'],
+      accountId: data['accountId'] ?? 'default',
+      description: data['description'],
+      notes: data['notes'],
+      isActive: data['isActive'] ?? true,
+      color: data['color'],
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+    );
+  }
+
+  factory Subscription.fromMap(Map<String, dynamic> data) {
+    return Subscription(
+      id: data['id'] ?? '',
+      userId: data['userId'] ?? '',
+      name: data['name'] ?? '',
+      amount: (data['amount'] ?? 0).toDouble(),
+      frequency: data['frequency'] ?? 'monthly',
+      nextDueDate: data['nextDueDate'] is Timestamp
+          ? (data['nextDueDate'] as Timestamp).toDate()
+          : DateTime.parse(data['nextDueDate']),
+      categoryId: data['categoryId'] ?? '',
+      accountId: data['accountId'] ?? 'default',
+      description: data['description'],
+      notes: data['notes'],
+      isActive: data['isActive'] ?? true,
+      color: data['color'] ?? 'blue',
+      createdAt: data['createdAt'] is Timestamp
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.parse(data['createdAt']),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'userId': userId,
       'name': name,
-      'description': description,
       'amount': amount,
       'frequency': frequency,
-      'nextDueDate': nextDueDate.toIso8601String(),
-      'accountId': accountId,
+      'nextDueDate': Timestamp.fromDate(nextDueDate),
       'categoryId': categoryId,
+      'accountId': accountId,
+      'description': description,
+      'notes': notes,
       'isActive': isActive,
-      'metadata': metadata,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'color': color,
+      'createdAt': Timestamp.fromDate(createdAt),
     };
   }
 
+  factory Subscription.fromJson(Map<String, dynamic> json) {
+    return Subscription(
+      id: json['id'],
+      userId: json['userId'],
+      name: json['name'],
+      amount: json['amount'],
+      frequency: json['frequency'],
+      nextDueDate: DateTime.parse(json['nextDueDate']),
+      categoryId: json['categoryId'],
+      accountId: json['accountId'] ?? 'default',
+      description: json['description'],
+      notes: json['notes'],
+      isActive: json['isActive'],
+      color: json['color'],
+      createdAt: DateTime.parse(json['createdAt']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'userId': userId,
+    'name': name,
+    'amount': amount,
+    'frequency': frequency,
+    'nextDueDate': nextDueDate.toIso8601String(),
+    'categoryId': categoryId,
+    'accountId': accountId,
+    'description': description,
+    'notes': notes,
+    'isActive': isActive,
+    'color': color,
+    'createdAt': createdAt.toIso8601String(),
+  };
+
   Subscription copyWith({
     String? id,
+    String? userId,
     String? name,
-    String? description,
     double? amount,
     String? frequency,
     DateTime? nextDueDate,
-    String? accountId,
     String? categoryId,
+    String? accountId,
+    String? description,
+    String? notes,
     bool? isActive,
-    Map<String, dynamic>? metadata,
+    String? color,
     DateTime? createdAt,
-    DateTime? updatedAt,
   }) {
     return Subscription(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       name: name ?? this.name,
-      description: description ?? this.description,
       amount: amount ?? this.amount,
       frequency: frequency ?? this.frequency,
       nextDueDate: nextDueDate ?? this.nextDueDate,
-      accountId: accountId ?? this.accountId,
       categoryId: categoryId ?? this.categoryId,
+      accountId: accountId ?? this.accountId,
+      description: description ?? this.description,
+      notes: notes ?? this.notes,
       isActive: isActive ?? this.isActive,
-      metadata: metadata ?? this.metadata,
+      color: color ?? this.color,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

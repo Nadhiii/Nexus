@@ -1,641 +1,504 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/providers/investment_provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/models/investment.dart';
+import '../../core/providers/investment_provider.dart';
+import '../../core/widgets/top_snackbar.dart';
 
 class AddInvestmentScreen extends StatefulWidget {
-  final Investment? investmentToEdit;
-  final bool isModal;
-  final VoidCallback? onDismiss;
+  static const routeName = '/add-investment';
 
-  const AddInvestmentScreen({
-    super.key,
-    this.investmentToEdit,
-    this.isModal = false,
-    this.onDismiss,
-  });
+  const AddInvestmentScreen({super.key});
 
   @override
-  State<AddInvestmentScreen> createState() => _AddInvestmentScreenState();
+  _AddInvestmentScreenState createState() => _AddInvestmentScreenState();
 }
 
 class _AddInvestmentScreenState extends State<AddInvestmentScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _searchController = TextEditingController();
   final _nameController = TextEditingController();
-  final _symbolController = TextEditingController();
-  final _unitsController = TextEditingController();
-  final _priceController = TextEditingController();
-  final _platformController = TextEditingController();
+  final _investedAmountController = TextEditingController();
+  final _purchaseNavController = TextEditingController();
+  final _sipAmountController = TextEditingController();
+  final _sipDayController = TextEditingController();
 
-  InvestmentType _selectedType = InvestmentType.stock;
-  bool _isLoading = false;
+  MutualFund? _selectedFund;
+  List<MutualFund> _searchResults = [];
+  bool _isSearching = false;
+  bool _fetchingNav = false;
+  DateTime _selectedDate = DateTime.now();
+  double? _calculatedUnits;
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _symbolController.dispose();
-    _unitsController.dispose();
-    _priceController.dispose();
-    _platformController.dispose();
-    super.dispose();
+  Future<void> _searchFunds(String query) async {
+    if (query.isEmpty) {
+      setState(() => _searchResults = []);
+      return;
+    }
+    setState(() => _isSearching = true);
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.mfapi.in/mf/search?q=$query'),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as List;
+        setState(() {
+          _searchResults = data
+              .map((fund) => MutualFund.fromJson(fund))
+              .toList();
+        });
+      }
+    } catch (e) {
+      // Handle error
+    } finally {
+      setState(() => _isSearching = false);
+    }
+  }
+
+  void _calculateUnits() {
+    final invested = double.tryParse(_investedAmountController.text) ?? 0;
+    final nav = double.tryParse(_purchaseNavController.text) ?? 0;
+
+    if (invested > 0 && nav > 0) {
+      setState(() {
+        _calculatedUnits = invested / nav;
+      });
+    } else {
+      setState(() {
+        _calculatedUnits = null;
+      });
+    }
+  }
+
+  Future<void> _fetchCurrentNav() async {
+    if (_selectedFund == null) return;
+
+    setState(() => _fetchingNav = true);
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.mfapi.in/mf/${_selectedFund!.schemeCode}'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final navData = data['data'] as List?;
+        if (navData != null && navData.isNotEmpty) {
+          final currentNav = double.parse(navData[0]['nav'].toString());
+          setState(() {
+            _purchaseNavController.text = currentNav.toStringAsFixed(4);
+            _fetchingNav = false;
+          });
+          _calculateUnits();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        showTopSnackBar(context, 'Error fetching NAV: $e', isError: true);
+      }
+    } finally {
+      setState(() => _fetchingNav = false);
+    }
+  }
+
+  Future<void> _submit() async {
+    if (_formKey.currentState!.validate() && _selectedFund != null) {
+      _formKey.currentState!.save();
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        final investedAmount = double.parse(_investedAmountController.text);
+        final purchaseNav = double.parse(_purchaseNavController.text);
+        final units = _calculatedUnits ?? (investedAmount / purchaseNav);
+        final sipAmount = double.tryParse(_sipAmountController.text) ?? 0.0;
+
+        final newInvestment = Investment(
+          id: ' ',
+          userId: user.uid,
+          name: _nameController.text,
+          mutualFundSchemeCode: _selectedFund!.schemeCode,
+          mutualFundSchemeName: _selectedFund!.schemeName,
+          sipAmount: sipAmount,
+          sipDay: int.tryParse(_sipDayController.text) ?? 1,
+          startDate: _selectedDate,
+          purchaseNav: purchaseNav,
+          units: units,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        await Provider.of<InvestmentProvider>(
+          context,
+          listen: false,
+        ).addInvestment(newInvestment);
+
+        if (mounted) {
+          Navigator.of(context).pop();
+          Navigator.of(context).pop();
+          showTopSnackBar(context, 'Investment added successfully');
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.of(context).pop();
+          showTopSnackBar(context, 'Error: $e', isError: true);
+        }
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final textTheme = Theme.of(context).textTheme;
 
-    if (widget.isModal) {
-      // Modal version without Scaffold
-      return Material(
-        color: Colors.transparent,
-        child: Column(
-          children: [
-            // Fixed header for modal
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(28),
-                  topRight: Radius.circular(28),
-                ),
-              ),
-              child: Row(
-                children: [
-                  // Custom close button
-                  Material(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(22),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(22),
-                      onTap: () {
-                        if (widget.onDismiss != null) {
-                          widget.onDismiss!();
-                        } else {
-                          Navigator.of(context).pop();
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.blue,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Title
-                  Expanded(
-                    child: Text(
-                      widget.investmentToEdit == null ? 'Add Investment' : 'Edit Investment',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Scrollable content
-            Flexible(
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                  child: Column(
-                    children: _buildFormContent(theme),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Full screen version with Scaffold
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(
-          widget.investmentToEdit == null ? 'Add Investment' : 'Edit Investment',
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
-          ),
-        ),
-        backgroundColor: Colors.white,
+        title: const Text('Add New SIP'),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        centerTitle: false,
-        automaticallyImplyLeading: false,
-        leading: Container(
-          margin: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
-          child: Material(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(22),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(22),
-              onTap: () {
-                if (widget.isModal && widget.onDismiss != null) {
-                  widget.onDismiss!();
-                } else {
-                  Navigator.of(context).pop();
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                child: const Icon(
-                  Icons.close,
-                  color: Colors.blue,
-                  size: 20,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Search for a Fund',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-          ),
-        ),
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-          children: _buildFormContent(theme),
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildFormContent(ThemeData theme) {
-    return [
-            // Investment Type Selection
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'E.g., TATA Digital India',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onChanged: _searchFunds,
+              ),
+              const SizedBox(height: 16),
+              if (_isSearching)
+                const Center(child: CircularProgressIndicator()),
+              if (_searchResults.isNotEmpty)
+                SizedBox(
+                  height: 200,
+                  child: ListView.builder(
+                    itemCount: _searchResults.length,
+                    itemBuilder: (ctx, i) => Card(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      child: ListTile(
+                        title: Text(_searchResults[i].schemeName),
+                        subtitle: Text(_searchResults[i].schemeCode),
+                        onTap: () {
+                          setState(() {
+                            _selectedFund = _searchResults[i];
+                            _searchController.text =
+                                _searchResults[i].schemeName;
+                            _nameController.text = _searchResults[i].schemeName;
+                            _searchResults = [];
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              if (_selectedFund != null)
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  margin: const EdgeInsets.symmetric(vertical: 16),
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                    ),
+                    title: Text(
+                      _selectedFund!.schemeName,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text('Scheme Code: ${_selectedFund!.schemeCode}'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => setState(() {
+                        _selectedFund = null;
+                        _searchController.clear();
+                        _nameController.clear();
+                      }),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 24),
+              Text(
+                'Investment Details',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Investment Nickname',
+                  hintText: 'e.g., My TATA Digital SIP',
+                  prefixIcon: Icon(Icons.label),
+                ),
+                validator: (val) => val!.isEmpty ? 'Please enter a name' : null,
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Investment Type',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: InvestmentType.values.map((type) {
-                        final isSelected = _selectedType == type;
-                        return FilterChip(
-                          label: Text(_getInvestmentTypeLabel(type)),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              _selectedType = type;
-                            });
-                          },
-                          backgroundColor: theme.colorScheme.surface,
-                          selectedColor: theme.colorScheme.primaryContainer,
-                          labelStyle: TextStyle(
-                            color: isSelected
-                                ? theme.colorScheme.onPrimaryContainer
-                                : theme.colorScheme.onSurface,
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Investment Details Form
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Investment Details',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Investment Name
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Investment Name',
-                        hintText: _getNameHint(_selectedType),
-                        border: const OutlineInputBorder(),
-                        prefixIcon: Icon(_getInvestmentTypeIcon(_selectedType)),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter investment name';
-                        }
-                        return null;
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Symbol/Code
-                    TextFormField(
-                      controller: _symbolController,
-                      decoration: InputDecoration(
-                        labelText: _getSymbolLabel(_selectedType),
-                        hintText: _getSymbolHint(_selectedType),
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.tag),
-                      ),
-                      textCapitalization: TextCapitalization.characters,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter ${_getSymbolLabel(_selectedType).toLowerCase()}';
-                        }
-                        return null;
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-
                     Row(
                       children: [
-                        // Units/Shares
+                        const Icon(
+                          Icons.account_balance_wallet,
+                          color: Colors.blue,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Current Investment',
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _investedAmountController,
+                      decoration: const InputDecoration(
+                        labelText: 'Total Amount Invested',
+                        hintText: 'e.g., 1999',
+                        prefixIcon: Icon(Icons.currency_rupee),
+                        helperText: 'How much money have you already invested?',
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      onChanged: (_) => _calculateUnits(),
+                      validator: (val) {
+                        if (val == null || val.isEmpty)
+                          return 'Enter invested amount';
+                        if (double.tryParse(val) == null)
+                          return 'Enter valid amount';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
                         Expanded(
+                          flex: 3,
                           child: TextFormField(
-                            controller: _unitsController,
-                            decoration: InputDecoration(
-                              labelText: _getUnitsLabel(_selectedType),
-                              border: const OutlineInputBorder(),
-                              prefixIcon: const Icon(Icons.numbers),
+                            controller: _purchaseNavController,
+                            decoration: const InputDecoration(
+                              labelText: 'Purchase NAV',
+                              hintText: 'e.g., 10.0772',
+                              prefixIcon: Icon(Icons.show_chart),
+                              helperText: 'NAV when you bought the units',
                             ),
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
                             ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Required';
-                              }
-                              final number = double.tryParse(value);
-                              if (number == null || number <= 0) {
-                                return 'Invalid amount';
-                              }
+                            onChanged: (_) => _calculateUnits(),
+                            validator: (val) {
+                              if (val == null || val.isEmpty)
+                                return 'Enter NAV';
+                              if (double.tryParse(val) == null)
+                                return 'Enter valid NAV';
                               return null;
                             },
                           ),
                         ),
-
-                        const SizedBox(width: 16),
-
-                        // Price per unit
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton.icon(
+                            onPressed: _fetchCurrentNav,
+                            icon: _fetchingNav
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.refresh, size: 18),
+                            label: const Text('Get Current'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_calculatedUnits != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.green.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'You own ${_calculatedUnits!.toStringAsFixed(3)} units',
+                                style: textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green[700],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.repeat, color: Colors.orange),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Future SIP (Optional)',
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'If you plan to invest monthly, enter the details below',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: Colors.orange[700],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
                         Expanded(
                           child: TextFormField(
-                            controller: _priceController,
+                            controller: _sipAmountController,
                             decoration: const InputDecoration(
-                              labelText: 'Price per Unit (₹)',
-                              border: OutlineInputBorder(),
+                              labelText: 'Monthly SIP Amount',
+                              hintText: 'e.g., 1000',
                               prefixIcon: Icon(Icons.currency_rupee),
                             ),
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
                             ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Required';
-                              }
-                              final number = double.tryParse(value);
-                              if (number == null || number <= 0) {
-                                return 'Invalid price';
-                              }
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _sipDayController,
+                            decoration: const InputDecoration(
+                              labelText: 'SIP Day',
+                              hintText: 'e.g., 5',
+                              prefixIcon: Icon(Icons.calendar_today),
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: (val) {
+                              if (val == null || val.isEmpty)
+                                return null;
+                              final day = int.tryParse(val);
+                              if (day == null || day < 1 || day > 28)
+                                return '1-28';
                               return null;
                             },
                           ),
                         ),
                       ],
                     ),
-
-                    const SizedBox(height: 16),
-
-                    // Total Investment Display
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withOpacity(
-                          0.3,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Total Investment:',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            _calculateTotalInvestment(),
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Investment Platform/Broker
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Where is it invested?',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _platformController,
-                      decoration: InputDecoration(
-                        labelText: 'Platform/Broker',
-                        hintText: 'e.g., Zerodha, Groww, Upstox, HDFC Securities',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        prefixIcon: const Icon(Icons.business),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter the platform/broker name';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
+              const SizedBox(height: 24),
+              ListTile(
+                title: const Text('Start Date'),
+                subtitle: Text(
+                  _selectedDate.toLocal().toString().split(' ')[0],
+                ),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: _selectedDate,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2101),
+                  );
+                  if (pickedDate != null && pickedDate != _selectedDate) {
+                    setState(() => _selectedDate = pickedDate);
+                  }
+                },
+              ),
+              const SizedBox(height: 40),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: _submit,
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.all(16),
+                  ),
+                  child: const Text(
+                    'Save Investment',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Add Investment Button
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: _isLoading ? null : _addInvestment,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Add Investment'),
-              ),
-            ),
-        ];
-      }
-
-  String _calculateTotalInvestment() {
-    final units = double.tryParse(_unitsController.text) ?? 0;
-    final price = double.tryParse(_priceController.text) ?? 0;
-    final total = units * price;
-    return '₹${total.toStringAsFixed(2)}';
-  }
-
-  String _getInvestmentTypeLabel(InvestmentType type) {
-    switch (type) {
-      case InvestmentType.stock:
-        return 'Stock';
-      case InvestmentType.mutualFund:
-        return 'Mutual Fund';
-      case InvestmentType.etf:
-        return 'ETF';
-      case InvestmentType.bond:
-        return 'Bond';
-      case InvestmentType.crypto:
-        return 'Crypto';
-      case InvestmentType.commodity:
-        return 'Commodity';
-      case InvestmentType.reit:
-        return 'REIT';
-      case InvestmentType.other:
-        return 'Other';
-    }
-  }
-
-  IconData _getInvestmentTypeIcon(InvestmentType type) {
-    switch (type) {
-      case InvestmentType.stock:
-        return Icons.trending_up;
-      case InvestmentType.mutualFund:
-        return Icons.account_balance;
-      case InvestmentType.etf:
-        return Icons.pie_chart;
-      case InvestmentType.bond:
-        return Icons.receipt_long;
-      case InvestmentType.crypto:
-        return Icons.currency_bitcoin;
-      case InvestmentType.commodity:
-        return Icons.agriculture;
-      case InvestmentType.reit:
-        return Icons.apartment;
-      case InvestmentType.other:
-        return Icons.category;
-    }
-  }
-
-  String _getNameHint(InvestmentType type) {
-    switch (type) {
-      case InvestmentType.stock:
-        return 'e.g., Apple Inc., HDFC Bank';
-      case InvestmentType.mutualFund:
-        return 'e.g., HDFC Equity Fund';
-      case InvestmentType.etf:
-        return 'e.g., Nifty 50 ETF';
-      case InvestmentType.bond:
-        return 'e.g., Government Bond';
-      case InvestmentType.crypto:
-        return 'e.g., Bitcoin, Ethereum';
-      case InvestmentType.commodity:
-        return 'e.g., Gold, Silver';
-      case InvestmentType.reit:
-        return 'e.g., Embassy REIT';
-      case InvestmentType.other:
-        return 'Enter investment name';
-    }
-  }
-
-  String _getSymbolLabel(InvestmentType type) {
-    switch (type) {
-      case InvestmentType.stock:
-        return 'Stock Symbol';
-      case InvestmentType.mutualFund:
-        return 'Fund Code';
-      case InvestmentType.etf:
-        return 'ETF Symbol';
-      case InvestmentType.bond:
-        return 'Bond Code';
-      case InvestmentType.crypto:
-        return 'Crypto Symbol';
-      case InvestmentType.commodity:
-        return 'Commodity Code';
-      case InvestmentType.reit:
-        return 'REIT Symbol';
-      case InvestmentType.other:
-        return 'Symbol/Code';
-    }
-  }
-
-  String _getSymbolHint(InvestmentType type) {
-    switch (type) {
-      case InvestmentType.stock:
-        return 'e.g., AAPL, HDFCBANK';
-      case InvestmentType.mutualFund:
-        return 'e.g., 120716';
-      case InvestmentType.etf:
-        return 'e.g., NIFTYBEES';
-      case InvestmentType.bond:
-        return 'e.g., GOI2030';
-      case InvestmentType.crypto:
-        return 'e.g., BTC, ETH';
-      case InvestmentType.commodity:
-        return 'e.g., GOLD, SILVER';
-      case InvestmentType.reit:
-        return 'e.g., EMBASSYOFC';
-      case InvestmentType.other:
-        return 'Enter symbol';
-    }
-  }
-
-  String _getUnitsLabel(InvestmentType type) {
-    switch (type) {
-      case InvestmentType.stock:
-        return 'Shares';
-      case InvestmentType.mutualFund:
-        return 'Units';
-      case InvestmentType.etf:
-        return 'Units';
-      case InvestmentType.bond:
-        return 'Units';
-      case InvestmentType.crypto:
-        return 'Coins';
-      case InvestmentType.commodity:
-        return 'Quantity';
-      case InvestmentType.reit:
-        return 'Units';
-      case InvestmentType.other:
-        return 'Units';
-    }
-  }
-
-  Future<void> _addInvestment() async {
-    if (!_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all required fields'),
-          backgroundColor: Colors.red,
+            ],
+          ),
         ),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final units = double.parse(_unitsController.text);
-      final price = double.parse(_priceController.text);
-      final totalInvested = units * price;
-      final now = DateTime.now();
-
-      final investment = Investment(
-        id: '', // Will be set by Firestore
-        name: _nameController.text.trim(),
-        symbol: _symbolController.text.trim().toUpperCase(),
-        type: _selectedType,
-        accountId: 'investment_portfolio', // Dummy account ID for investments
-        units: units,
-        averagePrice: price,
-        currentPrice: price, // Initially same as purchase price
-        totalInvested: totalInvested,
-        currentValue: totalInvested, // Initially same as invested
-        currency: '₹',
-        lastUpdated: now,
-        createdAt: now,
-        updatedAt: now,
-        metadata: {
-          'platform': _platformController.text.trim(),
-        },
-      );
-
-      final investmentProvider = Provider.of<InvestmentProvider>(
-        context,
-        listen: false,
-      );
-      await investmentProvider.addInvestment(investment);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Investment added successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        if (widget.isModal && widget.onDismiss != null) {
-          widget.onDismiss!();
-        } else {
-          Navigator.of(context).pop();
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to add investment: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+      ),
+    );
   }
 }

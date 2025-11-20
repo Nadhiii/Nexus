@@ -2,16 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/providers/user_provider.dart';
 import '../../../core/models/user_profile.dart';
+import '../../../core/widgets/top_snackbar.dart';
 
 class EditProfileModal extends StatefulWidget {
   final UserProfile userProfile;
 
-  const EditProfileModal({
-    super.key,
-    required this.userProfile,
-  });
+  const EditProfileModal({super.key, required this.userProfile});
 
   @override
   State<EditProfileModal> createState() => _EditProfileModalState();
@@ -34,7 +33,6 @@ class _EditProfileModalState extends State<EditProfileModal>
   void initState() {
     super.initState();
 
-    // Initialize form fields with current user data
     _displayNameController.text = widget.userProfile.displayName;
     _emailController.text = widget.userProfile.email;
     _phoneController.text = widget.userProfile.phone ?? '';
@@ -44,21 +42,13 @@ class _EditProfileModalState extends State<EditProfileModal>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
+    );
 
-    _opacityAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
+    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
 
     _animationController.forward();
   }
@@ -80,41 +70,26 @@ class _EditProfileModalState extends State<EditProfileModal>
     });
 
     try {
-      // Provide haptic feedback
       HapticFeedback.lightImpact();
 
-      await context.read<UserProvider>().updateUserProfile(
-        displayName: _displayNameController.text.trim(),
-        email: _emailController.text.trim(),
-        phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-      );
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await user.updateDisplayName(_displayNameController.text.trim());
+        await user.reload();
+      }
 
       if (mounted) {
-        // Success haptic feedback
         HapticFeedback.lightImpact();
-        
-        // Close modal
+
         Navigator.of(context).pop();
-        
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile updated successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
+
+        showTopSnackBar(context, 'Profile updated successfully');
       }
     } catch (e) {
       if (mounted) {
-        // Error haptic feedback
         HapticFeedback.heavyImpact();
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error updating profile: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+
+        showTopSnackBar(context, 'Error updating profile: $e', isError: true);
       }
     } finally {
       if (mounted) {
@@ -131,7 +106,6 @@ class _EditProfileModalState extends State<EditProfileModal>
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Background blur
           AnimatedBuilder(
             animation: _opacityAnimation,
             builder: (context, child) {
@@ -139,14 +113,11 @@ class _EditProfileModalState extends State<EditProfileModal>
                 opacity: _opacityAnimation.value * 0.5,
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    color: Colors.black.withOpacity(0.3),
-                  ),
+                  child: Container(color: Colors.black.withOpacity(0.3)),
                 ),
               );
             },
           ),
-          // Modal content
           Center(
             child: AnimatedBuilder(
               animation: _scaleAnimation,
@@ -170,14 +141,15 @@ class _EditProfileModalState extends State<EditProfileModal>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Header
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
                                 Theme.of(context).colorScheme.primary,
-                                Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                                Theme.of(
+                                  context,
+                                ).colorScheme.primary.withOpacity(0.8),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -197,23 +169,27 @@ class _EditProfileModalState extends State<EditProfileModal>
                               const SizedBox(width: 12),
                               Text(
                                 'Edit Profile',
-                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onPrimary,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: Theme.of(context).textTheme.headlineSmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                               ),
                               const Spacer(),
                               IconButton(
                                 onPressed: () => Navigator.of(context).pop(),
                                 icon: Icon(
                                   Icons.close,
-                                  color: Theme.of(context).colorScheme.onPrimary,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimary,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        // Form content
                         Padding(
                           padding: const EdgeInsets.all(24),
                           child: Form(
@@ -221,24 +197,26 @@ class _EditProfileModalState extends State<EditProfileModal>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Display Name Field
                                 Text(
                                   'Display Name',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 8),
                                 TextFormField(
                                   controller: _displayNameController,
                                   decoration: InputDecoration(
                                     hintText: 'Enter your display name',
-                                    prefixIcon: const Icon(Icons.person_outline),
+                                    prefixIcon: const Icon(
+                                      Icons.person_outline,
+                                    ),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     filled: true,
-                                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                    fillColor: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
                                   ),
                                   validator: (value) {
                                     if (value == null || value.trim().isEmpty) {
@@ -248,72 +226,80 @@ class _EditProfileModalState extends State<EditProfileModal>
                                   },
                                 ),
                                 const SizedBox(height: 20),
-
-                                // Email Field
                                 Text(
                                   'Email',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 8),
                                 TextFormField(
                                   controller: _emailController,
                                   decoration: InputDecoration(
                                     hintText: 'Enter your email',
-                                    prefixIcon: const Icon(Icons.email_outlined),
+                                    prefixIcon: const Icon(
+                                      Icons.email_outlined,
+                                    ),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     filled: true,
-                                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                    fillColor: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
                                   ),
                                   keyboardType: TextInputType.emailAddress,
                                   validator: (value) {
                                     if (value == null || value.trim().isEmpty) {
                                       return 'Email is required';
                                     }
-                                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                                    if (!RegExp(
+                                      r'^[^@]+@[^@]+\.[^@]+',
+                                    ).hasMatch(value)) {
                                       return 'Please enter a valid email';
                                     }
                                     return null;
                                   },
                                 ),
                                 const SizedBox(height: 20),
-
-                                // Phone Field
                                 Text(
                                   'Phone (Optional)',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 8),
                                 TextFormField(
                                   controller: _phoneController,
                                   decoration: InputDecoration(
                                     hintText: 'Enter your phone number',
-                                    prefixIcon: const Icon(Icons.phone_outlined),
+                                    prefixIcon: const Icon(
+                                      Icons.phone_outlined,
+                                    ),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     filled: true,
-                                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                    fillColor: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
                                   ),
                                   keyboardType: TextInputType.phone,
                                 ),
                                 const SizedBox(height: 32),
-
-                                // Action Buttons
                                 Row(
                                   children: [
                                     Expanded(
                                       child: OutlinedButton(
-                                        onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                                        onPressed: _isLoading
+                                            ? null
+                                            : () => Navigator.of(context).pop(),
                                         style: OutlinedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(vertical: 16),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                           ),
                                         ),
                                         child: const Text('Cancel'),
@@ -322,18 +308,26 @@ class _EditProfileModalState extends State<EditProfileModal>
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: ElevatedButton(
-                                        onPressed: _isLoading ? null : _saveProfile,
+                                        onPressed: _isLoading
+                                            ? null
+                                            : _saveProfile,
                                         style: ElevatedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(vertical: 16),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                           ),
                                         ),
                                         child: _isLoading
                                             ? const SizedBox(
                                                 height: 20,
                                                 width: 20,
-                                                child: CircularProgressIndicator(strokeWidth: 2),
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                ),
                                               )
                                             : const Text('Save Changes'),
                                       ),
@@ -357,7 +351,10 @@ class _EditProfileModalState extends State<EditProfileModal>
   }
 }
 
-Future<void> showEditProfileModal(BuildContext context, UserProfile userProfile) {
+Future<void> showEditProfileModal(
+  BuildContext context,
+  UserProfile userProfile,
+) {
   return Navigator.of(context).push(
     PageRouteBuilder(
       opaque: false,

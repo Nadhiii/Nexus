@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'dart:ui'; // Required for the blur effect (ImageFilter)
 import 'package:animations/animations.dart'; // Required for PageTransitionSwitcher
 
+import '../core/providers/is_popup_active_provider.dart';
 import '../core/providers/new_nbox_provider.dart';
 import '../modules/dashboard/modern_dashboard_screen.dart';
 import '../modules/finance/modern_finance_screen.dart';
@@ -30,20 +31,20 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final pendingNbox = context.watch<NewNboxProvider>().pendingTransactions.length;
+    final nbox = context.watch<NewNboxProvider>();
+    final pendingNbox = nbox.pendingSms.length + nbox.pendingEmails.length;
 
     final screens = [
       ModernDashboardScreen(onNavigate: _navigateToScreen),
       ModernFinanceScreen(initialTabIndex: _financeScreenInitialTab),
       const ModernInsightsScreen(),
-      const NewModernNBoxScreen(),
+      NewModernNBoxScreen(),
       const ModernMoreScreen(),
     ];
 
     return Scaffold(
       body: Stack(
         children: [
-          // IMPROVED: Using PageTransitionSwitcher for smooth fade-through animations
           PageTransitionSwitcher(
             transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
               return FadeThroughTransition(
@@ -84,8 +85,14 @@ class _MainScreenState extends State<MainScreen> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(35),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: ValueListenableBuilder<bool>(
+          valueListenable: isPopupActiveNotifier,
+          builder: (context, isPopupActive, child) {
+            return BackdropFilter(
+              filter: isPopupActive ? ImageFilter.blur() : ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: child,
+            );
+          },
           child: Container(
             decoration: BoxDecoration(
               color: colorScheme.surface.withOpacity(0.8),

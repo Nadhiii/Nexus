@@ -6,8 +6,8 @@ import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/providers/account_provider.dart';
 import '../../core/models/account.dart';
+import '../../core/widgets/top_snackbar.dart';
 
-/// Modern Add Account Screen - Revolut-inspired design
 class ModernAddAccountScreen extends StatefulWidget {
   const ModernAddAccountScreen({super.key});
 
@@ -61,7 +61,6 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Gradient Background
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -71,15 +70,10 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
               ),
             ),
           ),
-          
-          // Content
           SafeArea(
             child: Column(
               children: [
-                // App Bar
                 _buildAppBar(context),
-                
-                // Form
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(AppSpacing.xl),
@@ -103,8 +97,6 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.xl2),
-                          
-                          // Account Type
                           Text(
                             'Account Type',
                             style: AppTypography.titleSmall.copyWith(
@@ -115,8 +107,6 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                           const SizedBox(height: AppSpacing.sm),
                           _buildTypeSelector(),
                           const SizedBox(height: AppSpacing.xl),
-                          
-                          // Account Name
                           Text(
                             'Account Name',
                             style: AppTypography.titleSmall.copyWith(
@@ -138,7 +128,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                               filled: true,
                               fillColor: AppColors.cardDarkElevated,
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                                borderRadius: BorderRadius.circular(
+                                  AppSpacing.radiusMd,
+                                ),
                                 borderSide: BorderSide.none,
                               ),
                             ),
@@ -150,8 +142,6 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                             },
                           ),
                           const SizedBox(height: AppSpacing.lg),
-                          
-                          // Balance
                           Text(
                             'Initial Balance',
                             style: AppTypography.titleSmall.copyWith(
@@ -177,11 +167,15 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                               filled: true,
                               fillColor: AppColors.cardDarkElevated,
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                                borderRadius: BorderRadius.circular(
+                                  AppSpacing.radiusMd,
+                                ),
                                 borderSide: BorderSide.none,
                               ),
                             ),
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Balance is required';
@@ -193,8 +187,6 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                             },
                           ),
                           const SizedBox(height: AppSpacing.xl),
-                          
-                          // Optional Details
                           Text(
                             'Additional Details (Optional)',
                             style: AppTypography.titleSmall.copyWith(
@@ -216,7 +208,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                               filled: true,
                               fillColor: AppColors.cardDarkElevated,
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                                borderRadius: BorderRadius.circular(
+                                  AppSpacing.radiusMd,
+                                ),
                                 borderSide: BorderSide.none,
                               ),
                             ),
@@ -235,7 +229,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                               filled: true,
                               fillColor: AppColors.cardDarkElevated,
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                                borderRadius: BorderRadius.circular(
+                                  AppSpacing.radiusMd,
+                                ),
                                 borderSide: BorderSide.none,
                               ),
                             ),
@@ -243,8 +239,6 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                             maxLength: 4,
                           ),
                           const SizedBox(height: AppSpacing.xl),
-                          
-                          // Customization
                           Text(
                             'Customize',
                             style: AppTypography.titleSmall.copyWith(
@@ -253,8 +247,6 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.sm),
-                          
-                          // Color Picker
                           Text(
                             'Color',
                             style: AppTypography.bodyMedium.copyWith(
@@ -267,7 +259,8 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                             children: _colorOptions.map((color) {
                               final isSelected = color == _selectedColor;
                               return GestureDetector(
-                                onTap: () => setState(() => _selectedColor = color),
+                                onTap: () =>
+                                    setState(() => _selectedColor = color),
                                 child: Container(
                                   width: 48,
                                   height: 48,
@@ -275,20 +268,23 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                                     color: color,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: isSelected ? Colors.white : Colors.transparent,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.transparent,
                                       width: 3,
                                     ),
                                   ),
                                   child: isSelected
-                                      ? const Icon(Icons.check, color: Colors.white)
+                                      ? const Icon(
+                                          Icons.check,
+                                          color: Colors.white,
+                                        )
                                       : null,
                                 ),
                               );
                             }).toList(),
                           ),
                           const SizedBox(height: AppSpacing.lg),
-                          
-                          // Icon Picker
                           Text(
                             'Icon',
                             style: AppTypography.bodyMedium.copyWith(
@@ -301,31 +297,36 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                             children: _iconOptions.map((icon) {
                               final isSelected = icon == _selectedIcon;
                               return GestureDetector(
-                                onTap: () => setState(() => _selectedIcon = icon),
+                                onTap: () =>
+                                    setState(() => _selectedIcon = icon),
                                 child: Container(
                                   width: 48,
                                   height: 48,
                                   decoration: BoxDecoration(
-                                    color: isSelected 
+                                    color: isSelected
                                         ? _selectedColor.withOpacity(0.2)
                                         : AppColors.cardDarkElevated,
-                                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                                    borderRadius: BorderRadius.circular(
+                                      AppSpacing.radiusMd,
+                                    ),
                                     border: Border.all(
-                                      color: isSelected ? _selectedColor : Colors.transparent,
+                                      color: isSelected
+                                          ? _selectedColor
+                                          : Colors.transparent,
                                       width: 2,
                                     ),
                                   ),
                                   child: Icon(
                                     icon,
-                                    color: isSelected ? _selectedColor : AppColors.textSecondary,
+                                    color: isSelected
+                                        ? _selectedColor
+                                        : AppColors.textSecondary,
                                   ),
                                 ),
                               );
                             }).toList(),
                           ),
                           const SizedBox(height: AppSpacing.xl2),
-                          
-                          // Create Button
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
@@ -333,9 +334,13 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primaryBlue,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.lg,
+                                ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                                  borderRadius: BorderRadius.circular(
+                                    AppSpacing.radiusMd,
+                                  ),
                                 ),
                               ),
                               child: _isLoading
@@ -386,10 +391,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             ),
             child: IconButton(
-              icon: const Icon(
-                Icons.close,
-                color: Colors.white,
-              ),
+              icon: const Icon(Icons.close, color: Colors.white),
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),
@@ -407,9 +409,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
       child: DropdownButtonFormField<AccountType>(
         initialValue: _selectedType,
         dropdownColor: AppColors.cardDarkElevated,
-        style: AppTypography.bodyLarge.copyWith(
-          color: AppColors.textPrimary,
-        ),
+        style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
         decoration: InputDecoration(
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -480,43 +480,30 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
         balance: balance,
         color: _selectedColor,
         icon: _selectedIcon,
-        bankName: _bankNameController.text.trim().isEmpty 
-            ? null 
+        bankName: _bankNameController.text.trim().isEmpty
+            ? null
             : _bankNameController.text.trim(),
-        accountNumber: _accountNumberController.text.trim().isEmpty 
-            ? null 
+        accountNumber: _accountNumberController.text.trim().isEmpty
+            ? null
             : _accountNumberController.text.trim(),
         createdAt: now,
         updatedAt: now,
       );
 
-      final success = await context.read<AccountProvider>().createAccount(account);
+      await context.read<AccountProvider>().addAccount(account);
 
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Account created successfully!'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-        Navigator.of(context).pop();
-      } else if (mounted) {
-        final error = context.read<AccountProvider>().error;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error ?? 'Failed to create account'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+      if (mounted) {
+        final provider = context.read<AccountProvider>();
+        if (provider.error == null) {
+          showTopSnackBar(context, 'Account created successfully!');
+          Navigator.of(context).pop();
+        } else {
+          showTopSnackBar(context, provider.error!, isError: true);
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        showTopSnackBar(context, 'Error: $e', isError: true);
       }
     } finally {
       if (mounted) {

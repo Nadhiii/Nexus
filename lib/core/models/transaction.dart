@@ -1,17 +1,19 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum TransactionType { income, expense, transfer }
 
 class Transaction {
   final String id;
-  final String userId; // User ID for filtering
+  final String userId;
   final TransactionType type;
   final double amount;
   final String? description;
   final String? categoryId;
   final String accountId;
-  final String? toAccountId; // For transfers
+  final String? toAccountId;
   final DateTime date;
-  final Map<String, dynamic>? metadata; // For SMS parsing, receipts, etc.
-  final List<String>? attachments; // Document IDs
+  final Map<String, dynamic>? metadata;
+  final List<String>? attachments;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -31,34 +33,65 @@ class Transaction {
     required this.updatedAt,
   });
 
-  factory Transaction.fromMap(Map<String, dynamic> map) {
+  factory Transaction.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return Transaction(
-      id: map['id'],
-      userId: map['userId'] ?? '', // Handle legacy data without userId
+      id: doc.id,
+      userId: data['userId'] ?? '',
       type: TransactionType.values.firstWhere(
-        (e) => e.toString().split('.').last == map['type'],
+        (e) => e.toString().split('.').last == data['type'],
         orElse: () => TransactionType.expense,
       ),
-      amount: map['amount'].toDouble(),
-      description: map['description'],
-      categoryId: map['categoryId'],
-      accountId: map['accountId'],
-      toAccountId: map['toAccountId'],
-      date: DateTime.parse(map['date']),
-      metadata: map['metadata'] != null
-          ? Map<String, dynamic>.from(map['metadata'])
+      amount: (data['amount'] ?? 0).toDouble(),
+      description: data['description'],
+      categoryId: data['categoryId'],
+      accountId: data['accountId'],
+      toAccountId: data['toAccountId'],
+      date: (data['date'] as Timestamp).toDate(),
+      metadata: data['metadata'] != null
+          ? Map<String, dynamic>.from(data['metadata'])
           : null,
-      attachments: map['attachments'] != null
-          ? List<String>.from(map['attachments'])
+      attachments: data['attachments'] != null
+          ? List<String>.from(data['attachments'])
           : null,
-      createdAt: DateTime.parse(map['createdAt']),
-      updatedAt: DateTime.parse(map['updatedAt']),
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+    );
+  }
+
+  factory Transaction.fromMap(Map<String, dynamic> data) {
+    return Transaction(
+      id: data['id'] ?? '',
+      userId: data['userId'] ?? '',
+      type: TransactionType.values.firstWhere(
+        (e) => e.toString().split('.').last == data['type'],
+        orElse: () => TransactionType.expense,
+      ),
+      amount: (data['amount'] ?? 0).toDouble(),
+      description: data['description'],
+      categoryId: data['categoryId'],
+      accountId: data['accountId'] ?? '',
+      toAccountId: data['toAccountId'],
+      date: data['date'] is Timestamp
+          ? (data['date'] as Timestamp).toDate()
+          : DateTime.parse(data['date']),
+      metadata: data['metadata'] != null
+          ? Map<String, dynamic>.from(data['metadata'])
+          : null,
+      attachments: data['attachments'] != null
+          ? List<String>.from(data['attachments'])
+          : null,
+      createdAt: data['createdAt'] is Timestamp
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.parse(data['createdAt']),
+      updatedAt: data['updatedAt'] is Timestamp
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : DateTime.parse(data['updatedAt']),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'userId': userId,
       'type': type.toString().split('.').last,
       'amount': amount,
@@ -66,13 +99,47 @@ class Transaction {
       'categoryId': categoryId,
       'accountId': accountId,
       'toAccountId': toAccountId,
-      'date': date.toIso8601String(),
+      'date': Timestamp.fromDate(date),
       'metadata': metadata,
       'attachments': attachments,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
+
+  factory Transaction.fromJson(Map<String, dynamic> json) {
+    return Transaction(
+      id: json['id'],
+      userId: json['userId'],
+      type: TransactionType.values[json['type']],
+      amount: json['amount'],
+      description: json['description'],
+      categoryId: json['categoryId'],
+      accountId: json['accountId'],
+      toAccountId: json['toAccountId'],
+      date: DateTime.parse(json['date']),
+      metadata: json['metadata'],
+      attachments: List<String>.from(json['attachments'] ?? []),
+      createdAt: DateTime.parse(json['createdAt']),
+      updatedAt: DateTime.parse(json['updatedAt']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'userId': userId,
+    'type': type.index,
+    'amount': amount,
+    'description': description,
+    'categoryId': categoryId,
+    'accountId': accountId,
+    'toAccountId': toAccountId,
+    'date': date.toIso8601String(),
+    'metadata': metadata,
+    'attachments': attachments,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 
   Transaction copyWith({
     String? id,

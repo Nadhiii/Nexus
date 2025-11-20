@@ -5,9 +5,10 @@ import '../../core/widgets/translucent_app_bar.dart';
 import '../../core/providers/account_provider.dart';
 import '../../core/models/account.dart';
 import '../../core/services/account_service.dart';
+import '../../core/widgets/top_snackbar.dart';
 
 class AddAccountScreen extends StatefulWidget {
-  final Account? account; // Optional account for editing
+  final Account? account;
 
   const AddAccountScreen({super.key, this.account});
 
@@ -46,11 +47,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
   @override
   void initState() {
     super.initState();
-    print('AddAccountScreen: initState called');
-
     if (widget.account != null) {
-      print('AddAccountScreen: editing existing account');
-      // Populate fields for editing
       _nameController.text = widget.account!.name;
       _bankNameController.text = widget.account!.bankName ?? '';
       _balanceController.text = widget.account!.balance.toString();
@@ -60,10 +57,8 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
       _selectedColor = widget.account!.color;
       _selectedIcon = widget.account!.icon;
     } else {
-      print('AddAccountScreen: creating new account');
       _updateDefaultColorAndIcon();
     }
-    print('AddAccountScreen: initState completed');
   }
 
   @override
@@ -78,15 +73,9 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
 
   void _updateDefaultColorAndIcon() {
     try {
-      print(
-        'AddAccountScreen: _updateDefaultColorAndIcon called for type: $_selectedType',
-      );
       _selectedColor = AccountService.getDefaultColor(_selectedType);
       _selectedIcon = AccountService.getDefaultIcon(_selectedType);
-      print('AddAccountScreen: _updateDefaultColorAndIcon completed');
     } catch (e) {
-      print('AddAccountScreen: Error in _updateDefaultColorAndIcon - $e');
-      // Fallback to safe defaults
       _selectedColor = Colors.blue;
       _selectedIcon = Icons.account_balance;
     }
@@ -94,7 +83,6 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print('AddAccountScreen: build called');
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: TranslucentAppBar(
@@ -129,13 +117,10 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Account Type Selection
               _buildSectionHeader('Account Type'),
               const SizedBox(height: 8),
               _buildAccountTypeSelector(),
               const SizedBox(height: 24),
-
-              // Basic Information
               _buildSectionHeader('Basic Information'),
               const SizedBox(height: 16),
               _buildAccountNameField(),
@@ -144,30 +129,22 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
               const SizedBox(height: 16),
               _buildBalanceField(),
               const SizedBox(height: 24),
-
-              // Appearance
               _buildSectionHeader('Appearance'),
               const SizedBox(height: 16),
               _buildColorSelector(),
               const SizedBox(height: 16),
               _buildIconSelector(),
               const SizedBox(height: 24),
-
-              // Optional Information
               _buildSectionHeader('Optional Information'),
               const SizedBox(height: 16),
               _buildAccountNumberField(),
               const SizedBox(height: 16),
               _buildNotesField(),
               const SizedBox(height: 32),
-
-              // Preview
               _buildSectionHeader('Preview'),
               const SizedBox(height: 8),
               _buildAccountPreview(),
               const SizedBox(height: 32),
-
-              // Save Button
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
@@ -512,7 +489,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
           '₹${_balanceController.text.isEmpty ? '0.00' : _balanceController.text}',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.green, // All account types are assets now
+            color: Colors.green,
           ),
         ),
       ),
@@ -534,9 +511,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
       final account = Account(
-        id:
-            widget.account?.id ??
-            '', // Use existing ID for editing, empty for new
+        id: widget.account?.id ?? '',
         userId: widget.account?.userId ?? userId,
         name: _nameController.text.trim(),
         type: _selectedType,
@@ -546,9 +521,7 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
         balance: balance,
         color: _selectedColor,
         icon: _selectedIcon,
-        createdAt:
-            widget.account?.createdAt ??
-            now, // Keep original created date for editing
+        createdAt: widget.account?.createdAt ?? now,
         updatedAt: now,
         accountNumber: _accountNumberController.text.trim().isEmpty
             ? null
@@ -558,41 +531,29 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
             : _notesController.text.trim(),
       );
 
-      final success = widget.account != null
-          ? await context.read<AccountProvider>().updateAccount(account)
-          : await context.read<AccountProvider>().createAccount(account);
+      if (widget.account != null) {
+        await context.read<AccountProvider>().updateAccount(account);
+      } else {
+        await context.read<AccountProvider>().addAccount(account);
+      }
 
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.account != null
-                  ? 'Account updated successfully!'
-                  : 'Account created successfully!',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
+      if (mounted) {
+        final successMessage = widget.account != null
+            ? 'Account updated successfully!'
+            : 'Account created successfully!';
+        showTopSnackBar(context, successMessage);
         Navigator.of(context).pop();
       } else if (mounted) {
         final error = context.read<AccountProvider>().error;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              error ??
-                  (widget.account != null
-                      ? 'Failed to update account'
-                      : 'Failed to create account'),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
+        final errorMessage = error ??
+            (widget.account != null
+                ? 'Failed to update account'
+                : 'Failed to create account');
+        showTopSnackBar(context, errorMessage, isError: true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
+        showTopSnackBar(context, 'Error: $e', isError: true);
       }
     } finally {
       if (mounted) {

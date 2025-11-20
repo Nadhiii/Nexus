@@ -32,7 +32,7 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
 
           return RefreshIndicator(
             onRefresh: () async {
-              await debtProvider.refresh();
+              debtProvider.refresh();
             },
             child: CustomScrollView(
               slivers: [
@@ -62,9 +62,7 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
                   ),
                 ),
                 _buildDebtsList(context, debtProvider),
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 140),
-                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 140)),
               ],
             ),
           );
@@ -116,10 +114,7 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEF4444),
-            Color(0xFFDC2626),
-          ],
+          colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
         ),
         borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
         boxShadow: [
@@ -253,8 +248,8 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
 
   Widget _buildQuickStats(BuildContext context, DebtProvider provider) {
     final calculation = provider.debtFreeCalculation;
-    final monthsLeft = calculation['monthsToPayoff'] as int? ?? 0;
-    
+    final monthsLeft = calculation?['months'] as int? ?? 0;
+
     return Row(
       children: [
         Expanded(
@@ -287,7 +282,12 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -322,17 +322,14 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final debt = provider.debts[index];
-            final isPriority = debt.priority <= 3;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: _buildDebtCard(context, debt, isPriority),
-            );
-          },
-          childCount: provider.debts.length,
-        ),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final debt = provider.debts[index];
+          final isPriority = (debt.priority ?? 999) <= 3;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: _buildDebtCard(context, debt, isPriority),
+          );
+        }, childCount: provider.debts.length),
       ),
     );
   }
@@ -393,7 +390,9 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.error.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                              borderRadius: BorderRadius.circular(
+                                AppSpacing.radiusSm,
+                              ),
                             ),
                             child: Text(
                               'Priority #${debt.priority}',
@@ -481,7 +480,7 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${debt.interestRate.toStringAsFixed(1)}%',
+                      '${debt.interestRate?.toStringAsFixed(1) ?? '0.0'}%',
                       style: AppTypography.titleSmall.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -575,8 +574,10 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
 
   String _getFormattedDebtFreeDate(DebtProvider provider) {
     final calculation = provider.debtFreeCalculation;
-    final date = calculation['debtFreeDate'] as DateTime?;
-    if (date == null) return 'Never';
+    if (calculation == null) return 'Never';
+    final months = calculation['months'] as int? ?? 0;
+    if (months == 0) return 'Never';
+    final date = DateTime.now().add(Duration(days: months * 30));
     final formatter = DateFormat('MMM yyyy');
     return 'Free by ${formatter.format(date)}';
   }
@@ -619,6 +620,10 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
         return Icons.business;
       case DebtType.goldLoan:
         return Icons.star;
+      case DebtType.owedToMe:
+        return Icons.call_received;
+      case DebtType.owedByMe:
+        return Icons.call_made;
       case DebtType.other:
         return Icons.account_balance;
     }
@@ -640,6 +645,10 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
         return Colors.amber;
       case DebtType.goldLoan:
         return Colors.yellow;
+      case DebtType.owedToMe:
+        return Colors.green;
+      case DebtType.owedByMe:
+        return Colors.red;
       case DebtType.other:
         return Colors.grey;
     }

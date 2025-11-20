@@ -6,9 +6,10 @@ import 'dart:math' as math;
 import '../../../core/theme/app_theme.dart';
 import '../../../core/providers/budget_provider.dart';
 import '../../../core/models/budget.dart';
+import '../../../core/widgets/top_snackbar.dart';
 
 class AddBudgetModal extends StatefulWidget {
-  final Budget? budget; // Make budget optional for create/edit
+  final Budget? budget;
 
   const AddBudgetModal({super.key, this.budget});
 
@@ -140,7 +141,7 @@ class _AddBudgetModalState extends State<AddBudgetModal>
                             borderRadius: BorderRadius.circular(28),
                             child: AddBudgetForm(
                               onDismiss: _dismissModal,
-                              budget: widget.budget, // Pass budget to form
+                              budget: widget.budget,
                             ),
                           ),
                         ),
@@ -270,7 +271,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
   void initState() {
     super.initState();
     if (_isEditMode) {
-      // Pre-fill form for editing
       final budget = widget.budget!;
       _selectedCategoryId = budget.categoryId;
       _categoryNameController.text = budget.categoryName;
@@ -465,7 +465,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                   ),
                 ),
                 const SizedBox(height: 24),
-
                 Text(
                   'Category Name',
                   style: Theme.of(
@@ -475,9 +474,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _categoryNameController,
-                  enabled:
-                      _selectedCategoryId ==
-                      'custom',
+                  enabled: _selectedCategoryId == 'custom',
                   decoration: InputDecoration(
                     hintText: _selectedCategoryId == 'custom'
                         ? 'Enter custom category name'
@@ -499,7 +496,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                   },
                 ),
                 const SizedBox(height: 24),
-
                 Text(
                   'Budget Amount',
                   style: Theme.of(
@@ -533,7 +529,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                   },
                 ),
                 const SizedBox(height: 24),
-
                 Text(
                   'Budget Period',
                   style: Theme.of(
@@ -542,7 +537,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedPeriod,
+                  initialValue: _selectedPeriod,
                   decoration: InputDecoration(
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -566,7 +561,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                   },
                 ),
                 const SizedBox(height: 24),
-
                 if (_selectedPeriod == 'custom') ...[
                   Text(
                     'Custom Period',
@@ -600,7 +594,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                   ),
                   const SizedBox(height: 24),
                 ],
-
                 Text(
                   'Notes (Optional)',
                   style: Theme.of(
@@ -623,7 +616,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                   ),
                 ),
                 const SizedBox(height: 32),
-
                 FilledButton(
                   onPressed: _isLoading ? null : _saveBudget,
                   child: _isLoading
@@ -634,7 +626,6 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                         )
                       : Text(_isEditMode ? 'Save Changes' : 'Create Budget'),
                 ),
-
                 const SizedBox(height: 32),
               ],
             ),
@@ -679,12 +670,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_endDate.isBefore(_startDate)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('End date must be after start date'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showTopSnackBar(context, 'End date must be after start date', isError: true);
       return;
     }
 
@@ -720,21 +706,14 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
 
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Budget ${_isEditMode ? 'updated' : 'created'} successfully!'),
-            backgroundColor: Colors.green,
-          ),
+        showTopSnackBar(
+          context,
+          'Budget ${_isEditMode ? 'updated' : 'created'} successfully!',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error saving budget: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        showTopSnackBar(context, 'Error saving budget: $e', isError: true);
       }
     } finally {
       if (mounted) {
@@ -1042,7 +1021,6 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
                   ),
                 ),
                 const SizedBox(height: 24),
-
                 Text(
                   'Monthly Income',
                   style: Theme.of(
@@ -1076,7 +1054,6 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
                   },
                 ),
                 const SizedBox(height: 24),
-
                 Text(
                   'Choose Budget Method',
                   style: Theme.of(
@@ -1084,7 +1061,6 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 12),
-
                 ..._budgetRules.entries.map((entry) {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
@@ -1117,9 +1093,7 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
                     ),
                   );
                 }),
-
                 const SizedBox(height: 32),
-
                 FilledButton(
                   onPressed: _isLoading ? null : _createBudgets,
                   child: _isLoading
@@ -1130,7 +1104,6 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
                         )
                       : const Text('Create Budgets'),
                 ),
-
                 const SizedBox(height: 32),
               ],
             ),
@@ -1180,21 +1153,14 @@ class _QuickSetupFormState extends State<QuickSetupForm> {
 
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${categories.length} budgets created successfully!'),
-            backgroundColor: Colors.green,
-          ),
+        showTopSnackBar(
+          context,
+          '${categories.length} budgets created successfully!',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error creating budgets: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        showTopSnackBar(context, 'Error creating budgets: $e', isError: true);
       }
     } finally {
       if (mounted) {

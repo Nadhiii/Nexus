@@ -1,74 +1,85 @@
-import '../models/detected_sms_transaction.dart';
+import '../models/detected_transaction.dart';
 
 class NewSmsParser {
-  static final _amountRegex = RegExp(r'\b(?:inr|rs\.?|₹)\s*([\d,]+\.?\d*)\b', caseSensitive: false);
-  static final _debitRegex = RegExp(r'\b(debited|spent|paid|sent|withdrawn|charged)\b', caseSensitive: false);
-  static final _creditRegex = RegExp(r'\b(credited|received|deposit|refund)\b', caseSensitive: false);
-  static final _requestRegex = RegExp(r'\b(request|due|pending|approve|invoice)\b', caseSensitive: false);
+  static DetectedTransaction? parse(String id, String body, String sender, DateTime date) {
+    return _parseSms(id, body, sender, date);
+  }
 
-  // CORRECTED & IMPROVED: More robust regex for merchant detection.
-  static final _merchantRegex = [
-    RegExp(r"(?:to|from|by)\s+([\w\s.&\-',]+?)(?:\s+on|\s+for|\s+@|\s+with|\s+is|'s|\.)", caseSensitive: false),
-    RegExp(r"at\s+([\w\s.&\-',]+?)(?:\.)", caseSensitive: false),
-    RegExp(r'to\s+([\w\s]+)@', caseSensitive: false),
-    RegExp(r"\b(on|via)\s+([\w\s.&\-',]+?)(?:\sfor|\son|\.)", caseSensitive: false),
-  ];
+  static DetectedTransaction? _parseSms(String id, String body, String sender, DateTime date) {
+    final cleanBody = body.replaceAll(RegExp(r'[\n\r]'), ' ').trim();
 
-  static DetectedSmsTransaction? parse(String smsId, String smsBody, String sender, DateTime date) {
-    final amount = _extractAmount(smsBody);
-    if (amount == null) {
-      return null;
+    final patterns = [
+      RegExp(r'^(?:Rs\.?|INR)\.?\s*([\d,]+(?:\.\d{1,2})?)\s*(?:sent|debited|spent)', caseSensitive: false),
+
+      RegExp(r'Spent\s+(?:Rs\.?|INR)\.?\s*([\d,]+(?:\.\d{1,2})?)', caseSensitive: false),
+
+      RegExp(r'for\s+(?:Rs\.?|INR)\.?\s*([\d,]+(?:\.\d{1,2})?)', caseSensitive: false),
+
+      RegExp(r'debited\s+by\s+(?:Rs\.?|INR)\.?\s*([\d,]+(?:\.\d{1,2})?)', caseSensitive: false),
+
+      RegExp(r'(?:Rs\.?|INR)\.?\s*([\d,]+(?:\.\d{1,2})?)', caseSensitive: false),
+    ];
+
+    double? amount;
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(cleanBody);
+      if (match != null) {
+        final amountString = match.group(1)?.replaceAll(',', '');
+        amount = double.tryParse(amountString ?? '');
+        if (amount != null && amount > 0) break;
+      }
     }
 
-    final type = _determineType(smsBody);
-    final merchant = _extractMerchant(smsBody, sender);
-    final isDefinitive = _isDefinitive(smsBody);
+    if (amount == null || amount == 0) return null;
 
-    return DetectedSmsTransaction(
-      smsId: smsId,
+    final type = _getTransactionType(cleanBody);
+
+    final isFinancial = cleanBody.toLowerCase().contains(RegExp(r'(sent|paid|spent|debit|credit|purchase|txn|transfer|upi|a\/c|card|bank)'));
+    if (!isFinancial) return null;
+
+    final merchant = _getMerchant(sender, cleanBody);
+
+    return DetectedTransaction(
+      id: id,
       amount: amount,
-      type: type,
-      date: date,
       merchant: merchant,
-      isDefinitive: isDefinitive,
-      smsBody: smsBody,
-      sender: sender,
+      date: date,
+      type: type,
+      source: 'sms',
+      body: cleanBody,
     );
   }
 
-  static double? _extractAmount(String body) {
-    final match = _amountRegex.firstMatch(body);
-    if (match == null) return null;
-    return double.tryParse(match.group(1)!.replaceAll(',', ''));
-  }
-
-  static String _determineType(String body) {
+  static String _getTransactionType(String body) {
     final lowerBody = body.toLowerCase();
-    if (_creditRegex.hasMatch(lowerBody) && !_debitRegex.hasMatch(lowerBody)) return 'income';
-    if (_debitRegex.hasMatch(lowerBody)) return 'expense';
+    if (lowerBody.contains('credited') ||
+        lowerBody.contains('deposit') ||
+        lowerBody.contains('received') ||
+        lowerBody.contains('refund') ||
+        lowerBody.contains('added to')) {
+      return 'income';
+    }
     return 'expense';
   }
 
-  static String _extractMerchant(String body, String sender) {
-    for (final regex in _merchantRegex) {
-      final match = regex.firstMatch(body);
-      if (match != null && match.group(1) != null) {
-        final merchantCandidate = match.group(1)!.trim();
-        // Avoid matching generic words like "you"
-        if (merchantCandidate.isNotEmpty && merchantCandidate.toLowerCase() != 'you') {
-          return merchantCandidate;
-        }
-      }
-    }
-    // Fallback to the sender, which is much more useful than "Unknown".
-    return sender;
-  }
+  static String _getMerchant(String sender, String body) {
+    final cleanBody = body.replaceAll(RegExp(r'[\n\r]'), ' ');
 
-  static bool _isDefinitive(String body) {
-    final lowerBody = body.toLowerCase();
-    if (_requestRegex.hasMatch(lowerBody)) {
-      return false;
+    final idfcMatch = RegExp(r'Info:.*?\/.*?\/(.*?)(?:\.|$)', caseSensitive: false).firstMatch(cleanBody);
+    if (idfcMatch != null) return idfcMatch.group(1)!.trim();
+
+    final upiMatch = RegExp(r'to\s+([A-Za-z0-9\s\.]+?)\s?\.?Ref', caseSensitive: false).firstMatch(cleanBody);
+    if (upiMatch != null) return upiMatch.group(1)!.trim();
+
+    final atMatch = RegExp(r'done\s+at\s+(.*?)\s+on', caseSensitive: false).firstMatch(cleanBody);
+    if (atMatch != null) return atMatch.group(1)!.trim();
+
+    final generalMatch = RegExp(r'(?:at|to)\s+([A-Za-z0-9\s]+?)(?:\s+(?:on|for|via)|$)', caseSensitive: false).firstMatch(cleanBody);
+    if (generalMatch != null) {
+      final m = generalMatch.group(1)!.trim();
+      if (m.length < 25 && !m.toLowerCase().contains('upi')) return m;
     }
-    return _debitRegex.hasMatch(lowerBody) || _creditRegex.hasMatch(lowerBody);
+
+    return sender.replaceAll(RegExp(r'^[A-Z]{2}-'), '').replaceAll(RegExp(r'[-_]'), ' ').trim();
   }
 }

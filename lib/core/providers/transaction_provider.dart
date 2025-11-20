@@ -1,29 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
-import 'package:provider/provider.dart';
 import '../models/transaction.dart';
 import '../services/transaction_service.dart';
-import '../../models/detected_transaction.dart';
+import '../services/learning_service.dart';
 import 'notification_provider.dart';
 import 'budget_provider.dart';
+import 'account_provider.dart';
 
 class TransactionProvider with ChangeNotifier {
   final TransactionService _transactionService = TransactionService();
-  NotificationProvider? notificationProvider;
-  BudgetProvider? budgetProvider;
+  final LearningService _learningService;
+
+  NotificationProvider? _notificationProvider;
+  BudgetProvider? _budgetProvider;
+  AccountProvider? _accountProvider;
 
   List<Transaction> _transactions = [];
   bool _isLoading = false;
   String? _error;
   bool _isInitialized = false;
 
-  TransactionProvider({this.notificationProvider, this.budgetProvider});
-
   List<Transaction> get transactions => List.unmodifiable(_transactions);
   bool get isLoading => _isLoading;
   bool get isInitialized => _isInitialized;
   String? get error => _error;
+
+  TransactionProvider({required LearningService learningService}) : _learningService = learningService;
+
+  void update(AccountProvider account, BudgetProvider budget, NotificationProvider notification) {
+    _accountProvider = account;
+    _budgetProvider = budget;
+    _notificationProvider = notification;
+  }
 
   void _setLoading(bool value) {
     _isLoading = value;
@@ -71,27 +79,29 @@ class TransactionProvider with ChangeNotifier {
 
   Future<bool> addTransaction(Transaction transaction) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _setError('User not authenticated');
+    if (user == null || _accountProvider == null) {
+      _setError('User or Account Provider not available');
       return false;
     }
 
     try {
       _setLoading(true);
 
-      await _transactionService.createTransaction(user.uid, transaction);
-      await _updateAccountBalance(transaction.accountId, transaction.amount, transaction.type);
+      await _transactionService.addTransaction(transaction);
+      await _updateAccountBalance(transaction.accountId, transaction.amount, transaction.type, isReversal: false);
 
-      // Notification Logic
-      notificationProvider?.notifyTransaction(
+      if (transaction.description != null && transaction.categoryId != null) {
+        await _learningService.learn(transaction.description!, transaction.categoryId!);
+      }
+
+      _notificationProvider?.notifyTransaction(
         transaction.description ?? 'New Transaction',
         transaction.amount,
         transaction.type == TransactionType.income,
       );
 
-      // Budget Check Logic
-      if (transaction.type == TransactionType.expense && budgetProvider != null) {
-        await budgetProvider!.checkBudgetForTransaction(transaction);
+      if (transaction.type == TransactionType.expense && _budgetProvider != null) {
+        await _budgetProvider!.checkBudgetForTransaction(transaction);
       }
 
       _setLoading(false);
@@ -105,17 +115,23 @@ class TransactionProvider with ChangeNotifier {
 
   Future<bool> updateTransaction(Transaction transaction, Transaction originalTransaction) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _setError('User not authenticated');
+    if (user == null || _accountProvider == null) {
+      _setError('User or Account Provider not available');
       return false;
     }
 
     try {
       _setLoading(true);
 
-      await _transactionService.updateTransaction(user.uid, transaction);
-      await _reverseTransactionOnAccount(originalTransaction);
-      await _updateAccountBalance(transaction.accountId, transaction.amount, transaction.type);
+      await _transactionService.updateTransaction(transaction);
+      // Reverse the old transaction amount from its original account
+      await _updateAccountBalance(originalTransaction.accountId, originalTransaction.amount, originalTransaction.type, isReversal: true);
+      // Apply the new transaction amount to its (potentially new) account
+      await _updateAccountBalance(transaction.accountId, transaction.amount, transaction.type, isReversal: false);
+
+      if (transaction.description != null && transaction.categoryId != null) {
+        await _learningService.learn(transaction.description!, transaction.categoryId!);
+      }
 
       _setLoading(false);
       return true;
@@ -128,8 +144,8 @@ class TransactionProvider with ChangeNotifier {
 
   Future<bool> deleteTransaction(String transactionId) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _setError('User not authenticated');
+    if (user == null || _accountProvider == null) {
+      _setError('User or Account Provider not available');
       return false;
     }
 
@@ -137,8 +153,8 @@ class TransactionProvider with ChangeNotifier {
       _setLoading(true);
 
       final transaction = _transactions.firstWhere((t) => t.id == transactionId);
-      await _transactionService.deleteTransaction(user.uid, transactionId);
-      await _reverseTransactionOnAccount(transaction);
+      await _transactionService.deleteTransaction(transactionId);
+      await _updateAccountBalance(transaction.accountId, transaction.amount, transaction.type, isReversal: true);
 
       _setLoading(false);
       return true;
@@ -146,34 +162,39 @@ class TransactionProvider with ChangeNotifier {
       _setError('Failed to delete transaction: $e');
       _setLoading(false);
       return false;
-    } 
-  }
-
-  Future<void> _updateAccountBalance(String accountId, double amount, TransactionType type) async {
-    final accountDoc = FirebaseFirestore.instance.collection('accounts').doc(accountId);
-    final accountSnapshot = await accountDoc.get();
-
-    if (accountSnapshot.exists) {
-      final currentBalance = (accountSnapshot.data()?['balance'] ?? 0.0).toDouble();
-      final newBalance = type == TransactionType.income
-          ? currentBalance + amount
-          : currentBalance - amount;
-      await accountDoc.update({'balance': newBalance});
     }
   }
 
-  Future<void> _reverseTransactionOnAccount(Transaction transaction) async {
-    final accountDoc = FirebaseFirestore.instance.collection('accounts').doc(transaction.accountId);
-    final accountSnapshot = await accountDoc.get();
+  Future<void> _updateAccountBalance(String accountId, double amount, TransactionType type, {required bool isReversal}) async {
+    final account = _accountProvider!.getAccountById(accountId);
+    if (account == null) return;
 
-    if (accountSnapshot.exists) {
-      final currentBalance = (accountSnapshot.data()?['balance'] ?? 0.0).toDouble();
-      final newBalance = transaction.type == TransactionType.income
-          ? currentBalance - transaction.amount
-          : currentBalance + transaction.amount;
-      await accountDoc.update({'balance': newBalance});
+    double newBalance;
+    if (isReversal) {
+      newBalance = type == TransactionType.income
+          ? account.balance - amount
+          : account.balance + amount;
+    } else {
+      newBalance = type == TransactionType.income
+          ? account.balance + amount
+          : account.balance - amount;
     }
+    await _accountProvider!.updateAccountBalance(accountId, newBalance);
   }
+
+  Future<void> clearAllData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    await _transactionService.clearAllTransactions(user.uid);
+  }
+
+  Future<void> restoreFromBackup(List<dynamic> data) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final transactions = data.map((d) => Transaction.fromJson(d as Map<String, dynamic>)).toList();
+    await _transactionService.restoreTransactions(user.uid, transactions);
+  }
+
 
   Transaction? getTransactionById(String transactionId) {
     try {

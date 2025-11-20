@@ -1,144 +1,285 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
+import 'package:another_telephony/telephony.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../models/detected_sms_transaction.dart';
+import '../../models/detected_transaction.dart';
 import '../../utils/new_sms_parser.dart';
+import 'gmail_provider.dart';
 
 class NewNboxProvider extends ChangeNotifier {
+  GmailProvider? _gmailProvider;
+
+  final Telephony _telephony = Telephony.instance;
+
   bool _isLoading = false;
-  List<DetectedSmsTransaction> _pendingTransactions = [];
-  List<DetectedSmsTransaction> _rejectedTransactions = [];
-  Set<String> _approvedSmsIds = {};
-  Set<String> _rejectedSmsIds = {};
+  List<DetectedTransaction> _pendingSms = [];
+  List<DetectedTransaction> _pendingEmails = [];
+  List<DetectedTransaction> _rejected = [];
+
+  Set<String> _processedIds = {};
 
   bool get isLoading => _isLoading;
-  List<DetectedSmsTransaction> get pendingTransactions => List.unmodifiable(_pendingTransactions);
-  List<DetectedSmsTransaction> get rejectedTransactions => List.unmodifiable(_rejectedTransactions);
+  bool get isGmailLinked => _gmailProvider?.isLinked ?? false;
 
-  NewNboxProvider() {
+  List<DetectedTransaction> get pendingSms => List.unmodifiable(_pendingSms);
+  List<DetectedTransaction> get pendingEmails =>
+      List.unmodifiable(_pendingEmails);
+  List<DetectedTransaction> get rejected => List.unmodifiable(_rejected);
+
+  NewNboxProvider({GmailProvider? gmailProvider}) {
+    update(gmailProvider);
     _loadProcessedIds();
   }
 
+  void update(GmailProvider? gmailProvider) {
+    if (_gmailProvider != gmailProvider) {
+      _gmailProvider?.removeListener(_onGmailProviderChanged);
+      _gmailProvider = gmailProvider;
+      _gmailProvider?.addListener(_onGmailProviderChanged);
+      if (_gmailProvider != null) {
+        _onGmailProviderChanged();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _gmailProvider?.removeListener(_onGmailProviderChanged);
+    super.dispose();
+  }
+
+  void _onGmailProviderChanged() {
+    if (_gmailProvider != null) {
+      _processTransactions(_gmailProvider!.detectedTransactions, 'email');
+      notifyListeners();
+    }
+  }
+
+  Future<void> scanAll() async {
+    _setLoading(true);
+    await Future.wait([
+      scanSmsInbox(),
+      if (isGmailLinked) scanEmails(),
+    ]);
+    _setLoading(false);
+  }
+
+  Future<void> scanEmails() async {
+    if (!isGmailLinked) return;
+    _setLoading(true);
+    await _gmailProvider!.scanEmails();
+    _setLoading(false);
+  }
+
+  // --- FIXED SCAN FUNCTION ---
   Future<void> scanSmsInbox() async {
+    if (kDebugMode) print('[NewNboxProvider] Starting SMS scan...');
     _setLoading(true);
 
     if (!await _checkSmsPermission()) {
+      if (kDebugMode)
+        print('[NewNboxProvider] SMS permission denied. Aborting scan.');
       _setLoading(false);
       return;
     }
 
-    final smsQuery = SmsQuery();
-    final messages = await smsQuery.querySms(kinds: [SmsQueryKind.inbox], count: 500);
+    // FIX 1: Always look back 30 days.
+    // This ensures the list is repopulated on app restart and doesn't disappear.
+    // We use UTC for the query because Android stores SMS in UTC.
+    final DateTime nowUtc = DateTime.now().toUtc();
+    final DateTime minDate = nowUtc.subtract(const Duration(days: 30));
 
-    final freshPending = <DetectedSmsTransaction>[];
-    final freshRejected = <DetectedSmsTransaction>[];
+    if (kDebugMode) {
+      print('[NewNboxProvider] Fetching SMS from last 30 days (since $minDate UTC).');
+    }
 
+    List<SmsMessage> messages;
+    try {
+      messages = await _telephony.getInboxSms(
+        // FIX 2: Robust native query
+        filter: SmsFilter.where(SmsColumn.DATE)
+            .greaterThan(minDate.millisecondsSinceEpoch.toString()),
+        sortOrder: [
+          OrderBy(SmsColumn.DATE, sort: Sort.DESC),
+        ],
+      );
+    } catch (e) {
+      if (kDebugMode) print('[NewNboxProvider] Error fetching SMS: $e');
+      _setLoading(false);
+      return;
+    }
+
+    if (kDebugMode)
+      print('[NewNboxProvider] Found ${messages.length} SMS messages in window.');
+
+    final allSmsTransactions = <DetectedTransaction>[];
     for (final sms in messages) {
-      if (sms.id == null) continue;
-      final smsId = sms.id.toString();
+      if (sms.id == null || sms.date == null) continue;
 
-      if (_approvedSmsIds.contains(smsId)) {
-        continue;
-      }
+      // FIX 3: Convert the UTC SMS timestamp to Local time so the user sees correct hours
+      final localSmsDate = DateTime.fromMillisecondsSinceEpoch(sms.date!, isUtc: true).toLocal();
 
       final transaction = NewSmsParser.parse(
-        smsId,
+        sms.id.toString(),
         sms.body ?? '',
-        sms.sender ?? 'Unknown',
-        sms.date ?? DateTime.now(),
+        sms.address ?? 'Unknown',
+        localSmsDate,
       );
-
       if (transaction != null) {
-        if (_rejectedSmsIds.contains(smsId)) {
-          freshRejected.add(transaction);
-        } else {
-          freshPending.add(transaction);
-        }
+        allSmsTransactions.add(transaction);
       }
     }
 
-    _pendingTransactions = _applyDeDuplication(freshPending);
-    _rejectedTransactions = freshRejected;
+    // This will completely refresh the list based on the last 30 days
+    _processTransactions(allSmsTransactions, 'sms');
 
-    _sortLists();
+    notifyListeners();
+    if (kDebugMode) print('[NewNboxProvider] SMS scan complete.');
     _setLoading(false);
   }
 
-  Future<void> markAsApproved(String smsId) async {
-    _approvedSmsIds.add(smsId);
-    if (_rejectedSmsIds.contains(smsId)) {
-      _rejectedSmsIds.remove(smsId);
-    }
-    await _persistIds();
-    await scanSmsInbox();
-  }
+  void _processTransactions(
+      List<DetectedTransaction> transactions,
+      String source,
+      ) {
+    final freshPending = <DetectedTransaction>[];
+    final freshRejected = <DetectedTransaction>[];
 
-  Future<void> rejectTransaction(String smsId) async {
-    _rejectedSmsIds.add(smsId);
-    await _persistIds();
-    await scanSmsInbox();
-  }
+    for (final transaction in transactions) {
+      final approvedId = '${transaction.source}:${transaction.id}';
+      final rejectedId = '${transaction.source}:${transaction.id}:rejected';
 
-  Future<void> rejectTransactions(List<String> smsIds) async {
-    _rejectedSmsIds.addAll(smsIds);
-    await _persistIds();
-    await scanSmsInbox();
-  }
-
-  Future<void> restoreTransaction(String smsId) async {
-    _rejectedSmsIds.remove(smsId);
-    await _persistIds();
-    await scanSmsInbox();
-  }
-
-  List<DetectedSmsTransaction> _applyDeDuplication(List<DetectedSmsTransaction> list) {
-    final cleanList = <DetectedSmsTransaction>[];
-    final definitive = list.where((t) => t.isDefinitive).toList();
-    final nonDefinitive = list.where((t) => !t.isDefinitive).toList();
-
-    cleanList.addAll(definitive);
-
-    for (final request in nonDefinitive) {
-      final hasConfirmation = definitive.any((confirm) =>
-          confirm.amount == request.amount &&
-          confirm.date.difference(request.date).inMinutes.abs() < 15);
-
-      if (!hasConfirmation) {
-        cleanList.add(request);
+      if (_processedIds.contains(approvedId)) {
+        continue; // Already approved, so skip.
+      } else if (_processedIds.contains(rejectedId)) {
+        freshRejected.add(transaction);
+      } else {
+        freshPending.add(transaction);
       }
     }
-    return cleanList;
+
+    if (source == 'sms') {
+      _pendingSms = freshPending;
+    } else if (source == 'email') {
+      _pendingEmails = freshPending;
+    }
+
+    _rejected.removeWhere((t) => t.source == source);
+    _rejected.addAll(freshRejected);
+
+    _sortLists();
+  }
+
+  void markAsApproved(String id, String source) {
+    _pendingSms.removeWhere((t) => t.id == id && t.source == source);
+    _pendingEmails.removeWhere((t) => t.id == id && t.source == source);
+    _rejected.removeWhere((t) => t.id == id && t.source == source);
+
+    final approvedId = '$source:$id';
+    _processedIds.add(approvedId);
+    _processedIds.remove('$source:$id:rejected');
+
+    notifyListeners();
+    _persistIds();
+  }
+
+  void rejectTransaction(String id, String source, {bool silent = false}) {
+    DetectedTransaction? transactionToMove;
+
+    _pendingSms.removeWhere((t) {
+      if (t.id == id && t.source == source) {
+        transactionToMove = t;
+        return true;
+      }
+      return false;
+    });
+
+    _pendingEmails.removeWhere((t) {
+      if (t.id == id && t.source == source) {
+        transactionToMove = t;
+        return true;
+      }
+      return false;
+    });
+
+    if (transactionToMove != null) {
+      if (!_rejected.any((t) => t.id == id && t.source == source)) {
+        _rejected.add(transactionToMove!);
+      }
+
+      final rejectedId = '$source:$id:rejected';
+      _processedIds.add(rejectedId);
+      _processedIds.remove('$source:$id');
+
+      _sortLists();
+      notifyListeners();
+      _persistIds();
+    }
+  }
+
+  void restoreTransaction(String id, String source) {
+    DetectedTransaction? transactionToMove;
+    _rejected.removeWhere((t) {
+      if (t.id == id && t.source == source) {
+        transactionToMove = t;
+        return true;
+      }
+      return false;
+    });
+
+    if (transactionToMove != null) {
+      if (source == 'sms') {
+        _pendingSms.add(transactionToMove!);
+      } else {
+        _pendingEmails.add(transactionToMove!);
+      }
+
+      final rejectedId = '$source:$id:rejected';
+      _processedIds.remove(rejectedId);
+
+      _sortLists();
+      notifyListeners();
+      _persistIds();
+    }
   }
 
   void _sortLists() {
-    _pendingTransactions.sort((a, b) => b.date.compareTo(a.date));
-    _rejectedTransactions.sort((a, b) => b.date.compareTo(a.date));
+    _pendingSms.sort((a, b) => b.date.compareTo(a.date));
+    _pendingEmails.sort((a, b) => b.date.compareTo(a.date));
+    _rejected.sort((a, b) => b.date.compareTo(a.date));
   }
 
   Future<void> _persistIds() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('nbox_approved_ids', _approvedSmsIds.toList());
-    await prefs.setStringList('nbox_rejected_ids', _rejectedSmsIds.toList());
+    await prefs.setStringList('nbox_processed_ids', _processedIds.toList());
   }
 
   Future<void> _loadProcessedIds() async {
+    _setLoading(true);
     final prefs = await SharedPreferences.getInstance();
-    _approvedSmsIds = (prefs.getStringList('nbox_approved_ids') ?? []).toSet();
-    _rejectedSmsIds = (prefs.getStringList('nbox_rejected_ids') ?? []).toSet();
-    await scanSmsInbox();
+    _processedIds = (prefs.getStringList('nbox_processed_ids') ?? []).toSet();
+    await scanAll();
+    _setLoading(false);
   }
 
   Future<bool> _checkSmsPermission() async {
     final status = await Permission.sms.request();
+    if (kDebugMode) print('[NewNboxProvider] SMS permission status: $status');
     return status.isGranted;
   }
 
   void _setLoading(bool loading) {
     if (_isLoading != loading) {
       _isLoading = loading;
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (hasListeners) {
+          _isLoading = loading;
+          notifyListeners();
+        }
+      });
     }
   }
 }

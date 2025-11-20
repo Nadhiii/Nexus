@@ -1,10 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 enum AccountType { savings, salary, checking, investment, cash, other }
 
 class Account {
   final String id;
-  final String userId; // User ID for filtering
+  final String userId;
   final String name;
   final AccountType type;
   final String? bankName;
@@ -15,7 +16,7 @@ class Account {
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isActive;
-  final String? accountNumber; // Last 4 digits for display
+  final String? accountNumber;
   final String? notes;
 
   Account({
@@ -35,34 +36,80 @@ class Account {
     this.notes,
   });
 
-  factory Account.fromMap(Map<String, dynamic> map) {
+  String get typeDisplayName {
+    switch (type) {
+      case AccountType.savings:
+        return 'Savings';
+      case AccountType.salary:
+        return 'Salary';
+      case AccountType.checking:
+        return 'Checking';
+      case AccountType.investment:
+        return 'Investment';
+      case AccountType.cash:
+        return 'Cash';
+      case AccountType.other:
+        return 'Other';
+    }
+  }
+
+  factory Account.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return Account(
-      id: map['id'],
-      userId: map['userId'] ?? '', // Handle legacy data without userId
-      name: map['name'],
+      id: doc.id,
+      userId: data['userId'] ?? '',
+      name: data['name'],
       type: AccountType.values.firstWhere(
-        (e) => e.name == map['type'],
+        (e) => e.name == data['type'],
         orElse: () => AccountType.other,
       ),
-      bankName: map['bankName'],
-      balance: map['balance']?.toDouble() ?? 0.0,
-      currency: map['currency'] ?? '₹',
-      color: Color(map['color'] ?? Colors.blue.value),
+      bankName: data['bankName'],
+      balance: (data['balance'] ?? 0).toDouble(),
+      currency: data['currency'] ?? '₹',
+      color: Color(data['color'] ?? Colors.blue.value),
       icon: IconData(
-        map['icon'] ?? Icons.account_balance.codePoint,
+        data['icon'] ?? Icons.account_balance.codePoint,
         fontFamily: 'MaterialIcons',
       ),
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt']),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updatedAt']),
-      isActive: map['isActive'] ?? true,
-      accountNumber: map['accountNumber'],
-      notes: map['notes'],
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      isActive: data['isActive'] ?? true,
+      accountNumber: data['accountNumber'],
+      notes: data['notes'],
+    );
+  }
+
+  factory Account.fromMap(Map<String, dynamic> data) {
+    return Account(
+      id: data['id'] ?? '',
+      userId: data['userId'] ?? '',
+      name: data['name'] ?? '',
+      type: AccountType.values.firstWhere(
+        (e) => e.name == data['type'],
+        orElse: () => AccountType.other,
+      ),
+      bankName: data['bankName'],
+      balance: (data['balance'] ?? 0).toDouble(),
+      currency: data['currency'] ?? '₹',
+      color: Color(data['color'] ?? Colors.blue.value),
+      icon: IconData(
+        data['icon'] ?? Icons.account_balance.codePoint,
+        fontFamily: 'MaterialIcons',
+      ),
+      createdAt: data['createdAt'] is Timestamp
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.parse(data['createdAt']),
+      updatedAt: data['updatedAt'] is Timestamp
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : DateTime.parse(data['updatedAt']),
+      isActive: data['isActive'] ?? true,
+      accountNumber: data['accountNumber'],
+      notes: data['notes'],
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'userId': userId,
       'name': name,
       'type': type.name,
@@ -71,13 +118,49 @@ class Account {
       'currency': currency,
       'color': color.value,
       'icon': icon.codePoint,
-      'createdAt': createdAt.millisecondsSinceEpoch,
-      'updatedAt': updatedAt.millisecondsSinceEpoch,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
       'isActive': isActive,
       'accountNumber': accountNumber,
       'notes': notes,
     };
   }
+
+  factory Account.fromJson(Map<String, dynamic> json) {
+    return Account(
+      id: json['id'],
+      userId: json['userId'],
+      name: json['name'],
+      type: AccountType.values[json['type']],
+      bankName: json['bankName'],
+      balance: json['balance'],
+      currency: json['currency'],
+      color: Color(json['color']),
+      icon: IconData(json['icon'], fontFamily: 'MaterialIcons'),
+      createdAt: DateTime.parse(json['createdAt']),
+      updatedAt: DateTime.parse(json['updatedAt']),
+      isActive: json['isActive'],
+      accountNumber: json['accountNumber'],
+      notes: json['notes'],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'userId': userId,
+    'name': name,
+    'type': type.index,
+    'bankName': bankName,
+    'balance': balance,
+    'currency': currency,
+    'color': color.value,
+    'icon': icon.codePoint,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+    'isActive': isActive,
+    'accountNumber': accountNumber,
+    'notes': notes,
+  };
 
   Account copyWith({
     String? id,
@@ -111,43 +194,5 @@ class Account {
       accountNumber: accountNumber ?? this.accountNumber,
       notes: notes ?? this.notes,
     );
-  }
-
-  // Helper methods
-  bool get isAsset =>
-      true; // All our account types are assets since debts are handled separately
-  bool get isLiability => false; // No liability accounts in this enum
-
-  String get typeDisplayName {
-    // If user has set a custom name, prioritize that over type
-    if (name.isNotEmpty && type != AccountType.other) {
-      return name;
-    }
-
-    switch (type) {
-      case AccountType.savings:
-        return name.isNotEmpty ? name : 'Savings Account';
-      case AccountType.salary:
-        return name.isNotEmpty ? name : 'Salary Account';
-      case AccountType.checking:
-        return name.isNotEmpty ? name : 'Checking Account';
-      case AccountType.investment:
-        return name.isNotEmpty ? name : 'Investment Account';
-      case AccountType.cash:
-        return name.isNotEmpty ? name : 'Cash';
-      case AccountType.other:
-        return name.isNotEmpty ? name : 'Custom Account';
-    }
-  }
-
-  String get formattedBalance {
-    return '$currency${balance.abs().toStringAsFixed(2)}';
-  }
-
-  String get displayName {
-    if (bankName != null && bankName!.isNotEmpty) {
-      return '$name - $bankName';
-    }
-    return name;
   }
 }

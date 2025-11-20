@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/models/goal.dart';
+import '../../core/widgets/top_snackbar.dart';
 import 'widgets/add_goal_modal.dart';
 
 class ModernGoalsScreen extends StatefulWidget {
@@ -22,7 +23,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
 
   Stream<List<Goal>> _getGoalsStream() {
     if (_userId == null) return Stream.value([]);
-    
+
     return _firestore
         .collection('goals')
         .where('userId', isEqualTo: _userId)
@@ -38,22 +39,16 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
       if (user != null) {
         final goalData = goal.toMap();
         goalData['userId'] = user.uid;
-        
-        await FirebaseFirestore.instance
-            .collection('goals')
-            .add(goalData);
-        
+
+        await FirebaseFirestore.instance.collection('goals').add(goalData);
+
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Goal added successfully')),
-          );
+          showTopSnackBar(context, 'Goal added successfully');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error adding goal: $e')),
-        );
+        showTopSnackBar(context, 'Error adding goal: $e', isError: true);
       }
     }
   }
@@ -65,15 +60,11 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
           .doc(goalId)
           .delete();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Goal deleted successfully')),
-        );
+        showTopSnackBar(context, 'Goal deleted successfully');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting goal: $e')),
-        );
+        showTopSnackBar(context, 'Error deleting goal: $e', isError: true);
       }
     }
   }
@@ -88,13 +79,13 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           if (snapshot.hasError) {
             return _buildErrorState(context, snapshot.error.toString());
           }
-          
+
           final goals = snapshot.data ?? [];
-          
+
           if (goals.isEmpty) {
             return _buildEmptyState(context);
           }

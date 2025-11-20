@@ -7,7 +7,7 @@ import 'core/theme/app_theme.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/account_provider.dart';
 import 'core/providers/transaction_provider.dart';
-import 'core/providers/new_nbox_provider.dart'; 
+import 'core/providers/new_nbox_provider.dart';
 import 'core/providers/debt_provider.dart';
 import 'core/providers/backup_provider.dart';
 import 'core/providers/investment_provider.dart';
@@ -16,6 +16,10 @@ import 'core/providers/notification_provider.dart';
 import 'core/providers/subscription_provider.dart';
 import 'core/providers/budget_provider.dart';
 import 'core/providers/user_provider.dart';
+import 'core/providers/gmail_provider.dart';
+import 'core/providers/goal_provider.dart';
+import 'core/providers/category_provider.dart';
+import 'core/services/learning_service.dart';
 import 'core/auth/auth_gate.dart';
 
 void main() async {
@@ -23,59 +27,85 @@ void main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  runApp(const NexusApp());
+  final learningService = LearningService();
+  await learningService.init();
+
+  runApp(NexusApp(learningService: learningService));
 }
 
 class NexusApp extends StatelessWidget {
-  const NexusApp({super.key});
+  final LearningService learningService;
 
-  @override 
+  const NexusApp({super.key, required this.learningService});
+
+  @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<LearningService>.value(value: learningService),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => AccountProvider()),
-        ChangeNotifierProvider(create: (_) => NewNboxProvider()), 
         ChangeNotifierProvider(create: (_) => DebtProvider()),
-        ChangeNotifierProvider(create: (_) => BackupProvider()),
         ChangeNotifierProvider(create: (_) => InvestmentProvider()),
         ChangeNotifierProvider(create: (_) => BiometricProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
-
+        ChangeNotifierProvider(create: (_) => GmailProvider()),
+        ChangeNotifierProvider(create: (_) => GoalProvider()),
+        ChangeNotifierProvider(create: (_) => CategoryProvider()),
+        ChangeNotifierProxyProvider<GmailProvider, NewNboxProvider>(
+          create: (context) => NewNboxProvider(),
+          update: (context, gmailProvider, nboxProvider) {
+            nboxProvider?.update(gmailProvider);
+            return nboxProvider!;
+          },
+        ),
         ChangeNotifierProxyProvider<NotificationProvider, SubscriptionProvider>(
           create: (context) => SubscriptionProvider(),
-          update: (context, notificationProvider, subscriptionProvider) => 
-              SubscriptionProvider(notificationProvider: notificationProvider),
+          update: (context, notificationProvider, subscriptionProvider) {
+            subscriptionProvider?.update(notificationProvider);
+            return subscriptionProvider!;
+          },
         ),
         ChangeNotifierProxyProvider<NotificationProvider, BudgetProvider>(
           create: (context) => BudgetProvider(),
-          update: (context, notificationProvider, budgetProvider) => 
-              BudgetProvider(notificationProvider: notificationProvider),
+          update: (context, notificationProvider, budgetProvider) {
+            budgetProvider?.update(notificationProvider);
+            return budgetProvider!;
+          },
         ),
-        ChangeNotifierProxyProvider2<NotificationProvider, BudgetProvider, TransactionProvider>(
-          create: (context) => TransactionProvider(),
-          update: (context, notificationProvider, budgetProvider, transactionProvider) => 
-              TransactionProvider(
-                notificationProvider: notificationProvider,
-                budgetProvider: budgetProvider,
-              ),
+        ChangeNotifierProxyProvider3<AccountProvider, BudgetProvider, NotificationProvider, TransactionProvider>(
+          create: (context) => TransactionProvider(learningService: learningService),
+          update: (context, accountProvider, budgetProvider, notificationProvider, transactionProvider) {
+            transactionProvider?.update(accountProvider, budgetProvider, notificationProvider);
+            return transactionProvider!;
+          },
+        ),
+        ChangeNotifierProxyProvider5<TransactionProvider, AccountProvider, GoalProvider, SubscriptionProvider, DebtProvider, BackupProvider>(
+          create: (context) => BackupProvider(),
+          update: (context, transactionProvider, accountProvider, goalProvider, subscriptionProvider, debtProvider, backupProvider) {
+            backupProvider?.update(
+              transactionProvider: transactionProvider,
+              accountProvider: accountProvider,
+              goalProvider: goalProvider,
+              subscriptionProvider: subscriptionProvider,
+              debtProvider: debtProvider,
+            );
+            return backupProvider!;
+          },
         ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return DynamicColorBuilder(
-            builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+            builder: (_, ColorScheme? darkDynamic) {
               return MaterialApp(
                 title: 'Nexus',
                 debugShowCheckedModeBanner: false,
                 theme: themeProvider.useMaterialYou
-                    ? AppTheme.getTheme(lightDynamic ?? const ColorScheme.light())
-                    : AppTheme.lightTheme,
-                darkTheme: themeProvider.useMaterialYou
                     ? AppTheme.getTheme(darkDynamic ?? const ColorScheme.dark())
                     : AppTheme.darkTheme,
-                themeMode: themeProvider.themeMode,
+                themeMode: ThemeMode.dark,
                 home: const AuthGate(),
               );
             },

@@ -27,7 +27,8 @@ class ModernBalanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final gradient = gradientColors ?? [colorScheme.primary, colorScheme.primaryContainer];
+    final gradient =
+        gradientColors ?? [colorScheme.primary, colorScheme.primaryContainer];
 
     return GestureDetector(
       onTap: onTap,
@@ -79,7 +80,9 @@ class ModernBalanceCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     _formatAmount(amount),
-                    style: AppTypography.currencyLarge.copyWith(color: colorScheme.onPrimary),
+                    style: AppTypography.currencyLarge.copyWith(
+                      color: colorScheme.onPrimary,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -90,7 +93,9 @@ class ModernBalanceCard extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 subtitle!,
-                style: AppTypography.bodySmall.copyWith(color: colorScheme.onPrimary.withOpacity(0.8)),
+                style: AppTypography.bodySmall.copyWith(
+                  color: colorScheme.onPrimary.withOpacity(0.8),
+                ),
               ),
             ],
           ],
@@ -100,7 +105,8 @@ class ModernBalanceCard extends StatelessWidget {
   }
 
   String _formatAmount(double amount) {
-    if (amount.abs() >= 1000000) return '${(amount / 1000000).toStringAsFixed(2)}M';
+    if (amount.abs() >= 1000000)
+      return '${(amount / 1000000).toStringAsFixed(2)}M';
     if (amount.abs() >= 1000) return '${(amount / 1000).toStringAsFixed(2)}K';
     return amount.toStringAsFixed(2);
   }
@@ -112,7 +118,13 @@ class GlassCard extends StatelessWidget {
   final double? borderRadius;
   final VoidCallback? onTap;
 
-  const GlassCard({super.key, required this.child, this.padding, this.borderRadius, this.onTap});
+  const GlassCard({
+    super.key,
+    required this.child,
+    this.padding,
+    this.borderRadius,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -120,15 +132,22 @@ class GlassCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius ?? AppSpacing.radiusLg),
+        borderRadius: BorderRadius.circular(
+          borderRadius ?? AppSpacing.radiusLg,
+        ),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             padding: padding ?? AppSpacing.cardPaddingMd,
             decoration: BoxDecoration(
-              color: colorScheme.surfaceVariant.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(borderRadius ?? AppSpacing.radiusLg),
-              border: Border.all(color: colorScheme.onSurface.withOpacity(0.1), width: 1),
+              color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(
+                borderRadius ?? AppSpacing.radiusLg,
+              ),
+              border: Border.all(
+                color: colorScheme.onSurface.withOpacity(0.1),
+                width: 1,
+              ),
             ),
             child: child,
           ),
@@ -158,7 +177,7 @@ class ModernActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final bgColor = backgroundColor ?? colorScheme.surfaceVariant;
+    final bgColor = backgroundColor ?? colorScheme.surfaceContainerHighest;
     final iColor = iconColor ?? colorScheme.onSurfaceVariant;
 
     return GestureDetector(
@@ -169,16 +188,15 @@ class ModernActionButton extends StatelessWidget {
           Container(
             width: 60,
             height: 60,
-            decoration: BoxDecoration(
-              color: bgColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
             child: Icon(icon, color: iColor, size: AppSpacing.iconLg),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             label,
-            style: AppTypography.labelSmall.copyWith(color: colorScheme.onSurface),
+            style: AppTypography.labelSmall.copyWith(
+              color: colorScheme.onSurface,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -233,17 +251,37 @@ class ModernAccountTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: AppTypography.titleSmall.copyWith(color: colorScheme.onSurface)),
+                  Text(
+                    name,
+                    style: AppTypography.titleSmall.copyWith(
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
                   if (percentage != null) ...[
                     const SizedBox(height: 4),
-                    Text(percentage!, style: AppTypography.bodySmall.copyWith(color: colorScheme.onSurface.withOpacity(0.6))),
+                    Text(
+                      percentage!,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
                   ],
                 ],
               ),
             ),
-            Text(balance, style: AppTypography.titleMedium.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600)),
+            Text(
+              balance,
+              style: AppTypography.titleMedium.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(width: AppSpacing.sm),
-            Icon(Icons.chevron_right, color: colorScheme.onSurface.withOpacity(0.3), size: 20),
+            Icon(
+              Icons.chevron_right,
+              color: colorScheme.onSurface.withOpacity(0.3),
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -275,13 +313,18 @@ class ModernTransactionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final amountColor = isIncome ? Colors.green : colorScheme.onSurface;
-    final displayIcon = icon ?? (isIncome ? Icons.arrow_downward : Icons.arrow_upward);
-    final displayIconColor = iconColor ?? (isIncome ? Colors.green : colorScheme.error);
+    final displayIcon =
+        icon ?? (isIncome ? Icons.arrow_downward : Icons.arrow_upward);
+    final displayIconColor =
+        iconColor ?? (isIncome ? Colors.green : colorScheme.error);
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
@@ -303,15 +346,28 @@ class ModernTransactionTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: AppTypography.titleSmall.copyWith(color: colorScheme.onSurface)),
+                  Text(
+                    title,
+                    style: AppTypography.titleSmall.copyWith(
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: AppTypography.bodySmall.copyWith(color: colorScheme.onSurface.withOpacity(0.6))),
+                  Text(
+                    subtitle,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
                 ],
               ),
             ),
             Text(
               '${isIncome ? '+' : '-'}$amount',
-              style: AppTypography.titleMedium.copyWith(color: amountColor, fontWeight: FontWeight.w600),
+              style: AppTypography.titleMedium.copyWith(
+                color: amountColor,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),

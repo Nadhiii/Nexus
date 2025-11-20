@@ -40,13 +40,16 @@ dependencies:
   # Date & Time
   intl: ^0.19.0
 
+  # Another Telephony
+  another_telephony: ^0.4.1
+
   # Utilities
   uuid: ^4.5.1
   crypto: ^3.0.3
   image_picker: ^1.1.2
   permission_handler: ^11.3.1
-  flutter_sms_inbox: ^1.0.4
   url_launcher: ^6.3.0
+  flutter_sms_inbox: ^1.0.4
 
   # Icons
   cupertino_icons: ^1.0.8
@@ -55,6 +58,7 @@ dependencies:
   google_sign_in: ^6.2.1
   googleapis: ^15.0.0
   googleapis_auth: ^1.6.0
+  extension_google_sign_in_as_googleapis_auth: ^2.0.13
 
 dev_dependencies:
   flutter_test:

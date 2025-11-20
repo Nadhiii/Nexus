@@ -42,7 +42,7 @@ class AppTheme {
     secondary: AppColors.accentTeal,
     tertiary: AppColors.accentPurple,
     surface: AppColors.cardDark,
-    background: AppColors.neutral900,
+    background: AppColors.neutral800,
     error: AppColors.error,
     onPrimary: Colors.white,
     onSecondary: Colors.white,
@@ -53,30 +53,50 @@ class AppTheme {
     secondaryContainer: AppColors.accentTeal,
   );
 
-  static TextTheme _getTextTheme(ColorScheme colorScheme, TextTheme baseTextTheme) {
-    return baseTextTheme.copyWith(
-      displayLarge: baseTextTheme.displayLarge?.copyWith(fontFamily: 'RammettoOne'),
-      displayMedium: baseTextTheme.displayMedium?.copyWith(fontFamily: 'RammettoOne'),
-      displaySmall: baseTextTheme.displaySmall?.copyWith(fontFamily: 'RammettoOne'),
-      headlineLarge: baseTextTheme.headlineLarge?.copyWith(fontFamily: 'RammettoOne'),
-      headlineMedium: baseTextTheme.headlineMedium?.copyWith(fontFamily: 'RammettoOne'),
-      headlineSmall: baseTextTheme.headlineSmall?.copyWith(fontFamily: 'RammettoOne'),
-      titleLarge: baseTextTheme.titleLarge?.copyWith(fontFamily: 'Inter'),
-      titleMedium: baseTextTheme.titleMedium?.copyWith(fontFamily: 'Inter'),
-      titleSmall: baseTextTheme.titleSmall?.copyWith(fontFamily: 'Inter'),
-      bodyLarge: baseTextTheme.bodyLarge?.copyWith(fontFamily: 'Inter'),
-      bodyMedium: baseTextTheme.bodyMedium?.copyWith(fontFamily: 'Inter'),
-      bodySmall: baseTextTheme.bodySmall?.copyWith(fontFamily: 'Inter'),
-      labelLarge: baseTextTheme.labelLarge?.copyWith(fontFamily: 'Inter'),
-      labelMedium: baseTextTheme.labelMedium?.copyWith(fontFamily: 'Inter'),
-      labelSmall: baseTextTheme.labelSmall?.copyWith(fontFamily: 'Inter'),
-    ).apply(
-      bodyColor: colorScheme.onSurface,
-      displayColor: colorScheme.onSurface,
-    );
+  static TextTheme _getTextTheme(
+    ColorScheme colorScheme,
+    TextTheme baseTextTheme,
+  ) {
+    return baseTextTheme
+        .copyWith(
+          displayLarge: baseTextTheme.displayLarge?.copyWith(
+            fontFamily: 'RammettoOne',
+          ),
+          displayMedium: baseTextTheme.displayMedium?.copyWith(
+            fontFamily: 'RammettoOne',
+          ),
+          displaySmall: baseTextTheme.displaySmall?.copyWith(
+            fontFamily: 'RammettoOne',
+          ),
+          headlineLarge: baseTextTheme.headlineLarge?.copyWith(
+            fontFamily: 'RammettoOne',
+          ),
+          headlineMedium: baseTextTheme.headlineMedium?.copyWith(
+            fontFamily: 'RammettoOne',
+          ),
+          headlineSmall: baseTextTheme.headlineSmall?.copyWith(
+            fontFamily: 'RammettoOne',
+          ),
+          titleLarge: baseTextTheme.titleLarge?.copyWith(fontFamily: 'Inter'),
+          titleMedium: baseTextTheme.titleMedium?.copyWith(fontFamily: 'Inter'),
+          titleSmall: baseTextTheme.titleSmall?.copyWith(fontFamily: 'Inter'),
+          bodyLarge: baseTextTheme.bodyLarge?.copyWith(fontFamily: 'Inter'),
+          bodyMedium: baseTextTheme.bodyMedium?.copyWith(fontFamily: 'Inter'),
+          bodySmall: baseTextTheme.bodySmall?.copyWith(fontFamily: 'Inter'),
+          labelLarge: baseTextTheme.labelLarge?.copyWith(fontFamily: 'Inter'),
+          labelMedium: baseTextTheme.labelMedium?.copyWith(fontFamily: 'Inter'),
+          labelSmall: baseTextTheme.labelSmall?.copyWith(fontFamily: 'Inter'),
+        )
+        .apply(
+          bodyColor: colorScheme.onSurface,
+          displayColor: colorScheme.onSurface,
+        );
   }
 
-  static ThemeData _getThemeData(ColorScheme colorScheme, TextTheme baseTextTheme) {
+  static ThemeData _getThemeData(
+    ColorScheme colorScheme,
+    TextTheme baseTextTheme,
+  ) {
     final textTheme = _getTextTheme(colorScheme, baseTextTheme);
     return ThemeData(
       useMaterial3: true,
@@ -149,7 +169,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: colorScheme.surfaceVariant,
+        fillColor: colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusLarge),
           borderSide: BorderSide.none,
@@ -167,7 +187,9 @@ class AppTheme {
           vertical: spacing16,
         ),
         labelStyle: textTheme.bodyLarge,
-        hintStyle: textTheme.bodyLarge?.copyWith(color: colorScheme.onSurface.withOpacity(0.5)),
+        hintStyle: textTheme.bodyLarge?.copyWith(
+          color: colorScheme.onSurface.withOpacity(0.5),
+        ),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: colorScheme.surface,
@@ -216,8 +238,15 @@ class AppTheme {
     );
   }
 
-  static ThemeData get lightTheme => _getThemeData(_appLightColorScheme, AppTypography.textThemeLight);
-  static ThemeData get darkTheme => _getThemeData(_appDarkColorScheme, AppTypography.textThemeDark);
+  static ThemeData get lightTheme =>
+      _getThemeData(_appLightColorScheme, AppTypography.textThemeLight);
+  static ThemeData get darkTheme =>
+      _getThemeData(_appDarkColorScheme, AppTypography.textThemeDark);
 
-  static ThemeData getTheme(ColorScheme colorScheme) => _getThemeData(colorScheme, colorScheme.brightness == Brightness.light ? AppTypography.textThemeLight : AppTypography.textThemeDark);
+  static ThemeData getTheme(ColorScheme colorScheme) => _getThemeData(
+    colorScheme,
+    colorScheme.brightness == Brightness.light
+        ? AppTypography.textThemeLight
+        : AppTypography.textThemeDark,
+  );
 }

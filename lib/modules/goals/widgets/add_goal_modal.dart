@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:ui';
 import '../../../core/models/goal.dart';
+import '../../../core/widgets/top_snackbar.dart';
 
 class AddGoalModal extends StatefulWidget {
   final Function(Goal) onGoalAdded;
@@ -86,7 +87,6 @@ class _AddGoalModalState extends State<AddGoalModal>
         builder: (context, child) {
           return Stack(
             children: [
-              // Blurred background
               BackdropFilter(
                 filter: ImageFilter.blur(
                   sigmaX: _blurAnimation.value,
@@ -98,8 +98,6 @@ class _AddGoalModalState extends State<AddGoalModal>
                   ),
                 ),
               ),
-
-              // Content
               Center(
                 child: Transform.scale(
                   scale: _scaleAnimation.value,
@@ -204,7 +202,6 @@ class _AddGoalModalState extends State<AddGoalModal>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Goal Title
           _buildTextField(
             controller: _titleController,
             label: 'Goal Title',
@@ -218,12 +215,8 @@ class _AddGoalModalState extends State<AddGoalModal>
             },
           ),
           const SizedBox(height: 20),
-
-          // Category
           _buildDropdownField(theme),
           const SizedBox(height: 20),
-
-          // Target Amount
           _buildTextField(
             controller: _targetAmountController,
             label: 'Target Amount',
@@ -243,8 +236,6 @@ class _AddGoalModalState extends State<AddGoalModal>
             },
           ),
           const SizedBox(height: 20),
-
-          // Current Amount
           _buildTextField(
             controller: _currentAmountController,
             label: 'Current Amount (Optional)',
@@ -263,12 +254,8 @@ class _AddGoalModalState extends State<AddGoalModal>
             },
           ),
           const SizedBox(height: 20),
-
-          // Deadline
           _buildDateField(theme),
           const SizedBox(height: 32),
-
-          // Buttons
           _buildButtons(theme),
         ],
       ),
@@ -435,21 +422,26 @@ class _AddGoalModalState extends State<AddGoalModal>
             ? 0.0
             : double.parse(_currentAmountController.text);
 
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) {
+          throw Exception('User not logged in');
+        }
+
         final newGoal = Goal(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
+          userId: user.uid,
           name: _titleController.text.trim(),
           description:
-              _selectedCategory, // Using category as description for now
+              _selectedCategory,
           targetAmount: targetAmount,
           currentAmount: currentAmount,
           targetDate: _selectedDeadline,
-          color: '#4CAF50', // Default green color
+          color: '#4CAF50',
           isCompleted: false,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
 
-        // Simulate API call delay
         await Future.delayed(const Duration(milliseconds: 500));
 
         widget.onGoalAdded(newGoal);
@@ -457,22 +449,14 @@ class _AddGoalModalState extends State<AddGoalModal>
         if (mounted) {
           await _closeModal();
 
-          // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Goal "${newGoal.name}" created successfully!'),
-              backgroundColor: Theme.of(context).colorScheme.secondary,
-            ),
+          showTopSnackBar(
+            context,
+            'Goal "${newGoal.name}" created successfully!',
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error creating goal: $e'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
+          showTopSnackBar(context, 'Error creating goal: $e', isError: true);
         }
       } finally {
         if (mounted) {
