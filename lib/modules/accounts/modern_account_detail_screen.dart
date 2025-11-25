@@ -8,7 +8,7 @@ import '../../core/models/account.dart';
 import '../../core/models/transaction.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../transactions/modern_add_transaction_screen.dart';
-import 'add_account_screen.dart';
+import 'modern_add_account_screen.dart';
 
 /// Modern Account Detail Screen - Revolut-inspired design
 /// Features: Gradient background, modern cards, transaction list, clean layout
@@ -18,7 +18,8 @@ class ModernAccountDetailScreen extends StatefulWidget {
   const ModernAccountDetailScreen({super.key, required this.account});
 
   @override
-  State<ModernAccountDetailScreen> createState() => _ModernAccountDetailScreenState();
+  State<ModernAccountDetailScreen> createState() =>
+      _ModernAccountDetailScreenState();
 }
 
 class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
@@ -26,7 +27,9 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TransactionProvider>().loadTransactions();
+      final provider = context.read<TransactionProvider>();
+      // Force refresh to ensure transactions are loaded
+      provider.loadTransactions();
     });
   }
 
@@ -47,14 +50,14 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
               ),
             ),
           ),
-          
+
           // Content
           SafeArea(
             child: Column(
               children: [
                 // App Bar
                 _buildAppBar(context),
-                
+
                 // Content
                 Expanded(
                   child: CustomScrollView(
@@ -73,7 +76,10 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
                             amount: widget.account.balance,
                             currency: '₹',
                             subtitle: widget.account.typeDisplayName,
-                            gradientColors: [widget.account.color.withOpacity(0.8), widget.account.color],
+                            gradientColors: [
+                              widget.account.color.withOpacity(0.8),
+                              widget.account.color,
+                            ],
                             trailing: Container(
                               padding: const EdgeInsets.all(AppSpacing.sm),
                               decoration: BoxDecoration(
@@ -89,9 +95,10 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
                           ),
                         ),
                       ),
-                      
+
                       // Account Info
-                      if (widget.account.bankName != null || widget.account.accountNumber != null)
+                      if (widget.account.bankName != null ||
+                          widget.account.accountNumber != null)
                         SliverToBoxAdapter(
                           child: Padding(
                             padding: const EdgeInsets.fromLTRB(
@@ -104,7 +111,9 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
                               padding: AppSpacing.cardPaddingMd,
                               decoration: BoxDecoration(
                                 color: AppColors.cardDarkElevated,
-                                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                                borderRadius: BorderRadius.circular(
+                                  AppSpacing.radiusLg,
+                                ),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +152,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
                             ),
                           ),
                         ),
-                      
+
                       // Transactions Header
                       SliverToBoxAdapter(
                         child: Padding(
@@ -162,22 +171,33 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
                           ),
                         ),
                       ),
-                      
+
                       // Transactions List
                       Consumer<TransactionProvider>(
                         builder: (context, provider, child) {
-                          final accountTransactions = provider.transactions
-                              .where((t) => t.accountId == widget.account.id)
-                              .toList();
-                          
+                          // Filter transactions for this account
+                          final accountTransactions =
+                              provider.transactions
+                                  .where(
+                                    (t) => t.accountId == widget.account.id,
+                                  )
+                                  .toList()
+                                ..sort(
+                                  (a, b) => b.date.compareTo(a.date),
+                                ); // Sort by date descending
+
                           if (accountTransactions.isEmpty) {
                             return SliverToBoxAdapter(
                               child: Container(
-                                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.xl,
+                                ),
                                 padding: AppSpacing.cardPaddingLg,
                                 decoration: BoxDecoration(
                                   color: AppColors.cardDarkElevated,
-                                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                                  borderRadius: BorderRadius.circular(
+                                    AppSpacing.radiusLg,
+                                  ),
                                 ),
                                 child: Center(
                                   child: Column(
@@ -201,7 +221,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
                               ),
                             );
                           }
-                          
+
                           return SliverPadding(
                             padding: const EdgeInsets.fromLTRB(
                               AppSpacing.xl,
@@ -210,30 +230,139 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
                               120,
                             ),
                             sliver: SliverList(
-                              delegate: SliverChildBuilderDelegate(
-                                (context, index) {
-                                  final transaction = accountTransactions[index];
-                                  final isIncome = transaction.type == TransactionType.income;
-                                  final amountText = '₹${transaction.amount.toStringAsFixed(2)}';
-                                  
-                                  return Padding(
+                              delegate: SliverChildBuilderDelegate((
+                                context,
+                                index,
+                              ) {
+                                final transaction = accountTransactions[index];
+                                final isIncome =
+                                    transaction.type == TransactionType.income;
+                                final amountText =
+                                    '₹${transaction.amount.toStringAsFixed(2)}';
+
+                                return Dismissible(
+                                  key: ValueKey(transaction.id),
+                                  direction: DismissDirection.endToStart,
+                                  confirmDismiss: (direction) async {
+                                    return await showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          backgroundColor: AppColors.cardDark,
+                                          title: Text(
+                                            'Delete Transaction',
+                                            style: AppTypography.titleLarge
+                                                .copyWith(
+                                                  color: AppColors.textPrimary,
+                                                ),
+                                          ),
+                                          content: Text(
+                                            'Are you sure you want to delete this transaction?',
+                                            style: AppTypography.bodyMedium
+                                                .copyWith(
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                ),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.of(
+                                                context,
+                                              ).pop(false),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () => Navigator.of(
+                                                context,
+                                              ).pop(true),
+                                              child: Text(
+                                                'Delete',
+                                                style: TextStyle(
+                                                  color: AppColors.error,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                  onDismissed: (direction) async {
+                                    final provider = context
+                                        .read<TransactionProvider>();
+                                    await provider.deleteTransaction(
+                                      transaction.id,
+                                    );
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: const Text(
+                                            'Transaction deleted',
+                                          ),
+                                          backgroundColor: AppColors.error,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  background: Container(
+                                    alignment: Alignment.centerRight,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.lg,
+                                    ),
+                                    margin: EdgeInsets.only(
+                                      bottom:
+                                          index ==
+                                              accountTransactions.length - 1
+                                          ? 0
+                                          : AppSpacing.sm,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.error,
+                                      borderRadius: BorderRadius.circular(
+                                        AppSpacing.radiusLg,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.delete,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  child: Padding(
                                     padding: EdgeInsets.only(
-                                      bottom: index == accountTransactions.length - 1 ? 0 : AppSpacing.sm,
+                                      bottom:
+                                          index ==
+                                              accountTransactions.length - 1
+                                          ? 0
+                                          : AppSpacing.sm,
                                     ),
                                     child: ModernTransactionTile(
-                                      title: transaction.description ?? 'Transaction',
-                                      subtitle: _formatTransactionDate(transaction.date),
+                                      title:
+                                          transaction.description ??
+                                          'Transaction',
+                                      subtitle: _formatTransactionDate(
+                                        transaction.date,
+                                      ),
                                       amount: amountText,
                                       isIncome: isIncome,
-                                      icon: isIncome ? Icons.arrow_downward : Icons.arrow_upward,
+                                      icon: isIncome
+                                          ? Icons.arrow_downward
+                                          : Icons.arrow_upward,
                                       onTap: () {
-                                        // TODO: Show transaction details
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                ModernAddTransactionScreen(
+                                                  transaction: transaction,
+                                                ),
+                                          ),
+                                        );
                                       },
                                     ),
-                                  );
-                                },
-                                childCount: accountTransactions.length,
-                              ),
+                                  ),
+                                );
+                              }, childCount: accountTransactions.length),
                             ),
                           );
                         },
@@ -271,10 +400,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             ),
             child: IconButton(
-              icon: const Icon(
-                Icons.arrow_back,
-                color: Colors.white,
-              ),
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),
@@ -304,7 +430,10 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
                     children: [
                       Icon(Icons.delete_outline, color: AppColors.error),
                       SizedBox(width: 8),
-                      Text('Delete Account', style: TextStyle(color: AppColors.error)),
+                      Text(
+                        'Delete Account',
+                        style: TextStyle(color: AppColors.error),
+                      ),
                     ],
                   ),
                 ),
@@ -319,11 +448,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 18,
-          color: AppColors.textSecondary,
-        ),
+        Icon(icon, size: 18, color: AppColors.textSecondary),
         const SizedBox(width: AppSpacing.sm),
         Text(
           label,
@@ -346,7 +471,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
   String _formatTransactionDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-    
+
     if (difference.inDays == 0) {
       return 'Today';
     } else if (difference.inDays == 1) {
@@ -363,7 +488,8 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
       case 'edit':
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => AddAccountScreen(account: widget.account),
+            builder: (context) =>
+                ModernAddAccountScreen(accountToEdit: widget.account),
           ),
         );
         break;
@@ -392,9 +518,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
               Navigator.of(context).pop();
               Navigator.of(context).pop();
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Delete'),
           ),
         ],
@@ -402,8 +526,8 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
     );
   }
 
-  void _addTransaction() {
-    Navigator.of(context).push(
+  void _addTransaction() async {
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ModernAddTransactionScreen(
           accountId: widget.account.id,
@@ -411,5 +535,9 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
         ),
       ),
     );
+    // Refresh transactions after returning
+    if (mounted) {
+      context.read<TransactionProvider>().loadTransactions();
+    }
   }
 }

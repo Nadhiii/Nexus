@@ -105,8 +105,9 @@ class ModernBalanceCard extends StatelessWidget {
   }
 
   String _formatAmount(double amount) {
-    if (amount.abs() >= 1000000)
+    if (amount.abs() >= 1000000) {
       return '${(amount / 1000000).toStringAsFixed(2)}M';
+    }
     if (amount.abs() >= 1000) return '${(amount / 1000).toStringAsFixed(2)}K';
     return amount.toStringAsFixed(2);
   }

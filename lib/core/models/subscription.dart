@@ -66,14 +66,18 @@ class Subscription {
       name: data['name'],
       amount: (data['amount'] ?? 0).toDouble(),
       frequency: data['frequency'],
-      nextDueDate: (data['nextDueDate'] as Timestamp).toDate(),
+      nextDueDate: data['nextDueDate'] is Timestamp
+          ? (data['nextDueDate'] as Timestamp).toDate()
+          : DateTime.parse(data['nextDueDate']),
       categoryId: data['categoryId'],
       accountId: data['accountId'] ?? 'default',
       description: data['description'],
       notes: data['notes'],
       isActive: data['isActive'] ?? true,
       color: data['color'],
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      createdAt: data['createdAt'] is Timestamp
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.parse(data['createdAt']),
     );
   }
 

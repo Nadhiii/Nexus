@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:ui';
 import '../../../core/models/goal.dart';
 import '../../../core/widgets/top_snackbar.dart';
+import '../../../core/theme/app_colors.dart';
 
 class AddGoalModal extends StatefulWidget {
   final Function(Goal) onGoalAdded;
@@ -375,6 +376,7 @@ class _AddGoalModalState extends State<AddGoalModal>
           child: FilledButton(
             onPressed: _isLoading ? null : _createGoal,
             style: FilledButton.styleFrom(
+              backgroundColor: AppColors.accentPurple,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -431,8 +433,7 @@ class _AddGoalModalState extends State<AddGoalModal>
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           userId: user.uid,
           name: _titleController.text.trim(),
-          description:
-              _selectedCategory,
+          description: _selectedCategory,
           targetAmount: targetAmount,
           currentAmount: currentAmount,
           targetDate: _selectedDeadline,

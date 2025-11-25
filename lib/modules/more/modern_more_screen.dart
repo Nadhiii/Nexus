@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/providers/theme_provider.dart';
 import '../../core/providers/biometric_provider.dart';
-import '../../core/providers/user_provider.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -45,10 +44,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             foregroundColor: Colors.white,
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: true,
-              title: Text(
-                'Settings',
-                style: AppTypography.headlineMedium,
-              ),
+              title: Text('Settings', style: AppTypography.headlineMedium),
             ),
           ),
           SliverPadding(
@@ -263,7 +259,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                   value: biometricProvider.isBiometricEnabled,
                   onChanged: biometricProvider.isBiometricAvailable
                       ? (value) async => await biometricProvider
-                          .setAllBiometricFeatures(value)
+                            .setAllBiometricFeatures(value)
                       : null,
                   activeThumbColor: Theme.of(context).colorScheme.primary,
                 ),
@@ -344,7 +340,10 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             title: 'Reports & Analytics',
             subtitle: 'Detailed spending insights',
             onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ReportsAndAnalyticsScreen())),
+              MaterialPageRoute(
+                builder: (_) => const ReportsAndAnalyticsScreen(),
+              ),
+            ),
           ),
         ],
       ),

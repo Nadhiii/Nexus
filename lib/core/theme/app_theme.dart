@@ -26,7 +26,6 @@ class AppTheme {
     secondary: AppColors.accentTeal,
     tertiary: AppColors.accentPurple,
     surface: AppColors.cardLight,
-    background: AppColors.neutral50,
     error: AppColors.error,
     onPrimary: Colors.white,
     onSecondary: Colors.white,
@@ -42,7 +41,6 @@ class AppTheme {
     secondary: AppColors.accentTeal,
     tertiary: AppColors.accentPurple,
     surface: AppColors.cardDark,
-    background: AppColors.neutral800,
     error: AppColors.error,
     onPrimary: Colors.white,
     onSecondary: Colors.white,
@@ -102,7 +100,7 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       textTheme: textTheme,
-      scaffoldBackgroundColor: colorScheme.background,
+      scaffoldBackgroundColor: colorScheme.surface,
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
           TargetPlatform.android: FadeThroughPageTransitionsBuilder(),

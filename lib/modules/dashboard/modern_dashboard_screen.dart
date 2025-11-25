@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/providers/notification_provider.dart';
+import '../../core/providers/transaction_provider.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_colors.dart';
@@ -28,7 +29,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     'Hello',
     'Welcome',
     'ನಮಸ್ಕಾರ', // Kannada
-    'नमस्ते',   // Hindi
+    'नमस्ते', // Hindi
   ];
 
   int _currentIndex = 0;
@@ -89,7 +90,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                           .toList();
                       totalBalance = accounts.fold(
                         0.0,
-                            (sum, account) => sum + account.balance,
+                        (sum, account) => sum + account.balance,
                       );
                       accountCount = accounts.length;
                     }
@@ -99,7 +100,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                       amount: totalBalance,
                       currency: '₹',
                       subtitle:
-                      'Personal · $accountCount ${accountCount == 1 ? 'account' : 'accounts'}',
+                          'Personal · $accountCount ${accountCount == 1 ? 'account' : 'accounts'}',
                       gradientColors: [
                         colorScheme.primary,
                         colorScheme.primary.withOpacity(0.8),
@@ -136,9 +137,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -149,7 +148,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) =>
-                            const ModernAddTransactionScreen(),
+                                const ModernAddTransactionScreen(),
                           ),
                         );
                       },
@@ -175,9 +174,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                 ),
               ),
             ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: AppSpacing.xl2),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl2)),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -262,8 +259,9 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                             Text(
                               'Add your first transaction to get started',
                               style: AppTypography.bodySmall.copyWith(
-                                color: colorScheme.onSurfaceVariant
-                                    .withOpacity(0.7),
+                                color: colorScheme.onSurfaceVariant.withOpacity(
+                                  0.7,
+                                ),
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -285,26 +283,91 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                             ? 0
                             : AppSpacing.sm,
                       ),
-                      child: ModernTransactionTile(
-                        title: transaction.description ?? 'Transaction',
-                        subtitle: _formatTransactionDate(
-                          transaction.date,
-                        ),
-                        amount: '₹${transaction.amount.toStringAsFixed(2)}',
-                        isIncome: transaction.type == TransactionType.income,
-                        icon: transaction.type == TransactionType.income
-                            ? Icons.arrow_downward
-                            : Icons.arrow_upward,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  ModernAddTransactionScreen(
-                                    transaction: transaction,
+                      child: Dismissible(
+                        key: ValueKey(transaction.id),
+                        direction: DismissDirection.startToEnd,
+                        confirmDismiss: (direction) async {
+                          return await showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                backgroundColor: AppColors.cardDark,
+                                title: Text(
+                                  'Delete Transaction',
+                                  style: AppTypography.titleLarge.copyWith(
+                                    color: AppColors.textPrimary,
                                   ),
-                            ),
+                                ),
+                                content: Text(
+                                  'Are you sure you want to delete this transaction?',
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(true),
+                                    child: Text(
+                                      'Delete',
+                                      style: TextStyle(color: AppColors.error),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           );
                         },
+                        onDismissed: (direction) async {
+                          await context
+                              .read<TransactionProvider>()
+                              .deleteTransaction(transaction.id);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text('Transaction deleted'),
+                                backgroundColor: AppColors.error,
+                              ),
+                            );
+                          }
+                        },
+                        background: Container(
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.error,
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.radiusLg,
+                            ),
+                          ),
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        child: ModernTransactionTile(
+                          title: transaction.description ?? 'Transaction',
+                          subtitle: _formatTransactionDate(transaction.date),
+                          amount: '₹${transaction.amount.toStringAsFixed(2)}',
+                          isIncome: transaction.type == TransactionType.income,
+                          icon: transaction.type == TransactionType.income
+                              ? Icons.arrow_downward
+                              : Icons.arrow_upward,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    ModernAddTransactionScreen(
+                                      transaction: transaction,
+                                    ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     );
                   }, childCount: snapshot.data!.length),
@@ -333,75 +396,74 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
       backgroundColor: AppColors.darkGradient.first,
       foregroundColor: Colors.white,
 
-      // 1. Profile Icon
-      leading: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: GestureDetector(
-          onTap: () => widget.onNavigate(4),
-          child: CircleAvatar(
-            backgroundColor: colorScheme.primary,
-            backgroundImage: user?.photoURL != null
-                ? NetworkImage(user!.photoURL!)
-                : null,
-            child: user?.photoURL == null
-                ? Icon(
-              user?.isAnonymous == true ? Icons.person_off : Icons.person,
-              color: colorScheme.onPrimary,
-              size: 20,
-            )
-                : null,
-          ),
-        ),
-      ),
-
-      // 2. Animated Greeting (Aligned to Left, Fixed layout)
-      title: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 800), // Slower, smoother
-        switchInCurve: Curves.easeOutBack, // Add a subtle bounce effect
-        switchOutCurve: Curves.easeIn,
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          // Slide + Fade Transition
-          final offsetAnimation = Tween<Offset>(
-            begin: const Offset(0.0, 0.5), // Slide from slightly below
-            end: Offset.zero,
-          ).animate(animation);
-
-          return FadeTransition(
-            opacity: animation,
-            child: SlideTransition(
-              position: offsetAnimation,
-              child: child,
+      // 1. Profile Icon & Greeting
+      title: Row(
+        children: [
+          GestureDetector(
+            onTap: () => widget.onNavigate(4),
+            child: CircleAvatar(
+              radius: 18, // Slightly smaller
+              backgroundColor: colorScheme.primary,
+              backgroundImage: user?.photoURL != null
+                  ? NetworkImage(user!.photoURL!)
+                  : null,
+              child: user?.photoURL == null
+                  ? Icon(
+                      user?.isAnonymous == true
+                          ? Icons.person_off
+                          : Icons.person,
+                      color: colorScheme.onPrimary,
+                      size: 18,
+                    )
+                  : null,
             ),
-          );
-        },
-        // Important: Align left to prevent "center jumping"
-        layoutBuilder: (currentChild, previousChildren) {
-          return Stack(
-            alignment: Alignment.centerLeft,
-            children: <Widget>[
-              ...previousChildren,
-              if (currentChild != null) currentChild,
-            ],
-          );
-        },
-        child: Text(
-          '$currentGreeting, $displayName',
-          // Key matches greeting so it knows when to animate
-          key: ValueKey<String>(currentGreeting),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: AppTypography.headlineSmall.copyWith(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            // Fallback font to ensure Kannada/Hindi render smoothly
-            fontFamilyFallback: const ['Roboto', 'Arial'],
           ),
-        ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 800),
+              switchInCurve: Curves.easeOutBack,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                final offsetAnimation = Tween<Offset>(
+                  begin: const Offset(0.0, 0.5),
+                  end: Offset.zero,
+                ).animate(animation);
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: offsetAnimation,
+                    child: child,
+                  ),
+                );
+              },
+              layoutBuilder: (currentChild, previousChildren) {
+                return Stack(
+                  alignment: Alignment.centerLeft,
+                  children: <Widget>[
+                    ...previousChildren,
+                    if (currentChild != null) currentChild,
+                  ],
+                );
+              },
+              child: Text(
+                '$currentGreeting, $displayName',
+                key: ValueKey<String>(currentGreeting),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.headlineSmall.copyWith(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  fontFamilyFallback: const ['Roboto', 'Arial'],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-      centerTitle: false, // Keeps it next to the profile pic
-
-      // 3. Action (Notification only)
+      titleSpacing: AppSpacing.lg, // Use consistent spacing
+      // 2. Action (Notification only)
       actions: [
         Consumer<NotificationProvider>(
           builder: (context, notificationProvider, child) {
@@ -410,7 +472,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
               child: IconButton(
                 icon: Icon(
                   Icons.notifications_none,
-                  color: colorScheme.onSurface,
+                  color: Colors.white, // Ensure icon is always visible
                 ),
                 onPressed: () {
                   Navigator.of(context).push(
@@ -423,7 +485,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
             );
           },
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.md), // Right padding
       ],
     );
   }

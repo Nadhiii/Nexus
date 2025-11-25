@@ -8,7 +8,6 @@ import '../../../models/detected_transaction.dart';
 import '../../modules/transactions/modern_add_transaction_screen.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/theme/app_spacing.dart';
 
 class NewModernNBoxScreen extends StatefulWidget {
   const NewModernNBoxScreen({super.key});
@@ -17,7 +16,8 @@ class NewModernNBoxScreen extends StatefulWidget {
   State<NewModernNBoxScreen> createState() => _NewModernNBoxScreenState();
 }
 
-class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTickerProviderStateMixin {
+class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final Set<String> _expandedCardIds = {};
   bool _isSelectionMode = false;
@@ -84,7 +84,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
 
   void _toggleSelectAll() {
     final nbox = context.read<NewNboxProvider>();
-    final currentList = _tabController.index == 0 ? nbox.pendingSms : nbox.pendingEmails;
+    final currentList = _tabController.index == 0
+        ? nbox.pendingSms
+        : nbox.pendingEmails;
     final allIds = currentList.map((t) => '${t.source}:${t.id}').toSet();
 
     setState(() {
@@ -109,7 +111,11 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
     }
 
     final count = _selectedItems.length;
-    showTopNotification(context, '$count transaction${count > 1 ? 's' : ''} rejected.', isError: true);
+    showTopNotification(
+      context,
+      '$count transaction${count > 1 ? 's' : ''} rejected.',
+      isError: true,
+    );
     _exitSelectionMode();
   }
 
@@ -118,15 +124,17 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
     final nboxProvider = context.read<NewNboxProvider>();
     final success = await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ModernAddTransactionScreen(
-          detectedTransaction: transaction,
-        ),
+        builder: (context) =>
+            ModernAddTransactionScreen(detectedTransaction: transaction),
       ),
     );
 
     if (success == true) {
       nboxProvider.markAsApproved(transaction.id, transaction.source);
-      showTopNotification(context, 'Transaction from ${transaction.merchant} approved!');
+      showTopNotification(
+        context,
+        'Transaction from ${transaction.merchant} approved!',
+      );
     }
   }
 
@@ -177,14 +185,18 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
                 }
                 return [
                   SliverOverlapAbsorber(
-                    handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                    handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                      context,
+                    ),
                     sliver: _buildSliverAppBar(context, innerBoxIsScrolled),
                   ),
                 ];
               },
               body: TabBarView(
                 controller: _tabController,
-                physics: _isSelectionMode ? const NeverScrollableScrollPhysics() : null,
+                physics: _isSelectionMode
+                    ? const NeverScrollableScrollPhysics()
+                    : null,
                 children: [
                   _buildTransactionList(context, nbox.pendingSms, 'sms'),
                   _buildTransactionList(context, nbox.pendingEmails, 'email'),
@@ -212,14 +224,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
         centerTitle: true,
         title: Padding(
           padding: const EdgeInsets.only(bottom: 50),
-          child: Text(
-            'NBox',
-            // CORRECTED FONT
-            style: AppTypography.headlineMedium.copyWith(
-              color: Colors.white,
-              fontSize: 22,
-            ),
-          ),
+          child: Text('NBox', style: AppTypography.headlineMedium),
         ),
       ),
       actions: [
@@ -234,7 +239,10 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
         child: Container(
           color: AppColors.darkGradient.first,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 4.0,
+            ),
             child: AbsorbPointer(
               absorbing: _isSelectionMode,
               child: TabBar(
@@ -246,7 +254,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
                 indicatorSize: TabBarIndicatorSize.tab,
                 labelColor: colorScheme.onPrimaryContainer,
                 unselectedLabelColor: colorScheme.onSurfaceVariant,
-                labelStyle: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                labelStyle: textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
                 unselectedLabelStyle: textTheme.titleSmall,
                 dividerColor: Colors.transparent,
                 tabs: [
@@ -265,7 +275,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
   Widget _buildSelectionSliverAppBar(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final nbox = context.read<NewNboxProvider>();
-    final currentList = _tabController.index == 0 ? nbox.pendingSms : nbox.pendingEmails;
+    final currentList = _tabController.index == 0
+        ? nbox.pendingSms
+        : nbox.pendingEmails;
     final allSelected = _selectedItems.length == currentList.length;
 
     return SliverAppBar(
@@ -279,7 +291,10 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
       actions: [
         TextButton(
           onPressed: _toggleSelectAll,
-          child: Text(allSelected ? 'DESELECT ALL' : 'SELECT ALL', style: TextStyle(color: colorScheme.onPrimaryContainer)),
+          child: Text(
+            allSelected ? 'DESELECT ALL' : 'SELECT ALL',
+            style: TextStyle(color: colorScheme.onPrimaryContainer),
+          ),
         ),
         IconButton(
           icon: const Icon(Icons.delete_sweep_outlined),
@@ -290,37 +305,53 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
     );
   }
 
-  Widget _buildTransactionList(BuildContext context, List<DetectedTransaction> transactions, String type) {
+  Widget _buildTransactionList(
+    BuildContext context,
+    List<DetectedTransaction> transactions,
+    String type,
+  ) {
     final nboxProvider = context.read<NewNboxProvider>();
 
     return Builder(
-        builder: (context) {
-          return CustomScrollView(
-            slivers: [
-              if (!_isSelectionMode)
-                SliverOverlapInjector(
-                  handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+      builder: (context) {
+        return CustomScrollView(
+          slivers: [
+            if (!_isSelectionMode)
+              SliverOverlapInjector(
+                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                  context,
                 ),
+              ),
 
-              if (transactions.isEmpty)
-                SliverFillRemaining(
-                  child: RefreshIndicator(
-                    onRefresh: _refreshCurrentTab,
-                    child: _buildEmptyState(context, type),
-                  ),
-                )
-              else
-                _buildGroupedSliverList(context, transactions, type, nboxProvider),
+            if (transactions.isEmpty)
+              SliverFillRemaining(
+                child: RefreshIndicator(
+                  onRefresh: _refreshCurrentTab,
+                  child: _buildEmptyState(context, type),
+                ),
+              )
+            else
+              _buildGroupedSliverList(
+                context,
+                transactions,
+                type,
+                nboxProvider,
+              ),
 
-              // SAFE AREA PADDING to prevent bottom overflow
-              const SliverToBoxAdapter(child: SizedBox(height: 140)),
-            ],
-          );
-        }
+            // SAFE AREA PADDING to prevent bottom overflow
+            const SliverToBoxAdapter(child: SizedBox(height: 140)),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildGroupedSliverList(BuildContext context, List<DetectedTransaction> transactions, String type, NewNboxProvider nbox) {
+  Widget _buildGroupedSliverList(
+    BuildContext context,
+    List<DetectedTransaction> transactions,
+    String type,
+    NewNboxProvider nbox,
+  ) {
     final Map<String, List<DetectedTransaction>> grouped = {};
     for (final transaction in transactions) {
       final dateString = _getGroupHeader(transaction.date);
@@ -331,19 +362,21 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
     final flatList = <Widget>[];
     grouped.forEach((dateString, txs) {
       flatList.add(_buildDateHeader(context, dateString));
-      flatList.addAll(txs.map((t) {
-        final uniqueId = '${t.source}:${t.id}';
-        final isExpanded = _expandedCardIds.contains(uniqueId);
-        final isSelected = _selectedItems.contains(uniqueId);
-        return type == 'rejected'
-            ? _buildRejectedTransactionCard(context, t, nbox)
-            : _buildTransactionCard(context, t, nbox, isExpanded, isSelected);
-      }));
+      flatList.addAll(
+        txs.map((t) {
+          final uniqueId = '${t.source}:${t.id}';
+          final isExpanded = _expandedCardIds.contains(uniqueId);
+          final isSelected = _selectedItems.contains(uniqueId);
+          return type == 'rejected'
+              ? _buildRejectedTransactionCard(context, t, nbox)
+              : _buildTransactionCard(context, t, nbox, isExpanded, isSelected);
+        }),
+      );
     });
 
     return SliverList(
       delegate: SliverChildBuilderDelegate(
-            (context, index) => flatList[index],
+        (context, index) => flatList[index],
         childCount: flatList.length,
       ),
     );
@@ -378,12 +411,20 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
   Widget _buildEmptyState(BuildContext context, String type) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final icons = {'sms': Icons.sms_failed_outlined, 'email': Icons.mark_email_read_outlined, 'rejected': Icons.history_toggle_off};
-    final titles = {'sms': 'No SMS Transactions', 'email': 'Email Inbox Clear', 'rejected': 'No Rejected Items'};
+    final icons = {
+      'sms': Icons.sms_failed_outlined,
+      'email': Icons.mark_email_read_outlined,
+      'rejected': Icons.history_toggle_off,
+    };
+    final titles = {
+      'sms': 'No SMS Transactions',
+      'email': 'Email Inbox Clear',
+      'rejected': 'No Rejected Items',
+    };
     final subtitles = {
       'sms': 'Pull down to scan for new SMS transactions.',
       'email': 'Pull down to scan for new email transactions.',
-      'rejected': 'Transactions you dismiss will appear here. Tap to restore.'
+      'rejected': 'Transactions you dismiss will appear here. Tap to restore.',
     };
 
     return Center(
@@ -392,45 +433,82 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icons[type], size: 100, color: colorScheme.secondary.withOpacity(0.5)),
+            Icon(
+              icons[type],
+              size: 100,
+              color: colorScheme.secondary.withOpacity(0.5),
+            ),
             const SizedBox(height: 24),
-            Text(titles[type]!, style: textTheme.headlineMedium?.copyWith(color: Colors.white)),
+            Text(
+              titles[type]!,
+              style: textTheme.headlineMedium?.copyWith(color: Colors.white),
+            ),
             const SizedBox(height: 8),
-            Text(subtitles[type]!, textAlign: TextAlign.center, style: textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant)),
+            Text(
+              subtitles[type]!,
+              textAlign: TextAlign.center,
+              style: textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTransactionCard(BuildContext context, DetectedTransaction transaction, NewNboxProvider nbox, bool isExpanded, bool isSelected) {
+  Widget _buildTransactionCard(
+    BuildContext context,
+    DetectedTransaction transaction,
+    NewNboxProvider nbox,
+    bool isExpanded,
+    bool isSelected,
+  ) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     final isIncome = transaction.type == 'income';
 
     return Dismissible(
       key: ValueKey('${transaction.source}:${transaction.id}'),
-      direction: _isSelectionMode ? DismissDirection.none : DismissDirection.startToEnd,
+      direction: _isSelectionMode
+          ? DismissDirection.none
+          : DismissDirection.startToEnd,
       onDismissed: (_) {
         nbox.rejectTransaction(transaction.id, transaction.source);
-        showTopNotification(context, 'Transaction from ${transaction.merchant} rejected.', isError: true);
+        showTopNotification(
+          context,
+          'Transaction from ${transaction.merchant} rejected.',
+          isError: true,
+        );
       },
       background: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        decoration: BoxDecoration(color: colorScheme.errorContainer, borderRadius: BorderRadius.circular(24)),
+        decoration: BoxDecoration(
+          color: colorScheme.errorContainer,
+          borderRadius: BorderRadius.circular(24),
+        ),
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: Icon(Icons.delete_sweep_outlined, color: colorScheme.onErrorContainer),
+        child: Icon(
+          Icons.delete_sweep_outlined,
+          color: colorScheme.onErrorContainer,
+        ),
       ),
       child: Card(
         elevation: 0,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        color: isSelected ? colorScheme.primaryContainer.withOpacity(0.5) : const Color(0xFF2C2C35),
+        color: isSelected
+            ? colorScheme.primaryContainer.withOpacity(0.5)
+            : const Color(0xFF2C2C35),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => _isSelectionMode ? _toggleSelection(transaction) : _toggleCardExpansion(transaction.id, transaction.source),
-          onLongPress: () => _isSelectionMode ? _toggleSelection(transaction) : _enterSelectionMode(transaction),
+          onTap: () => _isSelectionMode
+              ? _toggleSelection(transaction)
+              : _toggleCardExpansion(transaction.id, transaction.source),
+          onLongPress: () => _isSelectionMode
+              ? _toggleSelection(transaction)
+              : _enterSelectionMode(transaction),
           child: Padding(
             padding: const EdgeInsets.all(20.0),
             child: Stack(
@@ -441,22 +519,52 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
                       children: [
                         Container(
                           padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: const Color(0xFF3F3F46), shape: BoxShape.circle),
-                          child: Icon(transaction.source == 'sms' ? Icons.sms : Icons.email, color: colorScheme.primary, size: 28),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3F3F46),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            transaction.source == 'sms'
+                                ? Icons.sms
+                                : Icons.email,
+                            color: colorScheme.primary,
+                            size: 28,
+                          ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(transaction.merchant, style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
+                              Text(
+                                transaction.merchant,
+                                style: textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                               const SizedBox(height: 2),
-                              Text(DateFormat.jm().format(transaction.date), style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+                              Text(
+                                DateFormat.jm().format(transaction.date),
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                         const SizedBox(width: 16),
-                        Text('${isIncome ? '+' : '-'}₹${transaction.amount.toStringAsFixed(2)}', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: isIncome ? Colors.green.shade400 : const Color(0xFFEF4444))),
+                        Text(
+                          '${isIncome ? '+' : '-'}₹${transaction.amount.toStringAsFixed(2)}',
+                          style: textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: isIncome
+                                ? Colors.green.shade400
+                                : const Color(0xFFEF4444),
+                          ),
+                        ),
                       ],
                     ),
                     if (isExpanded) ...[
@@ -470,7 +578,10 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
                         ),
                         child: Text(
                           transaction.body ?? 'No content available.',
-                          style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic),
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -479,18 +590,31 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
                           Expanded(
                             child: OutlinedButton.icon(
                               onPressed: () {
-                                nbox.rejectTransaction(transaction.id, transaction.source);
-                                showTopNotification(context, 'Transaction from ${transaction.merchant} rejected.', isError: true);
+                                nbox.rejectTransaction(
+                                  transaction.id,
+                                  transaction.source,
+                                );
+                                showTopNotification(
+                                  context,
+                                  'Transaction from ${transaction.merchant} rejected.',
+                                  isError: true,
+                                );
                               },
                               icon: const Icon(Icons.close, size: 18),
                               label: const Text('REJECT'),
-                              style: OutlinedButton.styleFrom(foregroundColor: colorScheme.error, side: BorderSide(color: colorScheme.error.withOpacity(0.4))),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: colorScheme.error,
+                                side: BorderSide(
+                                  color: colorScheme.error.withOpacity(0.4),
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: FilledButton.icon(
-                              onPressed: () => _navigateToApproveScreen(transaction),
+                              onPressed: () =>
+                                  _navigateToApproveScreen(transaction),
                               icon: const Icon(Icons.check, size: 18),
                               label: const Text('APPROVE'),
                             ),
@@ -506,8 +630,15 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
                     right: -4,
                     child: Container(
                       padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(color: colorScheme.primary, shape: BoxShape.circle),
-                      child: const Icon(Icons.check, color: Colors.white, size: 16),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                     ),
                   ),
               ],
@@ -518,7 +649,11 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
     );
   }
 
-  Widget _buildRejectedTransactionCard(BuildContext context, DetectedTransaction transaction, NewNboxProvider nbox) {
+  Widget _buildRejectedTransactionCard(
+    BuildContext context,
+    DetectedTransaction transaction,
+    NewNboxProvider nbox,
+  ) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -531,7 +666,10 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
       child: InkWell(
         onTap: () {
           nbox.restoreTransaction(transaction.id, transaction.source);
-          showTopNotification(context, 'Transaction from ${transaction.merchant} restored.');
+          showTopNotification(
+            context,
+            'Transaction from ${transaction.merchant} restored.',
+          );
         },
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -543,14 +681,36 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen> with SingleTi
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(transaction.merchant, style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontStyle: FontStyle.italic, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(
+                      transaction.merchant,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.white70,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     const SizedBox(height: 2),
-                    Text(DateFormat.yMMMd().format(transaction.date), style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic)),
+                    Text(
+                      DateFormat.yMMMd().format(transaction.date),
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(width: 16),
-              Text('₹${transaction.amount.toStringAsFixed(2)}', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic)),
+              Text(
+                '₹${transaction.amount.toStringAsFixed(2)}',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
             ],
           ),
         ),

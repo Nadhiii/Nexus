@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui';
-import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../core/providers/user_provider.dart';
 import '../../../core/models/user_profile.dart';
 import '../../../core/widgets/top_snackbar.dart';
 
@@ -325,9 +323,10 @@ class _EditProfileModalState extends State<EditProfileModal>
                                             ? const SizedBox(
                                                 height: 20,
                                                 width: 20,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                ),
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
                                               )
                                             : const Text('Save Changes'),
                                       ),

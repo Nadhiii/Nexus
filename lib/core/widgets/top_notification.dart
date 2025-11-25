@@ -1,7 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-void showTopNotification(BuildContext context, String message, {bool isError = false}) {
+void showTopNotification(
+  BuildContext context,
+  String message, {
+  bool isError = false,
+}) {
   final overlay = Overlay.of(context);
   late OverlayEntry overlayEntry;
 
@@ -24,17 +28,18 @@ class _TopNotificationWidget extends StatefulWidget {
   final VoidCallback onDismiss;
 
   const _TopNotificationWidget({
-    Key? key,
+    super.key,
     required this.message,
     required this.onDismiss,
     this.isError = false,
-  }) : super(key: key);
+  });
 
   @override
   _TopNotificationWidgetState createState() => _TopNotificationWidgetState();
 }
 
-class _TopNotificationWidgetState extends State<_TopNotificationWidget> with SingleTickerProviderStateMixin {
+class _TopNotificationWidgetState extends State<_TopNotificationWidget>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _offsetAnimation;
 
@@ -48,10 +53,7 @@ class _TopNotificationWidgetState extends State<_TopNotificationWidget> with Sin
     _offsetAnimation = Tween<Offset>(
       begin: const Offset(0, -2.0),
       end: const Offset(0, 1.0),
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     _controller.forward();
 
     Timer(const Duration(seconds: 3), () {
@@ -71,8 +73,12 @@ class _TopNotificationWidgetState extends State<_TopNotificationWidget> with Sin
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final backgroundColor = widget.isError ? colorScheme.error : theme.primaryColor;
-    final textColor = widget.isError ? colorScheme.onError : theme.colorScheme.onPrimary;
+    final backgroundColor = widget.isError
+        ? colorScheme.error
+        : theme.primaryColor;
+    final textColor = widget.isError
+        ? colorScheme.onError
+        : theme.colorScheme.onPrimary;
 
     return Positioned(
       top: MediaQuery.of(context).padding.top,

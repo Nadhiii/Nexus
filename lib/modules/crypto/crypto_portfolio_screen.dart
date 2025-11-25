@@ -2,25 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../core/providers/investment_provider.dart';
-import '../../core/models/investment.dart';
+import '../../core/providers/crypto_provider.dart';
+import '../../core/models/crypto.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/widgets/top_snackbar.dart';
-import 'add_investment_screen.dart';
-import 'edit_investment_screen.dart';
+import 'add_crypto_screen.dart';
+import 'edit_crypto_screen.dart';
 
-class SipPortfolioScreen extends StatelessWidget {
-  const SipPortfolioScreen({super.key});
+class CryptoPortfolioScreen extends StatelessWidget {
+  const CryptoPortfolioScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E21),
+      backgroundColor: AppColors.darkGradient.first,
       appBar: AppBar(
         title: Text(
-          'My SIPs',
+          'Crypto Portfolio',
           style: AppTypography.headlineMedium.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
@@ -34,18 +33,18 @@ class SipPortfolioScreen extends StatelessWidget {
             onPressed: () {
               final user = FirebaseAuth.instance.currentUser;
               if (user != null) {
-                final provider = Provider.of<InvestmentProvider>(
+                final provider = Provider.of<CryptoProvider>(
                   context,
                   listen: false,
                 );
-                provider.loadInvestments(user.uid);
+                provider.loadCryptos(user.uid);
               }
             },
             tooltip: 'Refresh',
           ),
         ],
       ),
-      body: Consumer<InvestmentProvider>(
+      body: Consumer<CryptoProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -70,13 +69,13 @@ class SipPortfolioScreen extends StatelessWidget {
                     onPressed: () {
                       final user = FirebaseAuth.instance.currentUser;
                       if (user != null) {
-                        provider.loadInvestments(user.uid);
+                        provider.loadCryptos(user.uid);
                       }
                     },
                     icon: const Icon(Icons.refresh),
                     label: const Text('Retry'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryBlue,
+                      backgroundColor: AppColors.accentTeal,
                     ),
                   ),
                 ],
@@ -84,7 +83,7 @@ class SipPortfolioScreen extends StatelessWidget {
             );
           }
 
-          if (provider.investments.isEmpty) {
+          if (provider.cryptos.isEmpty) {
             return _buildEmptyState(context);
           }
 
@@ -92,10 +91,10 @@ class SipPortfolioScreen extends StatelessWidget {
             onRefresh: () async {
               final user = FirebaseAuth.instance.currentUser;
               if (user != null) {
-                await provider.loadInvestments(user.uid);
+                await provider.loadCryptos(user.uid);
               }
             },
-            child: _buildSipList(context, provider.investments),
+            child: _buildCryptoList(context, provider.cryptos),
           );
         },
       ),
@@ -103,14 +102,12 @@ class SipPortfolioScreen extends StatelessWidget {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const AddInvestmentScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const AddCryptoScreen()),
           );
         },
         icon: const Icon(Icons.add),
-        label: const Text('Add SIP'),
-        backgroundColor: AppColors.primaryBlue,
+        label: const Text('Add Crypto'),
+        backgroundColor: AppColors.accentTeal,
       ),
     );
   }
@@ -123,13 +120,13 @@ class SipPortfolioScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.trending_up,
+              Icons.currency_bitcoin,
               size: 100,
               color: AppColors.textSecondary.withOpacity(0.5),
             ),
             const SizedBox(height: AppSpacing.xl),
             Text(
-              'No SIPs Yet',
+              'No Crypto Holdings Yet',
               style: AppTypography.headlineMedium.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
@@ -137,7 +134,7 @@ class SipPortfolioScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Start your investment journey by adding your first SIP',
+              'Start tracking your cryptocurrency investments',
               style: AppTypography.bodyLarge.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -149,14 +146,14 @@ class SipPortfolioScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const AddInvestmentScreen(),
+                    builder: (context) => const AddCryptoScreen(),
                   ),
                 );
               },
               icon: const Icon(Icons.add),
-              label: const Text('Add Your First SIP'),
+              label: const Text('Add Your First Crypto'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryBlue,
+                backgroundColor: AppColors.accentTeal,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.xl,
                   vertical: AppSpacing.md,
@@ -169,20 +166,15 @@ class SipPortfolioScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSipList(BuildContext context, List<Investment> sips) {
-    final totalMonthly = sips.fold<double>(
+  Widget _buildCryptoList(BuildContext context, List<Crypto> cryptos) {
+    final totalCurrentValue = cryptos.fold<double>(
       0,
-      (sum, sip) => sum + (sip.isActive ? sip.sipAmount : 0),
+      (sum, crypto) => sum + (crypto.currentValue ?? 0),
     );
 
-    final totalCurrentValue = sips.fold<double>(
+    final totalInvested = cryptos.fold<double>(
       0,
-      (sum, sip) => sum + (sip.currentValue ?? 0),
-    );
-
-    final totalInvested = sips.fold<double>(
-      0,
-      (sum, sip) => sum + (sip.investedAmount ?? 0),
+      (sum, crypto) => sum + (crypto.investedAmount ?? 0),
     );
 
     final totalGainLoss = totalCurrentValue - totalInvested;
@@ -198,8 +190,8 @@ class SipPortfolioScreen extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppColors.primaryBlue,
-                AppColors.primaryBlue.withOpacity(0.7),
+                AppColors.accentTeal,
+                AppColors.accentTeal.withOpacity(0.7),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -207,7 +199,7 @@ class SipPortfolioScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primaryBlue.withOpacity(0.3),
+                color: AppColors.accentTeal.withOpacity(0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -217,22 +209,22 @@ class SipPortfolioScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Portfolio Value',
+                'Total Portfolio Value',
                 style: AppTypography.bodyMedium.copyWith(
                   color: Colors.white.withOpacity(0.9),
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                totalCurrentValue > 0
-                    ? '₹${NumberFormat('#,##,###.00').format(totalCurrentValue)}'
-                    : '₹${NumberFormat('#,##,###').format(totalMonthly)}',
-                style: AppTypography.displayMedium.copyWith(
+                '\$${NumberFormat('#,##0.00').format(totalCurrentValue)}',
+                style: AppTypography.titleLarge.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
+                  fontSize: 36,
                 ),
               ),
-              if (totalGainLoss != 0) ...[
+              if (totalGainLoss.abs() >= 0.01 &&
+                  totalGainLossPercent.isFinite) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
@@ -245,7 +237,7 @@ class SipPortfolioScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
-                      '${totalGainLoss >= 0 ? '+' : ''}₹${NumberFormat('#,##,###.00').format(totalGainLoss)} (${totalGainLossPercent >= 0 ? '+' : ''}${totalGainLossPercent.toStringAsFixed(2)}%)',
+                      '${totalGainLoss >= 0 ? '+' : ''}\$${NumberFormat('#,##0.00').format(totalGainLoss)} (${totalGainLossPercent >= 0 ? '+' : ''}${totalGainLossPercent.toStringAsFixed(2)}%)',
                       style: AppTypography.titleMedium.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -258,13 +250,13 @@ class SipPortfolioScreen extends StatelessWidget {
               Row(
                 children: [
                   _buildStat(
-                    'Active SIPs',
-                    '${sips.where((s) => s.isActive).length}',
+                    'Total Holdings',
+                    '${cryptos.where((c) => c.isActive).length}',
                   ),
                   const SizedBox(width: AppSpacing.xl),
                   _buildStat(
-                    'Monthly',
-                    '₹${NumberFormat('#,##,###').format(totalMonthly)}',
+                    'Invested',
+                    '\$${NumberFormat('#,##0').format(totalInvested)}',
                   ),
                 ],
               ),
@@ -273,11 +265,16 @@ class SipPortfolioScreen extends StatelessWidget {
         ),
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            itemCount: sips.length,
+            padding: const EdgeInsets.only(
+              left: AppSpacing.lg,
+              right: AppSpacing.lg,
+              top: AppSpacing.lg,
+              bottom: 100, // Extra space for FAB
+            ),
+            itemCount: cryptos.length,
             itemBuilder: (context, index) {
-              final sip = sips[index];
-              return _buildSipCard(context, sip);
+              final crypto = cryptos[index];
+              return _buildCryptoCard(context, crypto);
             },
           ),
         ),
@@ -306,7 +303,7 @@ class SipPortfolioScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSipCard(BuildContext context, Investment sip) {
+  Widget _buildCryptoCard(BuildContext context, Crypto crypto) {
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       color: AppColors.cardDark,
@@ -315,7 +312,7 @@ class SipPortfolioScreen extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          _showSipDetails(context, sip);
+          _showCryptoDetails(context, crypto);
         },
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         child: Padding(
@@ -328,15 +325,15 @@ class SipPortfolioScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color: sip.isActive
-                          ? AppColors.success.withOpacity(0.2)
+                      color: crypto.isActive
+                          ? AppColors.accentTeal.withOpacity(0.2)
                           : AppColors.textSecondary.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                     ),
                     child: Icon(
-                      Icons.trending_up,
-                      color: sip.isActive
-                          ? AppColors.success
+                      Icons.currency_bitcoin,
+                      color: crypto.isActive
+                          ? AppColors.accentTeal
                           : AppColors.textSecondary,
                       size: 24,
                     ),
@@ -347,7 +344,7 @@ class SipPortfolioScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          sip.name,
+                          crypto.name,
                           style: AppTypography.titleMedium.copyWith(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.bold,
@@ -357,12 +354,10 @@ class SipPortfolioScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
-                          sip.mutualFundSchemeName,
+                          crypto.symbol.toUpperCase(),
                           style: AppTypography.bodySmall.copyWith(
                             color: AppColors.textSecondary,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -373,15 +368,15 @@ class SipPortfolioScreen extends StatelessWidget {
                       vertical: AppSpacing.xs,
                     ),
                     decoration: BoxDecoration(
-                      color: sip.isActive
+                      color: crypto.isActive
                           ? AppColors.success.withOpacity(0.2)
                           : AppColors.warning.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                     ),
                     child: Text(
-                      sip.isActive ? 'Active' : 'Paused',
+                      crypto.isActive ? 'Active' : 'Inactive',
                       style: AppTypography.bodySmall.copyWith(
-                        color: sip.isActive
+                        color: crypto.isActive
                             ? AppColors.success
                             : AppColors.warning,
                         fontWeight: FontWeight.bold,
@@ -391,7 +386,7 @@ class SipPortfolioScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
-              if (sip.currentValue != null) ...[
+              if (crypto.currentValue != null) ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -406,15 +401,18 @@ class SipPortfolioScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
-                          '₹${NumberFormat('#,##,###.00').format(sip.currentValue)}',
-                          style: AppTypography.headlineSmall.copyWith(
+                          '\$${NumberFormat('#,##0.00').format(crypto.currentValue)}',
+                          style: AppTypography.titleLarge.copyWith(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
-                    if (sip.gainLoss != null)
+                    if (crypto.gainLoss != null &&
+                        crypto.gainLossPercentage != null &&
+                        crypto.gainLossPercentage!.abs() >= 0.01 &&
+                        crypto.gainLossPercentage!.isFinite)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md,
@@ -422,7 +420,7 @@ class SipPortfolioScreen extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color:
-                              (sip.gainLoss! >= 0
+                              (crypto.gainLoss! >= 0
                                       ? AppColors.success
                                       : AppColors.error)
                                   .withOpacity(0.2),
@@ -434,18 +432,18 @@ class SipPortfolioScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              '${sip.gainLoss! >= 0 ? '+' : ''}₹${NumberFormat('#,##,###.00').format(sip.gainLoss)}',
+                              '${crypto.gainLoss! >= 0 ? '+' : ''}\$${NumberFormat('#,##0.00').format(crypto.gainLoss)}',
                               style: AppTypography.titleSmall.copyWith(
-                                color: sip.gainLoss! >= 0
+                                color: crypto.gainLoss! >= 0
                                     ? AppColors.success
                                     : AppColors.error,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             Text(
-                              '${sip.gainLossPercentage! >= 0 ? '+' : ''}${sip.gainLossPercentage!.toStringAsFixed(2)}%',
+                              '${crypto.gainLossPercentage! >= 0 ? '+' : ''}${crypto.gainLossPercentage!.toStringAsFixed(2)}%',
                               style: AppTypography.bodySmall.copyWith(
-                                color: sip.gainLoss! >= 0
+                                color: crypto.gainLoss! >= 0
                                     ? AppColors.success
                                     : AppColors.error,
                               ),
@@ -463,24 +461,24 @@ class SipPortfolioScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _buildInfoColumn(
-                      'Monthly SIP',
-                      '₹${NumberFormat('#,##,###').format(sip.sipAmount)}',
+                      'Amount',
+                      '${crypto.amount.toStringAsFixed(8)} ${crypto.symbol.toUpperCase()}',
                     ),
                   ),
                   Expanded(
                     child: _buildInfoColumn(
-                      'Invested',
-                      sip.investedAmount != null
-                          ? '₹${NumberFormat('#,##,###').format(sip.investedAmount)}'
-                          : '-',
+                      'Purchase Price',
+                      '\$${crypto.purchasePrice.toStringAsFixed(2)}',
                     ),
                   ),
                   Expanded(
                     child: _buildInfoColumn(
-                      sip.currentNav != null ? 'Current NAV' : 'Started',
-                      sip.currentNav != null
-                          ? '₹${sip.currentNav!.toStringAsFixed(4)}'
-                          : DateFormat('MMM yyyy').format(sip.startDate),
+                      crypto.currentPrice != null
+                          ? 'Current Price'
+                          : 'Purchase Date',
+                      crypto.currentPrice != null
+                          ? '\$${crypto.currentPrice!.toStringAsFixed(2)}'
+                          : DateFormat('MMM yyyy').format(crypto.purchaseDate),
                     ),
                   ),
                 ],
@@ -501,6 +499,8 @@ class SipPortfolioScreen extends StatelessWidget {
           style: AppTypography.bodySmall.copyWith(
             color: AppColors.textSecondary,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
@@ -509,140 +509,80 @@ class SipPortfolioScreen extends StatelessWidget {
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
   }
 
-  void _showSipDetails(BuildContext context, Investment sip) {
+  void _showCryptoDetails(BuildContext context, Crypto crypto) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: const BoxDecoration(
-          color: Color(0xFF0A0E21),
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppSpacing.radiusXl),
-          ),
-        ),
+      backgroundColor: AppColors.cardDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              margin: const EdgeInsets.only(top: AppSpacing.md),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.textSecondary.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
+            Text(
+              crypto.name,
+              style: AppTypography.headlineSmall.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      sip.name,
-                      style: AppTypography.headlineSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
+            if (crypto.notes != null && crypto.notes!.isNotEmpty) ...[
+              Text(
+                crypto.notes!,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              EditCryptoScreen(crypto: crypto),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Edit'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accentTeal,
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                    color: AppColors.textSecondary,
-                  ),
-                ],
-              ),
-            ),
-            const Divider(),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                children: [
-                  _buildDetailRow('Fund Name', sip.mutualFundSchemeName),
-                  _buildDetailRow('Scheme Code', sip.mutualFundSchemeCode),
-                  _buildDetailRow(
-                    'Monthly Amount',
-                    '₹${NumberFormat('#,##,###').format(sip.sipAmount)}',
-                  ),
-                  _buildDetailRow('SIP Date', '${sip.sipDay} of every month'),
-                  _buildDetailRow(
-                    'Start Date',
-                    DateFormat('dd MMM yyyy').format(sip.startDate),
-                  ),
-                  _buildDetailRow('Status', sip.isActive ? 'Active' : 'Paused'),
-                  if (sip.notes != null && sip.notes!.isNotEmpty)
-                    _buildDetailRow('Notes', sip.notes!),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _toggleSipStatus(context, sip);
-                          },
-                          icon: Icon(
-                            sip.isActive ? Icons.pause : Icons.play_arrow,
-                          ),
-                          label: Text(sip.isActive ? 'Pause' : 'Resume'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textPrimary,
-                            side: BorderSide(
-                              color: AppColors.textSecondary.withOpacity(0.3),
-                            ),
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _editSip(context, sip);
-                          },
-                          icon: const Icon(Icons.edit),
-                          label: const Text('Edit'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryBlue,
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _deleteSip(context, sip);
-                      },
-                      icon: const Icon(Icons.delete),
-                      label: const Text('Delete Investment'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.error,
-                        side: BorderSide(color: AppColors.error),
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                      ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _confirmDelete(context, crypto);
+                    },
+                    icon: const Icon(Icons.delete),
+                    label: const Text('Delete'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: BorderSide(color: AppColors.error),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),
@@ -650,68 +590,19 @@ class SipPortfolioScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _editSip(BuildContext context, Investment sip) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditInvestmentScreen(investment: sip),
-      ),
-    );
-  }
-
-  void _toggleSipStatus(BuildContext context, Investment sip) {
-    final provider = context.read<InvestmentProvider>();
-    provider.updateInvestment(
-      sip.copyWith(isActive: !sip.isActive, updatedAt: DateTime.now()),
-    );
-    showTopSnackBar(
-      context,
-      sip.isActive ? 'SIP paused successfully' : 'SIP resumed successfully',
-    );
-  }
-
-  void _deleteSip(BuildContext context, Investment sip) {
+  void _confirmDelete(BuildContext context, Crypto crypto) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.cardDark,
         title: Text(
-          'Delete SIP',
+          'Delete Crypto',
           style: AppTypography.titleLarge.copyWith(
             color: AppColors.textPrimary,
           ),
         ),
         content: Text(
-          'Are you sure you want to delete "${sip.name}"? This action cannot be undone.',
+          'Are you sure you want to delete ${crypto.name}?',
           style: AppTypography.bodyMedium.copyWith(
             color: AppColors.textSecondary,
           ),
@@ -721,14 +612,21 @@ class SipPortfolioScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          TextButton(
             onPressed: () {
+              Provider.of<CryptoProvider>(
+                context,
+                listen: false,
+              ).deleteCrypto(crypto.id);
               Navigator.pop(context);
-              context.read<InvestmentProvider>().deleteInvestment(sip.id);
-              showTopSnackBar(context, 'SIP deleted successfully');
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Crypto deleted successfully'),
+                  backgroundColor: Colors.green,
+                ),
+              );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Delete'),
+            child: Text('Delete', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),

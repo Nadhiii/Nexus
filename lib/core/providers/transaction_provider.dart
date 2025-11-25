@@ -25,9 +25,14 @@ class TransactionProvider with ChangeNotifier {
   bool get isInitialized => _isInitialized;
   String? get error => _error;
 
-  TransactionProvider({required LearningService learningService}) : _learningService = learningService;
+  TransactionProvider({required LearningService learningService})
+    : _learningService = learningService;
 
-  void update(AccountProvider account, BudgetProvider budget, NotificationProvider notification) {
+  void update(
+    AccountProvider account,
+    BudgetProvider budget,
+    NotificationProvider notification,
+  ) {
     _accountProvider = account;
     _budgetProvider = budget;
     _notificationProvider = notification;
@@ -63,15 +68,17 @@ class TransactionProvider with ChangeNotifier {
     if (user == null) return;
 
     try {
-      _transactionService.watchUserTransactions(user.uid).listen(
-        (transactions) {
-          _transactions = transactions;
-          notifyListeners();
-        },
-        onError: (error) {
-          _setError('Failed to load transactions: $error');
-        },
-      );
+      _transactionService
+          .watchUserTransactions(user.uid)
+          .listen(
+            (transactions) {
+              _transactions = transactions;
+              notifyListeners();
+            },
+            onError: (error) {
+              _setError('Failed to load transactions: $error');
+            },
+          );
     } catch (e) {
       _setError('Failed to load transactions: $e');
     }
@@ -88,10 +95,18 @@ class TransactionProvider with ChangeNotifier {
       _setLoading(true);
 
       await _transactionService.addTransaction(transaction);
-      await _updateAccountBalance(transaction.accountId, transaction.amount, transaction.type, isReversal: false);
+      await _updateAccountBalance(
+        transaction.accountId,
+        transaction.amount,
+        transaction.type,
+        isReversal: false,
+      );
 
       if (transaction.description != null && transaction.categoryId != null) {
-        await _learningService.learn(transaction.description!, transaction.categoryId!);
+        await _learningService.learn(
+          transaction.description!,
+          transaction.categoryId!,
+        );
       }
 
       _notificationProvider?.notifyTransaction(
@@ -100,7 +115,8 @@ class TransactionProvider with ChangeNotifier {
         transaction.type == TransactionType.income,
       );
 
-      if (transaction.type == TransactionType.expense && _budgetProvider != null) {
+      if (transaction.type == TransactionType.expense &&
+          _budgetProvider != null) {
         await _budgetProvider!.checkBudgetForTransaction(transaction);
       }
 
@@ -113,7 +129,10 @@ class TransactionProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> updateTransaction(Transaction transaction, Transaction originalTransaction) async {
+  Future<bool> updateTransaction(
+    Transaction transaction,
+    Transaction originalTransaction,
+  ) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || _accountProvider == null) {
       _setError('User or Account Provider not available');
@@ -124,13 +143,36 @@ class TransactionProvider with ChangeNotifier {
       _setLoading(true);
 
       await _transactionService.updateTransaction(transaction);
-      // Reverse the old transaction amount from its original account
-      await _updateAccountBalance(originalTransaction.accountId, originalTransaction.amount, originalTransaction.type, isReversal: true);
-      // Apply the new transaction amount to its (potentially new) account
-      await _updateAccountBalance(transaction.accountId, transaction.amount, transaction.type, isReversal: false);
+
+      // Only update account balances if amount, type, or account changed
+      final bool amountChanged =
+          transaction.amount != originalTransaction.amount;
+      final bool typeChanged = transaction.type != originalTransaction.type;
+      final bool accountChanged =
+          transaction.accountId != originalTransaction.accountId;
+
+      if (amountChanged || typeChanged || accountChanged) {
+        // Reverse the old transaction amount from its original account
+        await _updateAccountBalance(
+          originalTransaction.accountId,
+          originalTransaction.amount,
+          originalTransaction.type,
+          isReversal: true,
+        );
+        // Apply the new transaction amount to its (potentially new) account
+        await _updateAccountBalance(
+          transaction.accountId,
+          transaction.amount,
+          transaction.type,
+          isReversal: false,
+        );
+      }
 
       if (transaction.description != null && transaction.categoryId != null) {
-        await _learningService.learn(transaction.description!, transaction.categoryId!);
+        await _learningService.learn(
+          transaction.description!,
+          transaction.categoryId!,
+        );
       }
 
       _setLoading(false);
@@ -152,9 +194,16 @@ class TransactionProvider with ChangeNotifier {
     try {
       _setLoading(true);
 
-      final transaction = _transactions.firstWhere((t) => t.id == transactionId);
+      final transaction = _transactions.firstWhere(
+        (t) => t.id == transactionId,
+      );
       await _transactionService.deleteTransaction(transactionId);
-      await _updateAccountBalance(transaction.accountId, transaction.amount, transaction.type, isReversal: true);
+      await _updateAccountBalance(
+        transaction.accountId,
+        transaction.amount,
+        transaction.type,
+        isReversal: true,
+      );
 
       _setLoading(false);
       return true;
@@ -165,7 +214,12 @@ class TransactionProvider with ChangeNotifier {
     }
   }
 
-  Future<void> _updateAccountBalance(String accountId, double amount, TransactionType type, {required bool isReversal}) async {
+  Future<void> _updateAccountBalance(
+    String accountId,
+    double amount,
+    TransactionType type, {
+    required bool isReversal,
+  }) async {
     final account = _accountProvider!.getAccountById(accountId);
     if (account == null) return;
 
@@ -191,14 +245,17 @@ class TransactionProvider with ChangeNotifier {
   Future<void> restoreFromBackup(List<dynamic> data) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    final transactions = data.map((d) => Transaction.fromJson(d as Map<String, dynamic>)).toList();
+    final transactions = data
+        .map((d) => Transaction.fromJson(d as Map<String, dynamic>))
+        .toList();
     await _transactionService.restoreTransactions(user.uid, transactions);
   }
 
-
   Transaction? getTransactionById(String transactionId) {
     try {
-      return _transactions.firstWhere((transaction) => transaction.id == transactionId);
+      return _transactions.firstWhere(
+        (transaction) => transaction.id == transactionId,
+      );
     } catch (e) {
       return null;
     }

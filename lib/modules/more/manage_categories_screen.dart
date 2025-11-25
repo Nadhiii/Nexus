@@ -5,7 +5,7 @@ import '../../core/models/category.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/widgets/top_snackbar.dart'; // Assuming you have this from other screens
+// Assuming you have this from other screens
 import 'widgets/edit_category_modal.dart';
 
 class ManageCategoriesScreen extends StatelessWidget {
@@ -44,17 +44,19 @@ class ManageCategoriesScreen extends StatelessWidget {
                         return Center(
                           child: Text(
                             provider.error!,
-                            style: AppTypography.bodyMedium.copyWith(color: AppColors.error),
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: AppColors.error,
+                            ),
                           ),
                         );
                       }
 
                       return ListView.builder(
                         padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.lg,
-                            AppSpacing.sm,
-                            AppSpacing.lg,
-                            100 // Space for FAB
+                          AppSpacing.lg,
+                          AppSpacing.sm,
+                          AppSpacing.lg,
+                          100, // Space for FAB
                         ),
                         itemCount: provider.categories.length,
                         itemBuilder: (context, index) {
@@ -67,7 +69,10 @@ class ManageCategoriesScreen extends StatelessWidget {
                               direction: DismissDirection.endToStart,
                               background: _buildDeleteBackground(),
                               confirmDismiss: (direction) async {
-                                return await _showDeleteConfirmation(context, category);
+                                return await _showDeleteConfirmation(
+                                  context,
+                                  category,
+                                );
                               },
                               onDismissed: (direction) {
                                 provider.deleteCategory(category.id);
@@ -139,7 +144,9 @@ class ManageCategoriesScreen extends StatelessWidget {
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.2), // Matches your theme's error container
+        color: AppColors.error.withOpacity(
+          0.2,
+        ), // Matches your theme's error container
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         border: Border.all(color: AppColors.error.withOpacity(0.5)),
       ),
@@ -225,28 +232,41 @@ class ManageCategoriesScreen extends StatelessWidget {
     );
   }
 
-  Future<bool?> _showDeleteConfirmation(BuildContext context, Category category) {
+  Future<bool?> _showDeleteConfirmation(
+    BuildContext context,
+    Category category,
+  ) {
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.cardDarkElevated,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusLg)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        ),
         title: Text(
-            'Delete Category',
-            style: AppTypography.titleMedium.copyWith(color: Colors.white)
+          'Delete Category',
+          style: AppTypography.titleMedium.copyWith(color: Colors.white),
         ),
         content: Text(
           'Are you sure you want to delete "${category.name}"? This cannot be undone.',
-          style: AppTypography.bodyMedium.copyWith(color: Colors.white.withOpacity(0.7)),
+          style: AppTypography.bodyMedium.copyWith(
+            color: Colors.white.withOpacity(0.7),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Cancel', style: TextStyle(color: Colors.white.withOpacity(0.7))),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),

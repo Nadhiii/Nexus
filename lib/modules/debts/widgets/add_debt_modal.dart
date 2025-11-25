@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/debt.dart';
-import '../add_debt_screen.dart';
+import '../modern_add_debt_screen.dart';
 
 class AddDebtModal extends StatelessWidget {
   final Debt? debtToEdit;
 
-  const AddDebtModal({Key? key, this.debtToEdit}) : super(key: key);
+  const AddDebtModal({super.key, this.debtToEdit});
 
   @override
   Widget build(BuildContext context) {
-    return AddDebtScreen(debtToEdit: debtToEdit);
+    return ModernAddDebtScreen(debtToEdit: debtToEdit);
   }
 }
 
@@ -18,7 +18,7 @@ Future<void> showAddDebtModal(BuildContext context, {Debt? debtToEdit}) {
   return Navigator.push(
     context,
     MaterialPageRoute(
-      builder: (context) => AddDebtScreen(debtToEdit: debtToEdit),
+      builder: (context) => ModernAddDebtScreen(debtToEdit: debtToEdit),
       fullscreenDialog: true,
     ),
   );

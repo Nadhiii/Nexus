@@ -6,16 +6,14 @@ import '../../modules/security/app_lock_screen.dart';
 class BiometricAuthWrapper extends StatelessWidget {
   final Widget child;
 
-  const BiometricAuthWrapper({Key? key, required this.child}) : super(key: key);
+  const BiometricAuthWrapper({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
     return Consumer<BiometricProvider>(
       builder: (context, biometricProvider, _) {
         if (biometricProvider.isBiometricEnabled) {
-          return AppLockScreen(
-            child: child,
-          );
+          return AppLockScreen(child: child);
         } else {
           return child;
         }

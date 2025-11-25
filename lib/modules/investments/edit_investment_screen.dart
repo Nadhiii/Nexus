@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import '../../core/models/investment.dart';
+import '../../core/models/mutualfunds.dart';
 import '../../core/providers/investment_provider.dart';
 import '../../core/widgets/top_snackbar.dart';
 
@@ -257,10 +257,12 @@ class _EditInvestmentScreenState extends State<EditInvestmentScreen> {
                       ),
                       onChanged: (_) => _calculateUnits(),
                       validator: (val) {
-                        if (val == null || val.isEmpty)
+                        if (val == null || val.isEmpty) {
                           return 'Enter invested amount';
-                        if (double.tryParse(val) == null)
+                        }
+                        if (double.tryParse(val) == null) {
                           return 'Enter valid amount';
+                        }
                         return null;
                       },
                     ),
@@ -282,10 +284,12 @@ class _EditInvestmentScreenState extends State<EditInvestmentScreen> {
                             ),
                             onChanged: (_) => _calculateUnits(),
                             validator: (val) {
-                              if (val == null || val.isEmpty)
+                              if (val == null || val.isEmpty) {
                                 return 'Enter NAV';
-                              if (double.tryParse(val) == null)
+                              }
+                              if (double.tryParse(val) == null) {
                                 return 'Enter valid NAV';
+                              }
                               return null;
                             },
                           ),
@@ -408,8 +412,9 @@ class _EditInvestmentScreenState extends State<EditInvestmentScreen> {
                             validator: (val) {
                               if (val == null || val.isEmpty) return null;
                               final day = int.tryParse(val);
-                              if (day == null || day < 1 || day > 28)
+                              if (day == null || day < 1 || day > 28) {
                                 return '1-28';
+                              }
                               return null;
                             },
                           ),

@@ -1,14 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/investment.dart';
+import '../models/mutualfunds.dart';
 
 class InvestmentService {
-  final CollectionReference _investmentsCollection = FirebaseFirestore.instance.collection('investments');
+  final CollectionReference _investmentsCollection = FirebaseFirestore.instance
+      .collection('investments');
 
   Stream<List<Investment>> watchInvestments(String userId) {
     return _investmentsCollection
         .where('userId', isEqualTo: userId)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => Investment.fromFirestore(doc)).toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Investment.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   Future<void> addInvestment(Investment investment) {
@@ -16,7 +21,9 @@ class InvestmentService {
   }
 
   Future<void> updateInvestment(Investment investment) {
-    return _investmentsCollection.doc(investment.id).update(investment.toJson());
+    return _investmentsCollection
+        .doc(investment.id)
+        .update(investment.toJson());
   }
 
   Future<void> deleteInvestment(String investmentId) {

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/investment.dart';
+import '../models/mutualfunds.dart';
 
 class NavService {
   static const String baseUrl = 'https://api.mfapi.in/mf';
@@ -26,18 +26,29 @@ class NavService {
 
   /// Update investment with current NAV and calculate portfolio values
   Future<Investment> enrichInvestmentWithNav(Investment investment) async {
+    // Calculate months since start date
+    final now = DateTime.now();
+    final monthsInvested =
+        (now.year - investment.startDate.year) * 12 +
+        (now.month - investment.startDate.month);
+
+    // Calculate total invested amount (number of SIP installments * sipAmount)
+    final installments = monthsInvested > 0 ? monthsInvested : 1;
+    final investedAmount = investment.sipAmount * installments;
+
     final currentNav = await getCurrentNav(investment.mutualFundSchemeCode);
 
     if (currentNav == null) {
-      return investment; // Return as-is if NAV fetch failed
+      // Return with investedAmount calculated even if NAV fetch failed
+      return investment.copyWith(investedAmount: investedAmount);
     }
 
     // Calculate current value and gains/losses
     final currentValue = investment.units * currentNav;
-    final investedAmount = investment
-        .sipAmount; // For single SIP (will need to update for multiple installments)
     final gainLoss = currentValue - investedAmount;
-    final gainLossPercentage = (gainLoss / investedAmount) * 100;
+    final gainLossPercentage = investedAmount > 0
+        ? (gainLoss / investedAmount) * 100
+        : 0.0;
 
     return investment.copyWith(
       currentNav: currentNav,

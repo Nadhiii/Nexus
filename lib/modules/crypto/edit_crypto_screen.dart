@@ -1,54 +1,52 @@
 import 'package:flutter/material.dart';
+import '../../core/models/crypto.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 
-class BackupSettingsScreen extends StatelessWidget {
-  const BackupSettingsScreen({super.key});
+class EditCryptoScreen extends StatelessWidget {
+  final Crypto crypto;
+
+  const EditCryptoScreen({super.key, required this.crypto});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
+      backgroundColor: AppColors.darkGradient.first,
       appBar: AppBar(
         title: Text(
-          'Backup & Restore',
+          'Edit Crypto',
           style: AppTypography.headlineMedium.copyWith(
-            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
           ),
         ),
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      backgroundColor: theme.colorScheme.surface,
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
+          padding: const EdgeInsets.all(AppSpacing.xl2),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.construction,
                 size: 80,
-                color: theme.colorScheme.primary.withOpacity(0.5),
+                color: AppColors.textSecondary.withOpacity(0.5),
               ),
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.xl),
               Text(
                 'Coming Soon',
                 style: AppTypography.headlineMedium.copyWith(
+                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
               Text(
-                'Backup and restore functionality is currently under development.',
-                style: AppTypography.bodyLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'You\'ll be able to backup your financial data to the cloud and restore it when needed.',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                'Edit Crypto screen is under development',
+                style: AppTypography.bodyLarge.copyWith(
+                  color: AppColors.textSecondary,
                 ),
                 textAlign: TextAlign.center,
               ),

@@ -1,172 +1,123 @@
 import 'package:flutter/material.dart';
-import '../models/debt.dart';
-import '../services/debt_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../models/debt.dart';
 
-class DebtProvider extends ChangeNotifier {
-  final DebtService _debtService = DebtService();
+class DebtProvider with ChangeNotifier {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   List<Debt> _debts = [];
   bool _isLoading = false;
   String? _error;
-  DebtPayoffStrategy _selectedStrategy = DebtPayoffStrategy.snowball;
-  Map<String, dynamic>? _debtFreeCalculation;
 
-
-  List<Debt> get debts => _getSortedDebts();
-
+  List<Debt> get debts => _debts;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  DebtPayoffStrategy get selectedStrategy => _selectedStrategy;
-  Map<String, dynamic>? get debtFreeCalculation => _debtFreeCalculation;
-
-  double get totalDebt => _debts.fold(0.0, (sum, debt) => sum + debt.currentBalance);
-  double get totalMinimumPayments => _debts.fold(0.0, (sum, debt) => sum + (debt.monthlyEMI ?? 0.0));
-  String get formattedTotalMinimumPayments => '₹${totalMinimumPayments.toStringAsFixed(2)}';
-  double get totalMonthlyInterest => _debts.fold(0.0, (sum, debt) => sum + debt.monthlyInterestPayment);
-  String get formattedTotalMonthlyInterest => '₹${totalMonthlyInterest.toStringAsFixed(2)}';
-
+  double get totalDebt => _debts.where((d) => d.type != DebtType.owedToMe).fold(0.0, (sum, debt) => sum + debt.currentBalance);
 
   DebtProvider() {
-    initialize();
+    _loadDebts();
   }
 
-  void initialize() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      loadDebts(user.uid);
-    }
-  }
-  
-  void refresh(){
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        loadDebts(user.uid);
-      }
-  }
+  Future<void> _loadDebts() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
 
+    _isLoading = true;
+    notifyListeners();
 
-  Future<void> loadDebts(String userId) async {
-    _setLoading(true);
     try {
-      _debtService.watchDebts(userId).listen((debts) {
-        _debts = debts;
-        _calculateDebtFreePlan();
-        _setLoading(false);
+      _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('debts') // Corrected collection name
+          .snapshots()
+          .listen((snapshot) {
+        _debts = snapshot.docs.map((doc) => Debt.fromFirestore(doc)).toList();
+        _isLoading = false;
         notifyListeners();
-      }, onError: (e) {
-        _setError('Error loading debts: $e');
-        _setLoading(false);
       });
     } catch (e) {
-      _setError('Error setting up debt stream: $e');
-      _setLoading(false);
+      _error = 'Error loading debts: $e';
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
   Future<void> addDebt(Debt debt) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _setError('User not logged in');
-      return;
-    }
-    _setLoading(true);
+    final user = _auth.currentUser;
+    if (user == null) return;
+
     try {
-      await _debtService.addDebt(debt.copyWith(userId: user.uid));
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('debts')
+          .add(debt.toFirestore());
     } catch (e) {
-      _setError('Error adding debt: $e');
-    } finally {
-      _setLoading(false);
+      _error = 'Error adding debt: $e';
+      notifyListeners();
     }
   }
 
   Future<void> updateDebt(Debt debt) async {
-    _setLoading(true);
+    final user = _auth.currentUser;
+    if (user == null) return;
+
     try {
-      await _debtService.updateDebt(debt);
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('debts')
+          .doc(debt.id)
+          .update(debt.toFirestore());
     } catch (e) {
-      _setError('Error updating debt: $e');
-    } finally {
-      _setLoading(false);
+      _error = 'Error updating debt: $e';
+      notifyListeners();
     }
   }
 
   Future<void> deleteDebt(String debtId) async {
-    _setLoading(true);
-    try {
-      await _debtService.deleteDebt(debtId);
-    } catch (e) {
-      _setError('Error deleting debt: $e');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  Future<void> addRepayment(String debtId, double amount) async {
-    _setLoading(true);
-    try {
-      await _debtService.addRepayment(debtId, amount);
-    } catch (e) {
-      _setError('Error adding repayment: $e');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  void setPayoffStrategy(DebtPayoffStrategy strategy) {
-    _selectedStrategy = strategy;
-    _calculateDebtFreePlan();
-    notifyListeners();
-  }
-
-  void _calculateDebtFreePlan() {
-    if (_debts.isEmpty) {
-      _debtFreeCalculation = null;
-      return;
-    }
-    // This is a placeholder for a more complex calculation
-    _debtFreeCalculation = {
-      'months': 12,
-      'finalPayoffDate': DateTime.now().add(const Duration(days: 365)),
-      'totalInterestPaid': 1234.56,
-    };
-  }
-
-  List<Debt> _getSortedDebts() {
-    List<Debt> sortedDebts = List.from(_debts);
-    switch (_selectedStrategy) {
-      case DebtPayoffStrategy.snowball:
-        sortedDebts.sort((a, b) => a.currentBalance.compareTo(b.currentBalance));
-        break;
-      case DebtPayoffStrategy.avalanche:
-        sortedDebts.sort((a, b) => (b.interestRate ?? 0).compareTo(a.interestRate ?? 0));
-        break;
-      case DebtPayoffStrategy.custom:
-        sortedDebts.sort((a, b) => (a.priority ?? 99).compareTo(b.priority ?? 99));
-        break;
-    }
-    return sortedDebts;
-  }
-  
-  Future<void> clearAllData() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user == null) return;
-    await _debtService.clearAllDebts(user.uid);
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('debts')
+          .doc(debtId)
+          .delete();
+    } catch (e) {
+      _error = 'Error deleting debt: $e';
+      notifyListeners();
+    }
+  }
+
+  Future<void> clearAllData() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    final batch = _firestore.batch();
+    final snapshot = await _firestore.collection('users').doc(user.uid).collection('debts').get();
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+    _debts.clear();
+    notifyListeners();
   }
 
   Future<void> restoreFromBackup(List<dynamic> data) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user == null) return;
-    final debts = data.map((d) => Debt.fromJson(d as Map<String, dynamic>)).toList();
-    await _debtService.restoreDebts(user.uid, debts);
-  }
-
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-
-  void _setError(String? errorMessage) {
-    _error = errorMessage;
-    notifyListeners();
+    final batch = _firestore.batch();
+    for (final item in data) {
+      // This assumes the data is already in a Map<String, dynamic> format
+      final debtData = Map<String, dynamic>.from(item);
+      final docRef = _firestore.collection('users').doc(user.uid).collection('debts').doc();
+      batch.set(docRef, debtData);
+    }
+    await batch.commit();
   }
 }

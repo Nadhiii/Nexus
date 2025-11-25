@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:ui';
 import 'dart:math' as math;
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/subscription_provider.dart';
 import '../../../core/models/subscription.dart';
 import '../../../core/widgets/top_snackbar.dart';
@@ -293,11 +294,18 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
                   width: double.infinity,
                   child: FilledButton(
                     onPressed: _isLoading ? null : _addSubscription,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.accentOrange,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
                     child: _isLoading
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Text('Add Subscription'),
                   ),
@@ -366,7 +374,11 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
       }
     } catch (e) {
       if (mounted) {
-        showTopSnackBar(context, 'Error adding subscription: $e', isError: true);
+        showTopSnackBar(
+          context,
+          'Error adding subscription: $e',
+          isError: true,
+        );
       }
     } finally {
       setState(() {

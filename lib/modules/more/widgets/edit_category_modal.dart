@@ -5,7 +5,7 @@ import '../../../../core/models/category.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/top_snackbar.dart'; // Assuming you have this
+// Assuming you have this
 
 // Updated to push a full screen route instead of a modal bottom sheet
 // This matches the 'Add Transaction' and 'Add Account' transition animations.
@@ -51,7 +51,9 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.category?.name ?? '');
-    _emojiController = TextEditingController(text: widget.category?.emoji ?? '');
+    _emojiController = TextEditingController(
+      text: widget.category?.emoji ?? '',
+    );
     _selectedColor = widget.category?.color ?? _colorOptions[0];
   }
 
@@ -86,7 +88,10 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
           SafeArea(
             child: Column(
               children: [
-                _buildAppBar(context, isEditing ? 'Edit Category' : 'New Category'),
+                _buildAppBar(
+                  context,
+                  isEditing ? 'Edit Category' : 'New Category',
+                ),
 
                 Expanded(
                   child: SingleChildScrollView(
@@ -106,13 +111,17 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                               // Emoji Input
                               Container(
                                 width: 80,
-                                margin: const EdgeInsets.only(right: AppSpacing.md),
+                                margin: const EdgeInsets.only(
+                                  right: AppSpacing.md,
+                                ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                        'Icon',
-                                        style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)
+                                      'Icon',
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
                                     ),
                                     const SizedBox(height: AppSpacing.xs),
                                     TextFormField(
@@ -126,13 +135,19 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                                         filled: true,
                                         fillColor: AppColors.cardDarkElevated,
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                                          borderRadius: BorderRadius.circular(
+                                            AppSpacing.radiusMd,
+                                          ),
                                           borderSide: BorderSide.none,
                                         ),
-                                        contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              vertical: AppSpacing.md,
+                                            ),
                                       ),
                                       validator: (value) {
-                                        if (value == null || value.isEmpty) return 'Required';
+                                        if (value == null || value.isEmpty)
+                                          return 'Required';
                                         return null;
                                       },
                                     ),
@@ -146,29 +161,39 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                        'Category Name',
-                                        style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)
+                                      'Category Name',
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
                                     ),
                                     const SizedBox(height: AppSpacing.xs),
                                     TextFormField(
                                       controller: _nameController,
-                                      style: AppTypography.bodyLarge.copyWith(color: Colors.white),
+                                      style: AppTypography.bodyLarge.copyWith(
+                                        color: Colors.white,
+                                      ),
                                       decoration: InputDecoration(
                                         hintText: "e.g. Groceries",
-                                        hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                                        hintStyle: TextStyle(
+                                          color: Colors.white.withOpacity(0.3),
+                                        ),
                                         filled: true,
                                         fillColor: AppColors.cardDarkElevated,
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                                          borderRadius: BorderRadius.circular(
+                                            AppSpacing.radiusMd,
+                                          ),
                                           borderSide: BorderSide.none,
                                         ),
-                                        contentPadding: const EdgeInsets.symmetric(
-                                            horizontal: AppSpacing.lg,
-                                            vertical: AppSpacing.md
-                                        ),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: AppSpacing.lg,
+                                              vertical: AppSpacing.md,
+                                            ),
                                       ),
                                       validator: (value) {
-                                        if (value == null || value.isEmpty) return 'Please enter a name';
+                                        if (value == null || value.isEmpty)
+                                          return 'Please enter a name';
                                         return null;
                                       },
                                     ),
@@ -187,9 +212,11 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                             spacing: AppSpacing.md,
                             runSpacing: AppSpacing.md,
                             children: _colorOptions.map((color) {
-                              final isSelected = _selectedColor.value == color.value;
+                              final isSelected =
+                                  _selectedColor.value == color.value;
                               return GestureDetector(
-                                onTap: () => setState(() => _selectedColor = color),
+                                onTap: () =>
+                                    setState(() => _selectedColor = color),
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 200),
                                   width: 56,
@@ -198,7 +225,9 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                                     color: color.withOpacity(0.2),
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: isSelected ? color : Colors.transparent,
+                                      color: isSelected
+                                          ? color
+                                          : Colors.transparent,
                                       width: 2,
                                     ),
                                   ),
@@ -209,16 +238,22 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                                       decoration: BoxDecoration(
                                         color: color,
                                         shape: BoxShape.circle,
-                                        boxShadow: isSelected ? [
-                                          BoxShadow(
-                                            color: color.withOpacity(0.5),
-                                            blurRadius: 8,
-                                            spreadRadius: 1,
-                                          )
-                                        ] : [],
+                                        boxShadow: isSelected
+                                            ? [
+                                                BoxShadow(
+                                                  color: color.withOpacity(0.5),
+                                                  blurRadius: 8,
+                                                  spreadRadius: 1,
+                                                ),
+                                              ]
+                                            : [],
                                       ),
                                       child: isSelected
-                                          ? const Icon(Icons.check, size: 20, color: Colors.white)
+                                          ? const Icon(
+                                              Icons.check,
+                                              size: 20,
+                                              color: Colors.white,
+                                            )
                                           : null,
                                     ),
                                   ),
@@ -237,22 +272,33 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primaryBlue,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.lg,
+                                ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                                  borderRadius: BorderRadius.circular(
+                                    AppSpacing.radiusMd,
+                                  ),
                                 ),
                                 elevation: 0,
                               ),
                               child: _isLoading
                                   ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
-                              )
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
                                   : Text(
-                                isEditing ? 'Save Changes' : 'Create Category',
-                                style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-                              ),
+                                      isEditing
+                                          ? 'Save Changes'
+                                          : 'Create Category',
+                                      style: AppTypography.titleMedium.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                             ),
                           ),
                         ],
@@ -344,7 +390,10 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
       if (mounted) {
         // showTopSnackBar(context, 'Error: $e', isError: true);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } finally {

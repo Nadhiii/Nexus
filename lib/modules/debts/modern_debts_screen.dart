@@ -6,7 +6,7 @@ import '../../core/models/debt.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
-import 'widgets/add_debt_modal.dart' as debt_modal;
+import 'modern_add_debt_screen.dart';
 
 class ModernDebtsScreen extends StatefulWidget {
   const ModernDebtsScreen({super.key});
@@ -30,48 +30,37 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
             return _buildEmptyState(context);
           }
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              debtProvider.refresh();
-            },
-            child: CustomScrollView(
-              slivers: [
-                _buildAppBar(context),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSummaryCard(context, debtProvider),
-                        const SizedBox(height: AppSpacing.lg),
-                        _buildStrategyCard(context, debtProvider),
-                        const SizedBox(height: AppSpacing.lg),
-                        _buildQuickStats(context, debtProvider),
-                        const SizedBox(height: AppSpacing.xl),
-                        Text(
-                          'Your Debts',
-                          style: AppTypography.titleLarge.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                      ],
-                    ),
+          return CustomScrollView(
+            slivers: [
+              _buildAppBar(context),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSummaryCard(context, debtProvider),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
                   ),
                 ),
-                _buildDebtsList(context, debtProvider),
-                const SliverToBoxAdapter(child: SizedBox(height: 140)),
-              ],
-            ),
+              ),
+              _buildDebtsList(context, debtProvider),
+              const SliverToBoxAdapter(child: SizedBox(height: 140)),
+            ],
           );
         },
       ),
       floatingActionButton: Container(
         margin: const EdgeInsets.only(bottom: 80),
         child: FloatingActionButton.extended(
-          onPressed: () => debt_modal.showAddDebtModal(context),
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const ModernAddDebtScreen(),
+              ),
+            );
+          },
           backgroundColor: AppColors.error,
           icon: const Icon(Icons.add),
           label: const Text('Add Debt'),
@@ -82,28 +71,17 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
 
   Widget _buildAppBar(BuildContext context) {
     return SliverAppBar(
-      expandedHeight: 120,
-      floating: false,
       pinned: true,
+      expandedHeight: 120,
       backgroundColor: AppColors.darkGradient.first,
       foregroundColor: Colors.white,
       flexibleSpace: FlexibleSpaceBar(
+        centerTitle: true,
         title: Text(
           'Debts & Loans',
-          style: AppTypography.titleLarge.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppTypography.headlineMedium,
         ),
-        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.school_outlined),
-          onPressed: () => _showEducationDialog(context),
-          tooltip: 'Debt Education',
-        ),
-      ],
     );
   }
 
@@ -159,160 +137,6 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'Monthly Payment ${provider.formattedTotalMinimumPayments} • ${_getFormattedDebtFreeDate(provider)}',
-            style: AppTypography.bodySmall.copyWith(
-              color: Colors.white.withOpacity(0.8),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStrategyCard(BuildContext context, DebtProvider provider) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.cardDarkElevated,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: AppColors.accentPurple.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                ),
-                child: const Icon(
-                  Icons.psychology_outlined,
-                  color: AppColors.accentPurple,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Text(
-                'Payoff Strategy',
-                style: AppTypography.titleSmall.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.cardDark,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            ),
-            child: DropdownButton<DebtPayoffStrategy>(
-              value: provider.selectedStrategy,
-              isExpanded: true,
-              underline: const SizedBox(),
-              dropdownColor: AppColors.cardDarkElevated,
-              style: AppTypography.bodyMedium.copyWith(color: Colors.white),
-              items: DebtPayoffStrategy.values.map((strategy) {
-                return DropdownMenuItem(
-                  value: strategy,
-                  child: Text(_getStrategyDisplayName(strategy)),
-                );
-              }).toList(),
-              onChanged: (strategy) {
-                if (strategy != null) {
-                  provider.setPayoffStrategy(strategy);
-                }
-              },
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            _getStrategyDescription(provider.selectedStrategy),
-            style: AppTypography.bodySmall.copyWith(
-              color: Colors.white.withOpacity(0.6),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickStats(BuildContext context, DebtProvider provider) {
-    final calculation = provider.debtFreeCalculation;
-    final monthsLeft = calculation?['months'] as int? ?? 0;
-
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            'Debts',
-            '${provider.debts.length}',
-            Icons.receipt_long,
-            Colors.orange,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: _buildStatCard(
-            'Months Left',
-            monthsLeft > 0 ? '$monthsLeft' : '∞',
-            Icons.calendar_month,
-            AppColors.accentPurple,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: _buildStatCard(
-            'Interest/Mo',
-            provider.formattedTotalMonthlyInterest,
-            Icons.trending_up,
-            AppColors.error,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.cardDarkElevated,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            value,
-            style: AppTypography.titleMedium.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: AppTypography.bodySmall.copyWith(
-              color: Colors.white.withOpacity(0.6),
-            ),
-            textAlign: TextAlign.center,
-          ),
         ],
       ),
     );
@@ -324,17 +148,16 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
           final debt = provider.debts[index];
-          final isPriority = (debt.priority ?? 999) <= 3;
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: _buildDebtCard(context, debt, isPriority),
+            child: _buildDebtCard(context, debt),
           );
         }, childCount: provider.debts.length),
       ),
     );
   }
 
-  Widget _buildDebtCard(BuildContext context, Debt debt, bool isPriority) {
+  Widget _buildDebtCard(BuildContext context, Debt debt) {
     final progress = debt.currentBalance > 0
         ? (debt.originalAmount - debt.currentBalance) / debt.originalAmount
         : 1.0;
@@ -344,9 +167,6 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardDarkElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        border: isPriority
-            ? Border.all(color: AppColors.error.withOpacity(0.3), width: 1)
-            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,47 +191,31 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            debt.name,
-                            style: AppTypography.titleSmall.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        if (isPriority)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.error.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(
-                                AppSpacing.radiusSm,
-                              ),
-                            ),
-                            child: Text(
-                              'Priority #${debt.priority}',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.error,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                      ],
+                    Text(
+                      debt.name,
+                      style: AppTypography.titleSmall.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     Text(
-                      debt.typeDisplayName,
+                      _getDebtTypeName(debt.type),
                       style: AppTypography.bodySmall.copyWith(
                         color: Colors.white.withOpacity(0.6),
                       ),
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, color: Colors.white70),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ModernAddDebtScreen(debtToEdit: debt),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -492,24 +296,27 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: AppColors.cardDark,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                progress > 0.7 ? Colors.green : Colors.orange,
+          if (debt.originalAmount > 0)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: AppColors.cardDark,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  progress > 0.7 ? Colors.green : Colors.orange,
+                ),
+                minHeight: 6,
               ),
-              minHeight: 6,
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            '${(progress * 100).toStringAsFixed(1)}% paid off',
-            style: AppTypography.bodySmall.copyWith(
-              color: Colors.white.withOpacity(0.6),
+          if (debt.originalAmount > 0)
+            const SizedBox(height: AppSpacing.sm),
+          if (debt.originalAmount > 0)
+            Text(
+              '${(progress * 100).toStringAsFixed(1)}% paid off',
+              style: AppTypography.bodySmall.copyWith(
+                color: Colors.white.withOpacity(0.6),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -545,7 +352,13 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
             ),
             const SizedBox(height: AppSpacing.xl2),
             ElevatedButton.icon(
-              onPressed: () => debt_modal.showAddDebtModal(context),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ModernAddDebtScreen(),
+                  ),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
                 padding: const EdgeInsets.symmetric(
@@ -556,76 +369,39 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
               icon: const Icon(Icons.add),
               label: const Text('Add Debt'),
             ),
-            const SizedBox(height: AppSpacing.md),
-            OutlinedButton.icon(
-              onPressed: () => _showEducationDialog(context),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Colors.white24),
-              ),
-              icon: const Icon(Icons.school_outlined),
-              label: const Text('Learn About Debt'),
-            ),
           ],
         ),
       ),
     );
   }
 
-  String _getFormattedDebtFreeDate(DebtProvider provider) {
-    final calculation = provider.debtFreeCalculation;
-    if (calculation == null) return 'Never';
-    final months = calculation['months'] as int? ?? 0;
-    if (months == 0) return 'Never';
-    final date = DateTime.now().add(Duration(days: months * 30));
-    final formatter = DateFormat('MMM yyyy');
-    return 'Free by ${formatter.format(date)}';
-  }
-
-  String _getStrategyDisplayName(DebtPayoffStrategy strategy) {
-    switch (strategy) {
-      case DebtPayoffStrategy.avalanche:
-        return 'Avalanche (Highest Interest)';
-      case DebtPayoffStrategy.snowball:
-        return 'Snowball (Smallest Balance)';
-      case DebtPayoffStrategy.custom:
-        return 'Custom Order';
-    }
-  }
-
-  String _getStrategyDescription(DebtPayoffStrategy strategy) {
-    switch (strategy) {
-      case DebtPayoffStrategy.avalanche:
-        return 'Pay minimums on all debts, then extra toward highest interest. Saves the most money.';
-      case DebtPayoffStrategy.snowball:
-        return 'Pay minimums on all debts, then extra toward smallest balance. Provides quick wins.';
-      case DebtPayoffStrategy.custom:
-        return 'Pay debts in your preferred order.';
+  String _getDebtTypeName(DebtType type) {
+    switch (type) {
+      case DebtType.creditCard: return 'Credit Card';
+      case DebtType.personalLoan: return 'Personal Loan';
+      case DebtType.homeLoan: return 'Home Loan';
+      case DebtType.carLoan: return 'Car Loan';
+      case DebtType.educationLoan: return 'Education Loan';
+      case DebtType.businessLoan: return 'Business Loan';
+      case DebtType.goldLoan: return 'Gold Loan';
+      case DebtType.owedByMe: return 'Owed by Me';
+      case DebtType.owedToMe: return 'Owed to Me';
+      case DebtType.other: return 'Other';
     }
   }
 
   IconData _getDebtTypeIcon(DebtType type) {
     switch (type) {
-      case DebtType.creditCard:
-        return Icons.credit_card;
-      case DebtType.personalLoan:
-        return Icons.person;
-      case DebtType.homeLoan:
-        return Icons.home;
-      case DebtType.carLoan:
-        return Icons.directions_car;
-      case DebtType.educationLoan:
-        return Icons.school;
-      case DebtType.businessLoan:
-        return Icons.business;
-      case DebtType.goldLoan:
-        return Icons.star;
-      case DebtType.owedToMe:
-        return Icons.call_received;
-      case DebtType.owedByMe:
-        return Icons.call_made;
-      case DebtType.other:
-        return Icons.account_balance;
+      case DebtType.creditCard: return Icons.credit_card;
+      case DebtType.personalLoan: return Icons.person;
+      case DebtType.homeLoan: return Icons.home;
+      case DebtType.carLoan: return Icons.directions_car;
+      case DebtType.educationLoan: return Icons.school;
+      case DebtType.businessLoan: return Icons.business;
+      case DebtType.goldLoan: return Icons.monetization_on;
+      case DebtType.owedByMe: return Icons.arrow_outward;
+      case DebtType.owedToMe: return Icons.arrow_downward;
+      case DebtType.other: return Icons.more_horiz;
     }
   }
 
@@ -652,69 +428,5 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
       case DebtType.other:
         return Colors.grey;
     }
-  }
-
-  void _showEducationDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardDarkElevated,
-        title: Text(
-          'Debt Education',
-          style: AppTypography.titleLarge.copyWith(color: Colors.white),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Debt Strategies:',
-                style: AppTypography.titleSmall.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '• Debt Avalanche: Pay highest interest rate first. Saves most money mathematically.\n\n'
-                '• Debt Snowball: Pay smallest balance first. Provides psychological motivation.\n',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: Colors.white.withOpacity(0.8),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Tips:',
-                style: AppTypography.titleSmall.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '• Always pay minimum on all debts\n'
-                '• Put extra money toward priority debt\n'
-                '• Avoid taking on new debt\n'
-                '• Consider debt consolidation for high rates\n'
-                '• Build emergency fund alongside debt payoff',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: Colors.white.withOpacity(0.8),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Got it',
-              style: TextStyle(color: AppColors.accentTeal),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

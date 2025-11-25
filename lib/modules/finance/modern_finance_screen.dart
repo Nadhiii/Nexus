@@ -127,11 +127,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen>
           padding: const EdgeInsets.only(bottom: 50), // Push title above tabs
           child: Text(
             'Finance',
-            // CORRECTED FONT: Matches Insights Screen
-            style: AppTypography.headlineMedium.copyWith(
-              color: Colors.white,
-              fontSize: 22,
-            ),
+            style: AppTypography.headlineMedium,
           ),
         ),
       ),

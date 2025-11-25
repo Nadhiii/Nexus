@@ -7,7 +7,7 @@ import '../../core/providers/biometric_provider.dart';
 class AppLockScreen extends StatefulWidget {
   final Widget child;
 
-  const AppLockScreen({Key? key, required this.child}) : super(key: key);
+  const AppLockScreen({super.key, required this.child});
 
   @override
   _AppLockScreenState createState() => _AppLockScreenState();
@@ -19,7 +19,10 @@ class _AppLockScreenState extends State<AppLockScreen> {
   @override
   void initState() {
     super.initState();
-    final biometricProvider = Provider.of<BiometricProvider>(context, listen: false);
+    final biometricProvider = Provider.of<BiometricProvider>(
+      context,
+      listen: false,
+    );
     if (biometricProvider.isBiometricEnabled) {
       _authenticate();
     } else {
@@ -58,7 +61,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [colorScheme.surface, colorScheme.background],
+            colors: [colorScheme.surface, colorScheme.surface],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

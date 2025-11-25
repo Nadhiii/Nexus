@@ -17,7 +17,7 @@ class NewNboxProvider extends ChangeNotifier {
   bool _isLoading = false;
   List<DetectedTransaction> _pendingSms = [];
   List<DetectedTransaction> _pendingEmails = [];
-  List<DetectedTransaction> _rejected = [];
+  final List<DetectedTransaction> _rejected = [];
 
   Set<String> _processedIds = {};
 
@@ -60,10 +60,7 @@ class NewNboxProvider extends ChangeNotifier {
 
   Future<void> scanAll() async {
     _setLoading(true);
-    await Future.wait([
-      scanSmsInbox(),
-      if (isGmailLinked) scanEmails(),
-    ]);
+    await Future.wait([scanSmsInbox(), if (isGmailLinked) scanEmails()]);
     _setLoading(false);
   }
 
@@ -80,8 +77,9 @@ class NewNboxProvider extends ChangeNotifier {
     _setLoading(true);
 
     if (!await _checkSmsPermission()) {
-      if (kDebugMode)
+      if (kDebugMode) {
         print('[NewNboxProvider] SMS permission denied. Aborting scan.');
+      }
       _setLoading(false);
       return;
     }
@@ -93,18 +91,19 @@ class NewNboxProvider extends ChangeNotifier {
     final DateTime minDate = nowUtc.subtract(const Duration(days: 30));
 
     if (kDebugMode) {
-      print('[NewNboxProvider] Fetching SMS from last 30 days (since $minDate UTC).');
+      print(
+        '[NewNboxProvider] Fetching SMS from last 30 days (since $minDate UTC).',
+      );
     }
 
     List<SmsMessage> messages;
     try {
       messages = await _telephony.getInboxSms(
         // FIX 2: Robust native query
-        filter: SmsFilter.where(SmsColumn.DATE)
-            .greaterThan(minDate.millisecondsSinceEpoch.toString()),
-        sortOrder: [
-          OrderBy(SmsColumn.DATE, sort: Sort.DESC),
-        ],
+        filter: SmsFilter.where(
+          SmsColumn.DATE,
+        ).greaterThan(minDate.millisecondsSinceEpoch.toString()),
+        sortOrder: [OrderBy(SmsColumn.DATE, sort: Sort.DESC)],
       );
     } catch (e) {
       if (kDebugMode) print('[NewNboxProvider] Error fetching SMS: $e');
@@ -112,15 +111,21 @@ class NewNboxProvider extends ChangeNotifier {
       return;
     }
 
-    if (kDebugMode)
-      print('[NewNboxProvider] Found ${messages.length} SMS messages in window.');
+    if (kDebugMode) {
+      print(
+        '[NewNboxProvider] Found ${messages.length} SMS messages in window.',
+      );
+    }
 
     final allSmsTransactions = <DetectedTransaction>[];
     for (final sms in messages) {
       if (sms.id == null || sms.date == null) continue;
 
       // FIX 3: Convert the UTC SMS timestamp to Local time so the user sees correct hours
-      final localSmsDate = DateTime.fromMillisecondsSinceEpoch(sms.date!, isUtc: true).toLocal();
+      final localSmsDate = DateTime.fromMillisecondsSinceEpoch(
+        sms.date!,
+        isUtc: true,
+      ).toLocal();
 
       final transaction = NewSmsParser.parse(
         sms.id.toString(),
@@ -142,9 +147,9 @@ class NewNboxProvider extends ChangeNotifier {
   }
 
   void _processTransactions(
-      List<DetectedTransaction> transactions,
-      String source,
-      ) {
+    List<DetectedTransaction> transactions,
+    String source,
+  ) {
     final freshPending = <DetectedTransaction>[];
     final freshRejected = <DetectedTransaction>[];
 

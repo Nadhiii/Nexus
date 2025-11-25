@@ -9,7 +9,9 @@ import '../../core/models/account.dart';
 import '../../core/widgets/top_snackbar.dart';
 
 class ModernAddAccountScreen extends StatefulWidget {
-  const ModernAddAccountScreen({super.key});
+  final Account? accountToEdit;
+
+  const ModernAddAccountScreen({super.key, this.accountToEdit});
 
   @override
   State<ModernAddAccountScreen> createState() => _ModernAddAccountScreenState();
@@ -26,6 +28,21 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
   Color _selectedColor = AppColors.primaryBlue;
   IconData _selectedIcon = Icons.account_balance;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.accountToEdit != null) {
+      final account = widget.accountToEdit!;
+      _nameController.text = account.name;
+      _balanceController.text = account.balance.toString();
+      _bankNameController.text = account.bankName ?? '';
+      _accountNumberController.text = account.accountNumber ?? '';
+      _selectedType = account.type;
+      _selectedColor = account.color;
+      _selectedIcon = account.icon;
+    }
+  }
 
   final List<Color> _colorOptions = [
     AppColors.primaryBlue,
@@ -83,7 +100,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Add New Account',
+                            widget.accountToEdit != null ? 'Edit Account' : 'Add New Account',
                             style: AppTypography.displaySmall.copyWith(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.bold,
@@ -91,7 +108,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                           ),
                           const SizedBox(height: AppSpacing.xs),
                           Text(
-                            'Set up a new account to track your finances',
+                            widget.accountToEdit != null 
+                                ? 'Update your account details' 
+                                : 'Set up a new account to track your finances',
                             style: AppTypography.bodyMedium.copyWith(
                               color: AppColors.textSecondary,
                             ),
@@ -353,7 +372,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
                                       ),
                                     )
                                   : Text(
-                                      'Create Account',
+                                      widget.accountToEdit != null ? 'Save Changes' : 'Create Account',
                                       style: AppTypography.titleSmall.copyWith(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -472,33 +491,47 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
       final now = DateTime.now();
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-      final account = Account(
-        id: '',
-        userId: userId,
-        name: _nameController.text.trim(),
-        type: _selectedType,
-        balance: balance,
-        color: _selectedColor,
-        icon: _selectedIcon,
-        bankName: _bankNameController.text.trim().isEmpty
-            ? null
-            : _bankNameController.text.trim(),
-        accountNumber: _accountNumberController.text.trim().isEmpty
-            ? null
-            : _accountNumberController.text.trim(),
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      await context.read<AccountProvider>().addAccount(account);
-
-      if (mounted) {
-        final provider = context.read<AccountProvider>();
-        if (provider.error == null) {
-          showTopSnackBar(context, 'Account created successfully!');
+      if (widget.accountToEdit != null) {
+        final updatedAccount = widget.accountToEdit!.copyWith(
+          name: _nameController.text.trim(),
+          type: _selectedType,
+          balance: balance,
+          color: _selectedColor,
+          icon: _selectedIcon,
+          bankName: _bankNameController.text.trim().isEmpty ? null : _bankNameController.text.trim(),
+          accountNumber: _accountNumberController.text.trim().isEmpty ? null : _accountNumberController.text.trim(),
+          updatedAt: now,
+        );
+        await context.read<AccountProvider>().updateAccount(updatedAccount);
+        if (mounted) {
+          showTopSnackBar(context, 'Account updated successfully!');
           Navigator.of(context).pop();
-        } else {
-          showTopSnackBar(context, provider.error!, isError: true);
+        }
+      } else {
+        final account = Account(
+          id: '',
+          userId: userId,
+          name: _nameController.text.trim(),
+          type: _selectedType,
+          balance: balance,
+          color: _selectedColor,
+          icon: _selectedIcon,
+          bankName: _bankNameController.text.trim().isEmpty ? null : _bankNameController.text.trim(),
+          accountNumber: _accountNumberController.text.trim().isEmpty ? null : _accountNumberController.text.trim(),
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        await context.read<AccountProvider>().addAccount(account);
+
+        if (mounted) {
+          final provider = context.read<AccountProvider>();
+          if (provider.error == null) {
+            showTopSnackBar(context, 'Account created successfully!');
+            Navigator.of(context).pop();
+          } else {
+            showTopSnackBar(context, provider.error!, isError: true);
+          }
         }
       }
     } catch (e) {

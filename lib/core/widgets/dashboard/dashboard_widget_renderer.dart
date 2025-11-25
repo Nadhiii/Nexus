@@ -13,30 +13,35 @@ import '../subscriptions_widget.dart';
 class DashboardWidgetRenderer extends StatelessWidget {
   final String widgetType;
 
-  const DashboardWidgetRenderer({Key? key, required this.widgetType}) : super(key: key);
+  const DashboardWidgetRenderer({super.key, required this.widgetType});
 
   @override
   Widget build(BuildContext context) {
     switch (widgetType) {
       case 'net_worth':
         return Consumer<AccountProvider>(
-          builder: (context, provider, child) => NetWorthWidget(netWorth: provider.netWorth),
+          builder: (context, provider, child) =>
+              NetWorthWidget(netWorth: provider.netWorth),
         );
       case 'accounts':
         return Consumer<AccountProvider>(
-          builder: (context, provider, child) => AccountsWidget(accounts: provider.accounts),
+          builder: (context, provider, child) =>
+              AccountsWidget(accounts: provider.accounts),
         );
       case 'debts':
         return Consumer<DebtProvider>(
-          builder: (context, provider, child) => DebtsWidget(debts: provider.debts),
+          builder: (context, provider, child) =>
+              DebtsWidget(debts: provider.debts),
         );
       case 'goals':
         return Consumer<GoalProvider>(
-          builder: (context, provider, child) => GoalsWidget(goals: provider.goals),
+          builder: (context, provider, child) =>
+              GoalsWidget(goals: provider.goals),
         );
       case 'subscriptions':
         return Consumer<SubscriptionProvider>(
-          builder: (context, provider, child) => SubscriptionsWidget(subscriptions: provider.dueToday),
+          builder: (context, provider, child) =>
+              SubscriptionsWidget(subscriptions: provider.dueToday),
         );
       default:
         return _buildPlaceholder(context, widgetType);
@@ -47,7 +52,7 @@ class DashboardWidgetRenderer extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant.withOpacity(0.5),
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colorScheme.onSurface.withOpacity(0.1)),
       ),
@@ -57,9 +62,18 @@ class DashboardWidgetRenderer extends StatelessWidget {
           children: [
             const Icon(Icons.build, size: 40),
             const SizedBox(height: 8),
-            Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 4),
-            Text('Widget not implemented', style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
+            Text(
+              'Widget not implemented',
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       ),

@@ -6,7 +6,8 @@ import '../../core/providers/debt_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
-import '../investments/sip_portfolio_screen.dart';
+import '../investments/mutual_fund_portfolio_screen.dart';
+import '../crypto/crypto_portfolio_screen.dart';
 import '../debts/modern_debts_screen.dart';
 import '../subscriptions/modern_subscription_screen.dart';
 import '../budgets/modern_budgets_screen.dart';
@@ -59,17 +60,11 @@ class ModernInsightsScreen extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Consumer3<AccountProvider, InvestmentProvider, DebtProvider>(
-      builder: (
-          context,
-          accountProvider,
-          investmentProvider,
-          debtProvider,
-          child,
-          ) {
+      builder: (context, accountProvider, investmentProvider, debtProvider, child) {
         final totalAccounts = accountProvider.totalBalance;
         final totalInvestments = investmentProvider.investments.fold<double>(
           0.0,
-              (sum, investment) => sum + (investment.currentValue ?? 0.0),
+          (sum, investment) => sum + (investment.currentValue ?? 0.0),
         );
         final totalDebts = debtProvider.totalDebt;
         final netWorth = totalAccounts + totalInvestments - totalDebts;
@@ -148,11 +143,18 @@ class ModernInsightsScreen extends StatelessWidget {
 
     final tools = [
       {
-        'title': 'Investments',
+        'title': 'Mutual Funds',
         'subtitle': 'Manage portfolio',
         'icon': Icons.show_chart_rounded,
         'color': colorScheme.secondary,
-        'route': const SipPortfolioScreen(),
+        'route': const MutualFundPortfolioScreen(),
+      },
+      {
+        'title': 'Crypto',
+        'subtitle': 'Track crypto holdings',
+        'icon': Icons.currency_bitcoin,
+        'color': AppColors.accentTeal,
+        'route': const CryptoPortfolioScreen(),
       },
       {
         'title': 'Goals',
@@ -202,23 +204,22 @@ class ModernInsightsScreen extends StatelessWidget {
           subtitle: tool['subtitle'] as String,
           icon: tool['icon'] as IconData,
           color: tool['color'] as Color,
-          onTap:
-              () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => tool['route'] as Widget),
-          ),
+          onTap: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => tool['route'] as Widget)),
         );
       },
     );
   }
 
   Widget _buildFinanceToolCard(
-      BuildContext context, {
-        required String title,
-        required String subtitle,
-        required IconData icon,
-        required Color color,
-        required VoidCallback onTap,
-      }) {
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 

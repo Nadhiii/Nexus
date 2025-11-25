@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'learning_service.dart';
 
 /// A service to automatically suggest a category for a transaction based on its description.

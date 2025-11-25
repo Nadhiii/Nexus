@@ -88,19 +88,22 @@ class _ModernAddTransactionScreenState
     {
       'name': 'Miscellaneous',
       'icon': Icons.more_horiz,
-      'color': AppColors.neutral500
+      'color': AppColors.neutral500,
     },
     {
       'name': 'Uncategorized',
       'icon': Icons.label_off,
-      'color': AppColors.neutral500
+      'color': AppColors.neutral500,
     },
   ];
 
   @override
   void initState() {
     super.initState();
-    final learningService = Provider.of<LearningService>(context, listen: false);
+    final learningService = Provider.of<LearningService>(
+      context,
+      listen: false,
+    );
     _categorizationService = TransactionCategorizationService(learningService);
 
     if (_isEditMode) {
@@ -120,10 +123,12 @@ class _ModernAddTransactionScreenState
         _amountController.text = detected.amount.toStringAsFixed(2);
         _descriptionController.text = detected.merchant;
         _selectedDate = detected.date;
-        _selectedType = detected.type == 'income'
+        _selectedType = detected.type.toLowerCase() == 'income'
             ? TransactionType.income
             : TransactionType.expense;
-        _selectedCategory = _categorizationService.suggestCategory(detected.merchant);
+        _selectedCategory = _categorizationService.suggestCategory(
+          detected.merchant,
+        );
       }
     }
   }
@@ -140,8 +145,8 @@ class _ModernAddTransactionScreenState
     final title = _isEditMode
         ? 'Edit Transaction'
         : (widget.detectedTransaction != null
-        ? 'Approve Transaction'
-        : 'New Transaction');
+              ? 'Approve Transaction'
+              : 'New Transaction');
 
     return Scaffold(
       backgroundColor: AppColors.darkGradient.first,
@@ -182,8 +187,7 @@ class _ModernAddTransactionScreenState
                     TextFormField(
                       controller: _amountController,
                       autofocus:
-                      !_isEditMode &&
-                          widget.detectedTransaction == null,
+                          !_isEditMode && widget.detectedTransaction == null,
                       style: AppTypography.displayMedium.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.bold,
@@ -197,9 +201,7 @@ class _ModernAddTransactionScreenState
                               : AppColors.error,
                           fontWeight: FontWeight.bold,
                         ),
-                        hintStyle: TextStyle(
-                          color: AppColors.textTertiary,
-                        ),
+                        hintStyle: TextStyle(color: AppColors.textTertiary),
                         filled: true,
                         fillColor: AppColors.cardDarkElevated,
                         border: OutlineInputBorder(
@@ -276,8 +278,7 @@ class _ModernAddTransactionScreenState
                                     ),
                                     borderSide: BorderSide.none,
                                   ),
-                                  contentPadding:
-                                  const EdgeInsets.symmetric(
+                                  contentPadding: const EdgeInsets.symmetric(
                                     horizontal: AppSpacing.lg,
                                     vertical: AppSpacing.md,
                                   ),
@@ -298,10 +299,10 @@ class _ModernAddTransactionScreenState
                                             AppSpacing.xs,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: account.color
-                                                .withOpacity(0.2),
-                                            borderRadius:
-                                            BorderRadius.circular(
+                                            color: account.color.withOpacity(
+                                              0.2,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
                                               AppSpacing.radiusSm,
                                             ),
                                           ),
@@ -311,9 +312,7 @@ class _ModernAddTransactionScreenState
                                             size: 16,
                                           ),
                                         ),
-                                        const SizedBox(
-                                          width: AppSpacing.sm,
-                                        ),
+                                        const SizedBox(width: AppSpacing.sm),
                                         Text(account.name),
                                       ],
                                     ),
@@ -364,8 +363,9 @@ class _ModernAddTransactionScreenState
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? (category['color'] as Color)
-                                  .withOpacity(0.2)
+                                  ? (category['color'] as Color).withOpacity(
+                                      0.2,
+                                    )
                                   : AppColors.cardDarkElevated,
                               borderRadius: BorderRadius.circular(
                                 AppSpacing.radiusFull,
@@ -421,9 +421,7 @@ class _ModernAddTransactionScreenState
                       ),
                       decoration: InputDecoration(
                         hintText: 'Add a note...',
-                        hintStyle: TextStyle(
-                          color: AppColors.textTertiary,
-                        ),
+                        hintStyle: TextStyle(color: AppColors.textTertiary),
                         filled: true,
                         fillColor: AppColors.cardDarkElevated,
                         border: OutlineInputBorder(
@@ -466,9 +464,7 @@ class _ModernAddTransactionScreenState
                             ),
                             const SizedBox(width: AppSpacing.md),
                             Text(
-                              DateFormat(
-                                'MMM dd, yyyy',
-                              ).format(_selectedDate),
+                              DateFormat('MMM dd, yyyy').format(_selectedDate),
                               style: AppTypography.bodyLarge.copyWith(
                                 color: AppColors.textPrimary,
                               ),
@@ -489,7 +485,7 @@ class _ModernAddTransactionScreenState
                         onPressed: _isLoading ? null : _saveTransaction,
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
-                          _selectedType == TransactionType.income
+                              _selectedType == TransactionType.income
                               ? AppColors.success
                               : AppColors.primaryBlue,
                           foregroundColor: Colors.white,
@@ -504,22 +500,22 @@ class _ModernAddTransactionScreenState
                         ),
                         child: _isLoading
                             ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
                             : Text(
-                          _isEditMode
-                              ? 'Save Changes'
-                              : 'Save Transaction',
-                          style: AppTypography.titleSmall.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                                _isEditMode
+                                    ? 'Save Changes'
+                                    : 'Save Transaction',
+                                style: AppTypography.titleSmall.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 100),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/investment.dart';
+import '../models/mutualfunds.dart';
 import '../services/investment_service.dart';
 import '../services/nav_service.dart';
 

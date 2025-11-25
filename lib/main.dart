@@ -9,8 +9,9 @@ import 'core/providers/account_provider.dart';
 import 'core/providers/transaction_provider.dart';
 import 'core/providers/new_nbox_provider.dart';
 import 'core/providers/debt_provider.dart';
-import 'core/providers/backup_provider.dart';
+
 import 'core/providers/investment_provider.dart';
+import 'core/providers/crypto_provider.dart';
 import 'core/providers/biometric_provider.dart';
 import 'core/providers/notification_provider.dart';
 import 'core/providers/subscription_provider.dart';
@@ -48,6 +49,7 @@ class NexusApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AccountProvider()),
         ChangeNotifierProvider(create: (_) => DebtProvider()),
         ChangeNotifierProvider(create: (_) => InvestmentProvider()),
+        ChangeNotifierProvider(create: (_) => CryptoProvider()),
         ChangeNotifierProvider(create: (_) => BiometricProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => GmailProvider()),
@@ -61,7 +63,9 @@ class NexusApp extends StatelessWidget {
           },
         ),
         ChangeNotifierProxyProvider<NotificationProvider, SubscriptionProvider>(
-          create: (context) => SubscriptionProvider(),
+          // FIXED: Passed learningService to constructor
+          create: (context) =>
+              SubscriptionProvider(learningService: learningService),
           update: (context, notificationProvider, subscriptionProvider) {
             subscriptionProvider?.update(notificationProvider);
             return subscriptionProvider!;
@@ -74,25 +78,29 @@ class NexusApp extends StatelessWidget {
             return budgetProvider!;
           },
         ),
-        ChangeNotifierProxyProvider3<AccountProvider, BudgetProvider, NotificationProvider, TransactionProvider>(
-          create: (context) => TransactionProvider(learningService: learningService),
-          update: (context, accountProvider, budgetProvider, notificationProvider, transactionProvider) {
-            transactionProvider?.update(accountProvider, budgetProvider, notificationProvider);
-            return transactionProvider!;
-          },
-        ),
-        ChangeNotifierProxyProvider5<TransactionProvider, AccountProvider, GoalProvider, SubscriptionProvider, DebtProvider, BackupProvider>(
-          create: (context) => BackupProvider(),
-          update: (context, transactionProvider, accountProvider, goalProvider, subscriptionProvider, debtProvider, backupProvider) {
-            backupProvider?.update(
-              transactionProvider: transactionProvider,
-              accountProvider: accountProvider,
-              goalProvider: goalProvider,
-              subscriptionProvider: subscriptionProvider,
-              debtProvider: debtProvider,
-            );
-            return backupProvider!;
-          },
+        ChangeNotifierProxyProvider3<
+          AccountProvider,
+          BudgetProvider,
+          NotificationProvider,
+          TransactionProvider
+        >(
+          create: (context) =>
+              TransactionProvider(learningService: learningService),
+          update:
+              (
+                context,
+                accountProvider,
+                budgetProvider,
+                notificationProvider,
+                transactionProvider,
+              ) {
+                transactionProvider?.update(
+                  accountProvider,
+                  budgetProvider,
+                  notificationProvider,
+                );
+                return transactionProvider!;
+              },
         ),
       ],
       child: Consumer<ThemeProvider>(

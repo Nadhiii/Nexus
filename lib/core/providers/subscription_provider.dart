@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/subscription.dart';
 import '../services/subscription_service.dart';
+import '../services/learning_service.dart';
 import 'notification_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class SubscriptionProvider extends ChangeNotifier {
   final SubscriptionService _subscriptionService = SubscriptionService();
+  final LearningService _learningService;
   NotificationProvider? _notificationProvider;
 
   List<Subscription> _subscriptions = [];
@@ -13,6 +15,9 @@ class SubscriptionProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   String _filterFrequency = 'all';
+
+  SubscriptionProvider({required LearningService learningService})
+      : _learningService = learningService;
 
   // Getters
   List<Subscription> get subscriptions => _subscriptions;
@@ -116,6 +121,11 @@ class SubscriptionProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       await _subscriptionService.addSubscription(subscription);
+      
+      // Learn subscription category from name
+      if (subscription.name.isNotEmpty && subscription.categoryId.isNotEmpty) {
+        await _learningService.learnEntity('subscription', subscription.name, subscription.categoryId);
+      }
     } catch (e) {
       _setError('Failed to add subscription: $e');
     } finally {
@@ -127,6 +137,11 @@ class SubscriptionProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       await _subscriptionService.updateSubscription(subscription);
+      
+      // Learn subscription category from name
+      if (subscription.name.isNotEmpty && subscription.categoryId.isNotEmpty) {
+        await _learningService.learnEntity('subscription', subscription.name, subscription.categoryId);
+      }
     } catch (e) {
       _setError('Failed to update subscription: $e');
     } finally {

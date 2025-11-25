@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:ui';
 import '../../../core/theme/app_theme.dart';
 import '../add_investment_screen.dart';
-import '../../../core/models/investment.dart';
+import '../../../core/models/mutualfunds.dart';
 
 class AddInvestmentModal extends StatefulWidget {
   final Investment? investmentToEdit;
@@ -29,29 +29,20 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.85,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
+    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+    );
 
-    _opacityAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
-    ));
+    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
+      ),
+    );
 
-    _blurAnimation = Tween<double>(
-      begin: 0.0,
-      end: 15.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
+    _blurAnimation = Tween<double>(begin: 0.0, end: 15.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
 
     HapticFeedback.lightImpact();
     _animationController.forward();
@@ -95,7 +86,9 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
                   child: Container(
                     width: double.infinity,
                     height: double.infinity,
-                    color: Colors.black.withOpacity(0.3 * _opacityAnimation.value),
+                    color: Colors.black.withOpacity(
+                      0.3 * _opacityAnimation.value,
+                    ),
                   ),
                 ),
                 GestureDetector(
@@ -120,10 +113,14 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
                             left: AppTheme.spacing20,
                             right: AppTheme.spacing20,
                             top: AppTheme.spacing32,
-                            bottom: AppTheme.spacing32 + MediaQuery.of(context).viewInsets.bottom,
+                            bottom:
+                                AppTheme.spacing32 +
+                                MediaQuery.of(context).viewInsets.bottom,
                           ),
                           constraints: BoxConstraints(
-                            maxHeight: MediaQuery.of(context).size.height * 0.85 - MediaQuery.of(context).viewInsets.bottom,
+                            maxHeight:
+                                MediaQuery.of(context).size.height * 0.85 -
+                                MediaQuery.of(context).viewInsets.bottom,
                             maxWidth: 500,
                           ),
                           decoration: BoxDecoration(
