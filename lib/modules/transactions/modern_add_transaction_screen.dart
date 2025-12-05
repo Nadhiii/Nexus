@@ -447,7 +447,7 @@ class _ModernAddTransactionScreenState
                                 ),
                                 child: DropdownButtonFormField<String>(
                                   focusNode: _categoryFocus,
-                                  value: _selectedCategory,
+                                  initialValue: _selectedCategory,
                                   dropdownColor: AppColors.cardDarkElevated,
                                   style: AppTypography.bodyLarge.copyWith(
                                     color: AppColors.textPrimary,
