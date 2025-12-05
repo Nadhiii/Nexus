@@ -45,6 +45,17 @@ class AccountService {
     return _firestore.collection('users').doc(userId).collection('accounts');
   }
 
+  Future<int> purgeAccountsByName(String userId, String name) async {
+    final coll = _getAccountsCollection(userId);
+    final snapshot = await coll.where('name', isEqualTo: name).get();
+    int count = 0;
+    for (final doc in snapshot.docs) {
+      await doc.reference.delete();
+      count++;
+    }
+    return count;
+  }
+
   Stream<List<Account>> watchAccounts(String userId) {
     return _getAccountsCollection(userId).snapshots().map(
       (snapshot) =>

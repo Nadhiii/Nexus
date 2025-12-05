@@ -26,15 +26,9 @@ class NavService {
 
   /// Update investment with current NAV and calculate portfolio values
   Future<Investment> enrichInvestmentWithNav(Investment investment) async {
-    // Calculate months since start date
-    final now = DateTime.now();
-    final monthsInvested =
-        (now.year - investment.startDate.year) * 12 +
-        (now.month - investment.startDate.month);
-
-    // Calculate total invested amount (number of SIP installments * sipAmount)
-    final installments = monthsInvested > 0 ? monthsInvested : 1;
-    final investedAmount = investment.sipAmount * installments;
+    // Calculate total invested amount based on actual purchase
+    // (units owned * NAV at time of purchase)
+    final investedAmount = investment.units * investment.purchaseNav;
 
     final currentNav = await getCurrentNav(investment.mutualFundSchemeCode);
 

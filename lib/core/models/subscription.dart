@@ -45,8 +45,20 @@ class Subscription {
         case 'weekly':
           nextDate = DateTime(nextDate.year, nextDate.month, nextDate.day + 7);
           break;
+        case 'biweekly':
+          nextDate = DateTime(nextDate.year, nextDate.month, nextDate.day + 14);
+          break;
         case 'monthly':
           nextDate = DateTime(nextDate.year, nextDate.month + 1, nextDate.day);
+          break;
+        case 'bimonthly':
+          nextDate = DateTime(nextDate.year, nextDate.month + 2, nextDate.day);
+          break;
+        case 'quarterly':
+          nextDate = DateTime(nextDate.year, nextDate.month + 3, nextDate.day);
+          break;
+        case '6months':
+          nextDate = DateTime(nextDate.year, nextDate.month + 6, nextDate.day);
           break;
         case 'yearly':
           nextDate = DateTime(nextDate.year + 1, nextDate.month, nextDate.day);

@@ -40,8 +40,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     super.dispose();
   }
 
-  // ... (Keep logic methods: _toggleCardExpansion, _enterSelectionMode, _exitSelectionMode, _toggleSelection, _toggleSelectAll, _rejectSelectedItems, _navigateToApproveScreen, _refreshCurrentTab) ...
-
   void _toggleCardExpansion(String id, String source) {
     final uniqueId = '$source:$id';
     setState(() {
@@ -167,7 +165,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         backgroundColor: AppColors.darkGradient.first,
         body: Stack(
           children: [
-            // 1. Background
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -177,7 +174,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                 ),
               ),
             ),
-            // 2. Content
             NestedScrollView(
               headerSliverBuilder: (context, innerBoxIsScrolled) {
                 if (_isSelectionMode) {
@@ -322,7 +318,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                   context,
                 ),
               ),
-
             if (transactions.isEmpty)
               SliverFillRemaining(
                 child: RefreshIndicator(
@@ -337,8 +332,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                 type,
                 nboxProvider,
               ),
-
-            // SAFE AREA PADDING to prevent bottom overflow
             const SliverToBoxAdapter(child: SizedBox(height: 140)),
           ],
         );
@@ -382,16 +375,15 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     );
   }
 
-  // ... (Helper methods like _getGroupHeader, _buildDateHeader, _buildEmptyState, _buildTransactionCard, etc. stay consistent)
-
   String _getGroupHeader(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
     final dateToCompare = DateTime(date.year, date.month, date.day);
 
-    if (dateToCompare == today) return 'Today';
-    if (dateToCompare == yesterday) return 'Yesterday';
+    if (dateToCompare.isAtSameMomentAs(today)) return 'Today';
+    if (dateToCompare.isAtSameMomentAs(yesterday)) return 'Yesterday';
+
     return DateFormat.yMMMMd().format(date);
   }
 
@@ -472,7 +464,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       key: ValueKey('${transaction.source}:${transaction.id}'),
       direction: _isSelectionMode
           ? DismissDirection.none
-          : DismissDirection.startToEnd,
+          : DismissDirection.endToStart,
       onDismissed: (_) {
         nbox.rejectTransaction(transaction.id, transaction.source);
         showTopNotification(
@@ -487,11 +479,24 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           color: colorScheme.errorContainer,
           borderRadius: BorderRadius.circular(24),
         ),
-        alignment: Alignment.centerLeft,
+        alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: Icon(
-          Icons.delete_sweep_outlined,
-          color: colorScheme.onErrorContainer,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'Reject',
+              style: TextStyle(
+                color: colorScheme.onErrorContainer,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.delete_sweep_outlined,
+              color: colorScheme.onErrorContainer,
+            ),
+          ],
         ),
       ),
       child: Card(
@@ -547,7 +552,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                DateFormat.jm().format(transaction.date),
+                                DateFormat.jm().format(
+                                  transaction.date.toLocal(),
+                                ),
                                 style: textTheme.bodyMedium?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
                                 ),
@@ -693,7 +700,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      DateFormat.yMMMd().format(transaction.date),
+                      DateFormat.yMMMd().format(transaction.date.toLocal()),
                       style: textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                         fontStyle: FontStyle.italic,

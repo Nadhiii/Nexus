@@ -5,6 +5,7 @@ import '../../core/models/category.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/swipe_to_delete.dart';
 // Assuming you have this from other screens
 import 'widgets/edit_category_modal.dart';
 
@@ -64,20 +65,15 @@ class ManageCategoriesScreen extends StatelessWidget {
 
                           // Only custom categories can be deleted (Swiped)
                           if (category.isCustom) {
-                            return Dismissible(
-                              key: ValueKey(category.id),
-                              direction: DismissDirection.endToStart,
-                              background: _buildDeleteBackground(),
-                              confirmDismiss: (direction) async {
-                                return await _showDeleteConfirmation(
-                                  context,
-                                  category,
-                                );
-                              },
-                              onDismissed: (direction) {
+                            return SwipeToDelete(
+                              itemKey: ValueKey(category.id),
+                              itemId: category.id,
+                              itemName: category.name,
+                              onDelete: () {
                                 provider.deleteCategory(category.id);
-                                // Optional: Show success snackbar if you have the utility
-                                // showTopSnackBar(context, '${category.name} deleted');
+                              },
+                              onUndoDelete: () {
+                                provider.addCategory(category);
                               },
                               child: _buildCategoryCard(context, category),
                             );
@@ -134,23 +130,6 @@ class ManageCategoriesScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  // The red background that appears when swiping
-  Widget _buildDeleteBackground() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      alignment: Alignment.centerRight,
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(
-          0.2,
-        ), // Matches your theme's error container
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        border: Border.all(color: AppColors.error.withOpacity(0.5)),
-      ),
-      child: const Icon(Icons.delete_outline, color: AppColors.error),
     );
   }
 
@@ -228,47 +207,6 @@ class ManageCategoriesScreen extends StatelessWidget {
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  Future<bool?> _showDeleteConfirmation(
-    BuildContext context,
-    Category category,
-  ) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardDarkElevated,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        ),
-        title: Text(
-          'Delete Category',
-          style: AppTypography.titleMedium.copyWith(color: Colors.white),
-        ),
-        content: Text(
-          'Are you sure you want to delete "${category.name}"? This cannot be undone.',
-          style: AppTypography.bodyMedium.copyWith(
-            color: Colors.white.withOpacity(0.7),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: AppColors.error),
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -8,6 +8,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/models/transaction.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../../core/providers/account_provider.dart';
+import '../../core/providers/category_provider.dart';
 import '../../models/detected_transaction.dart';
 import '../../core/providers/new_nbox_provider.dart';
 import '../../core/widgets/top_snackbar.dart';
@@ -41,61 +42,17 @@ class _ModernAddTransactionScreenState
 
   TransactionType _selectedType = TransactionType.expense;
   String? _selectedAccountId;
+  String? _toAccountId; // For transfers
   String? _selectedCategory;
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
   bool get _isEditMode => widget.transaction != null;
 
   late final TransactionCategorizationService _categorizationService;
+  final FocusNode _categoryFocus = FocusNode();
+  bool _categoryHasFocus = false;
 
-  final List<Map<String, dynamic>> _categories = [
-    {
-      'name': 'Food & Dining',
-      'icon': Icons.restaurant,
-      'color': AppColors.error,
-    },
-    {
-      'name': 'Shopping',
-      'icon': Icons.shopping_bag,
-      'color': AppColors.accentPurple,
-    },
-    {
-      'name': 'Transportation',
-      'icon': Icons.directions_car,
-      'color': AppColors.primaryBlue,
-    },
-    {
-      'name': 'Entertainment',
-      'icon': Icons.movie,
-      'color': AppColors.accentTeal,
-    },
-    {'name': 'Bills', 'icon': Icons.receipt_long, 'color': AppColors.warning},
-    {
-      'name': 'Healthcare',
-      'icon': Icons.local_hospital,
-      'color': AppColors.error,
-    },
-    {
-      'name': 'Salary',
-      'icon': Icons.account_balance_wallet,
-      'color': AppColors.success,
-    },
-    {
-      'name': 'Investment',
-      'icon': Icons.trending_up,
-      'color': AppColors.accentTeal,
-    },
-    {
-      'name': 'Miscellaneous',
-      'icon': Icons.more_horiz,
-      'color': AppColors.neutral500,
-    },
-    {
-      'name': 'Uncategorized',
-      'icon': Icons.label_off,
-      'color': AppColors.neutral500,
-    },
-  ];
+  // Categories now sourced from CategoryProvider
 
   @override
   void initState() {
@@ -105,6 +62,14 @@ class _ModernAddTransactionScreenState
       listen: false,
     );
     _categorizationService = TransactionCategorizationService(learningService);
+
+    _categoryFocus.addListener(() {
+      if (mounted) {
+        setState(() {
+          _categoryHasFocus = _categoryFocus.hasFocus;
+        });
+      }
+    });
 
     if (_isEditMode) {
       final transaction = widget.transaction!;
@@ -137,6 +102,7 @@ class _ModernAddTransactionScreenState
   void dispose() {
     _amountController.dispose();
     _descriptionController.dispose();
+    _categoryFocus.dispose();
     super.dispose();
   }
 
@@ -227,26 +193,6 @@ class _ModernAddTransactionScreenState
                     const SizedBox(height: AppSpacing.xl2),
                     Consumer<AccountProvider>(
                       builder: (context, provider, child) {
-                        if (provider.accounts.isEmpty) {
-                          return Container(
-                            padding: AppSpacing.cardPaddingMd,
-                            decoration: BoxDecoration(
-                              color: AppColors.cardDarkElevated,
-                              borderRadius: BorderRadius.circular(
-                                AppSpacing.radiusLg,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'No accounts available',
-                                style: AppTypography.bodyMedium.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
-                          );
-                        }
-
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -331,81 +277,266 @@ class _ModernAddTransactionScreenState
                                 },
                               ),
                             ),
+                            // Show "To Account" dropdown for transfers
+                            if (_selectedType == TransactionType.transfer) ...[
+                              const SizedBox(height: AppSpacing.lg),
+                              Text(
+                                'To Account',
+                                style: AppTypography.titleSmall.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.cardDarkElevated,
+                                  borderRadius: BorderRadius.circular(
+                                    AppSpacing.radiusLg,
+                                  ),
+                                ),
+                                child: DropdownButtonFormField<String>(
+                                  initialValue: _toAccountId,
+                                  dropdownColor: AppColors.cardDarkElevated,
+                                  style: AppTypography.bodyLarge.copyWith(
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        AppSpacing.radiusLg,
+                                      ),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.lg,
+                                      vertical: AppSpacing.md,
+                                    ),
+                                  ),
+                                  hint: Text(
+                                    'Select destination account',
+                                    style: AppTypography.bodyLarge.copyWith(
+                                      color: AppColors.textTertiary,
+                                    ),
+                                  ),
+                                  items: provider.accounts
+                                      .where((a) => a.id != _selectedAccountId)
+                                      .map((account) {
+                                        return DropdownMenuItem<String>(
+                                          value: account.id,
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(
+                                                  AppSpacing.xs,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: account.color
+                                                      .withOpacity(0.2),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        AppSpacing.radiusSm,
+                                                      ),
+                                                ),
+                                                child: Icon(
+                                                  account.icon,
+                                                  color: account.color,
+                                                  size: 16,
+                                                ),
+                                              ),
+                                              const SizedBox(
+                                                width: AppSpacing.sm,
+                                              ),
+                                              Text(account.name),
+                                            ],
+                                          ),
+                                        );
+                                      })
+                                      .toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _toAccountId = value;
+                                    });
+                                  },
+                                  validator: (value) {
+                                    if (_selectedType ==
+                                            TransactionType.transfer &&
+                                        value == null) {
+                                      return 'Please select a destination account';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
                           ],
                         );
                       },
                     ),
                     const SizedBox(height: AppSpacing.xl2),
-                    Text(
-                      'Category',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                    // Hide category for transfers
+                    if (_selectedType != TransactionType.transfer) ...[
+                      Text(
+                        'Category',
+                        style: AppTypography.titleSmall.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Wrap(
-                      spacing: AppSpacing.sm,
-                      runSpacing: AppSpacing.sm,
-                      children: _categories.map((category) {
-                        final isSelected =
-                            _selectedCategory == category['name'];
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedCategory = category['name'];
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.md,
-                              vertical: AppSpacing.sm,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? (category['color'] as Color).withOpacity(
-                                      0.2,
-                                    )
-                                  : AppColors.cardDarkElevated,
-                              borderRadius: BorderRadius.circular(
-                                AppSpacing.radiusFull,
+                      const SizedBox(height: AppSpacing.sm),
+                      Consumer<CategoryProvider>(
+                        builder: (context, categoryProvider, _) {
+                          if (categoryProvider.isLoading) {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(AppSpacing.md),
+                                child: CircularProgressIndicator(),
                               ),
-                              border: Border.all(
-                                color: isSelected
-                                    ? (category['color'] as Color)
-                                    : Colors.transparent,
-                                width: 1.5,
+                            );
+                          }
+                          final categories = categoryProvider.categories;
+                          if (categories.isEmpty) {
+                            return Text(
+                              'No categories found',
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: AppColors.textSecondary,
                               ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  category['icon'] as IconData,
-                                  size: 18,
-                                  color: isSelected
-                                      ? (category['color'] as Color)
-                                      : AppColors.textSecondary,
-                                ),
-                                const SizedBox(width: AppSpacing.xs),
-                                Text(
-                                  category['name'] as String,
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: isSelected
-                                        ? AppColors.textPrimary
-                                        : AppColors.textSecondary,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.normal,
+                            );
+                          }
+                          final selectedColor = categories
+                              .firstWhere(
+                                (c) => c.id == _selectedCategory,
+                                orElse: () => categories.first,
+                              )
+                              .color;
+                          return AnimatedScale(
+                            duration: const Duration(milliseconds: 150),
+                            curve: Curves.easeOut,
+                            scale: _categoryHasFocus ? 1.02 : 1.0,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 150),
+                              curve: Curves.easeOut,
+                              opacity: _categoryHasFocus ? 1.0 : 0.95,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeOut,
+                                decoration: BoxDecoration(
+                                  color: AppColors.cardDarkElevated,
+                                  borderRadius: BorderRadius.circular(
+                                    AppSpacing.radiusLg,
                                   ),
+                                  border: Border.all(
+                                    color: _selectedCategory == null
+                                        ? AppColors.cardDarkElevated
+                                        : selectedColor,
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: _selectedCategory == null
+                                      ? []
+                                      : [
+                                          BoxShadow(
+                                            color: selectedColor.withOpacity(
+                                              0.2,
+                                            ),
+                                            blurRadius: 8,
+                                          ),
+                                        ],
                                 ),
-                              ],
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.xs,
+                                ),
+                                child: DropdownButtonFormField<String>(
+                                  focusNode: _categoryFocus,
+                                  value: _selectedCategory,
+                                  dropdownColor: AppColors.cardDarkElevated,
+                                  style: AppTypography.bodyLarge.copyWith(
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        AppSpacing.radiusLg,
+                                      ),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.lg,
+                                      vertical: AppSpacing.md,
+                                    ),
+                                  ),
+                                  hint: Text(
+                                    'Select category',
+                                    style: AppTypography.bodyLarge.copyWith(
+                                      color: AppColors.textTertiary,
+                                    ),
+                                  ),
+                                  items: categories.map((c) {
+                                    return DropdownMenuItem<String>(
+                                      value: c.id,
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: AppSpacing.sm,
+                                              vertical: AppSpacing.xs,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: c.color.withOpacity(0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    AppSpacing.radiusSm,
+                                                  ),
+                                            ),
+                                            child: Text(
+                                              c.emoji,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: AppSpacing.sm),
+                                          Text(
+                                            c.name,
+                                            style: AppTypography.bodyLarge
+                                                .copyWith(
+                                                  color: AppColors.textPrimary,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedCategory = value;
+                                      _categoryHasFocus = true;
+                                    });
+                                    // Briefly animate selection feedback
+                                    Future.delayed(
+                                      const Duration(milliseconds: 180),
+                                      () {
+                                        if (mounted) {
+                                          setState(() {
+                                            _categoryHasFocus = false;
+                                          });
+                                        }
+                                      },
+                                    );
+                                  },
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please select a category';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
                             ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: AppSpacing.xl2),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.xl2),
+                    ],
                     Text(
                       'Description (Optional)',
                       style: AppTypography.titleSmall.copyWith(
@@ -611,6 +742,43 @@ class _ModernAddTransactionScreenState
               ),
             ),
           ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () =>
+                  setState(() => _selectedType = TransactionType.transfer),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: _selectedType == TransactionType.transfer
+                      ? AppColors.primaryBlue
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.swap_horiz,
+                      color: _selectedType == TransactionType.transfer
+                          ? Colors.white
+                          : AppColors.textSecondary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      'Transfer',
+                      style: AppTypography.titleSmall.copyWith(
+                        color: _selectedType == TransactionType.transfer
+                            ? Colors.white
+                            : AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -641,6 +809,27 @@ class _ModernAddTransactionScreenState
       return;
     }
 
+    // Validate destination account for transfers
+    if (_selectedType == TransactionType.transfer && _toAccountId == null) {
+      showTopSnackBar(
+        context,
+        'Please select a destination account',
+        isError: true,
+      );
+      return;
+    }
+
+    // Validate same account for transfers
+    if (_selectedType == TransactionType.transfer &&
+        _selectedAccountId == _toAccountId) {
+      showTopSnackBar(
+        context,
+        'Source and destination accounts must be different',
+        isError: true,
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -650,20 +839,35 @@ class _ModernAddTransactionScreenState
       final now = DateTime.now();
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
+      print('🔄 Creating transfer transaction:');
+      print('   Type: $_selectedType');
+      print('   From Account ID: $_selectedAccountId');
+      print('   To Account ID: $_toAccountId');
+      print('   Amount: $amount');
+
       final transaction = Transaction(
         id: _isEditMode ? widget.transaction!.id : '',
         userId: userId,
         type: _selectedType,
         amount: amount,
         description: _descriptionController.text.trim().isEmpty
-            ? null
+            ? (_selectedType == TransactionType.transfer ? 'Transfer' : null)
             : _descriptionController.text.trim(),
-        categoryId: _selectedCategory,
+        categoryId: _selectedType == TransactionType.transfer
+            ? 'transfer'
+            : _selectedCategory,
         accountId: _selectedAccountId!,
+        toAccountId: _selectedType == TransactionType.transfer
+            ? _toAccountId
+            : null,
         date: _selectedDate,
         createdAt: _isEditMode ? widget.transaction!.createdAt : now,
         updatedAt: now,
       );
+
+      print('📝 Transaction object created:');
+      print('   accountId: ${transaction.accountId}');
+      print('   toAccountId: ${transaction.toAccountId}');
 
       final provider = context.read<TransactionProvider>();
       final success = _isEditMode
@@ -682,7 +886,9 @@ class _ModernAddTransactionScreenState
 
         showTopSnackBar(
           context,
-          'Transaction ${_isEditMode ? 'updated' : 'saved'} successfully!',
+          _selectedType == TransactionType.transfer
+              ? 'Transfer completed successfully!'
+              : 'Transaction ${_isEditMode ? 'updated' : 'saved'} successfully!',
         );
         Navigator.of(context).pop();
       } else if (mounted) {

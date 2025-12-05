@@ -16,8 +16,9 @@ class AccountProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isInitialized => _isInitialized;
-  
-  double get totalBalance => _accounts.fold(0.0, (sum, account) => sum + account.balance);
+
+  double get totalBalance =>
+      _accounts.fold(0.0, (sum, account) => sum + account.balance);
   double get netWorth => totalBalance; // Simplified for now
 
   AccountProvider() {
@@ -35,14 +36,19 @@ class AccountProvider with ChangeNotifier {
   Future<void> _loadAccounts(String userId) async {
     _setLoading(true);
     try {
-      _accountService.watchAccounts(userId).listen((accounts) {
-        _accounts = accounts;
-        _setLoading(false);
-        notifyListeners();
-      }, onError: (e) {
-        _setError('Error loading accounts: $e');
-        _setLoading(false);
-      });
+      _accountService
+          .watchAccounts(userId)
+          .listen(
+            (accounts) {
+              _accounts = accounts;
+              _setLoading(false);
+              notifyListeners();
+            },
+            onError: (e) {
+              _setError('Error loading accounts: $e');
+              _setLoading(false);
+            },
+          );
     } catch (e) {
       _setError(e.toString());
       _setLoading(false);
@@ -81,12 +87,20 @@ class AccountProvider with ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) return;
     try {
-      await _accountService.updateAccountBalance(user.uid, accountId, newBalance);
+      print(
+        '💰 AccountProvider.updateAccountBalance: accountId=$accountId, newBalance=$newBalance',
+      );
+      await _accountService.updateAccountBalance(
+        user.uid,
+        accountId,
+        newBalance,
+      );
+      print('✅ AccountProvider: Balance updated in Firestore');
     } catch (e) {
+      print('❌ AccountProvider: Failed to update balance: $e');
       _setError('Failed to update account balance: $e');
     }
   }
-
 
   Future<void> deleteAccount(String accountId) async {
     final user = _auth.currentUser;
@@ -102,14 +116,37 @@ class AccountProvider with ChangeNotifier {
     }
   }
 
-  Account? getAccountById(String id) {
+  /// Permanently deletes any account documents matching the given name.
+  /// Useful for cleaning up orphaned accounts (e.g., 'SBI').
+  Future<int> purgeAccountByName(String name) async {
+    final user = _auth.currentUser;
+    if (user == null) return 0;
     try {
-      return _accounts.firstWhere((acc) => acc.id == id);
+      final count = await _accountService.purgeAccountsByName(user.uid, name);
+      print('🧹 Purged $count account(s) named "$name"');
+      return count;
     } catch (e) {
+      print('❌ Failed to purge account "$name": $e');
+      _setError('Failed to purge account "$name": $e');
+      return 0;
+    }
+  }
+
+  Account? getAccountById(String id) {
+    print('🔍 getAccountById called with id: "$id"');
+    print(
+      '📋 Available accounts: ${_accounts.map((a) => '"${a.id}":${a.name}').toList()}',
+    );
+    try {
+      final account = _accounts.firstWhere((acc) => acc.id == id);
+      print('✅ Found account: ${account.name}');
+      return account;
+    } catch (e) {
+      print('❌ Account not found for id: "$id"');
       return null;
     }
   }
-  
+
   Future<void> clearAllData() async {
     final user = _auth.currentUser;
     if (user == null) return;
@@ -119,7 +156,9 @@ class AccountProvider with ChangeNotifier {
   Future<void> restoreFromBackup(List<dynamic> data) async {
     final user = _auth.currentUser;
     if (user == null) return;
-    final accounts = data.map((d) => Account.fromJson(d as Map<String, dynamic>)).toList();
+    final accounts = data
+        .map((d) => Account.fromJson(d as Map<String, dynamic>))
+        .toList();
     await _accountService.restoreAccounts(user.uid, accounts);
   }
 

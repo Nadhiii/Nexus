@@ -256,13 +256,29 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
                 DropdownButtonFormField<String>(
                   initialValue: _selectedFrequency,
                   decoration: const InputDecoration(
-                    labelText: 'Frequency',
+                    labelText: 'Billing Cycle',
                     border: OutlineInputBorder(),
                   ),
                   items: const [
                     DropdownMenuItem(value: 'daily', child: Text('Daily')),
                     DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+                    DropdownMenuItem(
+                      value: 'biweekly',
+                      child: Text('Every 2 Weeks'),
+                    ),
                     DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
+                    DropdownMenuItem(
+                      value: 'bimonthly',
+                      child: Text('Every 2 Months'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'quarterly',
+                      child: Text('Every 3 Months (Quarterly)'),
+                    ),
+                    DropdownMenuItem(
+                      value: '6months',
+                      child: Text('Every 6 Months'),
+                    ),
                     DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
                   ],
                   onChanged: (value) {

@@ -6,7 +6,7 @@ import '../../core/providers/debt_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
-import '../investments/mutual_fund_portfolio_screen.dart';
+import '../investments/mutual_fund_portfolio_screen.dart'; // Only mutual fund portfolio remains, legacy investment screens removed
 import '../crypto/crypto_portfolio_screen.dart';
 import '../debts/modern_debts_screen.dart';
 import '../subscriptions/modern_subscription_screen.dart';
@@ -59,6 +59,7 @@ class ModernInsightsScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    // Only mutual fund logic remains, legacy investment logic removed
     return Consumer3<AccountProvider, InvestmentProvider, DebtProvider>(
       builder: (context, accountProvider, investmentProvider, debtProvider, child) {
         final totalAccounts = accountProvider.totalBalance;

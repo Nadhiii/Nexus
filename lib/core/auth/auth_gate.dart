@@ -9,6 +9,7 @@ import '../providers/subscription_provider.dart';
 import '../providers/budget_provider.dart';
 import '../providers/goal_provider.dart';
 import '../providers/crypto_provider.dart';
+import '../providers/category_provider.dart';
 
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
@@ -72,6 +73,10 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
     final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
     final goalProvider = Provider.of<GoalProvider>(context, listen: false);
     final cryptoProvider = Provider.of<CryptoProvider>(context, listen: false);
+    final categoryProvider = Provider.of<CategoryProvider>(
+      context,
+      listen: false,
+    );
 
     // Initialize all providers
     accountProvider.initialize();
@@ -80,6 +85,7 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
     budgetProvider.initialize();
     goalProvider.loadGoals(user.uid);
     cryptoProvider.loadCryptos(user.uid);
+    categoryProvider.refresh(); // Refresh categories after authentication
   }
 
   @override

@@ -8,8 +8,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/top_snackbar.dart';
-import 'add_investment_screen.dart';
-import 'edit_investment_screen.dart';
 
 class MutualFundPortfolioScreen extends StatelessWidget {
   const MutualFundPortfolioScreen({super.key});
@@ -101,12 +99,7 @@ class MutualFundPortfolioScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddInvestmentScreen(),
-            ),
-          );
+          // Add mutual fund logic here (legacy investment screen removed)
         },
         icon: const Icon(Icons.add),
         label: const Text('Add Fund'),
@@ -146,12 +139,7 @@ class MutualFundPortfolioScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.xl2),
             ElevatedButton.icon(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AddInvestmentScreen(),
-                  ),
-                );
+                // Add mutual fund logic here (legacy investment screen removed)
               },
               icon: const Icon(Icons.add),
               label: const Text('Add Your First Fund'),
@@ -691,10 +679,7 @@ class MutualFundPortfolioScreen extends StatelessWidget {
 
   void _editSip(BuildContext context, Investment sip) {
     Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditInvestmentScreen(investment: sip),
-      ),
+      // EditInvestmentScreen removed (legacy investment)
     );
   }
 

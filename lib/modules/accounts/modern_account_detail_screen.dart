@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/modern/modern_widgets.dart';
+import '../../core/widgets/swipe_to_delete.dart';
 import '../../core/models/account.dart';
 import '../../core/models/transaction.dart';
 import '../../core/providers/transaction_provider.dart';
@@ -23,16 +24,6 @@ class ModernAccountDetailScreen extends StatefulWidget {
 }
 
 class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.read<TransactionProvider>();
-      // Force refresh to ensure transactions are loaded
-      provider.loadTransactions();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -176,10 +167,14 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
                       Consumer<TransactionProvider>(
                         builder: (context, provider, child) {
                           // Filter transactions for this account
+                          // Include both: transactions FROM this account AND transfers TO this account
                           final accountTransactions =
                               provider.transactions
                                   .where(
-                                    (t) => t.accountId == widget.account.id,
+                                    (t) =>
+                                        t.accountId == widget.account.id ||
+                                        (t.type == TransactionType.transfer &&
+                                            t.toAccountId == widget.account.id),
                                   )
                                   .toList()
                                 ..sort(
@@ -235,100 +230,39 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
                                 index,
                               ) {
                                 final transaction = accountTransactions[index];
-                                final isIncome =
-                                    transaction.type == TransactionType.income;
+
+                                // Determine if this is incoming or outgoing for THIS account
+                                final bool isTransfer =
+                                    transaction.type ==
+                                    TransactionType.transfer;
+                                final bool isIncomingTransfer =
+                                    isTransfer &&
+                                    transaction.toAccountId ==
+                                        widget.account.id;
+
+                                // For this account: income OR incoming transfer = positive
+                                final bool isIncome =
+                                    transaction.type ==
+                                        TransactionType.income ||
+                                    isIncomingTransfer;
+
                                 final amountText =
                                     '₹${transaction.amount.toStringAsFixed(2)}';
 
-                                return Dismissible(
-                                  key: ValueKey(transaction.id),
-                                  direction: DismissDirection.endToStart,
-                                  confirmDismiss: (direction) async {
-                                    return await showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return AlertDialog(
-                                          backgroundColor: AppColors.cardDark,
-                                          title: Text(
-                                            'Delete Transaction',
-                                            style: AppTypography.titleLarge
-                                                .copyWith(
-                                                  color: AppColors.textPrimary,
-                                                ),
-                                          ),
-                                          content: Text(
-                                            'Are you sure you want to delete this transaction?',
-                                            style: AppTypography.bodyMedium
-                                                .copyWith(
-                                                  color:
-                                                      AppColors.textSecondary,
-                                                ),
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.of(
-                                                context,
-                                              ).pop(false),
-                                              child: const Text('Cancel'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () => Navigator.of(
-                                                context,
-                                              ).pop(true),
-                                              child: Text(
-                                                'Delete',
-                                                style: TextStyle(
-                                                  color: AppColors.error,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
+                                return SwipeToDelete(
+                                  itemKey: ValueKey(transaction.id),
+                                  itemId: transaction.id,
+                                  itemName: 'Transaction',
+                                  onDelete: () {
+                                    context
+                                        .read<TransactionProvider>()
+                                        .deleteTransaction(transaction.id);
                                   },
-                                  onDismissed: (direction) async {
-                                    final provider = context
-                                        .read<TransactionProvider>();
-                                    await provider.deleteTransaction(
-                                      transaction.id,
-                                    );
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: const Text(
-                                            'Transaction deleted',
-                                          ),
-                                          backgroundColor: AppColors.error,
-                                        ),
-                                      );
-                                    }
+                                  onUndoDelete: () {
+                                    context
+                                        .read<TransactionProvider>()
+                                        .restoreTransaction(transaction);
                                   },
-                                  background: Container(
-                                    alignment: Alignment.centerRight,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.lg,
-                                    ),
-                                    margin: EdgeInsets.only(
-                                      bottom:
-                                          index ==
-                                              accountTransactions.length - 1
-                                          ? 0
-                                          : AppSpacing.sm,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.error,
-                                      borderRadius: BorderRadius.circular(
-                                        AppSpacing.radiusLg,
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.delete,
-                                      color: Colors.white,
-                                    ),
-                                  ),
                                   child: Padding(
                                     padding: EdgeInsets.only(
                                       bottom:
@@ -340,13 +274,17 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
                                     child: ModernTransactionTile(
                                       title:
                                           transaction.description ??
-                                          'Transaction',
+                                          (isTransfer
+                                              ? 'Transfer'
+                                              : 'Transaction'),
                                       subtitle: _formatTransactionDate(
                                         transaction.date,
                                       ),
                                       amount: amountText,
                                       isIncome: isIncome,
-                                      icon: isIncome
+                                      icon: isTransfer
+                                          ? Icons.swap_horiz
+                                          : isIncome
                                           ? Icons.arrow_downward
                                           : Icons.arrow_upward,
                                       onTap: () {
@@ -526,8 +464,8 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
     );
   }
 
-  void _addTransaction() async {
-    await Navigator.of(context).push(
+  void _addTransaction() {
+    Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ModernAddTransactionScreen(
           accountId: widget.account.id,
@@ -535,9 +473,5 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
         ),
       ),
     );
-    // Refresh transactions after returning
-    if (mounted) {
-      context.read<TransactionProvider>().loadTransactions();
-    }
   }
 }

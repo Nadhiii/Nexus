@@ -146,8 +146,9 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                                             ),
                                       ),
                                       validator: (value) {
-                                        if (value == null || value.isEmpty)
+                                        if (value == null || value.isEmpty) {
                                           return 'Required';
+                                        }
                                         return null;
                                       },
                                     ),
@@ -192,8 +193,9 @@ class _EditCategoryScreenState extends State<EditCategoryScreen> {
                                             ),
                                       ),
                                       validator: (value) {
-                                        if (value == null || value.isEmpty)
+                                        if (value == null || value.isEmpty) {
                                           return 'Please enter a name';
+                                        }
                                         return null;
                                       },
                                     ),

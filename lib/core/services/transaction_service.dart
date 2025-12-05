@@ -5,29 +5,48 @@ import '../models/transaction.dart';
 class TransactionService {
   final fs.FirebaseFirestore _firestore = fs.FirebaseFirestore.instance;
 
-  fs.CollectionReference<Map<String, dynamic>> _getTransactionsCollection(String userId) {
-    return _firestore.collection('users').doc(userId).collection('transactions');
+  fs.CollectionReference<Map<String, dynamic>> _getTransactionsCollection(
+    String userId,
+  ) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('transactions');
   }
 
   Stream<List<Transaction>> watchUserTransactions(String userId) {
-    return _getTransactionsCollection(userId)
-        .orderBy('date', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => Transaction.fromFirestore(doc)).toList());
+    return _getTransactionsCollection(userId).snapshots().map((snapshot) {
+      final transactions = snapshot.docs
+          .map((doc) => Transaction.fromFirestore(doc))
+          .toList();
+      // Sort in memory instead of using Firestore orderBy
+      transactions.sort((a, b) => b.date.compareTo(a.date));
+      return transactions;
+    });
   }
 
   Future<void> addTransaction(Transaction transaction) async {
     final docRef = _getTransactionsCollection(transaction.userId).doc();
-    await docRef.set(transaction.copyWith(id: docRef.id).toJson());
+    await docRef.set(transaction.copyWith(id: docRef.id).toMap());
+  }
+
+  /// Restores a transaction with its original ID (used for undo)
+  Future<void> restoreTransaction(Transaction transaction) async {
+    final docRef = _getTransactionsCollection(
+      transaction.userId,
+    ).doc(transaction.id);
+    await docRef.set(transaction.toMap());
   }
 
   Future<void> updateTransaction(Transaction transaction) {
-    return _getTransactionsCollection(transaction.userId).doc(transaction.id).update(transaction.toJson());
+    return _getTransactionsCollection(
+      transaction.userId,
+    ).doc(transaction.id).update(transaction.toMap());
   }
 
   Future<void> deleteTransaction(String transactionId) {
     final user = FirebaseAuth.instance.currentUser;
-    if(user == null) return Future.value();
+    if (user == null) return Future.value();
     return _getTransactionsCollection(user.uid).doc(transactionId).delete();
   }
 
@@ -40,11 +59,14 @@ class TransactionService {
     await batch.commit();
   }
 
-  Future<void> restoreTransactions(String userId, List<Transaction> transactions) async {
+  Future<void> restoreTransactions(
+    String userId,
+    List<Transaction> transactions,
+  ) async {
     final batch = _firestore.batch();
     for (final transaction in transactions) {
       final docRef = _getTransactionsCollection(userId).doc(transaction.id);
-      batch.set(docRef, transaction.toJson());
+      batch.set(docRef, transaction.toMap());
     }
     await batch.commit();
   }

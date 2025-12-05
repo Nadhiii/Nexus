@@ -4,10 +4,12 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/providers/notification_provider.dart';
 import '../../core/providers/transaction_provider.dart';
+import '../../core/providers/account_provider.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/modern/modern_widgets.dart';
+import '../../core/widgets/swipe_to_delete.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/models/account.dart';
 import '../../core/models/transaction.dart';
@@ -34,6 +36,8 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
 
   int _currentIndex = 0;
   Timer? _timer;
+  bool _hasRecalculated = false;
+  Timer? _recalcDebounce;
 
   @override
   void initState() {
@@ -46,11 +50,65 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
         });
       }
     });
+
+    // Recalculate all account balances once on init to fix any inconsistencies
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_hasRecalculated && mounted) {
+        _recalculateAllBalances();
+        _printFiLedger();
+        _hasRecalculated = true;
+      }
+    });
+  }
+
+  void _scheduleRecalc() {
+    _recalcDebounce?.cancel();
+    _recalcDebounce = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) _recalculateAllBalances();
+    });
+  }
+
+  Future<void> _recalculateAllBalances() async {
+    try {
+      final transactionProvider = context.read<TransactionProvider>();
+      final accountProvider = context.read<AccountProvider>();
+      if (accountProvider.accounts.isEmpty) {
+        print('ℹ️ No accounts loaded yet; skipping recalculation.');
+        return;
+      }
+      for (final account in accountProvider.accounts) {
+        print(
+          '🔧 Recalculating balance for account: ${account.name} (${account.id})',
+        );
+        await transactionProvider.recalculateAccountBalance(account.id);
+      }
+      print('✅ Account balances recalculated');
+    } catch (e) {
+      print('❌ Error recalculating balances: $e');
+    }
+  }
+
+  // Temporary: print ledger for Fi (replace with the account you see mismatched)
+  void _printFiLedger() {
+    try {
+      final transactionProvider = context.read<TransactionProvider>();
+      final accountProvider = context.read<AccountProvider>();
+      final fi = accountProvider.accounts.firstWhere(
+        (a) => a.name.toLowerCase().contains('fi'),
+        orElse: () => accountProvider.accounts.isNotEmpty
+            ? accountProvider.accounts.first
+            : throw Exception('No accounts available'),
+      );
+      transactionProvider.printAccountLedgerSummary(fi.id, lastN: 15);
+    } catch (e) {
+      print('❌ Error printing ledger: $e');
+    }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _recalcDebounce?.cancel();
     super.dispose();
   }
 
@@ -70,6 +128,15 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
         child: CustomScrollView(
           slivers: [
             _buildModernAppBar(context),
+            // Listen for transaction changes to auto-recalc balances (debounced)
+            SliverToBoxAdapter(
+              child: Consumer<TransactionProvider>(
+                builder: (context, txProvider, _) {
+                  _scheduleRecalc();
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -209,10 +276,9 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                 ),
               ),
             ),
-            StreamBuilder<List<Transaction>>(
-              stream: FirestoreService.getTransactionsStream(limit: 5),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+            Consumer<TransactionProvider>(
+              builder: (context, provider, child) {
+                if (provider.isLoading && provider.transactions.isEmpty) {
                   return const SliverToBoxAdapter(
                     child: Center(
                       child: Padding(
@@ -223,7 +289,11 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                   );
                 }
 
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                final recentTransactions = provider.transactions
+                    .take(5)
+                    .toList();
+
+                if (recentTransactions.isEmpty) {
                   return SliverToBoxAdapter(
                     child: Container(
                       margin: const EdgeInsets.symmetric(
@@ -274,87 +344,41 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
 
                 return SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
-                    final transaction = snapshot.data![index];
+                    final transaction = recentTransactions[index];
                     return Padding(
                       padding: EdgeInsets.only(
                         left: AppSpacing.xl,
                         right: AppSpacing.xl,
-                        bottom: index == snapshot.data!.length - 1
+                        bottom: index == recentTransactions.length - 1
                             ? 0
                             : AppSpacing.sm,
                       ),
-                      child: Dismissible(
-                        key: ValueKey(transaction.id),
-                        direction: DismissDirection.startToEnd,
-                        confirmDismiss: (direction) async {
-                          return await showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                backgroundColor: AppColors.cardDark,
-                                title: Text(
-                                  'Delete Transaction',
-                                  style: AppTypography.titleLarge.copyWith(
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                content: Text(
-                                  'Are you sure you want to delete this transaction?',
-                                  style: AppTypography.bodyMedium.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(false),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(true),
-                                    child: Text(
-                                      'Delete',
-                                      style: TextStyle(color: AppColors.error),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
+                      child: SwipeToDelete(
+                        itemKey: ValueKey(transaction.id),
+                        itemId: transaction.id,
+                        itemName: 'Transaction',
+                        onDelete: () {
+                          context.read<TransactionProvider>().deleteTransaction(
+                            transaction.id,
                           );
                         },
-                        onDismissed: (direction) async {
-                          await context
+                        onUndoDelete: () {
+                          context
                               .read<TransactionProvider>()
-                              .deleteTransaction(transaction.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Transaction deleted'),
-                                backgroundColor: AppColors.error,
-                              ),
-                            );
-                          }
+                              .restoreTransaction(transaction);
                         },
-                        background: Container(
-                          alignment: Alignment.centerLeft,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.error,
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.radiusLg,
-                            ),
-                          ),
-                          child: const Icon(Icons.delete, color: Colors.white),
-                        ),
                         child: ModernTransactionTile(
-                          title: transaction.description ?? 'Transaction',
+                          title:
+                              transaction.description ??
+                              (transaction.type == TransactionType.transfer
+                                  ? 'Transfer'
+                                  : 'Transaction'),
                           subtitle: _formatTransactionDate(transaction.date),
                           amount: '₹${transaction.amount.toStringAsFixed(2)}',
                           isIncome: transaction.type == TransactionType.income,
-                          icon: transaction.type == TransactionType.income
+                          icon: transaction.type == TransactionType.transfer
+                              ? Icons.swap_horiz
+                              : transaction.type == TransactionType.income
                               ? Icons.arrow_downward
                               : Icons.arrow_upward,
                           onTap: () {
@@ -370,7 +394,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                         ),
                       ),
                     );
-                  }, childCount: snapshot.data!.length),
+                  }, childCount: recentTransactions.length),
                 );
               },
             ),
@@ -463,7 +487,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
         ],
       ),
       titleSpacing: AppSpacing.lg, // Use consistent spacing
-      // 2. Action (Notification only)
+      // 2. Actions (Notification only)
       actions: [
         Consumer<NotificationProvider>(
           builder: (context, notificationProvider, child) {

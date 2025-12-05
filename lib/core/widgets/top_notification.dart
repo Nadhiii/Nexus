@@ -28,7 +28,6 @@ class _TopNotificationWidget extends StatefulWidget {
   final VoidCallback onDismiss;
 
   const _TopNotificationWidget({
-    super.key,
     required this.message,
     required this.onDismiss,
     this.isError = false,

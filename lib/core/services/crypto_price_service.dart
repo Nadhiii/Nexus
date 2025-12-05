@@ -5,18 +5,18 @@ import '../models/crypto.dart';
 class CryptoPriceService {
   static const String baseUrl = 'https://api.coingecko.com/api/v3';
 
-  /// Fetch current price for a cryptocurrency
+  /// Fetch current price for a cryptocurrency in INR
   /// [cryptoId] should be CoinGecko ID (e.g., 'bitcoin', 'ethereum')
   Future<double?> getCurrentPrice(String cryptoId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/simple/price?ids=$cryptoId&vs_currencies=usd'),
+        Uri.parse('$baseUrl/simple/price?ids=$cryptoId&vs_currencies=inr'),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data[cryptoId] != null) {
-          return (data[cryptoId]['usd'] as num).toDouble();
+          return (data[cryptoId]['inr'] as num).toDouble();
         }
       }
     } catch (e) {
@@ -34,14 +34,14 @@ class CryptoPriceService {
     try {
       final idsString = cryptoIds.join(',');
       final response = await http.get(
-        Uri.parse('$baseUrl/simple/price?ids=$idsString&vs_currencies=usd'),
+        Uri.parse('$baseUrl/simple/price?ids=$idsString&vs_currencies=inr'),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         for (var cryptoId in cryptoIds) {
-          if (data[cryptoId] != null && data[cryptoId]['usd'] != null) {
-            prices[cryptoId] = (data[cryptoId]['usd'] as num).toDouble();
+          if (data[cryptoId] != null && data[cryptoId]['inr'] != null) {
+            prices[cryptoId] = (data[cryptoId]['inr'] as num).toDouble();
           }
         }
       }

@@ -47,15 +47,21 @@ class Transaction {
       categoryId: data['categoryId'],
       accountId: data['accountId'],
       toAccountId: data['toAccountId'],
-      date: (data['date'] as Timestamp).toDate(),
+      date: data['date'] is Timestamp
+          ? (data['date'] as Timestamp).toDate()
+          : DateTime.parse(data['date'] as String),
       metadata: data['metadata'] != null
           ? Map<String, dynamic>.from(data['metadata'])
           : null,
       attachments: data['attachments'] != null
           ? List<String>.from(data['attachments'])
           : null,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      createdAt: data['createdAt'] is Timestamp
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.parse(data['createdAt'] as String),
+      updatedAt: data['updatedAt'] is Timestamp
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : DateTime.parse(data['updatedAt'] as String),
     );
   }
 

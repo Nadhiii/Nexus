@@ -121,13 +121,15 @@ class GmailParser {
       return true;
     }
 
-    if (lower.contains('trial subscription') || lower.contains('free trial'))
+    if (lower.contains('trial subscription') || lower.contains('free trial')) {
       return true;
+    }
 
     if (lower.contains('payment failed') ||
         lower.contains('transaction failed') ||
-        lower.contains('declined'))
+        lower.contains('declined')) {
       return true;
+    }
 
     if (lower.contains('total outstanding') ||
         lower.contains('minimum amount due') ||

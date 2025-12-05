@@ -24,11 +24,19 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
   late TextEditingController _balanceController;
   late TextEditingController _interestRateController;
   late TextEditingController _emiController;
+  late TextEditingController _totalMonthsController;
+  late TextEditingController _paidMonthsController;
   late TextEditingController _lenderController;
+  late TextEditingController _accountNumberController;
   late TextEditingController _notesController;
+  late TextEditingController _paymentDayController;
+  late TextEditingController _customTypeNameController;
 
   DebtType _selectedType = DebtType.creditCard;
   DateTime? _dueDate;
+  DateTime? _startDate;
+  DateTime? _nextPaymentDate;
+  bool _isAutoDebit = false;
   bool _isLoading = false;
 
   @override
@@ -46,16 +54,34 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
     _emiController = TextEditingController(
       text: widget.debtToEdit?.monthlyEMI?.toString() ?? '',
     );
+    _totalMonthsController = TextEditingController(
+      text: widget.debtToEdit?.totalMonths?.toString() ?? '',
+    );
+    _paidMonthsController = TextEditingController(
+      text: widget.debtToEdit?.paidMonths?.toString() ?? '',
+    );
     _lenderController = TextEditingController(
       text: widget.debtToEdit?.lenderName ?? '',
     );
+    _accountNumberController = TextEditingController(
+      text: widget.debtToEdit?.accountNumber ?? '',
+    );
     _notesController = TextEditingController(
       text: widget.debtToEdit?.notes ?? '',
+    );
+    _paymentDayController = TextEditingController(
+      text: widget.debtToEdit?.paymentDay?.toString() ?? '',
+    );
+    _customTypeNameController = TextEditingController(
+      text: widget.debtToEdit?.customTypeName ?? '',
     );
 
     if (widget.debtToEdit != null) {
       _selectedType = widget.debtToEdit!.type;
       _dueDate = widget.debtToEdit!.dueDate;
+      _startDate = widget.debtToEdit!.startDate;
+      _nextPaymentDate = widget.debtToEdit!.nextPaymentDate;
+      _isAutoDebit = widget.debtToEdit!.isAutoDebit;
     }
   }
 
@@ -65,8 +91,13 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
     _balanceController.dispose();
     _interestRateController.dispose();
     _emiController.dispose();
+    _totalMonthsController.dispose();
+    _paidMonthsController.dispose();
     _lenderController.dispose();
+    _accountNumberController.dispose();
     _notesController.dispose();
+    _paymentDayController.dispose();
+    _customTypeNameController.dispose();
     super.dispose();
   }
 
@@ -83,8 +114,21 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
       final balance = double.tryParse(_balanceController.text.trim()) ?? 0.0;
       final interestRate = double.tryParse(_interestRateController.text.trim());
       final emi = double.tryParse(_emiController.text.trim());
+      final totalMonths = int.tryParse(_totalMonthsController.text.trim());
+      final paidMonths = int.tryParse(_paidMonthsController.text.trim());
       final lender = _lenderController.text.trim();
+      final accountNumber = _accountNumberController.text.trim();
       final notes = _notesController.text.trim();
+      final paymentDay = int.tryParse(_paymentDayController.text.trim());
+      final customTypeName = _customTypeNameController.text.trim();
+
+      // Calculate total interest if we have all the data
+      double? totalInterest;
+      if (emi != null && totalMonths != null) {
+        final originalAmount = widget.debtToEdit?.originalAmount ?? balance;
+        totalInterest = (emi * totalMonths) - originalAmount;
+        if (totalInterest < 0) totalInterest = null;
+      }
 
       final debt = Debt(
         id: widget.debtToEdit?.id ?? '',
@@ -97,9 +141,21 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
         currentBalance: balance,
         interestRate: interestRate,
         monthlyEMI: emi,
+        totalMonths: totalMonths,
+        paidMonths: paidMonths,
+        totalInterest: totalInterest,
+        startDate: _startDate,
+        nextPaymentDate: _nextPaymentDate,
+        paymentDay: paymentDay,
         lenderName: lender.isNotEmpty ? lender : null,
+        accountNumber: accountNumber.isNotEmpty ? accountNumber : null,
+        customTypeName:
+            (_selectedType == DebtType.custom && customTypeName.isNotEmpty)
+            ? customTypeName
+            : null,
         notes: notes.isNotEmpty ? notes : null,
         dueDate: _dueDate,
+        isAutoDebit: _isAutoDebit,
         createdAt: widget.debtToEdit?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -156,6 +212,21 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildTypeSelector(),
+                    // Show custom type name field when 'Custom' is selected
+                    if (_selectedType == DebtType.custom) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      _buildInputField(
+                        controller: _customTypeNameController,
+                        label: 'Custom Type Name',
+                        hint: 'e.g., Medical Bill, Store Credit',
+                        icon: Icons.label_outline,
+                        validator: (v) =>
+                            _selectedType == DebtType.custom &&
+                                (v?.isEmpty == true)
+                            ? 'Enter custom type name'
+                            : null,
+                      ),
+                    ],
                     const SizedBox(height: AppSpacing.lg),
                     _buildInputField(
                       controller: _nameController,
@@ -204,14 +275,144 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildInputField(
+                            controller: _totalMonthsController,
+                            label: 'Total Tenure (Months)',
+                            hint: 'e.g., 36',
+                            icon: Icons.schedule_outlined,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: _buildInputField(
+                            controller: _paidMonthsController,
+                            label: 'Months Paid',
+                            hint: 'e.g., 12',
+                            icon: Icons.check_circle_outline,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
                     _buildInputField(
                       controller: _lenderController,
                       label: 'Lender / Bank',
-                      hint: 'e.g., Chase, Wells Fargo',
+                      hint: 'e.g., HDFC, SBI, ICICI',
                       icon: Icons.business_outlined,
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    _buildDatePicker(),
+                    _buildInputField(
+                      controller: _accountNumberController,
+                      label: 'Loan Account Number (Optional)',
+                      hint: 'e.g., LOAN12345678',
+                      icon: Icons.numbers_outlined,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Date Section Header
+                    Text(
+                      'Important Dates',
+                      style: AppTypography.titleSmall.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDatePickerField(
+                            label: 'Start Date',
+                            selectedDate: _startDate,
+                            onDateSelected: (date) =>
+                                setState(() => _startDate = date),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: _buildDatePickerField(
+                            label: 'End Date',
+                            selectedDate: _dueDate,
+                            onDateSelected: (date) =>
+                                setState(() => _dueDate = date),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDatePickerField(
+                            label: 'Next Payment',
+                            selectedDate: _nextPaymentDate,
+                            onDateSelected: (date) =>
+                                setState(() => _nextPaymentDate = date),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: _buildInputField(
+                            controller: _paymentDayController,
+                            label: 'EMI Day (1-31)',
+                            hint: 'e.g., 5',
+                            icon: Icons.today_outlined,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Auto-debit toggle
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardDarkElevated,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.neutral700),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.autorenew,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Auto-Debit Enabled',
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                Text(
+                                  'EMI is automatically debited from bank',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.textTertiary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: _isAutoDebit,
+                            onChanged: (value) =>
+                                setState(() => _isAutoDebit = value),
+                            activeThumbColor: Colors.green,
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.md),
                     _buildInputField(
                       controller: _notesController,
@@ -380,12 +581,16 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
     );
   }
 
-  Widget _buildDatePicker() {
+  Widget _buildDatePickerField({
+    required String label,
+    required DateTime? selectedDate,
+    required Function(DateTime) onDateSelected,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Due Date',
+          label,
           style: AppTypography.bodyMedium.copyWith(
             color: AppColors.textSecondary,
             fontWeight: FontWeight.w500,
@@ -396,11 +601,11 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
           onTap: () async {
             final date = await showDatePicker(
               context: context,
-              initialDate: _dueDate ?? DateTime.now(),
+              initialDate: selectedDate ?? DateTime.now(),
               firstDate: DateTime(2000),
               lastDate: DateTime(2100),
             );
-            if (date != null) setState(() => _dueDate = date);
+            if (date != null) onDateSelected(date);
           },
           child: Container(
             padding: const EdgeInsets.all(16),
@@ -414,17 +619,20 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
                 const Icon(
                   Icons.calendar_today,
                   color: AppColors.textSecondary,
-                  size: 20,
+                  size: 16,
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  _dueDate != null
-                      ? DateFormat('MMM dd, yyyy').format(_dueDate!)
-                      : 'Select Date',
-                  style: AppTypography.bodyLarge.copyWith(
-                    color: _dueDate != null
-                        ? AppColors.textPrimary
-                        : AppColors.textTertiary,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    selectedDate != null
+                        ? DateFormat('dd MMM yy').format(selectedDate)
+                        : 'Select',
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: selectedDate != null
+                          ? AppColors.textPrimary
+                          : AppColors.textTertiary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -455,6 +663,8 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
         return 'Owed by Me';
       case DebtType.owedToMe:
         return 'Owed to Me';
+      case DebtType.custom:
+        return 'Custom';
       case DebtType.other:
         return 'Other';
     }
@@ -480,6 +690,8 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
         return Icons.arrow_outward;
       case DebtType.owedToMe:
         return Icons.arrow_downward;
+      case DebtType.custom:
+        return Icons.tune;
       case DebtType.other:
         return Icons.more_horiz;
     }
