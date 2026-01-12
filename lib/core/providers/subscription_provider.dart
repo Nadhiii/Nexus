@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/subscription.dart';
 import '../services/subscription_service.dart';
-import '../services/learning_service.dart';
 import 'notification_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class SubscriptionProvider extends ChangeNotifier {
   final SubscriptionService _subscriptionService = SubscriptionService();
-  final LearningService _learningService;
   NotificationProvider? _notificationProvider;
 
   List<Subscription> _subscriptions = [];
@@ -16,8 +14,7 @@ class SubscriptionProvider extends ChangeNotifier {
   String? _error;
   String _filterFrequency = 'all';
 
-  SubscriptionProvider({required LearningService learningService})
-      : _learningService = learningService;
+  SubscriptionProvider();
 
   // Getters
   List<Subscription> get subscriptions => _subscriptions;
@@ -36,7 +33,9 @@ class SubscriptionProvider extends ChangeNotifier {
     if (_filterFrequency == 'all') {
       return _subscriptions;
     }
-    return _subscriptions.where((sub) => sub.frequency == _filterFrequency).toList();
+    return _subscriptions
+        .where((sub) => sub.frequency == _filterFrequency)
+        .toList();
   }
 
   // Statistics
@@ -63,57 +62,66 @@ class SubscriptionProvider extends ChangeNotifier {
 
   double get totalYearlyCost => totalMonthlyCost * 12;
 
-  int get activeSubscriptionCount => _subscriptions.where((s) => s.isActive).length;
+  int get activeSubscriptionCount =>
+      _subscriptions.where((s) => s.isActive).length;
   int get totalSubscriptionCount => _subscriptions.length;
 
   List<Subscription> get overdueSubscriptions =>
       _subscriptions.where((s) => s.isOverdue).toList();
 
   // Formatted getters
-  String get formattedTotalMonthlyCost => '₹${totalMonthlyCost.toStringAsFixed(2)}';
-  String get formattedTotalYearlyCost => '₹${totalYearlyCost.toStringAsFixed(2)}';
-
+  String get formattedTotalMonthlyCost =>
+      '₹${totalMonthlyCost.toStringAsFixed(2)}';
+  String get formattedTotalYearlyCost =>
+      '₹${totalYearlyCost.toStringAsFixed(2)}';
 
   void initialize() {
     final user = FirebaseAuth.instance.currentUser;
-    if(user != null) {
-          _loadSubscriptions(user.uid);
-          _loadDueToday(user.uid);
+    if (user != null) {
+      _loadSubscriptions(user.uid);
+      _loadDueToday(user.uid);
     }
   }
 
   void _loadSubscriptions(String userId) {
     _setLoading(true);
-    _subscriptionService.watchActiveSubscriptions(userId).listen(
-      (subscriptions) {
-        _subscriptions = subscriptions;
-        _checkSubscriptionReminders();
-        _setLoading(false);
-        notifyListeners();
-      },
-      onError: (error) {
-        _setError('Failed to load subscriptions: $error');
-        _setLoading(false);
-      },
-    );
+    _subscriptionService
+        .watchActiveSubscriptions(userId)
+        .listen(
+          (subscriptions) {
+            _subscriptions = subscriptions;
+            _checkSubscriptionReminders();
+            _setLoading(false);
+            notifyListeners();
+          },
+          onError: (error) {
+            _setError('Failed to load subscriptions: $error');
+            _setLoading(false);
+          },
+        );
   }
 
   void _loadDueToday(String userId) {
-    _subscriptionService.watchDueToday(userId).listen(
-      (subscriptions) {
-        _dueToday = subscriptions;
-        notifyListeners();
-      },
-      onError: (error) {
-        debugPrint('Error loading due today: $error');
-      },
-    );
+    _subscriptionService
+        .watchDueToday(userId)
+        .listen(
+          (subscriptions) {
+            _dueToday = subscriptions;
+            notifyListeners();
+          },
+          onError: (error) {
+            debugPrint('Error loading due today: $error');
+          },
+        );
   }
 
   void _checkSubscriptionReminders() {
     if (_notificationProvider == null) return;
     for (final sub in _subscriptions) {
-      _notificationProvider!.checkSubscriptionReminders(sub.name, sub.nextDueDate);
+      _notificationProvider!.checkSubscriptionReminders(
+        sub.name,
+        sub.nextDueDate,
+      );
     }
   }
 
@@ -121,11 +129,6 @@ class SubscriptionProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       await _subscriptionService.addSubscription(subscription);
-      
-      // Learn subscription category from name
-      if (subscription.name.isNotEmpty && subscription.categoryId.isNotEmpty) {
-        await _learningService.learnEntity('subscription', subscription.name, subscription.categoryId);
-      }
     } catch (e) {
       _setError('Failed to add subscription: $e');
     } finally {
@@ -137,11 +140,6 @@ class SubscriptionProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       await _subscriptionService.updateSubscription(subscription);
-      
-      // Learn subscription category from name
-      if (subscription.name.isNotEmpty && subscription.categoryId.isNotEmpty) {
-        await _learningService.learnEntity('subscription', subscription.name, subscription.categoryId);
-      }
     } catch (e) {
       _setError('Failed to update subscription: $e');
     } finally {
@@ -160,11 +158,34 @@ class SubscriptionProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> markSubscriptionPaid(Subscription subscription) async {
+    try {
+      final nextDate = subscription.calculateNextDueDate();
+      final updated = subscription.copyWith(nextDueDate: nextDate);
+      await _subscriptionService.updateSubscription(updated);
+      // Update local list optimistically
+      final idx = _subscriptions.indexWhere((s) => s.id == subscription.id);
+      if (idx != -1) {
+        _subscriptions[idx] = updated;
+      }
+      // Refresh reminders for this subscription
+      if (_notificationProvider != null) {
+        _notificationProvider!.checkSubscriptionReminders(
+          updated.name,
+          updated.nextDueDate,
+        );
+      }
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to mark as paid: $e');
+    }
+  }
+
   void setFrequencyFilter(String frequency) {
     _filterFrequency = frequency;
     notifyListeners();
   }
-  
+
   Future<void> clearAllData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -174,7 +195,9 @@ class SubscriptionProvider extends ChangeNotifier {
   Future<void> restoreFromBackup(List<dynamic> data) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    final subscriptions = data.map((d) => Subscription.fromJson(d as Map<String, dynamic>)).toList();
+    final subscriptions = data
+        .map((d) => Subscription.fromJson(d as Map<String, dynamic>))
+        .toList();
     await _subscriptionService.restoreSubscriptions(user.uid, subscriptions);
   }
 
@@ -195,5 +218,9 @@ class SubscriptionProvider extends ChangeNotifier {
     _error = null;
     _filterFrequency = 'all';
     notifyListeners();
+  }
+
+  void clear() {
+    reset();
   }
 }

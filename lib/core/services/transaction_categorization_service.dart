@@ -1,10 +1,6 @@
-import 'learning_service.dart';
-
 /// A service to automatically suggest a category for a transaction based on its description.
 class TransactionCategorizationService {
-  final LearningService _learningService;
-
-  TransactionCategorizationService(this._learningService);
+  TransactionCategorizationService();
 
   // A map of keywords to their corresponding category ID.
   // Keywords are checked in a case-insensitive manner.
@@ -71,13 +67,7 @@ class TransactionCategorizationService {
   ///
   /// Returns a category ID (e.g., 'Food & Dining') or falls back to 'Miscellaneous'.
   String suggestCategory(String description) {
-    // 1. Check for a learned category first
-    final learnedCategory = _learningService.suggest(description);
-    if (learnedCategory != null) {
-      return learnedCategory;
-    }
-
-    // 2. Fallback to keyword matching
+    // Keyword matching
     final lowerCaseDescription = description.toLowerCase();
     for (final keyword in _keywordCategoryMap.keys) {
       if (lowerCaseDescription.contains(keyword)) {
@@ -85,7 +75,7 @@ class TransactionCategorizationService {
       }
     }
 
-    // 3. If no match, return 'Miscellaneous'
+    // If no match, return 'Miscellaneous'
     return 'Miscellaneous';
   }
 }

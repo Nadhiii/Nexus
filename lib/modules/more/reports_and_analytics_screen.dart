@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/transaction.dart';
 import '../../core/providers/transaction_provider.dart';
-import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import 'widgets/chart_widgets.dart';
 import 'widgets/report_widgets.dart';
 
@@ -12,32 +13,20 @@ class ReportsAndAnalyticsScreen extends StatefulWidget {
   const ReportsAndAnalyticsScreen({super.key});
 
   @override
-  _ReportsAndAnalyticsScreenState createState() =>
+  State<ReportsAndAnalyticsScreen> createState() =>
       _ReportsAndAnalyticsScreenState();
 }
 
 class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
   TimeFilter _selectedFilter = TimeFilter.thisMonth;
-  late PageController _pageController;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(initialPage: _selectedFilter.index);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
 
   List<Transaction> _getFilteredTransactions(
-      List<Transaction> allTransactions, TimeFilter filter) {
+    List<Transaction> allTransactions,
+  ) {
     final now = DateTime.now();
     DateTime startDate;
 
-    switch (filter) {
+    switch (_selectedFilter) {
       case TimeFilter.thisMonth:
         startDate = DateTime(now.year, now.month, 1);
         break;
@@ -56,53 +45,141 @@ class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final allTransactions =
-        Provider.of<TransactionProvider>(context, listen: false).transactions;
+    final allTransactions = Provider.of<TransactionProvider>(
+      context,
+    ).transactions;
+    final filteredTransactions = _getFilteredTransactions(allTransactions);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Reports & Analytics'),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
-            child: _buildPeriodSelector(),
+      backgroundColor: AppColors.backgroundBlack,
+      body: CustomScrollView(
+        slivers: [
+          // 1. HEADER
+          SliverAppBar(
+            pinned: true,
+            expandedHeight: 110,
+            backgroundColor: AppColors.backgroundBlack,
+            surfaceTintColor: AppColors.backgroundBlack,
+            elevation: 0,
+            automaticallyImplyLeading: false, // Prevent overlap
+            flexibleSpace: FlexibleSpaceBar(
+              centerTitle: false,
+              titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
+              title: Text(
+                'Analytics',
+                style: AppTypography.headlineMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
           ),
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: TimeFilter.values.length,
-              onPageChanged: (index) {
-                // This is now the single source of truth for state changes
-                setState(() {
-                  _selectedFilter = TimeFilter.values[index];
-                });
-              },
-              itemBuilder: (context, index) {
-                final filter = TimeFilter.values[index];
-                final filteredTransactions = _getFilteredTransactions(allTransactions, filter);
 
-                if (filteredTransactions.isEmpty) {
-                  return _buildEmptyState(filter: filter);
-                }
+          // 2. FILTER PILLS
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: _buildFilterRow(),
+            ),
+          ),
 
-                return SingleChildScrollView(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: AppSpacing.md),
-                      CategorySpendingChart(transactions: filteredTransactions),
-                      const SizedBox(height: AppSpacing.lg),
-                      TransactionAnalysisSummary(transactions: filteredTransactions),
-                      const SizedBox(height: AppSpacing.xl2), // Bottom padding
-                    ],
+          if (filteredTransactions.isEmpty)
+            SliverFillRemaining(child: _buildEmptyState())
+          else
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // 3. HERO CARD (Cash Flow) - Moved to TOP
+                  CashFlowHeroCard(transactions: filteredTransactions),
+                  const SizedBox(height: 24),
+
+                  // 4. CHART SECTION
+                  Text("SPENDING BREAKDOWN", style: _headerStyle()),
+                  const SizedBox(height: 12),
+                  CategorySpendingChart(transactions: filteredTransactions),
+
+                  const SizedBox(height: 100),
+                ]),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterRow() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: TimeFilter.values.map((filter) {
+          final isSelected = _selectedFilter == filter;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedFilter = filter),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.primaryBlue
+                      : AppColors.cardSurface,
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.primaryBlue
+                        : Colors.white.withOpacity(0.05),
                   ),
-                );
-              },
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primaryBlue.withOpacity(0.4),
+                            blurRadius: 8,
+                          ),
+                        ]
+                      : [],
+                ),
+                child: Text(
+                  _filterToText(filter),
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.pie_chart_outline,
+            size: 64,
+            color: AppColors.textTertiary.withOpacity(0.3),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "No data available",
+            style: TextStyle(color: AppColors.textTertiary),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Try selecting a different time range",
+            style: TextStyle(
+              color: AppColors.textTertiary.withOpacity(0.5),
+              fontSize: 12,
             ),
           ),
         ],
@@ -110,55 +187,11 @@ class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
     );
   }
 
-  Widget _buildPeriodSelector() {
-    return SizedBox(
-      width: double.infinity,
-      child: SegmentedButton<TimeFilter>(
-        segments: const [
-          ButtonSegment(
-              value: TimeFilter.thisMonth,
-              label: Text('This Month'),
-              icon: Icon(Icons.calendar_view_month_outlined)),
-          ButtonSegment(value: TimeFilter.threeMonths, label: Text('3M')),
-          ButtonSegment(value: TimeFilter.sixMonths, label: Text('6M')),
-          ButtonSegment(
-              value: TimeFilter.thisYear,
-              label: Text('This Year'),
-              icon: Icon(Icons.calendar_today_outlined)),
-        ],
-        selected: {_selectedFilter},
-        onSelectionChanged: (newSelection) {
-          // The conflicting setState is removed. We only command the controller.
-          _pageController.animateToPage(
-            newSelection.first.index,
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeInOutCubic,
-          );
-        },
-        style: SegmentedButton.styleFrom(
-          visualDensity: VisualDensity.compact,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-          foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-          selectedBackgroundColor: Theme.of(context).colorScheme.primary,
-          selectedForegroundColor: Theme.of(context).colorScheme.onPrimary,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState({required TimeFilter filter}) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.analytics_outlined, size: 80, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text('No transactions found for \'${_filterToText(filter)}\'.'),
-          const Text('Your financial reports will appear here.',
-              style: TextStyle(color: Colors.grey)),
-        ],
-      ),
+  TextStyle _headerStyle() {
+    return AppTypography.labelSmall.copyWith(
+      color: AppColors.textTertiary,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 1.2,
     );
   }
 
@@ -167,9 +200,9 @@ class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
       case TimeFilter.thisMonth:
         return 'This Month';
       case TimeFilter.threeMonths:
-        return 'Last 3 Months';
+        return '3 Months';
       case TimeFilter.sixMonths:
-        return 'Last 6 Months';
+        return '6 Months';
       case TimeFilter.thisYear:
         return 'This Year';
     }

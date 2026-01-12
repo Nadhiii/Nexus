@@ -3,687 +3,499 @@ import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../core/models/mutualfunds.dart';
-import '../../core/providers/investment_provider.dart';
-import '../../core/widgets/top_snackbar.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_typography.dart';
-import '../../core/theme/app_spacing.dart';
+import 'dart:ui';
+import '../../../core/models/investment.dart';
+import '../../../core/providers/investment_provider.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/top_snackbar.dart';
 
-class AddInvestmentScreen extends StatefulWidget {
-  static const routeName = '/add-investment';
+class AddInvestmentModal extends StatefulWidget {
+  final Investment? investmentToEdit;
 
-  const AddInvestmentScreen({super.key});
+  const AddInvestmentModal({super.key, this.investmentToEdit});
 
   @override
-  _AddInvestmentScreenState createState() => _AddInvestmentScreenState();
+  State<AddInvestmentModal> createState() => _AddInvestmentModalState();
 }
 
-class _AddInvestmentScreenState extends State<AddInvestmentScreen> {
+class _AddInvestmentModalState extends State<AddInvestmentModal>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
   final _formKey = GlobalKey<FormState>();
+
+  // Controllers
   final _searchController = TextEditingController();
   final _nameController = TextEditingController();
-  final _investedAmountController = TextEditingController();
-  final _purchaseNavController = TextEditingController();
-  final _sipAmountController = TextEditingController();
-  final _sipDayController = TextEditingController();
+  final _symbolController = TextEditingController();
+  final _investedController = TextEditingController();
+  final _currentController = TextEditingController();
+  final _quantityController = TextEditingController();
+  final _navController = TextEditingController(); // For MF
 
-  MutualFund? _selectedFund;
-  List<MutualFund> _searchResults = [];
+  // State
+  InvestmentType _selectedType = InvestmentType.mutualFund;
   bool _isSearching = false;
-  bool _fetchingNav = false;
-  DateTime _selectedDate = DateTime.now();
-  double? _calculatedUnits;
+  List<dynamic> _searchResults = [];
+  String? _selectedSchemeCode;
+  bool _isLoading = false;
 
-  Future<void> _searchFunds(String query) async {
-    if (query.isEmpty) {
-      setState(() => _searchResults = []);
-      return;
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.9,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _controller.forward();
+
+    if (widget.investmentToEdit != null) {
+      final i = widget.investmentToEdit!;
+      _selectedType = i.type;
+      _nameController.text = i.name;
+      _symbolController.text = i.symbol ?? '';
+      _investedController.text = i.investedAmount.toString();
+      _currentController.text = i.currentAmount.toString();
+      _quantityController.text = i.quantity.toString();
+      _selectedSchemeCode = i.mutualFundSchemeCode;
+      _navController.text = i.purchasePrice.toString();
     }
+  }
+
+  // --- MUTUAL FUND LOGIC ---
+  Future<void> _searchFunds(String query) async {
+    if (query.length < 3) return;
     setState(() => _isSearching = true);
     try {
       final response = await http.get(
         Uri.parse('https://api.mfapi.in/mf/search?q=$query'),
       );
       if (response.statusCode == 200) {
-        final data = json.decode(response.body) as List;
         setState(() {
-          _searchResults = data
-              .map((fund) => MutualFund.fromJson(fund))
-              .toList();
+          _searchResults = json.decode(response.body) as List;
+          _isSearching = false;
         });
       }
     } catch (e) {
-      // Handle error
-    } finally {
       setState(() => _isSearching = false);
     }
   }
 
-  void _calculateUnits() {
-    final invested = double.tryParse(_investedAmountController.text) ?? 0;
-    final nav = double.tryParse(_purchaseNavController.text) ?? 0;
-
-    if (invested > 0 && nav > 0) {
-      setState(() {
-        _calculatedUnits = invested / nav;
-      });
-    } else {
-      setState(() {
-        _calculatedUnits = null;
-      });
-    }
-  }
-
-  Future<void> _fetchCurrentNav() async {
-    if (_selectedFund == null) return;
-
-    setState(() => _fetchingNav = true);
-
+  Future<void> _fetchNav(String code) async {
     try {
       final response = await http.get(
-        Uri.parse('https://api.mfapi.in/mf/${_selectedFund!.schemeCode}'),
+        Uri.parse('https://api.mfapi.in/mf/$code'),
       );
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final navData = data['data'] as List?;
-        if (navData != null && navData.isNotEmpty) {
-          final currentNav = double.parse(navData[0]['nav'].toString());
-          setState(() {
-            _purchaseNavController.text = currentNav.toStringAsFixed(4);
-            _fetchingNav = false;
-          });
-          _calculateUnits();
-        }
+        final nav = data['data'][0]['nav'];
+        setState(() {
+          _navController.text = nav.toString();
+          // If editing, don't overwrite current value unless it's zero
+          if (_currentController.text.isEmpty ||
+              _currentController.text == "0.0") {
+            // Just a helper, assumes 1 unit if empty. Real math happens on save.
+          }
+        });
       }
-    } catch (e) {
-      if (mounted) {
-        showTopSnackBar(context, 'Error fetching NAV: $e', isError: true);
-      }
-    } finally {
-      setState(() => _fetchingNav = false);
-    }
+    } catch (_) {}
   }
 
-  Future<void> _submit() async {
-    if (_formKey.currentState!.validate() && _selectedFund != null) {
-      _formKey.currentState!.save();
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-
-      try {
-        final investedAmount = double.parse(_investedAmountController.text);
-        final purchaseNav = double.parse(_purchaseNavController.text);
-        final units = _calculatedUnits ?? (investedAmount / purchaseNav);
-        final sipAmount = double.tryParse(_sipAmountController.text) ?? 0.0;
-
-        final newInvestment = Investment(
-          id: ' ',
-          userId: user.uid,
-          name: _nameController.text,
-          mutualFundSchemeCode: _selectedFund!.schemeCode,
-          mutualFundSchemeName: _selectedFund!.schemeName,
-          sipAmount: sipAmount,
-          sipDay: int.tryParse(_sipDayController.text) ?? 1,
-          startDate: _selectedDate,
-          purchaseNav: purchaseNav,
-          units: units,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-
-        await Provider.of<InvestmentProvider>(
-          context,
-          listen: false,
-        ).addInvestment(newInvestment);
-
-        if (mounted) {
-          Navigator.of(context).pop();
-          Navigator.of(context).pop();
-          showTopSnackBar(context, 'Investment added successfully');
-        }
-      } catch (e) {
-        if (mounted) {
-          Navigator.of(context).pop();
-          showTopSnackBar(context, 'Error: $e', isError: true);
-        }
-      }
-    }
+  @override
+  void dispose() {
+    _controller.dispose();
+    _nameController.dispose();
+    _symbolController.dispose();
+    _investedController.dispose();
+    _currentController.dispose();
+    _quantityController.dispose();
+    _searchController.dispose();
+    _navController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkGradient.first,
-      appBar: AppBar(
-        title: Text(
-          'Add New SIP',
-          style: AppTypography.headlineSmall.copyWith(color: Colors.white),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: AppColors.darkGradient,
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(color: Colors.black.withOpacity(0.6)),
           ),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Search for a Fund',
-                  style: AppTypography.titleLarge.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+          Center(
+            child: ScaleTransition(
+              scale: _scaleAnimation,
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.9,
+                constraints: const BoxConstraints(
+                  maxWidth: 450,
+                  maxHeight: 800,
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                TextFormField(
-                  controller: _searchController,
-                  style: AppTypography.bodyMedium.copyWith(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: 'E.g., TATA Digital India',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                    prefixIcon: const Icon(Icons.search, color: Colors.white),
-                    filled: true,
-                    fillColor: AppColors.cardDark,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                      borderSide: BorderSide.none,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundBlack,
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF6366F1).withOpacity(0.2),
+                      blurRadius: 40,
+                      offset: const Offset(0, 20),
                     ),
-                  ),
-                  onChanged: _searchFunds,
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                if (_isSearching)
-                  const Center(child: CircularProgressIndicator()),
-                if (_searchResults.isNotEmpty)
-                  Container(
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: AppColors.cardDark,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                    ),
-                    child: ListView.builder(
-                      itemCount: _searchResults.length,
-                      itemBuilder: (ctx, i) => ListTile(
-                        title: Text(
-                          _searchResults[i].schemeName,
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: Colors.white,
-                          ),
-                        ),
-                        subtitle: Text(
-                          _searchResults[i].schemeCode,
-                          style: AppTypography.bodySmall.copyWith(
-                            color: Colors.white70,
-                          ),
-                        ),
-                        onTap: () {
-                          setState(() {
-                            _selectedFund = _searchResults[i];
-                            _searchController.text =
-                                _searchResults[i].schemeName;
-                            _nameController.text = _searchResults[i].schemeName;
-                            _searchResults = [];
-                          });
-                        },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.investmentToEdit != null
+                          ? "EDIT ASSET"
+                          : "ADD ASSET",
+                      style: AppTypography.headlineSmall.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                if (_selectedFund != null)
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryBlue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                      border: Border.all(
-                        color: AppColors.primaryBlue.withOpacity(0.3),
-                      ),
-                    ),
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.check_circle,
-                        color: AppColors.success,
-                      ),
-                      title: Text(
-                        _selectedFund!.schemeName,
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Scheme Code: ${_selectedFund!.schemeCode}',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: Colors.white70,
-                        ),
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.white),
-                        onPressed: () => setState(() {
-                          _selectedFund = null;
-                          _searchController.clear();
-                          _nameController.clear();
-                        }),
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: AppSpacing.xl),
-                Text(
-                  'Investment Details',
-                  style: AppTypography.titleLarge.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                TextFormField(
-                  controller: _nameController,
-                  style: AppTypography.bodyMedium.copyWith(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'Investment Nickname',
-                    labelStyle: TextStyle(color: Colors.white70),
-                    hintText: 'e.g., My TATA Digital SIP',
-                    hintStyle: TextStyle(color: Colors.white30),
-                    prefixIcon: const Icon(Icons.label, color: Colors.white70),
-                    filled: true,
-                    fillColor: AppColors.cardDark,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  validator: (val) =>
-                      val!.isEmpty ? 'Please enter a name' : null,
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryBlue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                    border: Border.all(
-                      color: AppColors.primaryBlue.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                    const SizedBox(height: 24),
+
+                    // ASSET TYPE SELECTOR
+                    SizedBox(
+                      height: 45,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
                         children: [
-                          const Icon(
-                            Icons.account_balance_wallet,
-                            color: AppColors.primaryBlue,
+                          _buildTypeChip(
+                            "Mutual Fund",
+                            InvestmentType.mutualFund,
                           ),
-                          const SizedBox(width: AppSpacing.md),
-                          Text(
-                            'Current Investment',
-                            style: AppTypography.titleMedium.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primaryBlue,
-                            ),
+                          _buildTypeChip("Stock", InvestmentType.stock),
+                          _buildTypeChip("Crypto", InvestmentType.crypto),
+                          _buildTypeChip("Gold", InvestmentType.gold),
+                          _buildTypeChip(
+                            "Real Estate",
+                            InvestmentType.realEstate,
                           ),
                         ],
                       ),
-                      const SizedBox(height: AppSpacing.lg),
-                      TextFormField(
-                        controller: _investedAmountController,
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: Colors.white,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'Total Amount Invested',
-                          labelStyle: TextStyle(color: Colors.white70),
-                          hintText: 'e.g., 1999',
-                          hintStyle: TextStyle(color: Colors.white30),
-                          prefixIcon: const Icon(
-                            Icons.currency_rupee,
-                            color: Colors.white70,
-                          ),
-                          helperText:
-                              'How much money have you already invested?',
-                          helperStyle: TextStyle(color: Colors.white54),
-                          filled: true,
-                          fillColor: AppColors.cardDark,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.radiusMd,
-                            ),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        onChanged: (_) => _calculateUnits(),
-                        validator: (val) {
-                          if (val == null || val.isEmpty) {
-                            return 'Enter invested amount';
-                          }
-                          if (double.tryParse(val) == null) {
-                            return 'Enter valid amount';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: TextFormField(
-                              controller: _purchaseNavController,
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: Colors.white,
-                              ),
-                              decoration: InputDecoration(
-                                labelText: 'Purchase NAV',
-                                labelStyle: TextStyle(color: Colors.white70),
-                                hintText: 'e.g., 10.0772',
-                                hintStyle: TextStyle(color: Colors.white30),
-                                prefixIcon: const Icon(
-                                  Icons.show_chart,
-                                  color: Colors.white70,
-                                ),
-                                helperText: 'NAV when you bought the units',
-                                helperStyle: TextStyle(color: Colors.white54),
-                                filled: true,
-                                fillColor: AppColors.cardDark,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppSpacing.radiusMd,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                              ),
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                              onChanged: (_) => _calculateUnits(),
-                              validator: (val) {
-                                if (val == null || val.isEmpty) {
-                                  return 'Enter NAV';
-                                }
-                                if (double.tryParse(val) == null) {
-                                  return 'Enter valid NAV';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            flex: 2,
-                            child: ElevatedButton.icon(
-                              onPressed: _fetchCurrentNav,
-                              icon: _fetchingNav
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Icon(Icons.refresh, size: 18),
-                              label: const Text('Get Current'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primaryBlue,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppSpacing.radiusMd,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (_calculatedUnits != null) ...[
-                        const SizedBox(height: AppSpacing.lg),
-                        Container(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          decoration: BoxDecoration(
-                            color: AppColors.success.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.radiusMd,
-                            ),
-                            border: Border.all(
-                              color: AppColors.success.withOpacity(0.3),
-                            ),
-                          ),
-                          child: Row(
+                    ),
+                    const SizedBox(height: 24),
+
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(
-                                Icons.check_circle,
-                                color: AppColors.success,
-                                size: 20,
+                              // SEARCH BAR (Only for Mutual Funds)
+                              if (_selectedType == InvestmentType.mutualFund &&
+                                  widget.investmentToEdit == null) ...[
+                                _buildLabel("SEARCH FUND"),
+                                _buildGlassField(
+                                  controller: _searchController,
+                                  hint: "e.g. SBI Bluechip",
+                                  icon: Icons.search,
+                                  onChanged: _searchFunds,
+                                ),
+                                if (_isSearching)
+                                  const LinearProgressIndicator(),
+                                if (_searchResults.isNotEmpty)
+                                  Container(
+                                    height: 150,
+                                    margin: const EdgeInsets.only(top: 8),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.cardSurface,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: ListView.builder(
+                                      itemCount: _searchResults.length,
+                                      itemBuilder: (ctx, i) => ListTile(
+                                        title: Text(
+                                          _searchResults[i]['schemeName'],
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        subtitle: Text(
+                                          _searchResults[i]['schemeCode']
+                                              .toString(),
+                                          style: TextStyle(
+                                            color: AppColors.textTertiary,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                        onTap: () {
+                                          setState(() {
+                                            _nameController.text =
+                                                _searchResults[i]['schemeName'];
+                                            _selectedSchemeCode =
+                                                _searchResults[i]['schemeCode']
+                                                    .toString();
+                                            _searchResults = [];
+                                            _fetchNav(_selectedSchemeCode!);
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(height: 24),
+                              ],
+
+                              _buildLabel("DETAILS"),
+                              _buildGlassField(
+                                controller: _nameController,
+                                hint: "Asset Name",
+                                icon: Icons.label,
                               ),
-                              const SizedBox(width: AppSpacing.md),
-                              Expanded(
-                                child: Text(
-                                  'You own ${_calculatedUnits!.toStringAsFixed(3)} units',
-                                  style: AppTypography.bodyMedium.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.success,
+                              const SizedBox(height: 12),
+                              if (_selectedType != InvestmentType.mutualFund)
+                                _buildGlassField(
+                                  controller: _symbolController,
+                                  hint: "Symbol (e.g. AAPL, BTC)",
+                                  icon: Icons.short_text,
+                                ),
+
+                              const SizedBox(height: 12),
+                              _buildGlassField(
+                                controller: _quantityController,
+                                hint: "Quantity / Units",
+                                icon: Icons.pie_chart,
+                                isNumber: true,
+                              ),
+
+                              const SizedBox(height: 24),
+                              _buildLabel("VALUATION (₹)"),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildGlassField(
+                                      controller: _investedController,
+                                      hint: "Invested Amt",
+                                      isNumber: true,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _buildGlassField(
+                                      controller: _currentController,
+                                      hint: "Current Value",
+                                      isNumber: true,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 32),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 56,
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _saveAsset,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF6366F1),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                    elevation: 8,
+                                  ),
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Text(
+                                          "SAVE TO PORTFOLIO",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 16),
+                              Center(
+                                child: TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text(
+                                    "CANCEL",
+                                    style: TextStyle(
+                                      color: AppColors.textTertiary,
+                                    ),
                                   ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ],
-                  ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.xl),
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentOrange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                    border: Border.all(
-                      color: AppColors.accentOrange.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.repeat,
-                            color: AppColors.accentOrange,
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Text(
-                            'Future SIP (Optional)',
-                            style: AppTypography.titleMedium.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.accentOrange,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        'If you plan to invest monthly, enter the details below',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.accentOrange.withOpacity(0.8),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _sipAmountController,
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: Colors.white,
-                              ),
-                              decoration: InputDecoration(
-                                labelText: 'Monthly SIP Amount',
-                                labelStyle: TextStyle(color: Colors.white70),
-                                hintText: 'e.g., 1000',
-                                hintStyle: TextStyle(color: Colors.white30),
-                                prefixIcon: const Icon(
-                                  Icons.currency_rupee,
-                                  color: Colors.white70,
-                                ),
-                                filled: true,
-                                fillColor: AppColors.cardDark,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppSpacing.radiusMd,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                              ),
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.lg),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _sipDayController,
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: Colors.white,
-                              ),
-                              decoration: InputDecoration(
-                                labelText: 'SIP Day',
-                                labelStyle: TextStyle(color: Colors.white70),
-                                hintText: 'e.g., 5',
-                                hintStyle: TextStyle(color: Colors.white30),
-                                prefixIcon: const Icon(
-                                  Icons.calendar_today,
-                                  color: Colors.white70,
-                                ),
-                                filled: true,
-                                fillColor: AppColors.cardDark,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppSpacing.radiusMd,
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                              ),
-                              keyboardType: TextInputType.number,
-                              validator: (val) {
-                                if (val == null || val.isEmpty) return null;
-                                final day = int.tryParse(val);
-                                if (day == null || day < 1 || day > 28) {
-                                  return '1-28';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.cardDark,
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  ),
-                  child: ListTile(
-                    title: Text(
-                      'Start Date',
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: Colors.white,
-                      ),
-                    ),
-                    subtitle: Text(
-                      _selectedDate.toLocal().toString().split(' ')[0],
-                      style: AppTypography.bodySmall.copyWith(
-                        color: Colors.white70,
-                      ),
-                    ),
-                    trailing: const Icon(
-                      Icons.calendar_today,
-                      color: Colors.white,
-                    ),
-                    onTap: () async {
-                      final pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: _selectedDate,
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2101),
-                        builder: (context, child) {
-                          return Theme(
-                            data: ThemeData.dark().copyWith(
-                              colorScheme: const ColorScheme.dark(
-                                primary: AppColors.primaryBlue,
-                                onPrimary: Colors.white,
-                                surface: AppColors.cardDark,
-                                onSurface: Colors.white,
-                              ),
-                            ),
-                            child: child!,
-                          );
-                        },
-                      );
-                      if (pickedDate != null && pickedDate != _selectedDate) {
-                        setState(() => _selectedDate = pickedDate);
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(height: 40),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _submit,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primaryBlue,
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.radiusLg,
-                        ),
-                      ),
-                    ),
-                    child: Text(
-                      'Save Investment',
-                      style: AppTypography.labelLarge.copyWith(
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeChip(String label, InvestmentType type) {
+    final isSelected = _selectedType == type;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedType = type),
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF6366F1) : AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF6366F1)
+                : Colors.white.withOpacity(0.1),
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : AppColors.textTertiary,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
             ),
           ),
         ),
       ),
     );
   }
+
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, left: 4),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: AppColors.textTertiary,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.0,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassField({
+    required TextEditingController controller,
+    required String hint,
+    IconData? icon,
+    bool isNumber = false,
+    Function(String)? onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: isNumber
+            ? const TextInputType.numberWithOptions(decimal: true)
+            : TextInputType.text,
+        onChanged: onChanged,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.5)),
+          prefixIcon: icon != null
+              ? Icon(icon, color: AppColors.textSecondary, size: 20)
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
+        ),
+        validator: (value) =>
+            (value == null || value.isEmpty) ? "Required" : null,
+      ),
+    );
+  }
+
+  Future<void> _saveAsset() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) return;
+
+        final investment = Investment(
+          id: widget.investmentToEdit?.id ?? '',
+          userId: user.uid,
+          name: _nameController.text.trim(),
+          type: _selectedType,
+          symbol: _symbolController.text.trim().toUpperCase(),
+          mutualFundSchemeCode: _selectedSchemeCode,
+          mutualFundSchemeName: _selectedType == InvestmentType.mutualFund
+              ? _nameController.text
+              : null,
+          quantity: double.parse(_quantityController.text),
+          investedAmount: double.parse(_investedController.text),
+          currentAmount: double.parse(_currentController.text),
+          purchasePrice:
+              double.tryParse(_navController.text) ?? 0.0, // Avg Price/NAV
+          startDate: DateTime.now(), // Simplified
+          lastUpdated: DateTime.now(),
+        );
+
+        final provider = Provider.of<InvestmentProvider>(
+          context,
+          listen: false,
+        );
+
+        if (widget.investmentToEdit != null) {
+          await provider.updateInvestment(investment);
+        } else {
+          await provider.addInvestment(investment);
+        }
+
+        if (mounted) {
+          Navigator.pop(context);
+          showTopSnackBar(context, 'Portfolio updated successfully');
+        }
+      } catch (e) {
+        if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
+}
+
+Future<void> showAddInvestmentModal(
+  BuildContext context, {
+  Investment? investmentToEdit,
+}) {
+  return Navigator.of(context).push(
+    PageRouteBuilder(
+      opaque: false,
+      pageBuilder: (_, __, ___) =>
+          AddInvestmentModal(investmentToEdit: investmentToEdit),
+    ),
+  );
 }

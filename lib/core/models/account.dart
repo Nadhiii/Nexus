@@ -12,7 +12,8 @@ class Account {
   final double balance;
   final String currency;
   final Color color;
-  final IconData icon;
+  final int iconCodePoint;
+  final String iconFontFamily;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isActive;
@@ -28,13 +29,29 @@ class Account {
     required this.balance,
     this.currency = '₹',
     required this.color,
-    required this.icon,
+    required this.iconCodePoint,
+    this.iconFontFamily = 'MaterialIcons',
     required this.createdAt,
     required this.updatedAt,
     this.isActive = true,
     this.accountNumber,
     this.notes,
   });
+
+  // Map known icon code points to constant IconData instances to avoid
+  // non-constant IconData instantiation (tree shaking requirement).
+  static final Map<int, IconData> _iconLookup = {
+    Icons.account_balance.codePoint: Icons.account_balance,
+    Icons.savings.codePoint: Icons.savings,
+    Icons.credit_card.codePoint: Icons.credit_card,
+    Icons.wallet.codePoint: Icons.wallet,
+    Icons.pie_chart.codePoint: Icons.pie_chart,
+    Icons.attach_money.codePoint: Icons.attach_money,
+    Icons.diamond.codePoint: Icons.diamond,
+    Icons.lock.codePoint: Icons.lock,
+  };
+
+  IconData get icon => _iconLookup[iconCodePoint] ?? Icons.account_balance;
 
   String get typeDisplayName {
     switch (type) {
@@ -67,10 +84,8 @@ class Account {
       balance: (data['balance'] ?? 0).toDouble(),
       currency: data['currency'] ?? '₹',
       color: Color(data['color'] ?? Colors.blue.value),
-      icon: IconData(
-        data['icon'] ?? Icons.account_balance.codePoint,
-        fontFamily: 'MaterialIcons',
-      ),
+      iconCodePoint: data['icon'] ?? Icons.account_balance.codePoint,
+      iconFontFamily: data['iconFontFamily'] ?? 'MaterialIcons',
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
       isActive: data['isActive'] ?? true,
@@ -92,10 +107,8 @@ class Account {
       balance: (data['balance'] ?? 0).toDouble(),
       currency: data['currency'] ?? '₹',
       color: Color(data['color'] ?? Colors.blue.value),
-      icon: IconData(
-        data['icon'] ?? Icons.account_balance.codePoint,
-        fontFamily: 'MaterialIcons',
-      ),
+      iconCodePoint: data['icon'] ?? Icons.account_balance.codePoint,
+      iconFontFamily: data['iconFontFamily'] ?? 'MaterialIcons',
       createdAt: data['createdAt'] is Timestamp
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.parse(data['createdAt']),
@@ -117,7 +130,8 @@ class Account {
       'balance': balance,
       'currency': currency,
       'color': color.value,
-      'icon': icon.codePoint,
+      'icon': iconCodePoint,
+      'iconFontFamily': iconFontFamily,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'isActive': isActive,
@@ -136,7 +150,8 @@ class Account {
       balance: json['balance'],
       currency: json['currency'],
       color: Color(json['color']),
-      icon: IconData(json['icon'], fontFamily: 'MaterialIcons'),
+      iconCodePoint: json['icon'],
+      iconFontFamily: json['iconFontFamily'] ?? 'MaterialIcons',
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
       isActive: json['isActive'],
@@ -171,7 +186,8 @@ class Account {
     double? balance,
     String? currency,
     Color? color,
-    IconData? icon,
+    int? iconCodePoint,
+    String? iconFontFamily,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isActive,
@@ -187,7 +203,8 @@ class Account {
       balance: balance ?? this.balance,
       currency: currency ?? this.currency,
       color: color ?? this.color,
-      icon: icon ?? this.icon,
+      iconCodePoint: iconCodePoint ?? this.iconCodePoint,
+      iconFontFamily: iconFontFamily ?? this.iconFontFamily,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isActive: isActive ?? this.isActive,

@@ -3,21 +3,25 @@ import 'package:flutter/material.dart';
 import '../models/debt.dart';
 
 class DebtService {
-  final CollectionReference _debtsCollection = FirebaseFirestore.instance.collection('debts');
+  final CollectionReference _debtsCollection = FirebaseFirestore.instance
+      .collection('debts');
 
   Stream<List<Debt>> watchDebts(String userId) {
     return _debtsCollection
         .where('userId', isEqualTo: userId)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => Debt.fromFirestore(doc)).toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => Debt.fromFirestore(doc)).toList(),
+        );
   }
 
   Future<void> addDebt(Debt debt) async {
-    await _debtsCollection.doc(debt.id).set(debt.toJson());
+    await _debtsCollection.doc(debt.id).set(debt.toFirestore());
   }
 
   Future<void> updateDebt(Debt debt) {
-    return _debtsCollection.doc(debt.id).update(debt.toJson());
+    return _debtsCollection.doc(debt.id).update(debt.toFirestore());
   }
 
   Future<void> deleteDebt(String debtId) {
@@ -33,7 +37,9 @@ class DebtService {
   }
 
   Future<void> clearAllDebts(String userId) async {
-    final snapshot = await _debtsCollection.where('userId', isEqualTo: userId).get();
+    final snapshot = await _debtsCollection
+        .where('userId', isEqualTo: userId)
+        .get();
     final batch = FirebaseFirestore.instance.batch();
     for (final doc in snapshot.docs) {
       batch.delete(doc.reference);
@@ -45,11 +51,11 @@ class DebtService {
     final batch = FirebaseFirestore.instance.batch();
     for (final debt in debts) {
       final docRef = _debtsCollection.doc(debt.id);
-      batch.set(docRef, debt.toJson());
+      batch.set(docRef, debt.toFirestore());
     }
     await batch.commit();
   }
-  
+
   static String getDebtTypeDisplayName(DebtType type) {
     switch (type) {
       case DebtType.creditCard:
@@ -72,6 +78,8 @@ class DebtService {
         return 'Owed By Me';
       case DebtType.owedToMe:
         return 'Owed To Me';
+      case DebtType.custom:
+        return 'Custom';
     }
   }
 
@@ -97,6 +105,8 @@ class DebtService {
         return Icons.arrow_downward;
       case DebtType.owedToMe:
         return Icons.arrow_upward;
+      case DebtType.custom:
+        return Icons.category;
     }
   }
 
@@ -119,9 +129,11 @@ class DebtService {
       case DebtType.other:
         return Colors.grey;
       case DebtType.owedByMe:
-        return Colors.red.shade300;
+        return Colors.red;
       case DebtType.owedToMe:
-        return Colors.green.shade300;
+        return Colors.green;
+      case DebtType.custom:
+        return Colors.indigo;
     }
   }
 }

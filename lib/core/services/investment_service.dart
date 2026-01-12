@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/mutualfunds.dart';
+import '../models/investment.dart';
 
 class InvestmentService {
   final CollectionReference _investmentsCollection = FirebaseFirestore.instance

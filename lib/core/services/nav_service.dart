@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/mutualfunds.dart';
+import '../models/investment.dart';
 
 class NavService {
   static const String baseUrl = 'https://api.mfapi.in/mf';
@@ -26,30 +26,33 @@ class NavService {
 
   /// Update investment with current NAV and calculate portfolio values
   Future<Investment> enrichInvestmentWithNav(Investment investment) async {
-    // Calculate total invested amount based on actual purchase
-    // (units owned * NAV at time of purchase)
-    final investedAmount = investment.units * investment.purchaseNav;
+    // Only enrich Mutual Fund investments that have a scheme code
+    if (investment.mutualFundSchemeCode == null) {
+      return investment;
+    }
 
-    final currentNav = await getCurrentNav(investment.mutualFundSchemeCode);
+    // Calculate total invested amount based on actual purchase
+    // (quantity owned * purchase price per unit)
+    final investedAmount = investment.quantity * investment.purchasePrice;
+
+    // Fetch current NAV for the scheme
+    final currentNav = await getCurrentNav(investment.mutualFundSchemeCode!);
 
     if (currentNav == null) {
       // Return with investedAmount calculated even if NAV fetch failed
-      return investment.copyWith(investedAmount: investedAmount);
+      return investment.copyWith(
+        investedAmount: investedAmount,
+        lastUpdated: DateTime.now(),
+      );
     }
 
-    // Calculate current value and gains/losses
-    final currentValue = investment.units * currentNav;
-    final gainLoss = currentValue - investedAmount;
-    final gainLossPercentage = investedAmount > 0
-        ? (gainLoss / investedAmount) * 100
-        : 0.0;
+    // Calculate current value
+    final currentValue = investment.quantity * currentNav;
 
     return investment.copyWith(
-      currentNav: currentNav,
-      currentValue: currentValue,
+      currentAmount: currentValue,
       investedAmount: investedAmount,
-      gainLoss: gainLoss,
-      gainLossPercentage: gainLossPercentage,
+      lastUpdated: DateTime.now(),
     );
   }
 

@@ -2,17 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+
+// Providers
 import '../../core/providers/notification_provider.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../../core/providers/account_provider.dart';
+import '../../core/providers/bike_provider.dart';
+
+// Theme & Widgets
 import '../../core/theme/app_typography.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/widgets/modern/modern_widgets.dart';
 import '../../core/widgets/swipe_to_delete.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/models/account.dart';
 import '../../core/models/transaction.dart';
+
+// Screens & Components
 import '../transactions/modern_add_transaction_screen.dart';
 import '../notifications/modern_notifications_screen.dart';
 
@@ -26,36 +32,15 @@ class ModernDashboardScreen extends StatefulWidget {
 }
 
 class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
-  final _greetings = [
-    'Hi',
-    'Hello',
-    'Welcome',
-    'ನಮಸ್ಕಾರ', // Kannada
-    'नमस्ते', // Hindi
-  ];
-
-  int _currentIndex = 0;
-  Timer? _timer;
   bool _hasRecalculated = false;
   Timer? _recalcDebounce;
 
   @override
   void initState() {
     super.initState();
-    // Rotate greeting every 2.5 seconds
-    _timer = Timer.periodic(const Duration(milliseconds: 2500), (timer) {
-      if (mounted) {
-        setState(() {
-          _currentIndex = (_currentIndex + 1) % _greetings.length;
-        });
-      }
-    });
-
-    // Recalculate all account balances once on init to fix any inconsistencies
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasRecalculated && mounted) {
         _recalculateAllBalances();
-        _printFiLedger();
         _hasRecalculated = true;
       }
     });
@@ -72,63 +57,38 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     try {
       final transactionProvider = context.read<TransactionProvider>();
       final accountProvider = context.read<AccountProvider>();
-      if (accountProvider.accounts.isEmpty) {
-        print('ℹ️ No accounts loaded yet; skipping recalculation.');
-        return;
-      }
+      if (accountProvider.accounts.isEmpty) return;
       for (final account in accountProvider.accounts) {
-        print(
-          '🔧 Recalculating balance for account: ${account.name} (${account.id})',
-        );
         await transactionProvider.recalculateAccountBalance(account.id);
       }
-      print('✅ Account balances recalculated');
     } catch (e) {
-      print('❌ Error recalculating balances: $e');
-    }
-  }
-
-  // Temporary: print ledger for Fi (replace with the account you see mismatched)
-  void _printFiLedger() {
-    try {
-      final transactionProvider = context.read<TransactionProvider>();
-      final accountProvider = context.read<AccountProvider>();
-      final fi = accountProvider.accounts.firstWhere(
-        (a) => a.name.toLowerCase().contains('fi'),
-        orElse: () => accountProvider.accounts.isNotEmpty
-            ? accountProvider.accounts.first
-            : throw Exception('No accounts available'),
-      );
-      transactionProvider.printAccountLedgerSummary(fi.id, lastN: 15);
-    } catch (e) {
-      print('❌ Error printing ledger: $e');
+      debugPrint('Error recalculating balances: $e');
     }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _recalcDebounce?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Scaffold(
-      backgroundColor: AppColors.darkGradient.first,
+      backgroundColor: AppColors.backgroundBlack,
       body: RefreshIndicator(
+        color: AppColors.primaryBlue,
+        backgroundColor: AppColors.cardSurface,
         onRefresh: () async {
           await Future.delayed(const Duration(seconds: 1));
-          // Trigger a refresh if needed
-          setState(() {});
+          if (mounted) setState(() {});
         },
         child: CustomScrollView(
           slivers: [
+            // 1. GOLDEN HEADER
             _buildModernAppBar(context),
-            // Listen for transaction changes to auto-recalc balances (debounced)
+
+            // Recalc Listener (Invisible)
             SliverToBoxAdapter(
               child: Consumer<TransactionProvider>(
                 builder: (context, txProvider, _) {
@@ -137,20 +97,18 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                 },
               ),
             ),
+
+            // 2. TOTAL BALANCE CARD
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl,
-                  AppSpacing.xl,
-                  AppSpacing.xl,
-                  AppSpacing.lg,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
                 ),
                 child: StreamBuilder<List<Account>>(
                   stream: FirestoreService.getAccountsStream(),
                   builder: (context, snapshot) {
                     double totalBalance = 0.0;
-                    int accountCount = 0;
-
                     if (snapshot.hasData && snapshot.data != null) {
                       final accounts = snapshot.data!
                           .where((a) => a.isActive)
@@ -159,116 +117,103 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                         0.0,
                         (sum, account) => sum + account.balance,
                       );
-                      accountCount = accounts.length;
                     }
-
-                    return ModernBalanceCard(
-                      title: 'Total Balance',
-                      amount: totalBalance,
-                      currency: '₹',
-                      subtitle:
-                          'Personal · $accountCount ${accountCount == 1 ? 'account' : 'accounts'}',
-                      gradientColors: [
-                        colorScheme.primary,
-                        colorScheme.primary.withOpacity(0.8),
-                      ],
-                      trailing: GestureDetector(
-                        onTap: () {
-                          widget.onNavigate(1);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                            vertical: AppSpacing.sm,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colorScheme.onPrimary.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.radiusFull,
-                            ),
-                          ),
-                          child: Text(
-                            'Accounts',
-                            style: TextStyle(
-                              color: colorScheme.onPrimary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
+                    return _buildPremiumBalanceCard(totalBalance);
                   },
                 ),
               ),
             ),
+
+            // 3. QUICK ACTIONS
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    ModernActionButton(
-                      icon: Icons.add_circle_outline,
-                      label: 'Add\nTransaction',
-                      onTap: () {
-                        Navigator.of(context).push(
+                    Expanded(
+                      child: _buildQuickActionBtn(
+                        Icons.add,
+                        'Add',
+                        AppColors.primaryBlue,
+                        () => Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) =>
                                 const ModernAddTransactionScreen(),
                           ),
-                        );
-                      },
-                      backgroundColor: colorScheme.surfaceContainerHighest,
+                        ),
+                      ),
                     ),
-                    ModernActionButton(
-                      icon: Icons.account_balance_wallet_outlined,
-                      label: 'Accounts',
-                      onTap: () {
-                        widget.onNavigate(1);
-                      },
-                      backgroundColor: colorScheme.surfaceContainerHighest,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildQuickActionBtn(
+                        Icons.account_balance_wallet_outlined,
+                        'Accounts',
+                        AppColors.pastelPurple,
+                        () => widget.onNavigate(1),
+                      ),
                     ),
-                    ModernActionButton(
-                      icon: Icons.receipt_long_outlined,
-                      label: 'Transactions',
-                      onTap: () {
-                        widget.onNavigate(1, financeTab: 1);
-                      },
-                      backgroundColor: colorScheme.surfaceContainerHighest,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildQuickActionBtn(
+                        Icons.history,
+                        'History',
+                        AppColors.pastelTeal,
+                        () => widget.onNavigate(1, financeTab: 1),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl2)),
+
+            // 4. GARAGE SECTION (New "Status" Card)
+            SliverToBoxAdapter(
+              child: Consumer<BikeProvider>(
+                builder: (context, bikeProvider, _) {
+                  if (bikeProvider.bikes.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final bike =
+                      bikeProvider.selectedBike ?? bikeProvider.bikes.first;
+                  final mileage = bikeProvider.getAverageMileage();
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("MY VEHICLE", style: _headerStyle()),
+                        const SizedBox(height: 12),
+                        _buildVehicleStatusCard(bike, mileage),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 32)),
+
+            // 5. RECENT ACTIVITY HEADER
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl,
-                  AppSpacing.xl,
-                  AppSpacing.xl,
-                  AppSpacing.md,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Recent Transactions',
-                      style: AppTypography.titleLarge.copyWith(
-                        color: colorScheme.onSurface,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text("RECENT ACTIVITY", style: _headerStyle()),
                     GestureDetector(
-                      onTap: () {
-                        widget.onNavigate(1, financeTab: 1);
-                      },
+                      onTap: () => widget.onNavigate(1, financeTab: 1),
                       child: Text(
-                        'View All',
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w600,
+                        "See All",
+                        style: TextStyle(
+                          color: AppColors.primaryBlue,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
                         ),
                       ),
                     ),
@@ -276,128 +221,12 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                 ),
               ),
             ),
-            Consumer<TransactionProvider>(
-              builder: (context, provider, child) {
-                if (provider.isLoading && provider.transactions.isEmpty) {
-                  return const SliverToBoxAdapter(
-                    child: Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(AppSpacing.xl),
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
-                  );
-                }
 
-                final recentTransactions = provider.transactions
-                    .take(5)
-                    .toList();
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
-                if (recentTransactions.isEmpty) {
-                  return SliverToBoxAdapter(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xl,
-                      ),
-                      padding: AppSpacing.cardPaddingLg,
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.radiusLg,
-                        ),
-                        border: Border.all(
-                          color: colorScheme.onSurface.withOpacity(0.1),
-                        ),
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.receipt_long_outlined,
-                              size: 48,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            Text(
-                              'No transactions yet',
-                              style: AppTypography.bodyLarge.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              'Add your first transaction to get started',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: colorScheme.onSurfaceVariant.withOpacity(
-                                  0.7,
-                                ),
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }
+            // 6. TRANSACTION STREAM
+            _buildRecentTransactionsList(),
 
-                return SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final transaction = recentTransactions[index];
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        left: AppSpacing.xl,
-                        right: AppSpacing.xl,
-                        bottom: index == recentTransactions.length - 1
-                            ? 0
-                            : AppSpacing.sm,
-                      ),
-                      child: SwipeToDelete(
-                        itemKey: ValueKey(transaction.id),
-                        itemId: transaction.id,
-                        itemName: 'Transaction',
-                        onDelete: () {
-                          context.read<TransactionProvider>().deleteTransaction(
-                            transaction.id,
-                          );
-                        },
-                        onUndoDelete: () {
-                          context
-                              .read<TransactionProvider>()
-                              .restoreTransaction(transaction);
-                        },
-                        child: ModernTransactionTile(
-                          title:
-                              transaction.description ??
-                              (transaction.type == TransactionType.transfer
-                                  ? 'Transfer'
-                                  : 'Transaction'),
-                          subtitle: _formatTransactionDate(transaction.date),
-                          amount: '₹${transaction.amount.toStringAsFixed(2)}',
-                          isIncome: transaction.type == TransactionType.income,
-                          icon: transaction.type == TransactionType.transfer
-                              ? Icons.swap_horiz
-                              : transaction.type == TransactionType.income
-                              ? Icons.arrow_downward
-                              : Icons.arrow_upward,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ModernAddTransactionScreen(
-                                      transaction: transaction,
-                                    ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    );
-                  }, childCount: recentTransactions.length),
-                );
-              },
-            ),
             const SliverToBoxAdapter(child: SizedBox(height: 120)),
           ],
         ),
@@ -405,122 +234,485 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     );
   }
 
-  Widget _buildModernAppBar(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final user = FirebaseAuth.instance.currentUser;
-    final displayName = user?.displayName?.split(' ').first ?? 'User';
+  // --- WIDGET HELPERS ---
 
-    // Get the current greeting
-    final currentGreeting = _greetings[_currentIndex];
+  TextStyle _headerStyle() {
+    return AppTypography.labelSmall.copyWith(
+      color: AppColors.textTertiary,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 1.2,
+    );
+  }
 
-    return SliverAppBar(
-      pinned: true,
-      floating: true,
-      backgroundColor: AppColors.darkGradient.first,
-      foregroundColor: Colors.white,
-
-      // 1. Profile Icon & Greeting
-      title: Row(
+  Widget _buildPremiumBalanceCard(double balance) {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
-            onTap: () => widget.onNavigate(4),
-            child: CircleAvatar(
-              radius: 18, // Slightly smaller
-              backgroundColor: colorScheme.primary,
-              backgroundImage: user?.photoURL != null
-                  ? NetworkImage(user!.photoURL!)
-                  : null,
-              child: user?.photoURL == null
-                  ? Icon(
-                      user?.isAnonymous == true
-                          ? Icons.person_off
-                          : Icons.person,
-                      color: colorScheme.onPrimary,
-                      size: 18,
-                    )
-                  : null,
+          Text(
+            'Total Balance',
+            style: AppTypography.labelMedium.copyWith(
+              color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 800),
-              switchInCurve: Curves.easeOutBack,
-              switchOutCurve: Curves.easeIn,
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                final offsetAnimation = Tween<Offset>(
-                  begin: const Offset(0.0, 0.5),
-                  end: Offset.zero,
-                ).animate(animation);
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: offsetAnimation,
-                    child: child,
+          const SizedBox(height: 8),
+          Text(
+            '₹${balance.toStringAsFixed(2)}',
+            style: AppTypography.displaySmall.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // NEW: Sleek Vehicle Status Card (Replaces heavy RC Card)
+  Widget _buildVehicleStatusCard(dynamic bike, double mileage) {
+    return GestureDetector(
+      onTap: () => widget.onNavigate(3), // Navigate to Garage Tab
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Icon / Avatar
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: AppColors.primaryBlue.withOpacity(0.1),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.primaryBlue.withOpacity(0.3),
+                ),
+              ),
+              child: const Icon(
+                Icons.two_wheeler,
+                color: AppColors.primaryBlue,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            // Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    bike.name,
+                    style: AppTypography.titleMedium.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                );
-              },
-              layoutBuilder: (currentChild, previousChildren) {
-                return Stack(
-                  alignment: Alignment.centerLeft,
-                  children: <Widget>[
-                    ...previousChildren,
-                    if (currentChild != null) currentChild,
-                  ],
-                );
-              },
-              child: Text(
-                '$currentGreeting, $displayName',
-                key: ValueKey<String>(currentGreeting),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.headlineSmall.copyWith(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  fontFamilyFallback: const ['Roboto', 'Arial'],
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: AppColors.success,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        "Active",
+                        style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Mileage Stat
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  "EFFICIENCY",
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textTertiary,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "${mileage.toStringAsFixed(1)} km/L",
+                  style: TextStyle(
+                    color: AppColors.pastelTeal,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionBtn(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 80,
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: AppTypography.labelMedium.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentTransactionsList() {
+    return Consumer<TransactionProvider>(
+      builder: (context, provider, child) {
+        if (provider.isLoading && provider.transactions.isEmpty) {
+          return const SliverToBoxAdapter(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        }
+
+        final recentTransactions = provider.transactions.take(5).toList();
+
+        if (recentTransactions.isEmpty) {
+          return SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  color: AppColors.cardSurface,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Text(
+                    'No transactions yet',
+                    style: TextStyle(color: AppColors.textTertiary),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        return SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final transaction = recentTransactions[index];
+            final isLast = index == recentTransactions.length - 1;
+            return _buildTimelineItem(transaction, isLast);
+          }, childCount: recentTransactions.length),
+        );
+      },
+    );
+  }
+
+  // --- NBOX STYLE STREAM ITEM ---
+  Widget _buildTimelineItem(Transaction t, bool isLast) {
+    final isIncome = t.type == TransactionType.income;
+    final isTransfer = t.type == TransactionType.transfer;
+
+    final color = isTransfer
+        ? AppColors.primaryBlue
+        : (isIncome ? AppColors.pastelGreen : AppColors.error);
+
+    final icon = isTransfer
+        ? Icons.swap_horiz
+        : (isIncome ? Icons.arrow_downward : Icons.arrow_upward);
+
+    final sign = isIncome ? "+" : (isTransfer ? "" : "-");
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // A. Timeline Graphic
+          Padding(
+            padding: const EdgeInsets.only(left: 24, right: 16),
+            child: Column(
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: AppColors.backgroundBlack,
+                    border: Border.all(color: color, width: 2),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: isLast ? Colors.transparent : AppColors.cardSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // B. Content Bubble
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24, right: 20),
+              child: SwipeToDelete(
+                itemKey: ValueKey(t.id),
+                itemId: t.id,
+                itemName: "Transaction",
+                onDelete: () =>
+                    context.read<TransactionProvider>().deleteTransaction(t.id),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ModernAddTransactionScreen(transaction: t),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardSurface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            // Glass Icon
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: color.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(icon, color: color, size: 16),
+                            ),
+                            const SizedBox(width: 12),
+                            // Details
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  t.description?.isNotEmpty == true
+                                      ? t.description!
+                                      : (isTransfer
+                                            ? "Transfer"
+                                            : "Transaction"),
+                                  style: AppTypography.bodyLarge.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                // NEW: Pretty Date Format
+                                Text(
+                                  _formatPrettyDate(t.date),
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.textTertiary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        // Amount
+                        Text(
+                          "$sign₹${t.amount.toStringAsFixed(0)}",
+                          style: AppTypography.titleMedium.copyWith(
+                            color: color,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
         ],
       ),
-      titleSpacing: AppSpacing.lg, // Use consistent spacing
-      // 2. Actions (Notification only)
-      actions: [
-        Consumer<NotificationProvider>(
-          builder: (context, notificationProvider, child) {
-            return Badge(
-              isLabelVisible: notificationProvider.hasUnread,
-              child: IconButton(
-                icon: Icon(
-                  Icons.notifications_none,
-                  color: Colors.white, // Ensure icon is always visible
-                ),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ModernNotificationsScreen(),
-                    ),
-                  );
-                },
+    );
+  }
+
+  Widget _buildModernAppBar(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final displayName = user?.displayName?.split(' ').first ?? 'User';
+
+    return SliverAppBar(
+      pinned: true,
+      floating: true,
+      backgroundColor: AppColors.backgroundBlack,
+      surfaceTintColor: AppColors.backgroundBlack,
+      elevation: 0,
+      expandedHeight: 110, // STANDARD HEIGHT
+      flexibleSpace: FlexibleSpaceBar(
+        centerTitle: false,
+        titlePadding: const EdgeInsets.only(
+          left: 20,
+          bottom: 24,
+        ), // STANDARD PADDING
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'Good ${DateTime.now().hour < 12
+                  ? 'Morning'
+                  : DateTime.now().hour < 17
+                  ? 'Afternoon'
+                  : 'Evening'},',
+              style: TextStyle(
+                color: AppColors.textTertiary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
-            );
-          },
+            ),
+            Text(
+              displayName,
+              style: AppTypography.headlineMedium.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: AppSpacing.md), // Right padding
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 20, top: 10),
+          child: Consumer<NotificationProvider>(
+            builder: (context, notificationProvider, child) {
+              return Stack(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.cardSurface,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.notifications_outlined,
+                        color: AppColors.textSecondary,
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const ModernNotificationsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  if (notificationProvider.hasUnread)
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          color: AppColors.pastelPink,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
       ],
     );
   }
 
-  String _formatTransactionDate(DateTime date) {
+  // NEW: Smart Date Formatter (4th Dec, 1st Jan)
+  String _formatPrettyDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
 
-    if (difference.inDays == 0) return 'Today';
-    if (difference.inDays == 1) return 'Yesterday';
-    if (difference.inDays < 7) return '${difference.inDays} days ago';
-    return '${date.day}/${date.month}/${date.year}';
+    if (difference.inDays == 0 && now.day == date.day) return 'Today';
+    if (difference.inDays == 1 ||
+        (difference.inDays == 0 && now.day != date.day)) {
+      return 'Yesterday';
+    }
+
+    String suffix = 'th';
+    if (date.day % 10 == 1 && date.day != 11) {
+      suffix = 'st';
+    } else if (date.day % 10 == 2 && date.day != 12)
+      suffix = 'nd';
+    else if (date.day % 10 == 3 && date.day != 13)
+      suffix = 'rd';
+
+    return "${date.day}$suffix ${DateFormat('MMM').format(date)}";
   }
 }

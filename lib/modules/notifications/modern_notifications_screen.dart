@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../core/providers/notification_provider.dart';
 import '../../core/models/notification.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_colors.dart';
 
 class ModernNotificationsScreen extends StatefulWidget {
   const ModernNotificationsScreen({super.key});
-
   @override
   State<ModernNotificationsScreen> createState() =>
       _ModernNotificationsScreenState();
@@ -18,7 +17,6 @@ class _ModernNotificationsScreenState extends State<ModernNotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    // Mark all notifications as read when the screen is opened.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<NotificationProvider>().markAllAsRead();
     });
@@ -26,42 +24,50 @@ class _ModernNotificationsScreenState extends State<ModernNotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Scaffold(
-      backgroundColor: AppColors.darkGradient.first,
+      backgroundColor: AppColors.backgroundBlack,
       body: CustomScrollView(
         slivers: [
+          // 1. STANDARD HEADER
           SliverAppBar(
             pinned: true,
-            expandedHeight: 120,
-            backgroundColor: AppColors.darkGradient.first,
-            foregroundColor: Colors.white,
+            expandedHeight: 110, // Standard Height
+            backgroundColor: AppColors.backgroundBlack,
+            surfaceTintColor: AppColors.backgroundBlack,
+            elevation: 0,
             flexibleSpace: FlexibleSpaceBar(
-              centerTitle: true,
+              centerTitle: false,
+              titlePadding: const EdgeInsets.only(
+                left: 20,
+                bottom: 24,
+              ), // Standard Padding
               title: Text(
                 'Notifications',
-                style: AppTypography.headlineMedium,
+                style: AppTypography.headlineMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
             actions: [
               Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.md),
+                padding: const EdgeInsets.only(right: 8.0, top: 10.0),
                 child: TextButton(
-                  onPressed: () {
-                    context.read<NotificationProvider>().clearAllNotifications();
-                  },
+                  onPressed: () => context
+                      .read<NotificationProvider>()
+                      .clearAllNotifications(),
                   child: Text(
                     'Clear All',
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: colorScheme.primary,
+                    style: AppTypography.labelLarge.copyWith(
+                      color: AppColors.primaryBlue,
                     ),
                   ),
                 ),
               ),
             ],
           ),
+
+          // 2. LIST
           Consumer<NotificationProvider>(
             builder: (context, provider, child) {
               if (provider.isLoading) {
@@ -69,22 +75,10 @@ class _ModernNotificationsScreenState extends State<ModernNotificationsScreen> {
                   child: Center(child: CircularProgressIndicator()),
                 );
               }
-
               if (provider.notifications.isEmpty) {
-                return SliverFillRemaining(
-                  child: _buildEmptyState(context),
-                );
+                return SliverFillRemaining(child: _buildEmptyState());
               }
-
-              return SliverList(
-                delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                    final notification = provider.notifications[index];
-                    return _buildNotificationCard(context, notification);
-                  },
-                  childCount: provider.notifications.length,
-                ),
-              );
+              return _buildGroupedList(provider.notifications);
             },
           ),
         ],
@@ -92,72 +86,166 @@ class _ModernNotificationsScreenState extends State<ModernNotificationsScreen> {
     );
   }
 
-  Widget _buildNotificationCard(
-      BuildContext context,
-      AppNotification notification,
-      ) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final icon = _getIconForNotificationType(notification.type, colorScheme);
+  Widget _buildGroupedList(List<AppNotification> notifications) {
+    final Map<String, List<AppNotification>> grouped = {};
+    for (var n in notifications) {
+      final key = _getDateHeader(n.createdAt);
+      if (!grouped.containsKey(key)) grouped[key] = [];
+      grouped[key]!.add(n);
+    }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md, left: AppSpacing.md, right: AppSpacing.md),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-      ),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: icon.backgroundColor,
-          foregroundColor: icon.iconColor,
-          child: Icon(icon.icon, size: 24),
-        ),
-        title: Text(
-          notification.title,
-          style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          notification.message,
-          style: AppTypography.bodyMedium.copyWith(
-            color: colorScheme.onSurface.withOpacity(0.7),
-          ),
-        ),
-        isThreeLine: true,
-        trailing: notification.isRead
-            ? null
-            : const Icon(Icons.circle, color: Colors.blue, size: 12),
-        onTap: () {
-          // Handle notification tap, e.g., navigate to a specific screen
-          // For now, just mark as read.
-          context.read<NotificationProvider>().markAsRead(notification.id);
-        },
+    return SliverPadding(
+      padding: const EdgeInsets.only(bottom: 40),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final dateKey = grouped.keys.elementAt(index);
+          final items = grouped[dateKey]!;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionHeader(dateKey),
+              ...items.map((n) => _buildNotificationTile(context, n)),
+            ],
+          );
+        }, childCount: grouped.keys.length),
       ),
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+      child: Text(
+        title.toUpperCase(),
+        style: AppTypography.labelSmall.copyWith(
+          color: AppColors.textTertiary,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationTile(
+    BuildContext context,
+    AppNotification notification,
+  ) {
+    final style = _getNotificationStyle(notification.type);
+    return Dismissible(
+      key: ValueKey(notification.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        color: AppColors.error.withOpacity(0.2),
+        padding: const EdgeInsets.only(right: 24),
+        child: const Icon(Icons.delete_outline, color: AppColors.error),
+      ),
+      onDismissed: (_) {
+        context.read<NotificationProvider>().deleteNotification(
+          notification.id,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: notification.isRead
+                ? Colors.white.withOpacity(0.05)
+                : AppColors.primaryBlue.withOpacity(0.3),
+          ),
+        ),
+        child: ListTile(
+          contentPadding: const EdgeInsets.all(16),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: style.color.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(style.icon, color: style.color, size: 20),
+          ),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                notification.title,
+                style: AppTypography.bodyLarge.copyWith(
+                  fontWeight: notification.isRead
+                      ? FontWeight.w600
+                      : FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              if (!notification.isRead)
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryBlue,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+            ],
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 4),
+              Text(
+                notification.message,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.3,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                DateFormat('hh:mm a').format(notification.createdAt),
+                style: AppTypography.labelSmall.copyWith(
+                  color: AppColors.textTertiary,
+                ),
+              ),
+            ],
+          ),
+          onTap: () {
+            context.read<NotificationProvider>().markAsRead(notification.id);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.notifications_off_outlined,
-            size: 80,
-            color: colorScheme.onSurface.withOpacity(0.4),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            'No Notifications',
-            style: AppTypography.headlineSmall.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppColors.cardSurface,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.notifications_none_rounded,
+              size: 48,
+              color: AppColors.textTertiary.withOpacity(0.5),
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: 24),
           Text(
-            "You're all caught up!",
-            style: AppTypography.bodyLarge.copyWith(
-              color: colorScheme.onSurface.withOpacity(0.6),
+            'All Caught Up',
+            style: AppTypography.headlineSmall.copyWith(
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "No new notifications",
+            style: AppTypography.bodyMedium.copyWith(
+              color: AppColors.textTertiary,
             ),
           ),
         ],
@@ -165,44 +253,44 @@ class _ModernNotificationsScreenState extends State<ModernNotificationsScreen> {
     );
   }
 
-  _NotificationIcon _getIconForNotificationType(
-      NotificationType type,
-      ColorScheme colorScheme,
-      ) {
+  String _getDateHeader(DateTime date) {
+    final now = DateTime.now();
+    if (date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day) {
+      return "Today";
+    }
+    if (date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day - 1) {
+      return "Yesterday";
+    }
+    return DateFormat('MMM dd').format(date);
+  }
+
+  _NotifStyle _getNotificationStyle(NotificationType type) {
     switch (type) {
       case NotificationType.billReminder:
-        return _NotificationIcon(
-          Icons.receipt_long,
-          colorScheme.error,
-          colorScheme.onError,
-        );
+        return _NotifStyle(Icons.receipt_long_rounded, AppColors.error);
       case NotificationType.goalProgress:
-        return _NotificationIcon(Icons.trending_up, Colors.green, Colors.white);
+        return _NotifStyle(Icons.trending_up_rounded, AppColors.pastelGreen);
       case NotificationType.goalAchievement:
-        return _NotificationIcon(Icons.star, Colors.amber, Colors.white);
+        return _NotifStyle(Icons.emoji_events_rounded, Colors.amber);
       case NotificationType.transactionAlert:
-        return _NotificationIcon(Icons.paid, Colors.blue, Colors.white);
+        return _NotifStyle(Icons.paid_rounded, AppColors.primaryBlue);
       case NotificationType.unusualSpending:
-        return _NotificationIcon(
-          Icons.warning_amber_rounded,
-          colorScheme.error,
-          colorScheme.onError,
-        );
-      case NotificationType.systemUpdate:
+        return _NotifStyle(Icons.warning_amber_rounded, Colors.orange);
       default:
-        return _NotificationIcon(
-          Icons.notifications,
-          colorScheme.primary,
-          colorScheme.onPrimary,
+        return _NotifStyle(
+          Icons.notifications_rounded,
+          AppColors.textSecondary,
         );
     }
   }
 }
 
-class _NotificationIcon {
+class _NotifStyle {
   final IconData icon;
-  final Color backgroundColor;
-  final Color iconColor;
-
-  _NotificationIcon(this.icon, this.backgroundColor, this.iconColor);
+  final Color color;
+  _NotifStyle(this.icon, this.color);
 }

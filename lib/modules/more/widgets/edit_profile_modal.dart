@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/models/user_profile.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/top_snackbar.dart';
 
 class EditProfileModal extends StatefulWidget {
@@ -101,7 +102,7 @@ class _EditProfileModalState extends State<EditProfileModal>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       body: Stack(
         children: [
           AnimatedBuilder(
@@ -111,7 +112,7 @@ class _EditProfileModalState extends State<EditProfileModal>
                 opacity: _opacityAnimation.value * 0.5,
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(color: Colors.black.withOpacity(0.3)),
+                  child: Container(color: AppColors.black.withOpacity(0.3)),
                 ),
               );
             },
@@ -130,7 +131,7 @@ class _EditProfileModalState extends State<EditProfileModal>
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: AppColors.black.withOpacity(0.2),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),

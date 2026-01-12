@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/mutualfunds.dart';
+import '../models/investment.dart';
 import '../services/investment_service.dart';
 import '../services/nav_service.dart';
 
@@ -103,6 +103,15 @@ class InvestmentProvider extends ChangeNotifier {
     }
   }
 
+  /// Get investment by ID
+  Investment? getInvestmentById(String id) {
+    try {
+      return _investments.firstWhere((investment) => investment.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
+
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
@@ -110,6 +119,13 @@ class InvestmentProvider extends ChangeNotifier {
 
   void _setError(String? errorMessage) {
     _error = errorMessage;
+    notifyListeners();
+  }
+
+  void clear() {
+    _investments = [];
+    _isLoading = false;
+    _error = null;
     notifyListeners();
   }
 }

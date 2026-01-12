@@ -7,6 +7,10 @@
 .buildlog/
 .history
 
+# Environment files (keep API keys out of git)
+.env
+.env.*
+
 
 
 # Flutter repo-specific

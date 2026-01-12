@@ -27,14 +27,19 @@ class GoalProvider extends ChangeNotifier {
   Future<void> loadGoals(String userId) async {
     _setLoading(true);
     try {
-      _goalService.watchGoals(userId).listen((goals) {
-        _goals = goals;
-        _setLoading(false);
-        notifyListeners();
-      }, onError: (e) {
-        _setError('Error loading goals: $e');
-        _setLoading(false);
-      });
+      _goalService
+          .watchGoals(userId)
+          .listen(
+            (goals) {
+              _goals = goals;
+              _setLoading(false);
+              notifyListeners();
+            },
+            onError: (e) {
+              _setError('Error loading goals: $e');
+              _setLoading(false);
+            },
+          );
     } catch (e) {
       _setError('Error setting up goal stream: $e');
       _setLoading(false);
@@ -78,7 +83,7 @@ class GoalProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   Future<void> addContribution(String goalId, double amount) async {
     _setLoading(true);
     try {
@@ -99,7 +104,9 @@ class GoalProvider extends ChangeNotifier {
   Future<void> restoreFromBackup(List<dynamic> data) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    final goals = data.map((d) => Goal.fromJson(d as Map<String, dynamic>)).toList();
+    final goals = data
+        .map((d) => Goal.fromJson(d as Map<String, dynamic>))
+        .toList();
     await _goalService.restoreGoals(user.uid, goals);
   }
 
@@ -110,6 +117,13 @@ class GoalProvider extends ChangeNotifier {
 
   void _setError(String? errorMessage) {
     _error = errorMessage;
+    notifyListeners();
+  }
+
+  void clear() {
+    _goals = [];
+    _isLoading = false;
+    _error = null;
     notifyListeners();
   }
 }

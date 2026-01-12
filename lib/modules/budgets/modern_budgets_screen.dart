@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/providers/budget_provider.dart';
-import '../../core/models/budget.dart';
 import 'widgets/add_budget_modal.dart';
 
 class ModernBudgetsScreen extends StatefulWidget {
@@ -18,16 +17,51 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
   @override
   void initState() {
     super.initState();
-    // Ensure data is loaded when screen opens
     Future.microtask(
       () => Provider.of<BudgetProvider>(context, listen: false).initialize(),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, Budget budget) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        title: Text(
+          'Delete Budget',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${budget.categoryName}" budget?',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Provider.of<BudgetProvider>(
+                context,
+                listen: false,
+              ).deleteBudget(budget.id);
+            },
+            child: Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkGradient.first,
+      backgroundColor: AppColors.backgroundBlack,
       body: Consumer<BudgetProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
@@ -36,88 +70,101 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
 
           final budgets = provider.budgets;
 
-          if (budgets.isEmpty) {
-            return _buildEmptyState(context);
-          }
-
           return CustomScrollView(
             slivers: [
-              _buildAppBar(context),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildOverviewCard(context, provider),
-                      const SizedBox(height: AppSpacing.xl),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Your Budgets',
-                            style: AppTypography.titleLarge.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          // Quick Setup Button for Predefined Budgets
-                          TextButton.icon(
-                            onPressed: () => showQuickSetupModal(context),
-                            icon: const Icon(
-                              Icons.auto_fix_high,
-                              size: 16,
-                              color: AppColors.accentPurple,
-                            ),
-                            label: Text(
-                              'Auto Setup',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.accentPurple,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                    ],
+              // 1. GOLDEN HEADER
+              SliverAppBar(
+                pinned: true,
+                expandedHeight: 110,
+                backgroundColor: AppColors.backgroundBlack,
+                surfaceTintColor: AppColors.backgroundBlack,
+                elevation: 0,
+                automaticallyImplyLeading: false,
+                flexibleSpace: FlexibleSpaceBar(
+                  centerTitle: false,
+                  titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
+                  title: Text(
+                    'Budgets',
+                    style: AppTypography.headlineMedium.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
+                actions: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0, top: 10),
+                    child: IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardSurface,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.auto_fix_high,
+                          color: AppColors.accentPurple,
+                          size: 20,
+                        ),
+                      ),
+                      tooltip: "Auto Setup",
+                      onPressed: () => showQuickSetupModal(context),
+                    ),
+                  ),
+                ],
               ),
-              _buildBudgetsList(context, budgets),
-              const SliverToBoxAdapter(child: SizedBox(height: 140)),
+
+              // 2. HERO OVERVIEW (Monthly Cap)
+              if (budgets.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    child: _buildOverviewCard(context, provider),
+                  ),
+                ),
+
+              // 3. BUDGET LIST
+              if (budgets.isEmpty)
+                SliverFillRemaining(child: _buildEmptyState(context))
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final budget = budgets[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _buildBudgetCard(context, budget),
+                      );
+                    }, childCount: budgets.length),
+                  ),
+                ),
             ],
           );
         },
       ),
-      floatingActionButton: Container(
-        margin: const EdgeInsets.only(bottom: 80),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 20.0),
         child: FloatingActionButton.extended(
           onPressed: () => showAddBudgetModal(context),
-          backgroundColor: AppColors.accentPurple,
-          icon: const Icon(Icons.add),
-          label: const Text('New Budget'),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return SliverAppBar(
-      expandedHeight: 120,
-      floating: false,
-      pinned: true,
-      backgroundColor: AppColors.darkGradient.first,
-      foregroundColor: Colors.white,
-      flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          'Budgets',
-          style: AppTypography.titleLarge.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
+          backgroundColor: AppColors.cardSurface,
+          elevation: 0,
+          icon: Icon(Icons.add, color: AppColors.accentPurple),
+          label: Text(
+            'New Budget',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppColors.accentPurple,
+            ),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+            side: BorderSide(color: AppColors.accentPurple.withOpacity(0.3)),
           ),
         ),
-        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
       ),
     );
   }
@@ -127,21 +174,32 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
     final totalSpent = provider.totalSpent;
     final totalRemaining = provider.totalRemaining;
     final percentSpent = totalAllocated > 0
-        ? (totalSpent / totalAllocated) * 100
+        ? (totalSpent / totalAllocated)
         : 0.0;
 
+    // Color logic
+    final isOver = totalSpent > totalAllocated;
+    final statusColor = isOver
+        ? AppColors.error
+        : (percentSpent > 0.8 ? AppColors.warning : AppColors.success);
+
     return Container(
-      padding: AppSpacing.cardPaddingXl,
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: AppColors.purpleGradient,
+          colors: [
+            AppColors.accentPurple.withOpacity(0.15),
+            AppColors.accentPurple.withOpacity(0.05),
+          ],
         ),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.purpleGradient.first.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -154,75 +212,89 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Total Remaining',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: Colors.white.withOpacity(0.9),
-                  letterSpacing: 0.5,
+                'REMAINING MONTHLY',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '${percentSpent.toStringAsFixed(0)}% Spent',
-                  style: AppTypography.bodySmall.copyWith(color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '₹',
-                style: AppTypography.headlineMedium.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  _formatAmount(totalRemaining),
-                  style: AppTypography.currencyLarge.copyWith(
-                    color: Colors.white,
+                  '${(percentSpent * 100).clamp(0, 999).toStringAsFixed(0)}% Used',
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
+          const SizedBox(height: 8),
+          Text(
+            '₹${_formatAmount(totalRemaining)}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Neon Progress Bar
+          Stack(
             children: [
-              Icon(
-                Icons.arrow_downward,
-                color: Colors.white.withOpacity(0.8),
-                size: 14,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'Spent ₹${_formatAmount(totalSpent)}',
-                style: AppTypography.bodySmall.copyWith(
-                  color: Colors.white.withOpacity(0.8),
+              Container(
+                height: 8,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
-              const SizedBox(width: 12),
-              Container(
-                width: 1,
-                height: 12,
-                color: Colors.white.withOpacity(0.3),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  return Container(
+                    height: 8,
+                    width: constraints.maxWidth * percentSpent.clamp(0.0, 1.0),
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      borderRadius: BorderRadius.circular(4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: statusColor.withOpacity(0.6),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
-              const SizedBox(width: 12),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
               Text(
-                'Budgeted ₹${_formatAmount(totalAllocated)}',
-                style: AppTypography.bodySmall.copyWith(
-                  color: Colors.white.withOpacity(0.8),
+                'Spent: ₹${_formatAmount(totalSpent)}',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 12,
+                ),
+              ),
+              Text(
+                'Cap: ₹${_formatAmount(totalAllocated)}',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 12,
                 ),
               ),
             ],
@@ -232,178 +304,122 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
     );
   }
 
-  Widget _buildBudgetsList(BuildContext context, List<Budget> budgets) {
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      sliver: SliverList(
-        delegate: SliverChildBuilderDelegate((context, index) {
-          final budget = budgets[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: _buildBudgetCard(context, budget),
-          );
-        }, childCount: budgets.length),
-      ),
-    );
-  }
-
   Widget _buildBudgetCard(BuildContext context, Budget budget) {
     final progress = budget.progress;
-    final percentage = (progress * 100).round();
     final isOverspent = budget.isOverspent;
+    final statusColor = isOverspent
+        ? AppColors.error
+        : (progress > 0.85 ? AppColors.warning : AppColors.success);
 
-    // Color logic: Green (safe) -> Orange (warning) -> Red (danger)
-    Color statusColor;
-    if (isOverspent) {
-      statusColor = AppColors.error;
-    } else if (progress > 0.8) {
-      statusColor = Colors.orange;
-    } else {
-      statusColor = Colors.green;
-    }
-
-    return GestureDetector(
-      onTap: () => showAddBudgetModal(context, budget: budget),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        decoration: BoxDecoration(
-          color: AppColors.cardDarkElevated,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          border: Border.all(
-            color: isOverspent
-                ? AppColors.error.withOpacity(0.3)
-                : Colors.transparent,
+    return Slidable(
+      key: ValueKey(budget.id),
+      endActionPane: ActionPane(
+        motion: const DrawerMotion(),
+        children: [
+          SlidableAction(
+            onPressed: (_) => showAddBudgetModal(context, budget: budget),
+            backgroundColor: AppColors.accentPurple,
+            foregroundColor: Colors.white,
+            icon: Icons.edit,
+            label: 'Edit',
+            borderRadius: BorderRadius.circular(20),
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          SlidableAction(
+            onPressed: (_) => _showDeleteConfirmation(context, budget),
+            backgroundColor: AppColors.error,
+            foregroundColor: Colors.white,
+            icon: Icons.delete,
+            label: 'Delete',
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ],
+      ),
+      child: GestureDetector(
+        onTap: () => showAddBudgetModal(context, budget: budget),
+        onLongPress: () => showAddBudgetModal(context, budget: budget),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.cardSurface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      _getCategoryIcon(budget.categoryId),
+                      color: statusColor,
+                      size: 24,
+                    ),
                   ),
-                  child: Icon(
-                    _getCategoryIcon(budget.categoryId),
-                    color: statusColor,
-                    size: 24,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          budget.categoryName,
+                          style: AppTypography.titleMedium.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          budget.isOverspent
+                              ? 'Over by ₹${_formatAmount(budget.spentAmount - budget.allocatedAmount)}'
+                              : '₹${_formatAmount(budget.remainingAmount)} left',
+                          style: TextStyle(
+                            color: statusColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        budget.categoryName,
-                        style: AppTypography.titleSmall.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                        '₹${_formatAmount(budget.allocatedAmount)}',
+                        style: AppTypography.bodyLarge.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
                         budget.period.toUpperCase(),
-                        style: AppTypography.bodySmall.copyWith(
-                          color: Colors.white.withOpacity(0.6),
+                        style: TextStyle(
+                          color: AppColors.textTertiary,
                           fontSize: 10,
-                          letterSpacing: 1.0,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ],
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.radiusSm,
-                        ),
-                      ),
-                      child: Text(
-                        isOverspent ? 'Over!' : '$percentage%',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: statusColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'of ₹${_formatAmount(budget.allocatedAmount)}',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: Colors.white.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Spent',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: Colors.white.withOpacity(0.6),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '₹${_formatAmount(budget.spentAmount)}',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: isOverspent ? AppColors.error : Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Left',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: Colors.white.withOpacity(0.6),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '₹${_formatAmount(budget.remainingAmount)}',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-              child: LinearProgressIndicator(
-                value: progress.clamp(0.0, 1.0),
-                backgroundColor: AppColors.cardDark,
-                valueColor: AlwaysStoppedAnimation<Color>(statusColor),
-                minHeight: 6,
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progress.clamp(0.0, 1.0),
+                  backgroundColor: Colors.white.withOpacity(0.05),
+                  color: statusColor,
+                  minHeight: 6,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -411,66 +427,38 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
 
   Widget _buildEmptyState(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl2),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.account_balance_wallet_outlined,
-              size: 120,
-              color: AppColors.accentPurple.withOpacity(0.3),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.account_balance_wallet_outlined,
+            size: 64,
+            color: AppColors.textTertiary.withOpacity(0.3),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "No budgets set",
+            style: TextStyle(color: AppColors.textTertiary),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Take control of your spending",
+            style: TextStyle(
+              color: AppColors.textTertiary.withOpacity(0.5),
+              fontSize: 12,
             ),
-            const SizedBox(height: AppSpacing.xl2),
-            Text(
-              'No Budgets Set',
-              style: AppTypography.headlineSmall.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+          ),
+          const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: () => showQuickSetupModal(context),
+            icon: const Icon(Icons.auto_fix_high, size: 16),
+            label: const Text("Auto Setup"),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.accentPurple,
+              side: const BorderSide(color: AppColors.accentPurple),
             ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Create a budget or use the quick setup to start managing your expenses.',
-              textAlign: TextAlign.center,
-              style: AppTypography.bodyLarge.copyWith(
-                color: Colors.white.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl2),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () => showAddBudgetModal(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accentPurple,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                      vertical: AppSpacing.lg,
-                    ),
-                  ),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Manual'),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                OutlinedButton.icon(
-                  onPressed: () => showQuickSetupModal(context),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white30),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                      vertical: AppSpacing.lg,
-                    ),
-                  ),
-                  icon: const Icon(Icons.auto_fix_high),
-                  label: const Text('Auto Setup'),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/theme/app_spacing.dart';
-import '../../core/widgets/modern/modern_widgets.dart';
 import '../../core/widgets/swipe_to_delete.dart';
 import '../../core/models/account.dart';
 import '../../core/models/transaction.dart';
@@ -11,8 +10,6 @@ import '../../core/providers/transaction_provider.dart';
 import '../transactions/modern_add_transaction_screen.dart';
 import 'modern_add_account_screen.dart';
 
-/// Modern Account Detail Screen - Revolut-inspired design
-/// Features: Gradient background, modern cards, transaction list, clean layout
 class ModernAccountDetailScreen extends StatefulWidget {
   final Account account;
 
@@ -27,355 +24,367 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          // Gradient Background
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: AppColors.darkGradient,
+      backgroundColor: AppColors.backgroundBlack,
+      body: CustomScrollView(
+        slivers: [
+          // 1. APP BAR
+          SliverAppBar(
+            pinned: true,
+            backgroundColor: AppColors.backgroundBlack,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.white),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ModernAddAccountScreen(accountToEdit: widget.account),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // 2. HERO CARD
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: _buildHeroCard(),
+            ),
+          ),
+
+          // 3. ACTION BUTTONS (Updated Labels & Colors)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildActionButton(
+                      Icons.arrow_downward_rounded,
+                      "Deposit",
+                      AppColors.pastelGreen,
+                      () => _addTransaction(TransactionType.income),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildActionButton(
+                      Icons.arrow_upward_rounded,
+                      "Pay",
+                      AppColors.error,
+                      () => _addTransaction(TransactionType.expense),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildActionButton(
+                      Icons.swap_horiz_rounded,
+                      "Transfer",
+                      AppColors.primaryBlue,
+                      () => _addTransaction(TransactionType.transfer),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
 
-          // Content
-          SafeArea(
+          // 4. TIMELINE HEADER
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 10, 24, 10),
+              child: Text(
+                "HISTORY",
+                style: AppTypography.labelSmall.copyWith(
+                  color: AppColors.textTertiary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          ),
+
+          // 5. TRANSACTION STREAM
+          Consumer<TransactionProvider>(
+            builder: (context, provider, _) {
+              final txs =
+                  provider.transactions
+                      .where(
+                        (t) =>
+                            t.accountId == widget.account.id ||
+                            t.toAccountId == widget.account.id,
+                      )
+                      .toList()
+                    ..sort((a, b) => b.date.compareTo(a.date));
+
+              if (txs.isEmpty) {
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(40),
+                    child: Center(
+                      child: Text(
+                        "No transactions yet",
+                        style: TextStyle(color: AppColors.textTertiary),
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              return SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final t = txs[index];
+                  final isLast = index == txs.length - 1;
+                  return _buildTimelineItem(t, isLast);
+                }, childCount: txs.length),
+              );
+            },
+          ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 50)),
+        ],
+      ),
+    );
+  }
+
+  // --- WIDGETS ---
+
+  Widget _buildHeroCard() {
+    final displayNum = (widget.account.accountNumber ?? '0000')
+        .padRight(4, '*')
+        .substring(0, 4);
+
+    return Container(
+      height: 200,
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            widget.account.color,
+            widget.account.color.withOpacity(0.6),
+            Colors.black.withOpacity(0.8),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: widget.account.color.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                widget.account.bankName ?? widget.account.name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Icon(
+                widget.account.icon,
+                color: Colors.white.withOpacity(0.8),
+                size: 28,
+              ),
+            ],
+          ),
+
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "BALANCE",
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 10,
+                ),
+              ),
+              Text(
+                "₹${widget.account.balance.toStringAsFixed(2)}",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "**** $displayNum",
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontFamily: "Monospace",
+                  fontSize: 16,
+                ),
+              ),
+              Text(
+                widget.account.typeDisplayName.toUpperCase(),
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimelineItem(Transaction t, bool isLast) {
+    final isIncoming =
+        t.type == TransactionType.income || t.toAccountId == widget.account.id;
+    final color = isIncoming ? AppColors.pastelGreen : AppColors.textPrimary;
+    final sign = isIncoming ? '+' : '';
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // TIMELINE LEFT
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               children: [
-                // App Bar
-                _buildAppBar(context),
-
-                // Content
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: AppColors.backgroundBlack,
+                    border: Border.all(color: color, width: 2),
+                    shape: BoxShape.circle,
+                  ),
+                ),
                 Expanded(
-                  child: CustomScrollView(
-                    slivers: [
-                      // Account Balance Card
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.xl,
-                            AppSpacing.lg,
-                            AppSpacing.xl,
-                            AppSpacing.xl,
-                          ),
-                          child: ModernBalanceCard(
-                            title: widget.account.name,
-                            amount: widget.account.balance,
-                            currency: '₹',
-                            subtitle: widget.account.typeDisplayName,
-                            gradientColors: [
-                              widget.account.color.withOpacity(0.8),
-                              widget.account.color,
-                            ],
-                            trailing: Container(
-                              padding: const EdgeInsets.all(AppSpacing.sm),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                widget.account.icon,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Account Info
-                      if (widget.account.bankName != null ||
-                          widget.account.accountNumber != null)
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(
-                              AppSpacing.xl,
-                              0,
-                              AppSpacing.xl,
-                              AppSpacing.xl,
-                            ),
-                            child: Container(
-                              padding: AppSpacing.cardPaddingMd,
-                              decoration: BoxDecoration(
-                                color: AppColors.cardDarkElevated,
-                                borderRadius: BorderRadius.circular(
-                                  AppSpacing.radiusLg,
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Account Details',
-                                    style: AppTypography.titleSmall.copyWith(
-                                      color: AppColors.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  if (widget.account.bankName != null) ...[
-                                    _buildInfoRow(
-                                      Icons.account_balance_outlined,
-                                      'Bank',
-                                      widget.account.bankName!,
-                                    ),
-                                    const SizedBox(height: AppSpacing.sm),
-                                  ],
-                                  if (widget.account.accountNumber != null) ...[
-                                    _buildInfoRow(
-                                      Icons.credit_card_outlined,
-                                      'Account Number',
-                                      '**** ${widget.account.accountNumber}',
-                                    ),
-                                    const SizedBox(height: AppSpacing.sm),
-                                  ],
-                                  _buildInfoRow(
-                                    Icons.category_outlined,
-                                    'Type',
-                                    widget.account.typeDisplayName,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                      // Transactions Header
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.xl,
-                            AppSpacing.md,
-                            AppSpacing.xl,
-                            AppSpacing.md,
-                          ),
-                          child: Text(
-                            'Recent Transactions',
-                            style: AppTypography.titleLarge.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Transactions List
-                      Consumer<TransactionProvider>(
-                        builder: (context, provider, child) {
-                          // Filter transactions for this account
-                          // Include both: transactions FROM this account AND transfers TO this account
-                          final accountTransactions =
-                              provider.transactions
-                                  .where(
-                                    (t) =>
-                                        t.accountId == widget.account.id ||
-                                        (t.type == TransactionType.transfer &&
-                                            t.toAccountId == widget.account.id),
-                                  )
-                                  .toList()
-                                ..sort(
-                                  (a, b) => b.date.compareTo(a.date),
-                                ); // Sort by date descending
-
-                          if (accountTransactions.isEmpty) {
-                            return SliverToBoxAdapter(
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.xl,
-                                ),
-                                padding: AppSpacing.cardPaddingLg,
-                                decoration: BoxDecoration(
-                                  color: AppColors.cardDarkElevated,
-                                  borderRadius: BorderRadius.circular(
-                                    AppSpacing.radiusLg,
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.receipt_long_outlined,
-                                        size: 48,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                      const SizedBox(height: AppSpacing.md),
-                                      Text(
-                                        'No transactions yet',
-                                        style: AppTypography.bodyLarge.copyWith(
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-
-                          return SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(
-                              AppSpacing.xl,
-                              0,
-                              AppSpacing.xl,
-                              120,
-                            ),
-                            sliver: SliverList(
-                              delegate: SliverChildBuilderDelegate((
-                                context,
-                                index,
-                              ) {
-                                final transaction = accountTransactions[index];
-
-                                // Determine if this is incoming or outgoing for THIS account
-                                final bool isTransfer =
-                                    transaction.type ==
-                                    TransactionType.transfer;
-                                final bool isIncomingTransfer =
-                                    isTransfer &&
-                                    transaction.toAccountId ==
-                                        widget.account.id;
-
-                                // For this account: income OR incoming transfer = positive
-                                final bool isIncome =
-                                    transaction.type ==
-                                        TransactionType.income ||
-                                    isIncomingTransfer;
-
-                                final amountText =
-                                    '₹${transaction.amount.toStringAsFixed(2)}';
-
-                                return SwipeToDelete(
-                                  itemKey: ValueKey(transaction.id),
-                                  itemId: transaction.id,
-                                  itemName: 'Transaction',
-                                  onDelete: () {
-                                    context
-                                        .read<TransactionProvider>()
-                                        .deleteTransaction(transaction.id);
-                                  },
-                                  onUndoDelete: () {
-                                    context
-                                        .read<TransactionProvider>()
-                                        .restoreTransaction(transaction);
-                                  },
-                                  child: Padding(
-                                    padding: EdgeInsets.only(
-                                      bottom:
-                                          index ==
-                                              accountTransactions.length - 1
-                                          ? 0
-                                          : AppSpacing.sm,
-                                    ),
-                                    child: ModernTransactionTile(
-                                      title:
-                                          transaction.description ??
-                                          (isTransfer
-                                              ? 'Transfer'
-                                              : 'Transaction'),
-                                      subtitle: _formatTransactionDate(
-                                        transaction.date,
-                                      ),
-                                      amount: amountText,
-                                      isIncome: isIncome,
-                                      icon: isTransfer
-                                          ? Icons.swap_horiz
-                                          : isIncome
-                                          ? Icons.arrow_downward
-                                          : Icons.arrow_upward,
-                                      onTap: () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                ModernAddTransactionScreen(
-                                                  transaction: transaction,
-                                                ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                );
-                              }, childCount: accountTransactions.length),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                  child: Container(
+                    width: 2,
+                    color: isLast ? Colors.transparent : AppColors.cardSurface,
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _addTransaction(),
-        backgroundColor: AppColors.primaryBlue,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Transaction'),
-      ),
-    );
-  }
 
-  Widget _buildAppBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.md,
-      ),
-      child: Row(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-          const Spacer(),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            ),
-            child: PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.white),
-              onSelected: _handleAction,
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit_outlined),
-                      SizedBox(width: 8),
-                      Text('Edit Account'),
-                    ],
+          // CONTENT RIGHT
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24, right: 20),
+              child: SwipeToDelete(
+                itemKey: ValueKey(t.id),
+                itemId: t.id,
+                itemName: "Transaction",
+                onDelete: () =>
+                    context.read<TransactionProvider>().deleteTransaction(t.id),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardSurface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 'delete',
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(Icons.delete_outline, color: AppColors.error),
-                      SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t.description ??
+                                  (t.type == TransactionType.transfer
+                                      ? "Transfer"
+                                      : "Transaction"),
+                              style: AppTypography.bodyLarge.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              DateFormat('MMM dd, hh:mm a').format(t.date),
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textTertiary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Text(
-                        'Delete Account',
-                        style: TextStyle(color: AppColors.error),
+                        "$sign₹${t.amount.toStringAsFixed(0)}",
+                        style: AppTypography.titleMedium.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -383,93 +392,12 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: AppColors.textSecondary),
-        const SizedBox(width: AppSpacing.sm),
-        Text(
-          label,
-          style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const Spacer(),
-        Text(
-          value,
-          style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _formatTransactionDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      return 'Today';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
-  }
-
-  void _handleAction(String action) {
-    switch (action) {
-      case 'edit':
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) =>
-                ModernAddAccountScreen(accountToEdit: widget.account),
-          ),
-        );
-        break;
-      case 'delete':
-        _showDeleteConfirmation();
-        break;
-    }
-  }
-
-  void _showDeleteConfirmation() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Account'),
-        content: Text(
-          'Are you sure you want to delete "${widget.account.name}"? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // TODO: Implement delete
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _addTransaction() {
+  void _addTransaction(TransactionType type) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ModernAddTransactionScreen(
           accountId: widget.account.id,
-          initialType: TransactionType.expense,
+          initialType: type,
         ),
       ),
     );

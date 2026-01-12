@@ -15,6 +15,10 @@ dependencies:
   firebase_auth: ^5.3.3
   cloud_firestore: ^5.5.0
   firebase_analytics: ^11.3.3
+  firebase_messaging: ^15.1.6
+
+  # Notifications
+  flutter_local_notifications: ^17.2.1
 
   # State Management
   provider: ^6.1.2
@@ -23,8 +27,8 @@ dependencies:
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.10+1
   lottie: ^3.1.2
-  dynamic_color: ^1.7.0
   animations: ^2.0.11
+  flutter_slidable: ^3.1.1
 
   # Storage & Preferences
   shared_preferences: ^2.3.2
@@ -50,6 +54,13 @@ dependencies:
   permission_handler: ^11.3.1
   url_launcher: ^6.3.0
   flutter_sms_inbox: ^1.0.4
+  file_picker: ^10.3.8
+  pdf: ^3.10.8
+  
+  # Location & Geolocation
+  geolocator: ^14.0.2
+  geocoding: ^4.0.0
+  http: ^1.6.0
 
   # Icons
   cupertino_icons: ^1.0.8
@@ -59,19 +70,39 @@ dependencies:
   googleapis: ^15.0.0
   googleapis_auth: ^1.6.0
   extension_google_sign_in_as_googleapis_auth: ^2.0.13
+  flutter_dotenv: ^6.0.0
 
+  # Android Auto - Package not available on pub.dev
+  # car_app: ^0.6.0 # Commented out - not available
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_native_splash: ^2.4.1
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/Nexus_padded.png"
+  adaptive_icon_background: "#0F172A"
+  adaptive_icon_foreground: "assets/icons/Nexus_padded.png"
+  min_sdk_android: 21
+  # Add padding to prevent cropping
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true
 
   # Asset declaration to include the font directories
   assets:
+    # Environment file for flutter_dotenv (required for dotenv.load)
+    - .env
     - assets/fonts/Rammetto_One/
     - assets/fonts/Inter/static/
+    - assets/icons/
+    - assets/images/
 
   fonts:
     - family: RammettoOne
@@ -86,3 +117,15 @@ flutter:
           weight: 600
         - asset: assets/fonts/Inter/static/Inter_18pt-Bold.ttf
           weight: 700
+
+flutter_native_splash:
+  color: "#0F172A"
+  image: assets/icons/Nexus.png
+  android: true
+  ios: true
+  web: false
+  # Add padding to prevent logo from being cropped
+  fullscreen: true
+  android_12:
+    image: assets/icons/Nexus.png
+    color: "#0F172A"

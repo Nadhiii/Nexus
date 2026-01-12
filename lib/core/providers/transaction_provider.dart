@@ -3,14 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/transaction.dart';
 import '../services/transaction_service.dart';
-import '../services/learning_service.dart';
 import 'notification_provider.dart';
 import 'budget_provider.dart';
 import 'account_provider.dart';
 
 class TransactionProvider with ChangeNotifier {
   final TransactionService _transactionService = TransactionService();
-  final LearningService _learningService;
 
   NotificationProvider? _notificationProvider;
   BudgetProvider? _budgetProvider;
@@ -27,8 +25,7 @@ class TransactionProvider with ChangeNotifier {
   bool get isInitialized => _isInitialized;
   String? get error => _error;
 
-  TransactionProvider({required LearningService learningService})
-    : _learningService = learningService;
+  TransactionProvider();
 
   void update(
     AccountProvider account,
@@ -148,13 +145,6 @@ class TransactionProvider with ChangeNotifier {
           isReversal: false,
         );
         print('✅ Account balance updated');
-      }
-
-      if (transaction.description != null && transaction.categoryId != null) {
-        await _learningService.learn(
-          transaction.description!,
-          transaction.categoryId!,
-        );
       }
 
       _notificationProvider?.notifyTransaction(
@@ -350,13 +340,6 @@ class TransactionProvider with ChangeNotifier {
           );
           print('✅ Applied new ${transaction.type}: ${transaction.accountId}');
         }
-      }
-
-      if (transaction.description != null && transaction.categoryId != null) {
-        await _learningService.learn(
-          transaction.description!,
-          transaction.categoryId!,
-        );
       }
 
       _setLoading(false);
@@ -590,7 +573,6 @@ class TransactionProvider with ChangeNotifier {
     final recent = txns.sublist(start);
     print('🧾 Last $lastN entries:');
     for (final t in recent) {
-      final isSrc = t.accountId == accountId;
       final isDst = t.toAccountId == accountId;
       final sign = t.type == TransactionType.income || isDst ? '+' : '-';
       print('  $sign${t.amount.toStringAsFixed(2)}  ${t.description ?? ''}');

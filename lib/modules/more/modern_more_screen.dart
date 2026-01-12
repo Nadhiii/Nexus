@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../core/providers/theme_provider.dart';
 import '../../core/providers/biometric_provider.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../backup/backup_settings_screen.dart';
 import '../notifications/notification_settings_screen.dart';
@@ -34,44 +31,57 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkGradient.first,
+      backgroundColor: AppColors.backgroundBlack,
       body: CustomScrollView(
         slivers: [
+          // 1. Profile Header
           SliverAppBar(
             pinned: true,
-            expandedHeight: 120,
-            backgroundColor: AppColors.darkGradient.first,
-            foregroundColor: Colors.white,
+            expandedHeight: 110, // Standard
+            backgroundColor: AppColors.backgroundBlack,
+            surfaceTintColor: AppColors.backgroundBlack,
+            elevation: 0,
             flexibleSpace: FlexibleSpaceBar(
-              centerTitle: true,
-              title: Text('Settings', style: AppTypography.headlineMedium),
+              centerTitle: false,
+              titlePadding: const EdgeInsets.only(
+                left: 20,
+                bottom: 24,
+              ), // Standard
+              title: Text(
+                'More',
+                style: AppTypography.headlineMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ),
+
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.md,
-              AppSpacing.lg,
-              100,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _buildProfileCard(),
-                const SizedBox(height: AppSpacing.xl),
-                _buildSectionHeader('Preferences'),
-                const SizedBox(height: AppSpacing.md),
-                _buildSettingsCard(),
-                const SizedBox(height: AppSpacing.xl),
-                _buildSectionHeader('Tools'),
-                const SizedBox(height: AppSpacing.md),
-                _buildToolsCard(),
-                const SizedBox(height: AppSpacing.xl),
-                _buildSectionHeader('Support'),
-                const SizedBox(height: AppSpacing.md),
-                _buildSupportCard(),
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: 20),
+
+                // 2. Tools Grid (New Layout)
+                Text("TOOLS", style: _headerStyle()),
+                const SizedBox(height: 12),
+                _buildToolsGrid(),
+                const SizedBox(height: 32),
+
+                // 3. Settings List
+                Text("PREFERENCES", style: _headerStyle()),
+                const SizedBox(height: 12),
+                _buildSettingsSection(),
+
+                const SizedBox(height: 32),
+                Text("SUPPORT", style: _headerStyle()),
+                const SizedBox(height: 12),
+                _buildSupportSection(),
+
+                const SizedBox(height: 40),
                 _buildSignOutButton(),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: 120), // Bottom padding
               ]),
             ),
           ),
@@ -80,298 +90,101 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-      child: Text(
-        title,
-        style: AppTypography.bodyLarge.copyWith(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.5,
-        ),
-      ),
+  TextStyle _headerStyle() {
+    return AppTypography.labelSmall.copyWith(
+      color: AppColors.textTertiary,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 1.2,
     );
   }
 
-  Widget _buildProfileCard() {
-    final user = FirebaseAuth.instance.currentUser;
-
-    final displayName =
-        user?.displayName ??
-        (user?.isAnonymous == true ? 'Anonymous User' : 'User');
-    final email =
-        user?.email ??
-        (user?.isAnonymous == true ? 'Using without account' : 'No email');
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: AppColors.blueGradient,
-        ),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () {
-          if (user?.isAnonymous == true) {
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                backgroundColor: Theme.of(context).colorScheme.surface,
-                title: Text(
-                  'Anonymous Account',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                content: Text(
-                  'You are using the app without an account. To edit your profile, please sign in with Google or create an account.',
-                  style: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.8),
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
-            );
-          }
-        },
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        child: Row(
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
-                image: user?.photoURL != null
-                    ? DecorationImage(
-                        image: NetworkImage(user!.photoURL!),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-              ),
-              child: user?.photoURL == null
-                  ? Icon(
-                      user?.isAnonymous == true
-                          ? Icons.person_off_rounded
-                          : Icons.person_rounded,
-                      color: Colors.white,
-                      size: 32,
-                    )
-                  : null,
-            ),
-            const SizedBox(width: AppSpacing.lg),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    displayName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    email,
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              ),
-              child: Icon(
-                user?.isAnonymous == true
-                    ? Icons.info_outline_rounded
-                    : Icons.edit_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingsCard() {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-      ),
-      child: Column(
-        children: [
-          Consumer<ThemeProvider>(
-            builder: (context, themeProvider, child) {
-              return _buildSettingTile(
-                icon: Icons.color_lens_rounded,
-                iconColor: AppColors.accentPurple,
-                title: 'Material You Theme',
-                subtitle: 'Use wallpaper colors in the app',
-                trailing: Switch(
-                  value: themeProvider.useMaterialYou,
-                  onChanged: (value) => themeProvider.toggleMaterialYou(),
-                  activeThumbColor: Theme.of(context).colorScheme.primary,
-                ),
-              );
-            },
-          ),
-          _buildDivider(),
-          Consumer<BiometricProvider>(
-            builder: (context, biometricProvider, child) {
-              return _buildSettingTile(
-                icon: Icons.fingerprint_rounded,
-                iconColor: AppColors.accentTeal,
-                title: 'Biometric Security',
-                subtitle: biometricProvider.isBiometricAvailable
-                    ? 'Use fingerprint or face unlock'
-                    : 'Not available on this device',
-                trailing: Switch(
-                  value: biometricProvider.isBiometricEnabled,
-                  onChanged: biometricProvider.isBiometricAvailable
-                      ? (value) async => await biometricProvider
-                            .setAllBiometricFeatures(value)
-                      : null,
-                  activeThumbColor: Theme.of(context).colorScheme.primary,
-                ),
-              );
-            },
-          ),
-          _buildDivider(),
-          _buildSettingTile(
-            icon: Icons.notifications_rounded,
-            iconColor: AppColors.accentOrange,
-            title: 'Notifications',
-            subtitle: 'Manage notification preferences',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const NotificationSettingsScreen(),
-              ),
-            ),
-          ),
-          _buildDivider(),
-          _buildSettingTile(
-            icon: Icons.backup_rounded,
-            iconColor: AppColors.accentPurple,
-            title: 'Backup & Sync',
-            subtitle: 'Cloud backup settings',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const BackupSettingsScreen(),
-              ),
-            ),
-          ),
-          _buildDivider(),
-          _buildSettingTile(
-            icon: Icons.email_rounded,
-            iconColor: AppColors.primaryBlue,
-            title: 'Gmail Sync',
-            subtitle: 'Manage Gmail account linking',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const GmailSettingsScreen(),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToolsCard() {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-      ),
-      child: Column(
-        children: [
-          _buildSettingTile(
-            icon: Icons.category_rounded,
-            iconColor: AppColors.accentOrange,
-            title: 'Manage Categories',
-            subtitle: 'Add, edit, or delete custom categories',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const ManageCategoriesScreen(),
-              ),
-            ),
-          ),
-          _buildDivider(),
-          _buildSettingTile(
-            icon: Icons.folder_rounded,
-            iconColor: AppColors.accentTeal,
-            title: 'Document Vault',
-            subtitle: 'Store bills and receipts',
-            onTap: () => showTopSnackBar(context, 'Coming soon!'),
-          ),
-          _buildDivider(),
-          _buildSettingTile(
-            icon: Icons.analytics_rounded,
-            iconColor: AppColors.primaryBlue,
-            title: 'Reports & Analytics',
-            subtitle: 'Detailed spending insights',
-            onTap: () => Navigator.of(context).push(
+  Widget _buildToolsGrid() {
+    return Row(
+      children: [
+        Expanded(
+          child: _ToolCard(
+            icon: Icons.pie_chart_rounded,
+            color: AppColors.primaryBlue,
+            label: "Analytics",
+            onTap: () => Navigator.push(
+              context,
               MaterialPageRoute(
                 builder: (_) => const ReportsAndAnalyticsScreen(),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _ToolCard(
+            icon: Icons.category_rounded,
+            color: AppColors.pastelOrange,
+            label: "Categories",
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ManageCategoriesScreen()),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _ToolCard(
+            icon: Icons.cloud_upload_rounded,
+            color: AppColors.accentTeal,
+            label: "Backup",
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const BackupSettingsScreen()),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildSupportCard() {
+  Widget _buildSettingsSection() {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         children: [
-          _buildSettingTile(
-            icon: Icons.help_rounded,
-            iconColor: AppColors.accentOrange,
-            title: 'Help & Support',
-            subtitle: 'Get help with the app',
-            onTap: () => showTopSnackBar(context, 'Coming soon!'),
+          Consumer<BiometricProvider>(
+            builder: (context, bio, _) => _buildTile(
+              icon: Icons.fingerprint_rounded,
+              color: AppColors.accentTeal,
+              title: "Biometric Lock",
+              trailing: Switch(
+                value: bio.isBiometricEnabled,
+                onChanged: bio.isBiometricAvailable
+                    ? (v) => bio.setAllBiometricFeatures(v)
+                    : null,
+                activeThumbColor: AppColors.primaryBlue,
+              ),
+            ),
           ),
-          _buildDivider(),
-          _buildSettingTile(
-            icon: Icons.info_rounded,
-            iconColor: AppColors.primaryBlue,
-            title: 'About',
-            subtitle: 'App version and information',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const AboutScreen()),
+          _divider(),
+          _buildTile(
+            icon: Icons.notifications_rounded,
+            color: AppColors.accentOrange,
+            title: "Notifications",
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const NotificationSettingsScreen(),
+              ),
+            ),
+          ),
+          _divider(),
+          _buildTile(
+            icon: Icons.mark_email_unread_rounded,
+            color: AppColors.error,
+            title: "Gmail Sync",
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const GmailSettingsScreen()),
             ),
           ),
         ],
@@ -379,167 +192,134 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
     );
   }
 
-  Widget _buildSettingTile({
+  Widget _buildSupportSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Column(
+        children: [
+          _buildTile(
+            icon: Icons.help_outline_rounded,
+            color: AppColors.textSecondary,
+            title: "Help & Support",
+            onTap: () => showTopSnackBar(context, "Coming Soon!"),
+          ),
+          _divider(),
+          _buildTile(
+            icon: Icons.info_outline_rounded,
+            color: AppColors.textSecondary,
+            title: "About Nexus",
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AboutScreen()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTile({
     required IconData icon,
-    required Color iconColor,
+    required Color color,
     required String title,
-    String? subtitle,
     Widget? trailing,
     VoidCallback? onTap,
   }) {
-    return InkWell(
+    return ListTile(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              ),
-              child: Icon(icon, color: iconColor, size: 24),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTypography.bodyLarge.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (trailing != null)
-              trailing
-            else if (onTap != null)
-              Icon(
-                Icons.chevron_right_rounded,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                size: 24,
-              ),
-          ],
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
         ),
+        child: Icon(icon, color: color, size: 20),
       ),
+      title: Text(
+        title,
+        style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+      ),
+      trailing:
+          trailing ??
+          Icon(
+            Icons.chevron_right_rounded,
+            color: AppColors.textTertiary,
+            size: 20,
+          ),
     );
   }
 
-  Widget _buildDivider() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Divider(
-        height: 1,
-        thickness: 1,
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-      ),
-    );
-  }
+  Widget _divider() => Divider(
+    height: 1,
+    color: Colors.white.withOpacity(0.05),
+    indent: 56,
+    endIndent: 16,
+  );
 
   Widget _buildSignOutButton() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.error.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.error.withOpacity(0.3),
-          width: 1,
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton(
+        onPressed: () async {
+          final auth = AuthService();
+          await auth.signOut();
+        },
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          backgroundColor: AppColors.error.withOpacity(0.1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: Text(
+          "Sign Out",
+          style: AppTypography.labelLarge.copyWith(color: AppColors.error),
         ),
       ),
-      child: InkWell(
-        onTap: () async {
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              backgroundColor: Theme.of(context).colorScheme.surface,
-              title: Text(
-                'Sign Out',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              content: Text(
-                'Are you sure you want to sign out?',
-                style: TextStyle(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withOpacity(0.8),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.error,
-                  ),
-                  child: const Text('Sign Out'),
-                ),
-              ],
-            ),
-          );
+    );
+  }
+}
 
-          if (confirmed == true) {
-            final authService = AuthService();
-            try {
-              await authService.signOut();
-            } catch (e) {
-              if (context.mounted) {
-                showTopSnackBar(context, 'Sign out error: $e', isError: true);
-              }
-            }
-          }
-        },
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.error.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                ),
-                child: Icon(
-                  Icons.logout_rounded,
-                  color: Theme.of(context).colorScheme.error,
-                  size: 24,
-                ),
+class _ToolCard extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ToolCard({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: AppTypography.labelSmall.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(width: AppSpacing.md),
-              Text(
-                'Sign Out',
-                style: AppTypography.bodyLarge.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

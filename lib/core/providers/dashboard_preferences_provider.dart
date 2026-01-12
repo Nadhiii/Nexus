@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import '../../dashboard_widget_preferences.dart';
+import '../models/dashboard_widget_preferences.dart';
 
 class DashboardPreferencesProvider extends ChangeNotifier {
   DashboardPreferences _preferences = DashboardPreferences.getDefault();
@@ -12,16 +12,14 @@ class DashboardPreferencesProvider extends ChangeNotifier {
   DashboardPreferences get preferences => _preferences;
   bool get isLoading => _isLoading;
   bool get isEditMode => _isEditMode;
-  
-  List<DashboardWidget> get visibleWidgets => _preferences.widgets
-      .where((widget) => widget.isVisible)
-      .toList()
-    ..sort((a, b) => a.order.compareTo(b.order));
+
+  List<DashboardWidget> get visibleWidgets =>
+      _preferences.widgets.where((widget) => widget.isVisible).toList()
+        ..sort((a, b) => a.order.compareTo(b.order));
 
   List<DashboardWidget> get allWidgets => _preferences.widgets;
-  List<DashboardWidget> get hiddenWidgets => _preferences.widgets
-      .where((widget) => !widget.isVisible)
-      .toList();
+  List<DashboardWidget> get hiddenWidgets =>
+      _preferences.widgets.where((widget) => !widget.isVisible).toList();
 
   // Initialize and load preferences
   Future<void> loadPreferences() async {
@@ -35,7 +33,7 @@ class DashboardPreferencesProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final prefsJson = prefs.getString('dashboard_preferences');
-      
+
       if (prefsJson != null) {
         final Map<String, dynamic> prefsMap = json.decode(prefsJson);
         _preferences = DashboardPreferences.fromMap(prefsMap);
@@ -70,19 +68,19 @@ class DashboardPreferencesProvider extends ChangeNotifier {
   // Reorder widgets
   void reorderWidgets(int oldIndex, int newIndex) {
     final widgets = List<DashboardWidget>.from(_preferences.widgets);
-    
+
     if (newIndex > oldIndex) {
       newIndex -= 1;
     }
-    
+
     final item = widgets.removeAt(oldIndex);
     widgets.insert(newIndex, item);
-    
+
     // Update order values
     for (int i = 0; i < widgets.length; i++) {
       widgets[i] = widgets[i].copyWith(order: i);
     }
-    
+
     _preferences = _preferences.copyWith(widgets: widgets);
     _savePreferences();
     notifyListeners();

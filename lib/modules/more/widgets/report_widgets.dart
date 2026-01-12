@@ -1,96 +1,155 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/models/transaction.dart';
-import '../../../core/theme/app_typography.dart';
-import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_colors.dart';
 
-class TransactionAnalysisSummary extends StatelessWidget {
+class CashFlowHeroCard extends StatelessWidget {
   final List<Transaction> transactions;
 
-  const TransactionAnalysisSummary({super.key, required this.transactions});
+  const CashFlowHeroCard({super.key, required this.transactions});
 
   @override
   Widget build(BuildContext context) {
     double totalIncome = 0;
     double totalExpense = 0;
-    int expenseCount = 0;
 
     for (var tx in transactions) {
       if (tx.type == TransactionType.income) {
         totalIncome += tx.amount;
       } else if (tx.type == TransactionType.expense) {
         totalExpense += tx.amount;
-        expenseCount++;
       }
     }
 
     final netSavings = totalIncome - totalExpense;
-    final avgExpense = expenseCount > 0 ? totalExpense / expenseCount : 0.0;
+    final isPositive = netSavings >= 0;
 
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.analytics_outlined,
-                    color: Theme.of(context).colorScheme.tertiary),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Text(
-                    "Cash Flow Analysis",
-                    style: AppTypography.headlineSmall,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildRow(context, "Total Income", totalIncome, isPositive: true),
-            const Divider(height: AppSpacing.xl),
-            _buildRow(context, "Total Expense", totalExpense, isNegative: true),
-            const Divider(height: AppSpacing.xl),
-            _buildRow(context, "Net Savings", netSavings, isPositive: netSavings >= 0, isNegative: netSavings < 0),
-            const Divider(height: AppSpacing.xl),
-            _buildRow(context, "Avg. Expense Size", avgExpense),
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF1E293B), // Slate 800
+            const Color(0xFF0F172A), // Slate 900
           ],
         ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'NET SAVINGS',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (isPositive ? AppColors.success : AppColors.error)
+                      .withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  isPositive ? 'PROFIT' : 'LOSS',
+                  style: TextStyle(
+                    color: isPositive ? AppColors.success : AppColors.error,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${isPositive ? '+' : ''}₹${NumberFormat('#,##,###').format(netSavings)}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatItem(
+                  label: "Income",
+                  value: totalIncome,
+                  color: AppColors.success,
+                  icon: Icons.arrow_downward,
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 30,
+                color: Colors.white.withOpacity(0.1),
+              ),
+              Expanded(
+                child: _buildStatItem(
+                  label: "Expense",
+                  value: totalExpense,
+                  color: AppColors.error,
+                  icon: Icons.arrow_upward,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildRow(BuildContext context, String label, double value, {bool isPositive = false, bool isNegative = false}) {
-    Color valueColor = Theme.of(context).colorScheme.onSurface;
-    if (isPositive) valueColor = Colors.green; // Or use a custom success color from your theme
-    if (isNegative) valueColor = Theme.of(context).colorScheme.error;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
+  Widget _buildStatItem({
+    required String label,
+    required double value,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 4),
+            Text(
               label,
-              style: AppTypography.bodyLarge,
-              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.6),
+                fontSize: 12,
+              ),
             ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '₹${NumberFormat.compact().format(value)}',
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
           ),
-          const SizedBox(width: AppSpacing.lg), // Add spacing
-          Text(
-            "₹${value.abs().toStringAsFixed(2)}",
-            style: AppTypography.bodyLarge.copyWith(
-              fontWeight: FontWeight.bold,
-              color: valueColor,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

@@ -6,11 +6,11 @@ enum DebtType {
   homeLoan,
   carLoan,
   educationLoan,
-  businessLoan,
-  goldLoan,
-  owedByMe,
-  owedToMe,
-  custom, // User-defined custom type
+  businessLoan, // Restored
+  goldLoan, // Restored
+  owedByMe, // I owe someone
+  owedToMe, // Someone owes me
+  custom, // Restored
   other,
 }
 
@@ -23,23 +23,26 @@ class Debt {
   final DebtType type;
   final double originalAmount;
   final double currentBalance;
+
+  // Advanced Loan Fields
   final double? interestRate;
   final double? monthlyEMI;
-  final int? totalMonths; // Total tenure in months
-  final int? paidMonths; // Number of months paid
-  final double? totalInterest; // Total interest to be paid over loan tenure
-  final double? interestPaid; // Interest already paid
-  final double? principalPaid; // Principal already paid
-  final DateTime? startDate; // Loan start date
-  final DateTime? nextPaymentDate; // Next EMI due date
-  final int? paymentDay; // Day of month when EMI is due (1-31)
-  final String? lenderName;
-  final String? accountNumber; // Loan account number
-  final String? linkedAccountId; // Link to a bank account in the app
-  final String? customTypeName; // Custom type name when type is 'custom'
+  final int? totalMonths;
+  final int? paidMonths;
+  final double? totalInterest;
+  final double? interestPaid;
+  final double? principalPaid;
+  final DateTime? startDate;
+  final DateTime? nextPaymentDate;
+  final int? paymentDay;
+  final String? lenderName; // Used for Bank Name OR Person Name (IOU)
+  final String? accountNumber;
+  final String? linkedAccountId;
+  final String? customTypeName;
   final String? notes;
-  final DateTime? dueDate; // Final loan end date
-  final bool isAutoDebit; // Whether EMI is auto-debited
+  final DateTime? dueDate;
+  final bool isAutoDebit;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -71,112 +74,101 @@ class Debt {
     required this.updatedAt,
   });
 
-  // Calculate remaining months
+  // --- COMPATIBILITY HELPERS ---
+  // Alias for new code that might look for 'personName'
+  String get personName => lenderName ?? 'Unknown';
+
+  // --- LOGIC GETTERS (Restored for your UI) ---
+
   int? get remainingMonths {
     if (totalMonths == null) return null;
     final paid = paidMonths ?? 0;
     return (totalMonths! - paid).clamp(0, totalMonths!);
   }
 
-  // Calculate progress based on months (if available) or amount
   double get progressByMonths {
     if (totalMonths == null || totalMonths == 0) return 0;
     final paid = paidMonths ?? 0;
     return (paid / totalMonths!).clamp(0.0, 1.0);
   }
 
-  // Calculate progress based on amount paid
-  double get progressByAmount {
-    if (originalAmount <= 0) return 0;
-    return ((originalAmount - currentBalance) / originalAmount).clamp(0.0, 1.0);
-  }
-
-  // Check if payment is due soon (within 5 days)
   bool get isPaymentDueSoon {
     if (nextPaymentDate == null) return false;
     final daysUntilDue = nextPaymentDate!.difference(DateTime.now()).inDays;
     return daysUntilDue >= 0 && daysUntilDue <= 5;
   }
 
-  // Check if payment is overdue
   bool get isPaymentOverdue {
     if (nextPaymentDate == null) return false;
+    // If balance is 0, it's not overdue
+    if (currentBalance <= 0) return false;
     return nextPaymentDate!.isBefore(DateTime.now());
   }
 
-  // Get payment status
-  PaymentStatus get paymentStatus {
-    if (currentBalance <= 0) return PaymentStatus.paid;
-    if (isPaymentOverdue) return PaymentStatus.overdue;
-    if (isPaymentDueSoon) return PaymentStatus.pending;
-    return PaymentStatus.pending;
-  }
-
-  // Days until next payment
   int? get daysUntilNextPayment {
     if (nextPaymentDate == null) return null;
     return nextPaymentDate!.difference(DateTime.now()).inDays;
   }
 
-  // Estimated payoff date
   DateTime? get estimatedPayoffDate {
     if (remainingMonths == null || remainingMonths == 0) return null;
     return DateTime.now().add(Duration(days: remainingMonths! * 30));
   }
 
-  // Total amount to be paid (principal + interest)
-  double get totalAmountPayable {
-    if (totalInterest != null) {
-      return originalAmount + totalInterest!;
-    }
-    if (monthlyEMI != null && totalMonths != null) {
-      return monthlyEMI! * totalMonths!;
-    }
-    return originalAmount;
-  }
-
-  // Amount saved if paid early
-  double get potentialSavingsIfPaidNow {
-    if (totalInterest == null || interestPaid == null) return 0;
-    return totalInterest! - interestPaid!;
-  }
+  // --- FACTORIES & SERIALIZATION ---
 
   factory Debt.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    data['id'] = doc.id;
+    return Debt.fromMap(data);
+  }
+
+  factory Debt.fromMap(Map<String, dynamic> data) {
     return Debt(
-      id: doc.id,
-      userId: data['userId'] as String,
-      name: data['name'] as String,
-      type: DebtType.values[data['type'] as int],
-      originalAmount: (data['originalAmount'] as num).toDouble(),
-      currentBalance: (data['currentBalance'] as num).toDouble(),
-      interestRate: (data['interestRate'] as num?)?.toDouble(),
-      monthlyEMI: (data['monthlyEMI'] as num?)?.toDouble(),
-      totalMonths: data['totalMonths'] as int?,
-      paidMonths: data['paidMonths'] as int?,
-      totalInterest: (data['totalInterest'] as num?)?.toDouble(),
-      interestPaid: (data['interestPaid'] as num?)?.toDouble(),
-      principalPaid: (data['principalPaid'] as num?)?.toDouble(),
-      startDate: (data['startDate'] as Timestamp?)?.toDate(),
-      nextPaymentDate: (data['nextPaymentDate'] as Timestamp?)?.toDate(),
-      paymentDay: data['paymentDay'] as int?,
-      lenderName: data['lenderName'] as String?,
-      accountNumber: data['accountNumber'] as String?,
-      linkedAccountId: data['linkedAccountId'] as String?,
-      customTypeName: data['customTypeName'] as String?,
-      notes: data['notes'] as String?,
-      dueDate: (data['dueDate'] as Timestamp?)?.toDate(),
-      isAutoDebit: data['isAutoDebit'] as bool? ?? false,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      id: data['id'] ?? '',
+      userId: data['userId'] ?? '',
+      name: data['name'] ?? '',
+      // Handle Integer vs String enum storage
+      type: data['type'] is int
+          ? DebtType.values[data['type']]
+          : DebtType.values.firstWhere(
+              (e) => e.toString().split('.').last == data['type'],
+              orElse: () => DebtType.other,
+            ),
+      originalAmount: (data['originalAmount'] ?? 0).toDouble(),
+      currentBalance: (data['currentBalance'] ?? 0).toDouble(),
+      interestRate: data['interestRate']?.toDouble(),
+      monthlyEMI: data['monthlyEMI']?.toDouble(),
+      totalMonths: data['totalMonths'],
+      paidMonths: data['paidMonths'],
+      totalInterest: data['totalInterest']?.toDouble(),
+      interestPaid: data['interestPaid']?.toDouble(),
+      principalPaid: data['principalPaid']?.toDouble(),
+      startDate: _parseDate(data['startDate']),
+      nextPaymentDate: _parseDate(data['nextPaymentDate']),
+      paymentDay: data['paymentDay'],
+      lenderName: data['lenderName'] ?? data['personName'], // Fallback for IOU
+      accountNumber: data['accountNumber'],
+      linkedAccountId: data['linkedAccountId'],
+      customTypeName: data['customTypeName'],
+      notes: data['notes'],
+      dueDate: _parseDate(data['dueDate']),
+      isAutoDebit: data['isAutoDebit'] ?? false,
+      createdAt: _parseDate(data['createdAt']) ?? DateTime.now(),
+      updatedAt: _parseDate(data['updatedAt']) ?? DateTime.now(),
     );
   }
 
+  // Required by your DebtProvider
   Map<String, dynamic> toFirestore() {
+    return toMap();
+  }
+
+  Map<String, dynamic> toMap() {
     return {
       'userId': userId,
       'name': name,
-      'type': type.index,
+      'type': type.index, // Storing as index to match your old data
       'originalAmount': originalAmount,
       'currentBalance': currentBalance,
       'interestRate': interestRate,
@@ -192,6 +184,7 @@ class Debt {
           : null,
       'paymentDay': paymentDay,
       'lenderName': lenderName,
+      'personName': lenderName, // Duplicate for new code compatibility
       'accountNumber': accountNumber,
       'linkedAccountId': linkedAccountId,
       'customTypeName': customTypeName,
@@ -257,5 +250,12 @@ class Debt {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  static DateTime? _parseDate(dynamic date) {
+    if (date == null) return null;
+    if (date is Timestamp) return date.toDate();
+    if (date is String) return DateTime.parse(date);
+    return null;
   }
 }

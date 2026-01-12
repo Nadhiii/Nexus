@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../../core/widgets/top_snackbar.dart';
-import '../../core/widgets/translucent_app_bar.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -10,526 +11,299 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: TranslucentAppBar(
-        title: const Text('About'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+      backgroundColor: AppColors.backgroundBlack,
+      body: CustomScrollView(
+        slivers: [
+          // 1. IMMERSIVE HEADER (With Back Button)
+          SliverAppBar(
+            pinned: true,
+            expandedHeight: 110,
+            backgroundColor: AppColors.backgroundBlack,
+            surfaceTintColor: AppColors.backgroundBlack,
+            elevation: 0,
+            leading: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.cardSurface,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.05),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+            flexibleSpace: FlexibleSpaceBar(
+              centerTitle: false,
+              titlePadding: const EdgeInsets.only(
+                left: 60,
+                bottom: 24,
+              ), // Offset for back button
+              title: Text(
+                'About',
+                style: AppTypography.headlineMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+
+          // 2. APP HERO CARD
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF6366F1),
+                          Color(0xFF4338CA),
+                        ], // Indigo
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.asset(
+                        'assets/icons/Nexus.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "Nexus",
+                    style: AppTypography.headlineMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // 3. INFO TILES
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildSectionHeader("MISSION"),
+                _buildGlassCard(
+                  context,
+                  child: Text(
+                    "Nexus is built on the belief that you know your money best. No black-box algorithms or AI guesswork—just powerful, precision tools wrapped in a stunning, distraction-free interface. Take absolute control of your financial destiny with clarity and confidence.",
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+                _buildSectionHeader("DEVELOPER"),
+                _buildGlassCard(
+                  context,
+                  child: Column(
+                    children: [
+                      _buildDevRow(
+                        Icons.person,
+                        "Mahanadhi Parisara",
+                        "Developer",
+                      ),
+                      const Divider(color: Colors.white10, height: 24),
+                      _buildActionRow(
+                        context,
+                        icon: Icons.language,
+                        label: "Website",
+                        onTap: () =>
+                            _launchURL(context, 'https://mahanadhi.space'),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildActionRow(
+                        context,
+                        icon: Icons.email_outlined,
+                        label: "Contact Support",
+                        onTap: () => _launchEmail(context),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+                _buildSectionHeader("TECH STACK"),
+                _buildGlassCard(
+                  context,
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildTechChip("Flutter"),
+                      _buildTechChip("Firebase"),
+                      _buildTechChip("Provider"),
+                      _buildTechChip("Material 3"),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 100), // Bottom padding
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, left: 4),
+      child: Text(
+        title,
+        style: AppTypography.labelSmall.copyWith(
+          color: AppColors.textTertiary,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.2,
         ),
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          MediaQuery.of(context).padding.top + kToolbarHeight + 16,
-          16,
-          MediaQuery.of(context).padding.bottom + 16,
+    );
+  }
+
+  Widget _buildGlassCard(BuildContext context, {required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildDevRow(IconData icon, String title, String subtitle) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: Colors.white, size: 24),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        const SizedBox(width: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.secondary,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: const Icon(
-                Icons.account_balance_wallet,
-                size: 60,
+            Text(
+              title,
+              style: const TextStyle(
                 color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Nexus',
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
+                fontSize: 16,
               ),
             ),
-            const SizedBox(height: 8),
             Text(
-              'Personal Finance Management',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Version 1.0.0',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-              ),
-            ),
-            const SizedBox(height: 32),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'About Nexus',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Nexus is a comprehensive personal finance management application designed to help you take complete control of your financial life. With intelligent tracking, AI-powered insights, and smart budgeting tools, Nexus empowers you to make informed financial decisions.',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge?.copyWith(height: 1.5),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Key Features:',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildFeatureItem(
-                      context,
-                      'Smart transaction tracking with SMS integration',
-                    ),
-                    _buildFeatureItem(
-                      context,
-                      'Comprehensive debt management with payoff strategies',
-                    ),
-                    _buildFeatureItem(
-                      context,
-                      'Goal tracking and progress visualization',
-                    ),
-                    _buildFeatureItem(context, 'Secure cloud backup and sync'),
-                    _buildFeatureItem(context, 'Beautiful dark-first design'),
-                    _buildFeatureItem(context, 'Real-time financial insights'),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.person_outline,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Developer',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Nexus is crafted with passion by Mahanadhi, a dedicated developer focused on creating beautiful and functional applications that solve real-world problems.',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge?.copyWith(height: 1.5),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () =>
-                            _launchURL(context, 'https://mahanadhi.space'),
-                        icon: const Icon(Icons.open_in_new),
-                        label: const Text('Visit Portfolio'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.code,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Built With',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTechItem(
-                      context,
-                      'Flutter',
-                      'Cross-platform framework',
-                    ),
-                    _buildTechItem(
-                      context,
-                      'Firebase',
-                      'Backend and authentication',
-                    ),
-                    _buildTechItem(
-                      context,
-                      'Material Design 3',
-                      'Modern UI design',
-                    ),
-                    _buildTechItem(context, 'Provider', 'State management'),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.support_agent,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Support & Feedback',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Have questions, suggestions, or found a bug? We\'d love to hear from you!',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge?.copyWith(height: 1.5),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _launchEmail(context),
-                            icon: const Icon(Icons.email_outlined),
-                            label: const Text('Contact Us'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () =>
-                                _launchURL(context, 'https://mahanadhi.space'),
-                            icon: const Icon(Icons.web),
-                            label: const Text('Website'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '© 2025 Mahanadhi. All rights reserved.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Made with ❤️ for better financial management',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-              ),
-              textAlign: TextAlign.center,
+              subtitle,
+              style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildFeatureItem(BuildContext context, String feature) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.check_circle_outline,
-            size: 16,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(feature, style: Theme.of(context).textTheme.bodyMedium),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTechItem(BuildContext context, String tech, String description) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+  Widget _buildActionRow(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
       child: Row(
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              shape: BoxShape.circle,
-            ),
-          ),
+          Icon(icon, color: AppColors.primaryBlue, size: 20),
           const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tech,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  description,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                ),
-              ],
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.primaryBlue,
+              fontWeight: FontWeight.w600,
             ),
           ),
+          const Spacer(),
+          Icon(
+            Icons.open_in_new,
+            color: AppColors.primaryBlue.withValues(alpha: 0.5),
+            size: 16,
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTechChip(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
       ),
     );
   }
 
   Future<void> _launchURL(BuildContext context, String url) async {
     try {
-      final Uri uri = Uri.parse(url);
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } catch (e) {
       if (context.mounted) {
-        _showUrlFallback(context, url);
+        showTopSnackBar(context, "Could not open link", isError: true);
       }
     }
   }
 
-  void _showUrlFallback(BuildContext context, String url) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.link, color: Colors.blue),
-              SizedBox(width: 8),
-              Text('Open Link'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Could not open the link automatically.'),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  url,
-                  style: const TextStyle(fontFamily: 'monospace'),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton.icon(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await Clipboard.setData(ClipboardData(text: url));
-                if (context.mounted) {
-                  showTopSnackBar(context, 'URL copied to clipboard!');
-                }
-              },
-              icon: const Icon(Icons.copy),
-              label: const Text('Copy URL'),
-            ),
-            ElevatedButton.icon(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: url));
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                  showTopSnackBar(context, 'URL copied to clipboard!');
-                }
-              },
-              icon: const Icon(Icons.copy),
-              label: const Text('Copy URL'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Future<void> _launchEmail(BuildContext context) async {
-    _showEmailOptions(context, 'mahanadhip@gmail.com', 'Nexus App Feedback');
-  }
-
-  void _showEmailOptions(BuildContext context, String email, String subject) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.email, color: Colors.blue),
-              SizedBox(width: 8),
-              Text('Contact Options'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Choose how you\'d like to contact us:'),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Email: $email',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text('Subject: $subject'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton.icon(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await Clipboard.setData(
-                  ClipboardData(
-                    text:
-                        'Contact Nexus App Developer:\nEmail: $email\nSubject: $subject',
-                  ),
-                );
-                if (context.mounted) {
-                  showTopSnackBar(context, 'Contact info copied to clipboard!');
-                }
-              },
-              icon: const Icon(Icons.copy),
-              label: const Text('Copy Info'),
-            ),
-            TextButton.icon(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                final gmailUrl =
-                    'https://mail.google.com/mail/?view=cm&fs=1&to=$email&su=${Uri.encodeComponent(subject)}';
-
-                try {
-                  final Uri uri = Uri.parse(gmailUrl);
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                } catch (e) {
-                  await Clipboard.setData(
-                    ClipboardData(
-                      text:
-                          'Contact Nexus App Developer:\nEmail: $email\nSubject: $subject\n\nGmail Link: $gmailUrl',
-                    ),
-                  );
-                  if (context.mounted) {
-                    showTopSnackBar(
-                      context,
-                      'Gmail failed. Contact info copied to clipboard!',
-                      isError: true,
-                    );
-                  }
-                }
-              },
-              icon: const Icon(Icons.open_in_new),
-              label: const Text('Gmail Web'),
-            ),
-            ElevatedButton.icon(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: email));
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                  showTopSnackBar(context, 'Email address copied to clipboard!');
-                }
-              },
-              icon: const Icon(Icons.copy),
-              label: const Text('Copy Email'),
-            ),
-          ],
-        );
-      },
+    final Uri emailLaunchUri = Uri(
+      scheme: 'mailto',
+      path: 'mahanadhip@gmail.com',
+      query: 'subject=Nexus Support',
     );
+    try {
+      await launchUrl(emailLaunchUri);
+    } catch (e) {
+      if (context.mounted) {
+        Clipboard.setData(const ClipboardData(text: 'mahanadhip@gmail.com'));
+        showTopSnackBar(context, "Email copied to clipboard");
+      }
+    }
   }
 }

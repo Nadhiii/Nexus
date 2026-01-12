@@ -9,7 +9,8 @@ class NotificationProvider extends ChangeNotifier {
 
   // Settings keys
   static const _budgetAlertsKey = 'notifications_budget_alerts';
-  static const _subscriptionRemindersKey = 'notifications_subscription_reminders';
+  static const _subscriptionRemindersKey =
+      'notifications_subscription_reminders';
   static const _largeTransactionAlertsKey = 'notifications_large_transactions';
 
   List<AppNotification> _notifications = [];
@@ -42,8 +43,10 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _budgetAlertsEnabled = prefs.getBool(_budgetAlertsKey) ?? true;
-    _subscriptionRemindersEnabled = prefs.getBool(_subscriptionRemindersKey) ?? true;
-    _largeTransactionAlertsEnabled = prefs.getBool(_largeTransactionAlertsKey) ?? true;
+    _subscriptionRemindersEnabled =
+        prefs.getBool(_subscriptionRemindersKey) ?? true;
+    _largeTransactionAlertsEnabled =
+        prefs.getBool(_largeTransactionAlertsKey) ?? true;
     notifyListeners();
   }
 
@@ -83,7 +86,10 @@ class NotificationProvider extends ChangeNotifier {
 
   Future<void> _saveNotifications() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_notificationsStorageKey, jsonEncode(_notifications.map((n) => n.toMap()).toList()));
+    await prefs.setString(
+      _notificationsStorageKey,
+      jsonEncode(_notifications.map((n) => n.toMap()).toList()),
+    );
   }
 
   void addNotification(AppNotification notification) {
@@ -103,7 +109,9 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   void markAllAsRead() {
-    _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
+    _notifications = _notifications
+        .map((n) => n.copyWith(isRead: true))
+        .toList();
     _saveNotifications();
     notifyListeners();
   }
@@ -113,7 +121,13 @@ class NotificationProvider extends ChangeNotifier {
     _saveNotifications();
     notifyListeners();
   }
-  
+
+  void deleteNotification(String notificationId) {
+    _notifications.removeWhere((n) => n.id == notificationId);
+    _saveNotifications();
+    notifyListeners();
+  }
+
   void sendTestNotification() {
     addNotification(
       AppNotification(
@@ -126,28 +140,62 @@ class NotificationProvider extends ChangeNotifier {
     );
   }
 
-  void notifyTransaction(String description, double amount, bool isIncome, {double threshold = 10000}) {
+  void notifyTransaction(
+    String description,
+    double amount,
+    bool isIncome, {
+    double threshold = 10000,
+  }) {
     if (_largeTransactionAlertsEnabled && amount.abs() > threshold) {
-      addNotification(AppNotification.transactionAlert(description: description, amount: amount, isIncome: isIncome));
+      addNotification(
+        AppNotification.transactionAlert(
+          description: description,
+          amount: amount,
+          isIncome: isIncome,
+        ),
+      );
     }
   }
 
-  void checkBudgetThresholds(double totalSpent, double budgetAmount, String budgetCategory, String budgetCycle) {
+  void checkBudgetThresholds(
+    double totalSpent,
+    double budgetAmount,
+    String budgetCategory,
+    String budgetCycle,
+  ) {
     if (_budgetAlertsEnabled) {
-        final threshold = budgetAmount * 0.9;
-        if (totalSpent >= threshold && totalSpent < budgetAmount) {
-          addNotification(AppNotification.budgetWarning(category: budgetCategory, cycle: budgetCycle, spentAmount: totalSpent, budgetAmount: budgetAmount));
-        }
+      final threshold = budgetAmount * 0.9;
+      if (totalSpent >= threshold && totalSpent < budgetAmount) {
+        addNotification(
+          AppNotification.budgetWarning(
+            category: budgetCategory,
+            cycle: budgetCycle,
+            spentAmount: totalSpent,
+            budgetAmount: budgetAmount,
+          ),
+        );
+      }
     }
   }
 
-  void checkSubscriptionReminders(String subscriptionName, DateTime nextPaymentDate) {
+  void checkSubscriptionReminders(
+    String subscriptionName,
+    DateTime nextPaymentDate,
+  ) {
     if (_subscriptionRemindersEnabled) {
-        final reminderDays = 3;
-        final reminderDate = nextPaymentDate.subtract(Duration(days: reminderDays));
-        if (DateTime.now().isAfter(reminderDate) && DateTime.now().isBefore(nextPaymentDate)) {
-          addNotification(AppNotification.subscriptionReminder(subscriptionName: subscriptionName, dueDate: nextPaymentDate));
-        }
+      final reminderDays = 3;
+      final reminderDate = nextPaymentDate.subtract(
+        Duration(days: reminderDays),
+      );
+      if (DateTime.now().isAfter(reminderDate) &&
+          DateTime.now().isBefore(nextPaymentDate)) {
+        addNotification(
+          AppNotification.subscriptionReminder(
+            subscriptionName: subscriptionName,
+            dueDate: nextPaymentDate,
+          ),
+        );
+      }
     }
   }
 }

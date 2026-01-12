@@ -5,8 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:another_telephony/telephony.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../models/detected_transaction.dart';
-import '../../utils/new_sms_parser.dart';
+import '../models/detected_transaction.dart';
+import '../utils/new_sms_parser.dart';
 import 'gmail_provider.dart';
 
 class NewNboxProvider extends ChangeNotifier {

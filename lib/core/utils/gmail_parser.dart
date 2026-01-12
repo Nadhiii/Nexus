@@ -1,5 +1,5 @@
 import 'package:intl/intl.dart';
-import '../../models/detected_transaction.dart';
+import '../models/detected_transaction.dart';
 
 class GmailParser {
   static DetectedTransaction? parse(
@@ -8,6 +8,7 @@ class GmailParser {
     String snippet,
     DateTime emailDate,
   ) {
+    // 1. CLEANING
     String combined = "$snippet $body";
     String cleanBody = combined
         .replaceAll(RegExp(r'<[^>]*>'), ' ')
@@ -18,17 +19,8 @@ class GmailParser {
 
     final lower = cleanBody.toLowerCase();
 
-    // 1. GUARD GATE
-    if (_isJunk(lower)) {
-      return null;
-    }
-
-    // 2. IGNORE LIST
-    if (lower.contains('credited to your loan') ||
-        lower.contains('credited to loan')) {
-      return null;
-    }
-    if (lower.contains('beneficiary') && lower.contains('has received')) {
+    // 2. STRICT GUARD (The New "Anti-Spam" Layer)
+    if (_isIgnorable(lower)) {
       return null;
     }
 
@@ -39,13 +31,13 @@ class GmailParser {
       type = 'income';
     }
 
-    // --- PATTERN A: SBI Card ---
-    // Captures date like 17/11/25 (No time info)
+    // --- BANK SPECIFIC PATTERNS (High Precision) ---
+
+    // PATTERN A: SBI Card
     final sbiMatch = RegExp(
       r'(?:Rs\.?|INR)\s*(?<amount>[\d,.]+)\s+spent\s+on\s+.*?at\s+(?<merchant>.*?)\s+on\s+(?<date>\d{2}/\d{2}/\d{2})',
       caseSensitive: false,
     ).firstMatch(cleanBody);
-
     if (sbiMatch != null) {
       return _buildTransaction(
         emailId,
@@ -57,12 +49,11 @@ class GmailParser {
       );
     }
 
-    // --- PATTERN B: Axis Bank ---
+    // PATTERN B: Axis Bank
     final axisMatch = RegExp(
       r'Transaction Amount:\s*(?:INR|Rs\.?)\s*(?<amount>[\d,.]+).*?Merchant Name:\s*(?<merchant>.*?)\s+(?:Axis|Date)',
       caseSensitive: false,
     ).firstMatch(cleanBody);
-
     if (axisMatch != null) {
       return _buildTransaction(
         emailId,
@@ -74,34 +65,15 @@ class GmailParser {
       );
     }
 
-    // --- PATTERN C: IDFC (Detailed) ---
-    // Captures date AND time
-    final idfcDetailed = RegExp(
-      r'(?:debited|credited)\s+(?:by|with)\s+(?:INR|Rs\.?)\s*(?<amount>[\d,.]+)\s+(?:on|to)\s+(?<date>[\d/-]+\s+[\d:]+).*?(?:received\s+from|paid\s+to)\s+(?<merchant>.*?)(?:\.|$)',
-      caseSensitive: false,
-    ).firstMatch(cleanBody);
-
-    if (idfcDetailed != null) {
-      return _buildTransaction(
-        emailId,
-        idfcDetailed,
-        cleanBody,
-        'IDFC FIRST Bank',
-        emailDate,
-        type,
-      );
-    }
-
-    // --- PATTERN D: IDFC (Fallback) ---
-    final idfcFallback = RegExp(
+    // PATTERN C: IDFC
+    final idfcMatch = RegExp(
       r'(?:debited|credited)\s+(?:by|with)\s+(?:INR|Rs\.?)\s*(?<amount>[\d,.]+)\s+(?:on|to)\s+(?<date>[\d/-]+\s+[\d:]+)',
       caseSensitive: false,
     ).firstMatch(cleanBody);
-
-    if (idfcFallback != null) {
+    if (idfcMatch != null) {
       return _buildTransaction(
         emailId,
-        idfcFallback,
+        idfcMatch,
         cleanBody,
         'IDFC FIRST Bank',
         emailDate,
@@ -109,43 +81,144 @@ class GmailParser {
       );
     }
 
-    // Fallback
-    return _parseGeneric(emailId, cleanBody, emailDate, type);
+    // --- GENERIC FALLBACK (Context Aware) ---
+    return _parseGeneric(emailId, cleanBody, lower, emailDate, type);
   }
 
-  static bool _isJunk(String lower) {
-    if (lower.contains('is your otp') ||
-        lower.contains('otp for transaction') ||
-        lower.contains('verification code') ||
-        lower.contains('one time password')) {
+  // --- STRICT FILTERING ---
+  static bool _isIgnorable(String lower) {
+    // 1. Security / OTPs
+    if (lower.contains('otp') || lower.contains('verification code'))
       return true;
-    }
 
-    if (lower.contains('trial subscription') || lower.contains('free trial')) {
+    // 2. Debt / Missed Payments (Flipkart Example)
+    if (lower.contains('not made your payment')) return true;
+    if (lower.contains('overdue')) return true;
+
+    // 3. Low Balance (Surfshark Example)
+    if (lower.contains('balance is too low') || lower.contains('add credit'))
       return true;
-    }
 
+    // 4. Future / Requests / Setup
+    if (lower.contains('autopay') &&
+        (lower.contains('registered') ||
+            lower.contains('request') ||
+            lower.contains('setup')))
+      return true;
+    if (lower.contains('mandate') && lower.contains('success')) return true;
+    if (lower.contains('request received') || lower.contains('will be debited'))
+      return true;
+
+    // 5. Failures
     if (lower.contains('payment failed') ||
-        lower.contains('transaction failed') ||
-        lower.contains('declined')) {
+        lower.contains('transaction declined'))
       return true;
-    }
 
-    if (lower.contains('total outstanding') ||
-        lower.contains('minimum amount due') ||
-        lower.contains('immediate amount due') ||
-        lower.contains('payment due date') ||
-        lower.contains('reminder for payment') ||
-        lower.contains('overdue') ||
-        lower.contains('not received the payment') ||
-        lower.contains('statement generated')) {
-      if (!lower.contains('payment received') &&
-          !lower.contains('thank you for')) {
-        return true;
-      }
-    }
+    // 6. Not a Transaction
+    if (lower.contains('statement generated') ||
+        lower.contains('total outstanding'))
+      return true;
+    if (lower.contains('payment due') || lower.contains('bill generated'))
+      return true;
 
     return false;
+  }
+
+  // --- GENERIC PARSER ---
+  static DetectedTransaction? _parseGeneric(
+    String id,
+    String text,
+    String lower,
+    DateTime date,
+    String type,
+  ) {
+    // 1. Find Amount
+    final amountPattern = RegExp(
+      r'(?:Rs\.?|INR|₹)\s?\.?\s*([0-9,]+(?:\.[0-9]+)?)',
+      caseSensitive: false,
+    );
+    final amountMatch = amountPattern.firstMatch(text);
+
+    if (amountMatch == null) return null;
+
+    double amount = double.parse(amountMatch.group(1)!.replaceAll(',', ''));
+    if (amount == 0) return null;
+
+    // 2. Find Merchant (Smart Strategies)
+    String merchant = "Unknown (Email)";
+
+    // Strategy A: "Subscription from [Merchant]" (Google Play Example)
+    final subMatch = RegExp(
+      r'subscription from\s+(.*?)\s+(?:on|for)',
+      caseSensitive: false,
+    ).firstMatch(text);
+
+    // Strategy B: "Payment for your [Merchant]" (Jio Example)
+    final forMatch = RegExp(
+      r'payment.*?for your\s+(.*?)\s+(?:connection|bill|subscription|order)',
+      caseSensitive: false,
+    ).firstMatch(text);
+
+    // Strategy C: Standard "Paid to/at"
+    final atMatch = RegExp(
+      r'(?:paid|spent|purchase).*?(?:at|to)\s+([A-Za-z0-9\s]+?)(?:\s+on|\.|$)',
+      caseSensitive: false,
+    ).firstMatch(text);
+
+    if (subMatch != null) {
+      merchant = subMatch.group(1)!.trim();
+    } else if (forMatch != null) {
+      merchant = forMatch.group(1)!.trim();
+    } else if (atMatch != null) {
+      merchant = atMatch.group(1)!.trim();
+    }
+
+    // Strategy D: Keyword Scanner (The Safety Net)
+    // If regex failed or gave us a long sentence, check for known brands
+    if (merchant.contains('Unknown') || merchant.length > 25) {
+      final knownBrand = _scanForBrands(lower);
+      if (knownBrand != null) merchant = knownBrand;
+    }
+
+    return DetectedTransaction(
+      id: id,
+      amount: amount,
+      merchant: merchant,
+      date: date,
+      type: type,
+      source: 'email',
+      body: text,
+    );
+  }
+
+  // --- HELPERS ---
+
+  static String? _scanForBrands(String lower) {
+    // Add common Indian services here
+    final brands = {
+      'jio': 'Jio',
+      'airtel': 'Airtel',
+      'vi ': 'Vodafone',
+      'act fibernet': 'ACT',
+      'bescom': 'BESCOM',
+      'flipkart': 'Flipkart',
+      'amazon': 'Amazon',
+      'swiggy': 'Swiggy',
+      'zomato': 'Zomato',
+      'uber': 'Uber',
+      'ola': 'Ola',
+      'netflix': 'Netflix',
+      'spotify': 'Spotify',
+      'google play': 'Google Play',
+      'google ireland': 'Google',
+      'surfshark': 'Surfshark',
+      'apple': 'Apple',
+    };
+
+    for (var key in brands.keys) {
+      if (lower.contains(key)) return brands[key];
+    }
+    return null;
   }
 
   static DetectedTransaction? _buildTransaction(
@@ -159,7 +232,6 @@ class GmailParser {
     try {
       String amountStr = match.namedGroup('amount')!.replaceAll(',', '');
       double amount = double.parse(amountStr);
-
       if (amount == 0) return null;
 
       String merchant = bankName;
@@ -170,16 +242,12 @@ class GmailParser {
         }
       }
 
-      // FIX: Intelligent Date Merging
+      // Intelligent Date Merging
       DateTime date = emailDate;
       if (match.groupNames.contains('date')) {
         final parsedDate = _parseDate(match.namedGroup('date')!);
         if (parsedDate != null) {
-          // If the parsed date is exactly midnight (00:00:00), it likely had no time info (like SBI).
-          // So we take the Date from the body, but the Time from the email.
-          if (parsedDate.hour == 0 &&
-              parsedDate.minute == 0 &&
-              parsedDate.second == 0) {
+          if (parsedDate.hour == 0 && parsedDate.minute == 0) {
             date = DateTime(
               parsedDate.year,
               parsedDate.month,
@@ -189,7 +257,6 @@ class GmailParser {
               emailDate.second,
             );
           } else {
-            // If it has time (like IDFC), use it.
             date = parsedDate;
           }
         }
@@ -209,62 +276,6 @@ class GmailParser {
     }
   }
 
-  static DetectedTransaction? _parseGeneric(
-    String id,
-    String body,
-    DateTime emailDate,
-    String type,
-  ) {
-    if (body.contains(
-      RegExp(
-        r'(?:Rs\.?|INR|₹)\.?\s*[\d,.]+\s*/\s*(?:month|year|mo|yr)',
-        caseSensitive: false,
-      ),
-    )) {
-      return null;
-    }
-
-    final amountPattern = RegExp(
-      r'(?:paid|sent|spent|purchase|debited|credited|refund)\s.*?(?:Rs\.?|INR|₹)\.?\s*([\d,]+(?:\.\d{1,2})?)',
-      caseSensitive: false,
-    );
-    final match = amountPattern.firstMatch(body);
-
-    final strictAmount = RegExp(
-      r'(?:Rs\.?|INR|₹)\.?\s*([\d,]+(?:\.\d{1,2})?)',
-      caseSensitive: false,
-    ).firstMatch(body);
-
-    String? amountStr = match?.group(1) ?? strictAmount?.group(1);
-    if (amountStr == null) return null;
-
-    double? amount = double.tryParse(amountStr.replaceAll(',', ''));
-    if (amount == null || amount == 0) return null;
-
-    String merchant = "Unknown Merchant";
-    final merchantMatch = RegExp(
-      r'(?:to|at)\s+([A-Za-z0-9\s\.]+)(?:\s+(?:on|for)|$)',
-      caseSensitive: false,
-    ).firstMatch(body);
-
-    if (merchantMatch != null) {
-      String m = merchantMatch.group(1)!.trim();
-      if (_isValidMerchant(m)) merchant = m;
-    } else {
-      return null;
-    }
-
-    return DetectedTransaction(
-      id: id,
-      amount: amount,
-      merchant: merchant,
-      date: emailDate,
-      type: type,
-      source: 'email',
-      body: body,
-    );
-  }
-
   static bool _isValidMerchant(String m) {
     if (m.length < 2 || m.length > 60) return false;
     final lower = m.toLowerCase();
@@ -275,13 +286,10 @@ class GmailParser {
       'verify',
       'sincerely',
       'team',
-      'unknown',
       'view',
       'click',
       'policy',
-      'safe banking',
       'report',
-      'call',
       'your',
       'the',
       'loan',
@@ -301,7 +309,6 @@ class GmailParser {
         .replaceAll(',', '')
         .replaceAll('at', '')
         .trim();
-
     final formats = [
       'dd/MM/yy',
       'dd-MM-yyyy HH:mm:ss',

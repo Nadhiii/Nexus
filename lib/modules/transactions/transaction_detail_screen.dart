@@ -1,3 +1,4 @@
+import '../../core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/widgets/translucent_app_bar.dart';
@@ -155,7 +156,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         style: TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
-                          color: _isExpense ? Colors.red : Colors.green,
+                          color: _isExpense ? AppColors.red : AppColors.green,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -235,7 +236,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         ChoiceChip(
                           label: const Text('Expense'),
                           selected: _isExpense,
-                          selectedColor: Colors.red.withOpacity(0.2),
+                          selectedColor: AppColors.red.withOpacity(0.2),
                           onSelected: (selected) {
                             setState(() {
                               _isExpense = true;
@@ -246,7 +247,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         ChoiceChip(
                           label: const Text('Income'),
                           selected: !_isExpense,
-                          selectedColor: Colors.green.withOpacity(0.2),
+                          selectedColor: AppColors.green.withOpacity(0.2),
                           onSelected: (selected) {
                             setState(() {
                               _isExpense = false;

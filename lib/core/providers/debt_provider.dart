@@ -14,7 +14,9 @@ class DebtProvider with ChangeNotifier {
   List<Debt> get debts => _debts;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  double get totalDebt => _debts.where((d) => d.type != DebtType.owedToMe).fold(0.0, (sum, debt) => sum + debt.currentBalance);
+  double get totalDebt => _debts
+      .where((d) => d.type != DebtType.owedToMe)
+      .fold(0.0, (sum, debt) => sum + debt.currentBalance);
 
   DebtProvider() {
     _loadDebts();
@@ -34,10 +36,12 @@ class DebtProvider with ChangeNotifier {
           .collection('debts') // Corrected collection name
           .snapshots()
           .listen((snapshot) {
-        _debts = snapshot.docs.map((doc) => Debt.fromFirestore(doc)).toList();
-        _isLoading = false;
-        notifyListeners();
-      });
+            _debts = snapshot.docs
+                .map((doc) => Debt.fromFirestore(doc))
+                .toList();
+            _isLoading = false;
+            notifyListeners();
+          });
     } catch (e) {
       _error = 'Error loading debts: $e';
       _isLoading = false;
@@ -99,12 +103,23 @@ class DebtProvider with ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) return;
     final batch = _firestore.batch();
-    final snapshot = await _firestore.collection('users').doc(user.uid).collection('debts').get();
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('debts')
+        .get();
     for (final doc in snapshot.docs) {
       batch.delete(doc.reference);
     }
     await batch.commit();
     _debts.clear();
+    notifyListeners();
+  }
+
+  void clear() {
+    _debts = [];
+    _isLoading = false;
+    _error = null;
     notifyListeners();
   }
 
@@ -115,9 +130,57 @@ class DebtProvider with ChangeNotifier {
     for (final item in data) {
       // This assumes the data is already in a Map<String, dynamic> format
       final debtData = Map<String, dynamic>.from(item);
-      final docRef = _firestore.collection('users').doc(user.uid).collection('debts').doc();
+      final docRef = _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('debts')
+          .doc();
       batch.set(docRef, debtData);
     }
     await batch.commit();
+  }
+
+  /// Pays a debt by reducing its current balance locally and in Firestore.
+  /// Also triggers UI updates immediately for responsiveness.
+  Future<void> payDebt(String debtId, double amount) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      // Find debt in local state
+      final debtIndex = _debts.indexWhere((d) => d.id == debtId);
+      if (debtIndex == -1) return;
+
+      final currentDebt = _debts[debtIndex];
+      final newBalance = (currentDebt.currentBalance - amount).clamp(
+        0.0,
+        double.infinity,
+      );
+
+      // Update local state immediately for UI responsiveness
+      final updatedDebt = currentDebt.copyWith(
+        currentBalance: newBalance,
+        updatedAt: DateTime.now(),
+      );
+      _debts[debtIndex] = updatedDebt;
+      notifyListeners();
+
+      // Persist to Firestore
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('debts')
+          .doc(debtId)
+          .update({
+            'currentBalance': newBalance,
+            'updatedAt': FieldValue.serverTimestamp(),
+            'lastPaymentDate': FieldValue.serverTimestamp(),
+            'lastPaymentAmount': amount,
+          });
+    } catch (e) {
+      _error = 'Error processing payment: $e';
+      notifyListeners();
+      rethrow; // Allow UI to handle specifics
+    }
   }
 }

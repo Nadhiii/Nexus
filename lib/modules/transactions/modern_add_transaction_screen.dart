@@ -9,11 +9,10 @@ import '../../core/models/transaction.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../../core/providers/account_provider.dart';
 import '../../core/providers/category_provider.dart';
-import '../../models/detected_transaction.dart';
+import '../../core/models/detected_transaction.dart';
 import '../../core/providers/new_nbox_provider.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/services/transaction_categorization_service.dart';
-import '../../core/services/learning_service.dart';
 
 class ModernAddTransactionScreen extends StatefulWidget {
   final Transaction? transaction;
@@ -57,11 +56,7 @@ class _ModernAddTransactionScreenState
   @override
   void initState() {
     super.initState();
-    final learningService = Provider.of<LearningService>(
-      context,
-      listen: false,
-    );
-    _categorizationService = TransactionCategorizationService(learningService);
+    _categorizationService = TransactionCategorizationService();
 
     _categoryFocus.addListener(() {
       if (mounted) {
@@ -122,7 +117,7 @@ class _ModernAddTransactionScreenState
             pinned: true,
             expandedHeight: 120.0,
             backgroundColor: AppColors.darkGradient.first,
-            foregroundColor: Colors.white,
+            foregroundColor: AppColors.white,
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: true,
               title: Text(title, style: AppTypography.headlineMedium),
@@ -619,7 +614,7 @@ class _ModernAddTransactionScreenState
                               _selectedType == TransactionType.income
                               ? AppColors.success
                               : AppColors.primaryBlue,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.white,
                           padding: const EdgeInsets.symmetric(
                             vertical: AppSpacing.lg,
                           ),
@@ -635,7 +630,7 @@ class _ModernAddTransactionScreenState
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                 ),
                               )
                             : Text(
@@ -643,7 +638,7 @@ class _ModernAddTransactionScreenState
                                     ? 'Save Changes'
                                     : 'Save Transaction',
                                 style: AppTypography.titleSmall.copyWith(
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -677,7 +672,7 @@ class _ModernAddTransactionScreenState
                 decoration: BoxDecoration(
                   color: _selectedType == TransactionType.expense
                       ? AppColors.error
-                      : Colors.transparent,
+                      : AppColors.transparent,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
                 child: Row(
@@ -686,7 +681,7 @@ class _ModernAddTransactionScreenState
                     Icon(
                       Icons.arrow_upward,
                       color: _selectedType == TransactionType.expense
-                          ? Colors.white
+                          ? AppColors.white
                           : AppColors.textSecondary,
                       size: 18,
                     ),
@@ -695,7 +690,7 @@ class _ModernAddTransactionScreenState
                       'Expense',
                       style: AppTypography.titleSmall.copyWith(
                         color: _selectedType == TransactionType.expense
-                            ? Colors.white
+                            ? AppColors.white
                             : AppColors.textSecondary,
                         fontWeight: FontWeight.w600,
                       ),
@@ -714,7 +709,7 @@ class _ModernAddTransactionScreenState
                 decoration: BoxDecoration(
                   color: _selectedType == TransactionType.income
                       ? AppColors.success
-                      : Colors.transparent,
+                      : AppColors.transparent,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
                 child: Row(
@@ -723,7 +718,7 @@ class _ModernAddTransactionScreenState
                     Icon(
                       Icons.arrow_downward,
                       color: _selectedType == TransactionType.income
-                          ? Colors.white
+                          ? AppColors.white
                           : AppColors.textSecondary,
                       size: 18,
                     ),
@@ -732,7 +727,7 @@ class _ModernAddTransactionScreenState
                       'Income',
                       style: AppTypography.titleSmall.copyWith(
                         color: _selectedType == TransactionType.income
-                            ? Colors.white
+                            ? AppColors.white
                             : AppColors.textSecondary,
                         fontWeight: FontWeight.w600,
                       ),
@@ -751,7 +746,7 @@ class _ModernAddTransactionScreenState
                 decoration: BoxDecoration(
                   color: _selectedType == TransactionType.transfer
                       ? AppColors.primaryBlue
-                      : Colors.transparent,
+                      : AppColors.transparent,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
                 child: Row(
@@ -760,7 +755,7 @@ class _ModernAddTransactionScreenState
                     Icon(
                       Icons.swap_horiz,
                       color: _selectedType == TransactionType.transfer
-                          ? Colors.white
+                          ? AppColors.white
                           : AppColors.textSecondary,
                       size: 18,
                     ),
@@ -769,7 +764,7 @@ class _ModernAddTransactionScreenState
                       'Transfer',
                       style: AppTypography.titleSmall.copyWith(
                         color: _selectedType == TransactionType.transfer
-                            ? Colors.white
+                            ? AppColors.white
                             : AppColors.textSecondary,
                         fontWeight: FontWeight.w600,
                       ),

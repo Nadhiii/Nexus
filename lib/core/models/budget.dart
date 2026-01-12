@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Budget {
   final String id;
   final String categoryId;
@@ -29,13 +31,18 @@ class Budget {
     required this.updatedAt,
   });
 
-  double get progress => allocatedAmount > 0 ? (spentAmount / allocatedAmount).clamp(0.0, 1.0) : 0.0;
+  double get progress => allocatedAmount > 0
+      ? (spentAmount / allocatedAmount).clamp(0.0, 1.0)
+      : 0.0;
 
   /// Calculate the remaining budget amount
-  double get remainingAmount => (allocatedAmount - spentAmount).clamp(0.0, double.infinity);
+  double get remainingAmount =>
+      (allocatedAmount - spentAmount).clamp(0.0, double.infinity);
 
   /// Calculate the spent percentage
-  double get spentPercentage => allocatedAmount > 0 ? (spentAmount / allocatedAmount).clamp(0.0, 1.0) : 0.0;
+  double get spentPercentage => allocatedAmount > 0
+      ? (spentAmount / allocatedAmount).clamp(0.0, 1.0)
+      : 0.0;
 
   /// Check if budget is overspent
   bool get isOverspent => spentAmount > allocatedAmount;
@@ -49,7 +56,10 @@ class Budget {
   /// Days remaining in budget period
   int get daysRemaining {
     final days = endDate.difference(DateTime.now()).inDays;
-    return days.clamp(0, 999999); // Use a reasonable max value instead of infinity
+    return days.clamp(
+      0,
+      999999,
+    ); // Use a reasonable max value instead of infinity
   }
 
   /// Days total in budget period
@@ -62,10 +72,13 @@ class Budget {
   }
 
   /// Projected spending for the period based on current rate
-  double get projectedSpending => daysRemaining > 0 ? spentAmount + (dailySpendingRate * daysRemaining) : spentAmount;
+  double get projectedSpending => daysRemaining > 0
+      ? spentAmount + (dailySpendingRate * daysRemaining)
+      : spentAmount;
 
   /// Recommended daily spending to stay within budget
-  double get recommendedDailySpending => daysRemaining > 0 ? remainingAmount / daysRemaining : 0.0;
+  double get recommendedDailySpending =>
+      daysRemaining > 0 ? remainingAmount / daysRemaining : 0.0;
 
   /// Check if budget period is active
   bool get isPeriodActive {
@@ -92,6 +105,16 @@ class Budget {
   }
 
   factory Budget.fromMap(Map<String, dynamic> map) {
+    // Helper function to parse date fields (handles both Timestamp and String)
+    DateTime parseDate(dynamic dateField) {
+      if (dateField is String) {
+        return DateTime.parse(dateField);
+      } else if (dateField is Timestamp) {
+        return dateField.toDate();
+      }
+      return DateTime.now(); // Fallback
+    }
+
     return Budget(
       id: map['id'],
       categoryId: map['categoryId'],
@@ -99,13 +122,15 @@ class Budget {
       allocatedAmount: map['allocatedAmount'].toDouble(),
       spentAmount: (map['spentAmount'] ?? 0.0).toDouble(),
       period: map['period'],
-      startDate: DateTime.parse(map['startDate']),
-      endDate: DateTime.parse(map['endDate']),
+      startDate: parseDate(map['startDate']),
+      endDate: parseDate(map['endDate']),
       accountId: map['accountId'],
       isActive: map['isActive'] ?? true,
-      metadata: map['metadata'] != null ? Map<String, dynamic>.from(map['metadata']) : null,
-      createdAt: DateTime.parse(map['createdAt']),
-      updatedAt: DateTime.parse(map['updatedAt']),
+      metadata: map['metadata'] != null
+          ? Map<String, dynamic>.from(map['metadata'])
+          : null,
+      createdAt: parseDate(map['createdAt']),
+      updatedAt: parseDate(map['updatedAt']),
     );
   }
 
@@ -161,11 +186,7 @@ class Budget {
 }
 
 /// Enum for spending trends
-enum SpendingTrend {
-  low,
-  moderate,
-  high,
-}
+enum SpendingTrend { low, moderate, high }
 
 /// Budget categories with default allocations (percentage-based)
 class BudgetCategory {
@@ -216,7 +237,7 @@ class BudgetCategory {
       color: 'orange',
       isEssential: true,
     ),
-    
+
     // Savings & Investments (20% of income)
     BudgetCategory(
       id: 'savings',
@@ -234,7 +255,7 @@ class BudgetCategory {
       icon: 'trending_up',
       color: 'teal',
     ),
-    
+
     // Lifestyle (30% of income)
     BudgetCategory(
       id: 'entertainment',

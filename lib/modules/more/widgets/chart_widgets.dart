@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/transaction.dart';
-import '../../../core/theme/app_typography.dart';
-import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_colors.dart';
 
 class CategorySpendingChart extends StatelessWidget {
   final List<Transaction> transactions;
@@ -10,9 +9,9 @@ class CategorySpendingChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final expenseTransactions =
-        transactions.where((tx) => tx.type == TransactionType.expense).toList();
-
+    final expenseTransactions = transactions
+        .where((tx) => tx.type == TransactionType.expense)
+        .toList();
     final Map<String, double> categoryTotals = {};
     double totalSpent = 0;
 
@@ -25,103 +24,104 @@ class CategorySpendingChart extends StatelessWidget {
     final sortedEntries = categoryTotals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    return Card(
-      elevation: 0,
-      color:
-          Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+    if (totalSpent == 0) {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Center(
+          child: Text(
+            "No expenses recorded",
+            style: TextStyle(color: AppColors.textTertiary),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Column(
+        children: sortedEntries.take(5).map((e) {
+          final percentage = e.value / totalSpent;
+          // Dynamic color based on intensity
+          final barColor = AppColors.primaryBlue.withOpacity(
+            0.4 + (percentage * 0.6),
+          );
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.pie_chart_outline_rounded,
-                    color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Text(
-                    "Spending by Category",
-                    style: AppTypography.headlineSmall,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      e.key.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    Text(
+                      "${(percentage * 100).toStringAsFixed(1)}%",
+                      style: TextStyle(
+                        color: barColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Stack(
+                  children: [
+                    Container(
+                      height: 8,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundBlack,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    FractionallySizedBox(
+                      widthFactor: percentage,
+                      child: Container(
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: barColor,
+                          borderRadius: BorderRadius.circular(4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: barColor.withOpacity(0.5),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "₹${e.value.toStringAsFixed(0)}",
+                  style: TextStyle(color: AppColors.textTertiary, fontSize: 11),
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.lg),
-            if (totalSpent == 0)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                child: Center(
-                  child: Text(
-                    "No expenses for this period.",
-                    style: AppTypography.bodyLarge.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                    ),
-                  ),
-                ),
-              )
-            else
-              ...sortedEntries.map((e) {
-                final percentage = e.value / totalSpent;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              e.key.toUpperCase(),
-                              style: AppTypography.bodyLarge
-                                  .copyWith(fontWeight: FontWeight.w500),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Text(
-                            "${(percentage * 100).toStringAsFixed(1)}%",
-                            style: AppTypography.bodyLarge,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      LinearProgressIndicator(
-                        value: percentage,
-                        backgroundColor:
-                            Theme.of(context).colorScheme.surfaceContainer,
-                        color: _getColorForIndex(sortedEntries.indexOf(e), context),
-                        borderRadius: BorderRadius.circular(4),
-                        minHeight: 8,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "₹${e.value.toStringAsFixed(2)}",
-                        style: AppTypography.bodySmall.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withOpacity(0.7)),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-          ],
-        ),
+          );
+        }).toList(),
       ),
     );
-  }
-
-  Color _getColorForIndex(int index, BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    final opacity = (1.0 - (index * 0.1)).clamp(0.3, 1.0);
-    return primary.withOpacity(opacity);
   }
 }

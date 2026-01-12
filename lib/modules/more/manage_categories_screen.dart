@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/category_provider.dart';
 import '../../core/models/category.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/swipe_to_delete.dart';
-// Assuming you have this from other screens
 import 'widgets/edit_category_modal.dart';
 
 class ManageCategoriesScreen extends StatelessWidget {
@@ -15,150 +13,175 @@ class ManageCategoriesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          // 1. Gradient Background
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: AppColors.darkGradient,
-              ),
-            ),
-          ),
+      backgroundColor: AppColors.backgroundBlack,
+      body: Consumer<CategoryProvider>(
+        builder: (context, provider, child) {
+          final systemCategories = provider.categories
+              .where((c) => !c.isCustom)
+              .toList();
+          final customCategories = provider.categories
+              .where((c) => c.isCustom)
+              .toList();
 
-          // 2. Content
-          SafeArea(
-            child: Column(
-              children: [
-                _buildAppBar(context),
-                Expanded(
-                  child: Consumer<CategoryProvider>(
-                    builder: (context, provider, child) {
-                      if (provider.isLoading) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (provider.error != null) {
-                        return Center(
-                          child: Text(
-                            provider.error!,
-                            style: AppTypography.bodyMedium.copyWith(
-                              color: AppColors.error,
-                            ),
-                          ),
-                        );
-                      }
-
-                      return ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.lg,
-                          AppSpacing.sm,
-                          AppSpacing.lg,
-                          100, // Space for FAB
+          return CustomScrollView(
+            slivers: [
+              // 1. IMMERSIVE HEADER
+              SliverAppBar(
+                pinned: true,
+                expandedHeight: 110,
+                backgroundColor: AppColors.backgroundBlack,
+                surfaceTintColor: AppColors.backgroundBlack,
+                elevation: 0,
+                leading: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.cardSurface,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.05),
                         ),
-                        itemCount: provider.categories.length,
-                        itemBuilder: (context, index) {
-                          final category = provider.categories[index];
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+                flexibleSpace: FlexibleSpaceBar(
+                  centerTitle: false,
+                  titlePadding: const EdgeInsets.only(left: 60, bottom: 24),
+                  title: Text(
+                    'Category Vault',
+                    style: AppTypography.headlineMedium.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
 
-                          // Only custom categories can be deleted (Swiped)
-                          if (category.isCustom) {
-                            return SwipeToDelete(
-                              itemKey: ValueKey(category.id),
-                              itemId: category.id,
-                              itemName: category.name,
-                              onDelete: () {
-                                provider.deleteCategory(category.id);
-                              },
-                              onUndoDelete: () {
-                                provider.addCategory(category);
-                              },
-                              child: _buildCategoryCard(context, category),
-                            );
-                          } else {
-                            // Default categories cannot be swiped
-                            return _buildCategoryCard(context, category);
-                          }
-                        },
-                      );
-                    },
+              // 2. SYSTEM CATEGORIES (Locked)
+              if (systemCategories.isNotEmpty) ...[
+                SliverToBoxAdapter(child: _buildSectionHeader("SYSTEM CORE")),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _buildCategoryTile(
+                          context,
+                          systemCategories[index],
+                        ),
+                      ),
+                      childCount: systemCategories.length,
+                    ),
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
+
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+              // 3. USER CATEGORIES (Unlocked)
+              if (customCategories.isNotEmpty) ...[
+                SliverToBoxAdapter(child: _buildSectionHeader("USER DEFINED")),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final category = customCategories[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: SwipeToDelete(
+                          itemKey: ValueKey(category.id),
+                          itemId: category.id,
+                          itemName: category.name,
+                          onDelete: () => provider.deleteCategory(category.id),
+                          child: _buildCategoryTile(context, category),
+                        ),
+                      );
+                    }, childCount: customCategories.length),
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => showEditCategoryModal(context),
-        backgroundColor: AppColors.primaryBlue,
-        icon: const Icon(Icons.add),
-        label: const Text('New Category'),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 20.0),
+        child: FloatingActionButton.extended(
+          onPressed: () => showEditCategoryModal(context),
+          backgroundColor: AppColors.primaryBlue,
+          elevation: 8,
+          icon: const Icon(Icons.add, color: Colors.white),
+          label: const Text(
+            'Mint Category',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildAppBar(BuildContext context) {
+  Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.xl,
-      ),
-      child: Row(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.lg),
-          Text(
-            'Manage Categories',
-            style: AppTypography.headlineSmall.copyWith(
-              color: Colors.white, // Fixed text color for dark background
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: AppColors.textTertiary,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.5,
+        ),
       ),
     );
   }
 
-  Widget _buildCategoryCard(BuildContext context, Category category) {
+  Widget _buildCategoryTile(BuildContext context, Category category) {
+    final isLocked = !category.isCustom;
+
     return GestureDetector(
-      // Tap to edit (if custom), or just view (if default)
-      onTap: category.isCustom
-          ? () => showEditCategoryModal(context, category: category)
-          : null,
+      onTap: isLocked
+          ? null
+          : () => showEditCategoryModal(context, category: category),
       child: Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.md),
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.cardDarkElevated,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          color: AppColors.cardSurface.withOpacity(0.6), // Glass effect
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: category.isCustom
+                ? category.color.withOpacity(0.3)
+                : Colors.white.withOpacity(0.05),
+          ),
         ),
         child: Row(
           children: [
-            // Icon Container
+            // Glowing Icon Container
             Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: category.color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                border: Border.all(
-                  color: category.color.withOpacity(0.3),
-                  width: 1,
-                ),
+                color: category.color.withOpacity(0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: category.color.withOpacity(0.2)),
+                boxShadow: [
+                  BoxShadow(
+                    color: category.color.withOpacity(0.1),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
               child: Center(
                 child: Text(
@@ -167,44 +190,38 @@ class ManageCategoriesScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: 16),
 
-            // Name and Type
+            // Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     category.name,
-                    style: AppTypography.titleSmall.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
+                    style: AppTypography.titleMedium.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    category.isCustom ? 'Custom Category' : 'Default Category',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: Colors.white.withOpacity(0.5),
+                  if (isLocked)
+                    Text(
+                      "System Protected",
+                      style: TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: 10,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
 
-            // Visual cue for interaction
-            if (category.isCustom)
-              Icon(
-                Icons.chevron_right,
-                color: Colors.white.withOpacity(0.3),
-                size: 20,
-              )
-            else
-              Icon(
-                Icons.lock_outline,
-                size: 16,
-                color: Colors.white.withOpacity(0.3),
-              ),
+            // Status Icon
+            Icon(
+              isLocked ? Icons.lock_outline : Icons.edit_outlined,
+              size: 18,
+              color: isLocked ? AppColors.textTertiary : Colors.white,
+            ),
           ],
         ),
       ),

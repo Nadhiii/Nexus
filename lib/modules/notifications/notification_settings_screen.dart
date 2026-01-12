@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/notification_provider.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/top_snackbar.dart';
 
 class NotificationSettingsScreen extends StatelessWidget {
@@ -10,80 +10,69 @@ class NotificationSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Scaffold(
+      backgroundColor: AppColors.backgroundBlack,
       appBar: AppBar(
-        title: Text(
-          'Notification Settings',
-          style: AppTypography.headlineMedium.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: colorScheme.surface,
+        title: const Text('Notifications'),
+        backgroundColor: AppColors.backgroundBlack,
         elevation: 0,
       ),
-      backgroundColor: colorScheme.surface,
       body: Consumer<NotificationProvider>(
         builder: (context, provider, child) {
           return ListView(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.all(20),
             children: [
-              _buildSectionHeader(context, 'General'),
-              _buildSettingsCard(context, [
-                _buildSwitchTile(
-                  context,
-                  title: 'Budget Alerts',
-                  subtitle: 'Notify when you approach a budget limit',
-                  value: provider.budgetAlertsEnabled,
-                  onChanged: (value) => provider.updateNotificationSetting(
+              _buildSectionHeader('Alerts'),
+              _buildCard([
+                _buildSwitch(
+                  'Budget Alerts',
+                  'Notify when approaching limits',
+                  provider.budgetAlertsEnabled,
+                  (v) => provider.updateNotificationSetting(
                     'notifications_budget_alerts',
-                    value,
+                    v,
                   ),
                 ),
-                _buildSwitchTile(
-                  context,
-                  title: 'Subscription Reminders',
-                  subtitle: 'Get reminders for upcoming subscriptions',
-                  value: provider.subscriptionRemindersEnabled,
-                  onChanged: (value) => provider.updateNotificationSetting(
+                _divider(),
+                _buildSwitch(
+                  'Subscription Reminders',
+                  'Alerts for upcoming bills',
+                  provider.subscriptionRemindersEnabled,
+                  (v) => provider.updateNotificationSetting(
                     'notifications_subscription_reminders',
-                    value,
+                    v,
                   ),
                 ),
-                _buildSwitchTile(
-                  context,
-                  title: 'Large Transaction Alerts',
-                  subtitle: 'Receive alerts for transactions over ₹10,000',
-                  value: provider.largeTransactionAlertsEnabled,
-                  onChanged: (value) => provider.updateNotificationSetting(
+              ]),
+
+              const SizedBox(height: 24),
+              _buildSectionHeader('Security'),
+              _buildCard([
+                _buildSwitch(
+                  'Large Transactions',
+                  'Alerts for spends over ₹10,000',
+                  provider.largeTransactionAlertsEnabled,
+                  (v) => provider.updateNotificationSetting(
                     'notifications_large_transactions',
-                    value,
+                    v,
                   ),
                 ),
               ]),
-              const SizedBox(height: AppSpacing.lg),
-              _buildSectionHeader(context, 'Testing'),
-              _buildSettingsCard(context, [
-                ListTile(
-                  title: const Text(
-                    'Send Test Notification',
-                    style: AppTypography.bodyLarge,
+
+              const SizedBox(height: 24),
+              OutlinedButton(
+                onPressed: () {
+                  provider.sendTestNotification();
+                  showTopSnackBar(context, 'Test notification sent!');
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary,
+                  side: BorderSide(
+                    color: AppColors.textTertiary.withOpacity(0.3),
                   ),
-                  subtitle: Text(
-                    'Check if your notifications are working',
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                  ),
-                  trailing: const Icon(Icons.send_outlined),
-                  onTap: () {
-                    provider.sendTestNotification();
-                    showTopSnackBar(context, 'Test notification sent!');
-                  },
                 ),
-              ]),
+                child: const Text("Send Test Notification"),
+              ),
             ],
           );
         },
@@ -91,57 +80,54 @@ class NotificationSettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
+  Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.lg,
-        AppSpacing.md,
-        AppSpacing.sm,
-      ),
+      padding: const EdgeInsets.only(bottom: 12, left: 4),
       child: Text(
         title.toUpperCase(),
-        style: AppTypography.labelMedium.copyWith(
-          color: Theme.of(context).colorScheme.primary,
+        style: AppTypography.labelSmall.copyWith(
+          color: AppColors.textTertiary,
+          fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
         ),
       ),
     );
   }
 
-  Widget _buildSettingsCard(BuildContext context, List<Widget> children) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        side: BorderSide(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
-          width: 1,
-        ),
+  Widget _buildCard(List<Widget> children) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(children: children),
     );
   }
 
-  Widget _buildSwitchTile(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
+  Widget _buildSwitch(
+    String title,
+    String subtitle,
+    bool value,
+    Function(bool) onChanged,
+  ) {
     return SwitchListTile(
-      title: Text(title, style: AppTypography.bodyLarge),
+      title: Text(title, style: const TextStyle(color: Colors.white)),
       subtitle: Text(
         subtitle,
-        style: AppTypography.bodyMedium.copyWith(
-          color: colorScheme.onSurface.withOpacity(0.7),
-        ),
+        style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
       ),
       value: value,
       onChanged: onChanged,
-      activeThumbColor: colorScheme.primary,
+      activeThumbColor: AppColors.primaryBlue,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
   }
+
+  Widget _divider() => Divider(
+    height: 1,
+    color: Colors.white.withOpacity(0.05),
+    indent: 16,
+    endIndent: 16,
+  );
 }

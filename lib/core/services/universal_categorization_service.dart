@@ -1,51 +1,47 @@
-import 'learning_service.dart';
-
 /// A universal service to automatically suggest classifications for all app entities
 class UniversalCategorizationService {
-  final LearningService _learningService;
-
-  UniversalCategorizationService(this._learningService);
+  UniversalCategorizationService();
 
   // ==================== DEBT TYPE SUGGESTION ====================
-  
+
   static final Map<String, String> _debtTypeKeywords = {
     // Credit Cards
     'credit card': 'creditCard',
     'credit': 'creditCard',
     'card': 'creditCard',
-    
+
     // Home Loans
     'home loan': 'homeLoan',
     'housing loan': 'homeLoan',
     'housing': 'homeLoan',
     'mortgage': 'homeLoan',
     'property loan': 'homeLoan',
-    
+
     // Car Loans
     'car loan': 'carLoan',
     'vehicle loan': 'carLoan',
     'auto loan': 'carLoan',
     'bike loan': 'carLoan',
-    
+
     // Education Loans
     'education loan': 'educationLoan',
     'student loan': 'educationLoan',
     'education': 'educationLoan',
     'student': 'educationLoan',
-    
+
     // Personal Loans
     'personal loan': 'personalLoan',
     'personal': 'personalLoan',
-    
+
     // Business Loans
     'business loan': 'businessLoan',
     'business': 'businessLoan',
     'commercial': 'businessLoan',
-    
+
     // Gold Loans
     'gold loan': 'goldLoan',
     'gold': 'goldLoan',
-    
+
     // Owed
     'owed to me': 'owedToMe',
     'lent': 'owedToMe',
@@ -54,11 +50,7 @@ class UniversalCategorizationService {
   };
 
   String? suggestDebtType(String name) {
-    // 1. Check learned patterns first
-    final learned = _learningService.suggestForEntity('debt', name);
-    if (learned != null) return learned;
-
-    // 2. Fallback to keyword matching
+    // Keyword matching
     final lowerName = name.toLowerCase();
     for (final keyword in _debtTypeKeywords.keys) {
       if (lowerName.contains(keyword)) {
@@ -71,18 +63,18 @@ class UniversalCategorizationService {
   }
 
   // ==================== SUBSCRIPTION CATEGORY SUGGESTION ====================
-  
+
   static final Map<String, String> _subscriptionCategoryKeywords = {
     // Food & Dining
     'zomato': 'Food & Dining',
     'swiggy': 'Food & Dining',
     'ubereats': 'Food & Dining',
-    
+
     // Shopping
     'amazon': 'Shopping',
     'flipkart': 'Shopping',
     'myntra': 'Shopping',
-    
+
     // Entertainment
     'netflix': 'Entertainment',
     'spotify': 'Entertainment',
@@ -92,7 +84,7 @@ class UniversalCategorizationService {
     'youtube premium': 'Entertainment',
     'bookmyshow': 'Entertainment',
     'apple music': 'Entertainment',
-    
+
     // Bills & Utilities
     'electricity': 'Bills',
     'water': 'Bills',
@@ -101,18 +93,18 @@ class UniversalCategorizationService {
     'internet': 'Bills',
     'mobile': 'Bills',
     'phone': 'Bills',
-    
+
     // Healthcare
     'gym': 'Healthcare',
     'fitness': 'Healthcare',
     'health': 'Healthcare',
     'insurance': 'Healthcare',
-    
+
     // Transportation
     'uber': 'Transportation',
     'ola': 'Transportation',
     'metro': 'Transportation',
-    
+
     // Software/Cloud
     'cloud': 'Software',
     'storage': 'Software',
@@ -124,11 +116,7 @@ class UniversalCategorizationService {
   };
 
   String? suggestSubscriptionCategory(String name) {
-    // 1. Check learned patterns first
-    final learned = _learningService.suggestForEntity('subscription', name);
-    if (learned != null) return learned;
-
-    // 2. Fallback to keyword matching
+    // Keyword matching
     final lowerName = name.toLowerCase();
     for (final keyword in _subscriptionCategoryKeywords.keys) {
       if (lowerName.contains(keyword)) {
@@ -141,15 +129,14 @@ class UniversalCategorizationService {
   }
 
   // ==================== INVESTMENT SCHEME SUGGESTION ====================
-  
+
   String? suggestInvestmentScheme(String name) {
-    // For investments, we primarily rely on learned data
-    // as scheme names are very specific
-    return _learningService.suggestForEntity('investment', name);
+    // No auto-suggestion for investment schemes
+    return null;
   }
 
   // ==================== GOAL DESCRIPTION SUGGESTION ====================
-  
+
   static final Map<String, String> _goalDescriptionTemplates = {
     'emergency': 'Build emergency fund for unexpected expenses',
     'house': 'Save for house down payment',
@@ -167,11 +154,7 @@ class UniversalCategorizationService {
   };
 
   String? suggestGoalDescription(String name) {
-    // 1. Check learned patterns first
-    final learned = _learningService.suggestForEntity('goal', name);
-    if (learned != null) return learned;
-
-    // 2. Fallback to templates
+    // Template matching
     final lowerName = name.toLowerCase();
     for (final keyword in _goalDescriptionTemplates.keys) {
       if (lowerName.contains(keyword)) {
@@ -184,13 +167,9 @@ class UniversalCategorizationService {
   }
 
   // ==================== BUDGET CATEGORY SUGGESTION ====================
-  
-  String? suggestBudgetCategory(String name) {
-    // 1. Check learned patterns first
-    final learned = _learningService.suggestForEntity('budget', name);
-    if (learned != null) return learned;
 
-    // 2. Fallback to keyword matching (reuse subscription keywords)
+  String? suggestBudgetCategory(String name) {
+    // Keyword matching (reuse subscription keywords)
     final lowerName = name.toLowerCase();
     for (final keyword in _subscriptionCategoryKeywords.keys) {
       if (lowerName.contains(keyword)) {
@@ -213,7 +192,7 @@ class UniversalCategorizationService {
   }
 
   // ==================== ACCOUNT TYPE SUGGESTION ====================
-  
+
   static final Map<String, String> _accountTypeKeywords = {
     'savings': 'Savings',
     'current': 'Current',
@@ -229,11 +208,7 @@ class UniversalCategorizationService {
   };
 
   String? suggestAccountType(String name) {
-    // 1. Check learned patterns first
-    final learned = _learningService.suggestForEntity('account', name);
-    if (learned != null) return learned;
-
-    // 2. Fallback to keyword matching
+    // Keyword matching
     final lowerName = name.toLowerCase();
     for (final keyword in _accountTypeKeywords.keys) {
       if (lowerName.contains(keyword)) {
@@ -246,7 +221,7 @@ class UniversalCategorizationService {
   }
 
   // ==================== TRANSACTION CATEGORY (Backward Compatibility) ====================
-  
+
   static final Map<String, String> _transactionCategoryKeywords = {
     // Food & Dining
     'zomato': 'Food & Dining',
@@ -307,11 +282,7 @@ class UniversalCategorizationService {
   };
 
   String suggestTransactionCategory(String description) {
-    // 1. Check learned patterns first
-    final learned = _learningService.suggest(description);
-    if (learned != null) return learned;
-
-    // 2. Fallback to keyword matching
+    // Keyword matching
     final lowerDescription = description.toLowerCase();
     for (final keyword in _transactionCategoryKeywords.keys) {
       if (lowerDescription.contains(keyword)) {

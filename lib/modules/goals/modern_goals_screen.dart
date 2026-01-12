@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/models/goal.dart';
 import '../../core/widgets/top_snackbar.dart';
 import 'widgets/add_goal_modal.dart';
@@ -28,9 +28,11 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
         .collection('goals')
         .where('userId', isEqualTo: _userId)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Goal.fromMap({'id': doc.id, ...doc.data()}))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Goal.fromMap({'id': doc.id, ...doc.data()}))
+              .toList(),
+        );
   }
 
   Future<void> _addGoal(Goal goal) async {
@@ -53,12 +55,30 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
     }
   }
 
-  Future<void> _deleteGoal(String goalId) async {
+  Future<void> _updateGoal(Goal goal) async {
     try {
       await FirebaseFirestore.instance
           .collection('goals')
-          .doc(goalId)
+          .doc(goal.id)
+          .update(goal.toMap());
+
+      if (mounted) {
+        showTopSnackBar(context, 'Goal updated successfully');
+      }
+    } catch (e) {
+      if (mounted) {
+        showTopSnackBar(context, 'Error updating goal: $e', isError: true);
+      }
+    }
+  }
+
+  Future<void> _deleteGoal(Goal goal) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('goals')
+          .doc(goal.id)
           .delete();
+
       if (mounted) {
         showTopSnackBar(context, 'Goal deleted successfully');
       }
@@ -69,10 +89,53 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
     }
   }
 
+  void _showEditGoalModal(Goal goal) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) =>
+          AddGoalModal(onGoalAdded: _updateGoal, goalToEdit: goal),
+    );
+  }
+
+  void _showDeleteConfirmation(Goal goal) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        title: Text(
+          'Delete Goal',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${goal.name}"?',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteGoal(goal);
+            },
+            child: Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkGradient.first,
+      backgroundColor: AppColors.backgroundBlack,
       body: StreamBuilder<List<Goal>>(
         stream: _getGoalsStream(),
         builder: (context, snapshot) {
@@ -86,90 +149,112 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
 
           final goals = snapshot.data ?? [];
 
-          if (goals.isEmpty) {
-            return _buildEmptyState(context);
-          }
-
           return CustomScrollView(
             slivers: [
-              _buildAppBar(context),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildOverviewCard(context, goals),
-                      const SizedBox(height: AppSpacing.xl),
-                      Text(
-                        'Your Goals',
-                        style: AppTypography.titleLarge.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                    ],
+              // 1. GOLDEN HEADER
+              SliverAppBar(
+                pinned: true,
+                expandedHeight: 110,
+                backgroundColor: AppColors.backgroundBlack,
+                surfaceTintColor: AppColors.backgroundBlack,
+                elevation: 0,
+                automaticallyImplyLeading: false,
+                flexibleSpace: FlexibleSpaceBar(
+                  centerTitle: false,
+                  titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
+                  title: Text(
+                    'Goals',
+                    style: AppTypography.headlineMedium.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ),
-              _buildGoalsList(context, goals),
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 140),
-              ),
+
+              // 2. HERO OVERVIEW (Total Savings Progress)
+              if (goals.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    child: _buildOverviewCard(context, goals),
+                  ),
+                ),
+
+              // 3. GOALS LIST
+              if (goals.isEmpty)
+                SliverFillRemaining(child: _buildEmptyState(context))
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _buildGoalCard(context, goals[index]),
+                      ),
+                      childCount: goals.length,
+                    ),
+                  ),
+                ),
             ],
           );
         },
       ),
-      floatingActionButton: Container(
-        margin: const EdgeInsets.only(bottom: 80),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 20.0),
         child: FloatingActionButton.extended(
           onPressed: () => showAddGoalModal(context, _addGoal),
-          backgroundColor: AppColors.accentPurple,
-          icon: const Icon(Icons.add),
-          label: const Text('Add Goal'),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return SliverAppBar(
-      expandedHeight: 120,
-      floating: false,
-      pinned: true,
-      backgroundColor: AppColors.darkGradient.first,
-      foregroundColor: Colors.white,
-      flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          'Goals',
-          style: AppTypography.titleLarge.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
+          backgroundColor: AppColors.cardSurface,
+          icon: Icon(Icons.add, color: AppColors.accentPurple),
+          label: Text(
+            'New Goal',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppColors.accentPurple,
+            ),
+          ),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+            side: BorderSide(color: AppColors.accentPurple.withOpacity(0.3)),
           ),
         ),
-        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
       ),
     );
   }
 
   Widget _buildOverviewCard(BuildContext context, List<Goal> goals) {
-    final totalTarget = goals.fold<double>(0, (sum, goal) => sum + goal.targetAmount);
-    final totalSaved = goals.fold<double>(0, (sum, goal) => sum + goal.currentAmount);
-    final completedGoals = goals.where((goal) => goal.isCompleted).length;
+    final totalTarget = goals.fold<double>(
+      0,
+      (sum, goal) => sum + goal.targetAmount,
+    );
+    final totalSaved = goals.fold<double>(
+      0,
+      (sum, goal) => sum + goal.currentAmount,
+    );
+    final progress = totalTarget > 0 ? (totalSaved / totalTarget) : 0.0;
 
     return Container(
-      padding: AppSpacing.cardPaddingXl,
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: AppColors.purpleGradient,
+          colors: [
+            AppColors.accentPurple.withOpacity(0.15),
+            AppColors.accentPurple.withOpacity(0.05),
+          ],
         ),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.purpleGradient.first.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -179,277 +264,227 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Goals Overview',
-            style: AppTypography.bodyMedium.copyWith(
-              color: Colors.white.withOpacity(0.9),
-              letterSpacing: 0.5,
+            'TOTAL SAVINGS',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.0,
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: 8),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '₹',
-                style: AppTypography.headlineMedium.copyWith(
+                '₹${_formatAmount(totalSaved)}',
+                style: const TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(width: 4),
-              Expanded(
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
                 child: Text(
-                  totalSaved.toStringAsFixed(2),
-                  style: AppTypography.currencyLarge.copyWith(
-                    color: Colors.white,
+                  '/ ${_formatAmount(totalTarget)}',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'Target ₹${_formatAmount(totalTarget)} • $completedGoals/${goals.length} completed • ${((totalSaved / totalTarget) * 100).toStringAsFixed(0)}%',
-            style: AppTypography.bodySmall.copyWith(
-              color: Colors.white.withOpacity(0.8),
+          const SizedBox(height: 20),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: progress.clamp(0.0, 1.0),
+              backgroundColor: Colors.black26,
+              color: AppColors.accentTeal,
+              minHeight: 8,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              '${(progress * 100).toStringAsFixed(0)}% Achieved',
+              style: TextStyle(
+                color: AppColors.accentTeal,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildGoalsList(BuildContext context, List<Goal> goals) {
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final goal = goals[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: _buildGoalCard(context, goal),
-            );
-          },
-          childCount: goals.length,
-        ),
       ),
     );
   }
 
   Widget _buildGoalCard(BuildContext context, Goal goal) {
-    final progress = goal.currentAmount / goal.targetAmount;
-    final remaining = goal.targetAmount - goal.currentAmount;
-    final percentage = (progress * 100).round();
-    final daysLeft = goal.targetDate.difference(DateTime.now()).inDays;
+    final progress = goal.targetAmount > 0
+        ? (goal.currentAmount / goal.targetAmount)
+        : 0.0;
+    final percentage = (progress * 100).clamp(0, 100).round();
+    final isCompleted = percentage >= 100;
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.cardDarkElevated,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Slidable(
+      key: ValueKey(goal.id),
+      endActionPane: ActionPane(
+        motion: const DrawerMotion(),
         children: [
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.accentPurple.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                ),
-                child: const Icon(
-                  Icons.flag_outlined,
-                  color: AppColors.accentPurple,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      goal.name,
-                      style: AppTypography.titleSmall.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      goal.description ?? 'No description',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: Colors.white.withOpacity(0.6),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: goal.isCompleted
-                          ? Colors.green.withOpacity(0.15)
-                          : AppColors.accentPurple.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                    ),
-                    child: Text(
-                      goal.isCompleted ? 'Complete' : '$percentage%',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: goal.isCompleted ? Colors.green : AppColors.accentPurple,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    daysLeft > 0 ? '$daysLeft days' : 'Overdue',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: daysLeft > 0
-                          ? Colors.white.withOpacity(0.6)
-                          : AppColors.error,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          SlidableAction(
+            onPressed: (_) => _showEditGoalModal(goal),
+            backgroundColor: AppColors.accentPurple,
+            foregroundColor: Colors.white,
+            icon: Icons.edit,
+            label: 'Edit',
+            borderRadius: BorderRadius.circular(20),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Current',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: Colors.white.withOpacity(0.6),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '₹${_formatAmount(goal.currentAmount)}',
-                    style: AppTypography.titleSmall.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'Target',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: Colors.white.withOpacity(0.6),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '₹${_formatAmount(goal.targetAmount)}',
-                    style: AppTypography.titleSmall.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    'Remaining',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: Colors.white.withOpacity(0.6),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '₹${_formatAmount(remaining)}',
-                    style: AppTypography.titleSmall.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            child: LinearProgressIndicator(
-              value: progress.clamp(0.0, 1.0),
-              backgroundColor: AppColors.cardDark,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                goal.isCompleted ? Colors.green : AppColors.accentPurple,
-              ),
-              minHeight: 6,
-            ),
+          SlidableAction(
+            onPressed: (_) => _showDeleteConfirmation(goal),
+            backgroundColor: AppColors.error,
+            foregroundColor: Colors.white,
+            icon: Icons.delete,
+            label: 'Delete',
+            borderRadius: BorderRadius.circular(20),
           ),
         ],
+      ),
+      child: GestureDetector(
+        onTap: () => _showEditGoalModal(goal),
+        onLongPress: () => _showDeleteConfirmation(goal),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.cardSurface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color:
+                          (isCompleted
+                                  ? AppColors.success
+                                  : AppColors.accentPurple)
+                              .withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      isCompleted ? Icons.check_circle : Icons.flag_rounded,
+                      color: isCompleted
+                          ? AppColors.success
+                          : AppColors.accentPurple,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          goal.name,
+                          style: AppTypography.titleMedium.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (goal.description != null &&
+                            goal.description!.isNotEmpty)
+                          Text(
+                            goal.description!,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.textTertiary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    '$percentage%',
+                    style: TextStyle(
+                      color: isCompleted
+                          ? AppColors.success
+                          : AppColors.accentPurple,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '₹${_formatAmount(goal.currentAmount)}',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Target: ₹${_formatAmount(goal.targetAmount)}',
+                    style: TextStyle(
+                      color: AppColors.textTertiary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progress.clamp(0.0, 1.0),
+                  backgroundColor: Colors.white.withOpacity(0.05),
+                  color: isCompleted
+                      ? AppColors.success
+                      : AppColors.accentPurple,
+                  minHeight: 6,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildEmptyState(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl2),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.flag_outlined,
-              size: 120,
-              color: AppColors.accentPurple.withOpacity(0.3),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.flag_outlined,
+            size: 64,
+            color: AppColors.textTertiary.withOpacity(0.3),
+          ),
+          const SizedBox(height: 16),
+          Text("No goals yet", style: TextStyle(color: AppColors.textTertiary)),
+          const SizedBox(height: 8),
+          Text(
+            "Set a target to start saving",
+            style: TextStyle(
+              color: AppColors.textTertiary.withOpacity(0.5),
+              fontSize: 12,
             ),
-            const SizedBox(height: AppSpacing.xl2),
-            Text(
-              'No Goals Yet',
-              style: AppTypography.headlineSmall.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Set your first savings goal to start tracking your progress',
-              textAlign: TextAlign.center,
-              style: AppTypography.bodyLarge.copyWith(
-                color: Colors.white.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl2),
-            ElevatedButton.icon(
-              onPressed: () => showAddGoalModal(context, _addGoal),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accentPurple,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl2,
-                  vertical: AppSpacing.lg,
-                ),
-              ),
-              icon: const Icon(Icons.add),
-              label: const Text('Create Goal'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -457,28 +492,19 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
   Widget _buildErrorState(BuildContext context, String error) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl2),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppColors.error.withOpacity(0.7),
-            ),
-            const SizedBox(height: AppSpacing.lg),
+            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+            const SizedBox(height: 16),
             Text(
               'Error loading goals',
-              style: AppTypography.titleMedium.copyWith(
-                color: Colors.white,
-              ),
+              style: TextStyle(color: AppColors.textPrimary),
             ),
-            const SizedBox(height: AppSpacing.sm),
             Text(
               error,
-              style: AppTypography.bodyMedium.copyWith(
-                color: Colors.white.withOpacity(0.6),
-              ),
+              style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
               textAlign: TextAlign.center,
             ),
           ],

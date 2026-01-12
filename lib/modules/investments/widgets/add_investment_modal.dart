@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:ui';
-import '../../../core/theme/app_theme.dart';
-import '../add_investment_screen.dart';
-import '../../../core/models/mutualfunds.dart';
+import '../../../core/models/investment.dart';
+import '../../../core/providers/investment_provider.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/top_snackbar.dart';
 
 class AddInvestmentModal extends StatefulWidget {
   final Investment? investmentToEdit;
@@ -15,154 +20,473 @@ class AddInvestmentModal extends StatefulWidget {
 }
 
 class _AddInvestmentModalState extends State<AddInvestmentModal>
-    with TickerProviderStateMixin {
-  late AnimationController _animationController;
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _opacityAnimation;
-  late Animation<double> _blurAnimation;
+
+  final _formKey = GlobalKey<FormState>();
+
+  // Controllers
+  final _nameController = TextEditingController();
+  final _symbolController = TextEditingController();
+  final _investedController = TextEditingController();
+  final _currentController = TextEditingController();
+  final _quantityController = TextEditingController();
+  final _searchController = TextEditingController();
+  final _navController = TextEditingController();
+
+  // State
+  InvestmentType _selectedType = InvestmentType.mutualFund;
+  bool _isLoading = false;
+  bool _isSearching = false;
+  List<dynamic> _searchResults = [];
+  String? _selectedSchemeCode;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
+    _scaleAnimation = Tween<double>(
+      begin: 0.9,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _controller.forward();
 
-    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
-    );
-
-    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
-      ),
-    );
-
-    _blurAnimation = Tween<double>(begin: 0.0, end: 15.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
-
-    HapticFeedback.lightImpact();
-    _animationController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _dismissModal() async {
-    HapticFeedback.lightImpact();
-    await _animationController.reverse();
-    if (mounted) {
-      Navigator.of(context).pop();
+    if (widget.investmentToEdit != null) {
+      final i = widget.investmentToEdit!;
+      _selectedType = i.type;
+      _nameController.text = i.name;
+      _symbolController.text = i.symbol ?? '';
+      _investedController.text = i.investedAmount.toString();
+      _currentController.text = i.currentAmount.toString();
+      _quantityController.text = i.quantity.toString();
+      _selectedSchemeCode = i.mutualFundSchemeCode;
+      _navController.text = i.purchasePrice.toString();
     }
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    _nameController.dispose();
+    _symbolController.dispose();
+    _investedController.dispose();
+    _currentController.dispose();
+    _quantityController.dispose();
+    _searchController.dispose();
+    _navController.dispose();
+    super.dispose();
+  }
+
+  // --- MUTUAL FUND API ---
+  Future<void> _searchFunds(String query) async {
+    if (query.length < 3) return;
+    setState(() => _isSearching = true);
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.mfapi.in/mf/search?q=$query'),
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          _searchResults = json.decode(response.body) as List;
+          _isSearching = false;
+        });
+      }
+    } catch (e) {
+      setState(() => _isSearching = false);
+    }
+  }
+
+  Future<void> _fetchNav(String code) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.mfapi.in/mf/$code'),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final nav = data['data'][0]['nav'];
+        setState(() {
+          _navController.text = nav.toString();
+        });
+      }
+    } catch (_) {}
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (didPop) async {
-        if (!didPop) {
-          await _dismissModal();
-        }
-      },
-      child: Material(
-        color: Colors.transparent,
-        child: AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return Stack(
-              children: [
-                BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: _blurAnimation.value,
-                    sigmaY: _blurAnimation.value,
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    color: Colors.black.withOpacity(
-                      0.3 * _opacityAnimation.value,
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          // Blur Backdrop
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(color: Colors.black.withOpacity(0.6)),
+          ),
+          Center(
+            child: ScaleTransition(
+              scale: _scaleAnimation,
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.9,
+                constraints: const BoxConstraints(
+                  maxWidth: 450,
+                  maxHeight: 800,
+                ),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundBlack,
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  // SHADOW REMOVED HERE
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header
+                    Text(
+                      widget.investmentToEdit != null
+                          ? "EDIT ASSET"
+                          : "ADD ASSET",
+                      style: AppTypography.headlineSmall.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: _dismissModal,
-                  child: Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    color: Colors.transparent,
-                  ),
-                ),
-                Center(
-                  child: GestureDetector(
-                    onTap: () {},
-                    child: Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: Opacity(
-                        opacity: _opacityAnimation.value,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                          margin: EdgeInsets.only(
-                            left: AppTheme.spacing20,
-                            right: AppTheme.spacing20,
-                            top: AppTheme.spacing32,
-                            bottom:
-                                AppTheme.spacing32 +
-                                MediaQuery.of(context).viewInsets.bottom,
+                    const SizedBox(height: 24),
+
+                    // Type Pills
+                    SizedBox(
+                      height: 40,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          _buildTypeChip(
+                            "Mutual Fund",
+                            InvestmentType.mutualFund,
                           ),
-                          constraints: BoxConstraints(
-                            maxHeight:
-                                MediaQuery.of(context).size.height * 0.85 -
-                                MediaQuery.of(context).viewInsets.bottom,
-                            maxWidth: 500,
+                          _buildTypeChip("Stock", InvestmentType.stock),
+                          _buildTypeChip("Crypto", InvestmentType.crypto),
+                          _buildTypeChip("Gold", InvestmentType.gold),
+                          _buildTypeChip(
+                            "Real Estate",
+                            InvestmentType.realEstate,
                           ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(28),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.25),
-                                blurRadius: 40,
-                                spreadRadius: 0,
-                                offset: const Offset(0, 20),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // SEARCH (MF ONLY)
+                              if (_selectedType == InvestmentType.mutualFund &&
+                                  widget.investmentToEdit == null) ...[
+                                _buildLabel("SEARCH FUND"),
+                                _buildGlassField(
+                                  controller: _searchController,
+                                  hint: "e.g. SBI Small Cap",
+                                  icon: Icons.search,
+                                  onChanged: _searchFunds,
+                                ),
+                                if (_isSearching)
+                                  const LinearProgressIndicator(
+                                    color: Color(0xFF6366F1),
+                                    backgroundColor: Colors.transparent,
+                                  ),
+                                if (_searchResults.isNotEmpty)
+                                  Container(
+                                    height: 150,
+                                    margin: const EdgeInsets.only(top: 8),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.cardSurface,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: ListView.builder(
+                                      itemCount: _searchResults.length,
+                                      itemBuilder: (ctx, i) => ListTile(
+                                        title: Text(
+                                          _searchResults[i]['schemeName'],
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        subtitle: Text(
+                                          _searchResults[i]['schemeCode']
+                                              .toString(),
+                                          style: TextStyle(
+                                            color: AppColors.textTertiary,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                        onTap: () {
+                                          setState(() {
+                                            _nameController.text =
+                                                _searchResults[i]['schemeName'];
+                                            _selectedSchemeCode =
+                                                _searchResults[i]['schemeCode']
+                                                    .toString();
+                                            _searchResults = [];
+                                            _fetchNav(_selectedSchemeCode!);
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(height: 24),
+                              ],
+
+                              // FIELDS
+                              _buildLabel("DETAILS"),
+                              _buildGlassField(
+                                controller: _nameController,
+                                hint: "Asset Name",
+                                icon: Icons.description_outlined,
                               ),
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                spreadRadius: 0,
-                                offset: const Offset(0, 5),
+                              const SizedBox(height: 12),
+                              if (_selectedType != InvestmentType.mutualFund)
+                                _buildGlassField(
+                                  controller: _symbolController,
+                                  hint: "Symbol (BTC, AAPL)",
+                                  icon: Icons.short_text,
+                                ),
+
+                              const SizedBox(height: 12),
+                              _buildGlassField(
+                                controller: _quantityController,
+                                hint: "Quantity",
+                                icon: Icons.pie_chart_outline,
+                                isNumber: true,
+                              ),
+
+                              const SizedBox(height: 24),
+                              _buildLabel("VALUATION (₹)"),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildGlassField(
+                                      controller: _investedController,
+                                      hint: "Invested Amt",
+                                      isNumber: true,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _buildGlassField(
+                                      controller: _currentController,
+                                      hint: "Current Value",
+                                      isNumber: true,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 32),
+
+                              // ACTIONS
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _saveAsset,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF6366F1),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(25),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Text(
+                                          "SAVE ASSET",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 1.2,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Center(
+                                child: TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text(
+                                    "CANCEL",
+                                    style: TextStyle(
+                                      color: AppColors.textTertiary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(28),
-                            child: AddInvestmentScreen(
-                              investmentToEdit: widget.investmentToEdit,
-                              isModal: true,
-                              onDismiss: _dismissModal,
-                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            );
-          },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeChip(String label, InvestmentType type) {
+    final isSelected = _selectedType == type;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedType = type),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF6366F1) : AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF6366F1)
+                : Colors.white.withOpacity(0.1),
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : AppColors.textSecondary,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
         ),
       ),
     );
   }
+
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, left: 4),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: AppColors.textTertiary,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.0,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassField({
+    required TextEditingController controller,
+    required String hint,
+    IconData? icon,
+    bool isNumber = false,
+    Function(String)? onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: isNumber
+            ? const TextInputType.numberWithOptions(decimal: true)
+            : TextInputType.text,
+        onChanged: onChanged,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.5)),
+          prefixIcon: icon != null
+              ? Icon(icon, color: AppColors.textSecondary, size: 20)
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
+        ),
+        validator: (value) =>
+            (value == null || value.isEmpty) ? "Required" : null,
+      ),
+    );
+  }
+
+  Future<void> _saveAsset() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) return;
+
+        final investment = Investment(
+          id:
+              widget.investmentToEdit?.id ??
+              DateTime.now().millisecondsSinceEpoch.toString(),
+          userId: user.uid,
+          name: _nameController.text.trim(),
+          type: _selectedType,
+          symbol: _symbolController.text.trim().toUpperCase(),
+          mutualFundSchemeCode: _selectedSchemeCode,
+          mutualFundSchemeName: _selectedType == InvestmentType.mutualFund
+              ? _nameController.text
+              : null,
+          quantity: double.parse(_quantityController.text),
+          investedAmount: double.parse(_investedController.text),
+          currentAmount: double.parse(_currentController.text),
+          purchasePrice: double.tryParse(_navController.text) ?? 0.0,
+          startDate: DateTime.now(),
+          lastUpdated: DateTime.now(),
+        );
+
+        final provider = Provider.of<InvestmentProvider>(
+          context,
+          listen: false,
+        );
+        if (widget.investmentToEdit != null) {
+          await provider.updateInvestment(investment);
+        } else {
+          await provider.addInvestment(investment);
+        }
+
+        if (mounted) {
+          Navigator.pop(context);
+          showTopSnackBar(context, 'Asset Saved');
+        }
+      } catch (e) {
+        if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
 }
 
+// Global helper
 Future<void> showAddInvestmentModal(
   BuildContext context, {
   Investment? investmentToEdit,
@@ -170,12 +494,8 @@ Future<void> showAddInvestmentModal(
   return Navigator.of(context).push(
     PageRouteBuilder(
       opaque: false,
-      barrierDismissible: false,
-      pageBuilder: (context, animation, _) {
-        return AddInvestmentModal(investmentToEdit: investmentToEdit);
-      },
-      transitionDuration: const Duration(milliseconds: 400),
-      reverseTransitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (_, __, ___) =>
+          AddInvestmentModal(investmentToEdit: investmentToEdit),
     ),
   );
 }

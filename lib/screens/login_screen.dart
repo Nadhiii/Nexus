@@ -33,8 +33,9 @@ class _LoginScreenState extends State<LoginScreen> {
       } else if (errorMessage.contains('Configuration error')) {
         errorMessage =
             'App configuration issue. Please contact support or use "Use without account" option.';
-      } else if (errorMessage
-          .contains('account-exists-with-different-credential')) {
+      } else if (errorMessage.contains(
+        'account-exists-with-different-credential',
+      )) {
         errorMessage =
             'This email is already registered with a different sign-in method. Please try a different account.';
       } else if (errorMessage.contains('Network error')) {
@@ -53,11 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
             'Sign-in failed. Please try again later or use "Use without account" option.';
       }
 
-      showTopSnackBar(
-        context,
-        errorMessage,
-        isError: true,
-      );
+      showTopSnackBar(context, errorMessage, isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -82,8 +79,8 @@ class _LoginScreenState extends State<LoginScreen> {
               constraints: const BoxConstraints(maxWidth: 420),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl, 
-                  vertical: AppSpacing.xl2
+                  horizontal: AppSpacing.xl,
+                  vertical: AppSpacing.xl2,
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -102,14 +99,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: _isLoading
                           ? null
                           : () => _handle(() async {
-                                await authService.signInWithGoogle();
-                              }),
+                              await authService.signInWithGoogle();
+                            }),
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primaryBlue,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.lg,
+                        ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusMd,
+                          ),
                         ),
                       ),
                       icon: const Icon(Icons.login),
@@ -120,7 +121,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 color: Colors.white,
-                              ))
+                              ),
+                            )
                           : Text(
                               'Continue with Google',
                               style: AppTypography.labelLarge.copyWith(
@@ -133,14 +135,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: _isLoading
                           ? null
                           : () => _handle(() async {
-                                await authService.signInAnonymously();
-                              }),
+                              await authService.signInAnonymously();
+                            }),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.textPrimary,
                         side: BorderSide(color: AppColors.neutral700),
-                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.lg,
+                        ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusMd,
+                          ),
                         ),
                       ),
                       child: _isLoading
@@ -150,7 +156,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 color: AppColors.textPrimary,
-                              ))
+                              ),
+                            )
                           : Text(
                               'Use without account',
                               style: AppTypography.labelLarge.copyWith(

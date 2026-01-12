@@ -1,228 +1,349 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:crypto/crypto.dart';
-import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class FirebaseBackupService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+class BackupSummary {
+  final String id;
+  final DateTime createdAt;
+  final Map<String, int> counts;
 
-  static const int maxBackupVersions = 5; // Keep last 5 backups
-  static const String backupVersion = '1.0.0'; // For future compatibility
+  BackupSummary({
+    required this.id,
+    required this.createdAt,
+    required this.counts,
+  });
+}
 
-  CollectionReference get _backupCollection => _firestore.collection('backups');
+/// Handles snapshot-based backups to Firestore under `users/{uid}/backups/{backupId}`.
+/// Each backup document stores the payload (all user collections) plus counts and metadata.
+class BackupService {
+  BackupService({FirebaseFirestore? firestore, FirebaseAuth? auth})
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _auth = auth ?? FirebaseAuth.instance;
 
-  /// Create a new backup with versioning support
-  Future<void> createBackup(String userId, Map<String, dynamic> data) async {
-    final timestamp = DateTime.now();
-    final backupId = timestamp.millisecondsSinceEpoch.toString();
+  final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
 
-    // Calculate data checksum for integrity verification
-    final dataString = jsonEncode(data);
-    final checksum = sha256.convert(utf8.encode(dataString)).toString();
+  String? get _uid => _auth.currentUser?.uid;
 
-    // Count items in backup
-    final itemCounts = {
-      'transactions': (data['transactions'] as List?)?.length ?? 0,
-      'accounts': (data['accounts'] as List?)?.length ?? 0,
-      'goals': (data['goals'] as List?)?.length ?? 0,
-      'subscriptions': (data['subscriptions'] as List?)?.length ?? 0,
-      'debts': (data['debts'] as List?)?.length ?? 0,
-    };
-
-    final totalItems = itemCounts.values.reduce((a, b) => a + b);
-
-    // Create backup document in versioned subcollection
-    await _backupCollection
-        .doc(userId)
-        .collection('versions')
-        .doc(backupId)
-        .set({
-          'timestamp': FieldValue.serverTimestamp(),
-          'clientTimestamp': timestamp.toIso8601String(),
-          'data': data,
-          'checksum': checksum,
-          'itemCounts': itemCounts,
-          'totalItems': totalItems,
-          'version': backupVersion,
-          'deviceInfo': 'Flutter App', // Could add actual device info
-        });
-
-    // Update the main document with latest backup reference
-    await _backupCollection.doc(userId).set({
-      'latestBackupId': backupId,
-      'lastBackupTimestamp': FieldValue.serverTimestamp(),
-      'lastBackupClientTimestamp': timestamp.toIso8601String(),
-      'totalBackups': FieldValue.increment(1),
-      'itemCounts': itemCounts,
-      'totalItems': totalItems,
-    }, SetOptions(merge: true));
-
-    // Clean up old backups (keep only last maxBackupVersions)
-    await _cleanOldBackups(userId);
+  DocumentReference<Map<String, dynamic>> _backupDoc(String id) {
+    return _firestore
+        .collection('users')
+        .doc(_uid)
+        .collection('backups')
+        .doc(id);
   }
 
-  /// Clean up old backups, keeping only the most recent ones
-  Future<void> _cleanOldBackups(String userId) async {
-    try {
-      final versions = await _backupCollection
-          .doc(userId)
-          .collection('versions')
-          .orderBy('timestamp', descending: true)
-          .get();
+  CollectionReference<Map<String, dynamic>> _collection(String name) {
+    return _firestore.collection('users').doc(_uid).collection(name);
+  }
 
-      if (versions.docs.length > maxBackupVersions) {
-        // Delete oldest backups
-        for (int i = maxBackupVersions; i < versions.docs.length; i++) {
-          await versions.docs[i].reference.delete();
-        }
-      }
-    } catch (e) {
-      print('Error cleaning old backups: $e');
-      // Don't throw - this is not critical
+  // --- AUTO BACKUP / RESTORE PREFS ---
+  static const _prefAutoBackup = 'auto_backup_enabled';
+  static const _prefAutoRestore = 'auto_restore_enabled';
+  static const _prefLastBackupMs = 'last_backup_ms';
+
+  Future<bool> getAutoBackupEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_prefAutoBackup) ?? true;
+  }
+
+  Future<void> setAutoBackupEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefAutoBackup, value);
+  }
+
+  Future<bool> getAutoRestoreEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_prefAutoRestore) ?? true;
+  }
+
+  Future<void> setAutoRestoreEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefAutoRestore, value);
+  }
+
+  Future<DateTime?> getLastBackupAt() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ms = prefs.getInt(_prefLastBackupMs);
+    if (ms == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
+  Future<void> setLastBackupAt(DateTime dt) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_prefLastBackupMs, dt.millisecondsSinceEpoch);
+  }
+
+  /// Create a full backup of all primary collections for the current user.
+  Future<BackupSummary> createBackup() async {
+    if (_uid == null) throw Exception('Not authenticated');
+
+    final collections = <String>[
+      'accounts',
+      'transactions',
+      'budgets',
+      'goals',
+      'debts',
+      'subscriptions',
+      'investments',
+    ];
+
+    final payload = <String, List<Map<String, dynamic>>>{};
+    final counts = <String, int>{};
+
+    for (final col in collections) {
+      final snap = await _collection(col).get();
+      final list = snap.docs
+          .map((d) => {'id': d.id, ...d.data()})
+          .toList(growable: false);
+      payload[col] = list;
+      counts[col] = list.length;
     }
+
+    // Backup bikes with their subcollections (entries and trips)
+    await _backupBikesWithSubcollections(payload, counts);
+
+    final docRef = _firestore
+        .collection('users')
+        .doc(_uid)
+        .collection('backups')
+        .doc();
+    final createdAt = DateTime.now();
+
+    await docRef.set({
+      'createdAt': Timestamp.fromDate(createdAt),
+      'counts': counts,
+      'payload': payload,
+      'schemaVersion': 1,
+    });
+
+    // Update last-backup timestamp
+    await setLastBackupAt(createdAt);
+
+    return BackupSummary(id: docRef.id, createdAt: createdAt, counts: counts);
   }
 
-  /// Restore from the latest backup
-  Future<Map<String, dynamic>?> restoreFromBackup(String userId) async {
-    return await restoreFromSpecificBackup(userId, null);
-  }
-
-  /// Restore from a specific backup version
-  Future<Map<String, dynamic>?> restoreFromSpecificBackup(
-    String userId,
-    String? backupId,
-  ) async {
-    try {
-      String? targetBackupId = backupId;
-
-      // If no specific backup ID, get the latest one
-      if (targetBackupId == null) {
-        final mainDoc = await _backupCollection.doc(userId).get();
-        if (!mainDoc.exists) return null;
-        final mainData = mainDoc.data() as Map<String, dynamic>?;
-        targetBackupId = mainData?['latestBackupId'] as String?;
-        if (targetBackupId == null) return null;
-      }
-
-      // Fetch the backup version
-      final backupDoc = await _backupCollection
-          .doc(userId)
-          .collection('versions')
-          .doc(targetBackupId)
-          .get();
-
-      if (!backupDoc.exists) return null;
-
-      final backupData = backupDoc.data() as Map<String, dynamic>;
-
-      // Verify checksum if available
-      final storedChecksum = backupData['checksum'] as String?;
-      if (storedChecksum != null) {
-        final data = backupData['data'] as Map<String, dynamic>;
-        final dataString = jsonEncode(data);
-        final calculatedChecksum = sha256
-            .convert(utf8.encode(dataString))
-            .toString();
-
-        if (storedChecksum != calculatedChecksum) {
-          throw Exception(
-            'Backup data integrity check failed. Checksum mismatch.',
-          );
-        }
-      }
-
-      return backupData;
-    } catch (e) {
-      print('Error restoring backup: $e');
-      rethrow;
-    }
-  }
-
-  /// Get list of all available backups for a user
-  Future<List<Map<String, dynamic>>> getBackupHistory(String userId) async {
-    try {
-      final versions = await _backupCollection
-          .doc(userId)
-          .collection('versions')
-          .orderBy('timestamp', descending: true)
-          .limit(maxBackupVersions)
-          .get();
-
-      return versions.docs.map((doc) {
-        final data = doc.data();
-        final timestamp = data['timestamp'] as Timestamp?;
-        return {
-          'id': doc.id,
-          'timestamp': timestamp?.toDate(),
-          'clientTimestamp': data['clientTimestamp'],
-          'itemCounts': data['itemCounts'],
-          'totalItems': data['totalItems'],
-          'version': data['version'],
-        };
-      }).toList();
-    } catch (e) {
-      print('Error fetching backup history: $e');
-      return [];
-    }
-  }
-
-  /// Get last backup timestamp
-  Future<DateTime?> getLastBackupTimestamp(String userId) async {
-    try {
-      final doc = await _backupCollection.doc(userId).get();
-      if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>?;
-        final timestamp = data?['lastBackupTimestamp'] as Timestamp?;
-        return timestamp?.toDate();
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /// Get backup statistics
-  Future<Map<String, dynamic>?> getBackupStats(String userId) async {
-    try {
-      final doc = await _backupCollection.doc(userId).get();
-      if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>?;
-        return {
-          'totalBackups': data?['totalBackups'] ?? 0,
-          'lastBackupTimestamp': (data?['lastBackupTimestamp'] as Timestamp?)
-              ?.toDate(),
-          'itemCounts': data?['itemCounts'] ?? {},
-          'totalItems': data?['totalItems'] ?? 0,
-        };
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /// Delete a specific backup
-  Future<void> deleteBackup(String userId, String backupId) async {
-    await _backupCollection
-        .doc(userId)
-        .collection('versions')
-        .doc(backupId)
-        .delete();
-  }
-
-  /// Delete all backups for a user
-  Future<void> deleteAllBackups(String userId) async {
-    final batch = _firestore.batch();
-
-    final versions = await _backupCollection
-        .doc(userId)
-        .collection('versions')
+  /// List backups (latest first).
+  Future<List<BackupSummary>> listBackups() async {
+    if (_uid == null) throw Exception('Not authenticated');
+    final snap = await _firestore
+        .collection('users')
+        .doc(_uid)
+        .collection('backups')
+        .orderBy('createdAt', descending: true)
         .get();
 
-    for (var doc in versions.docs) {
-      batch.delete(doc.reference);
+    return snap.docs
+        .map(
+          (d) => BackupSummary(
+            id: d.id,
+            createdAt: (d['createdAt'] as Timestamp).toDate(),
+            counts: Map<String, int>.from(d['counts'] ?? {}),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  Future<BackupSummary?> latestBackup() async {
+    final list = await listBackups();
+    if (list.isEmpty) return null;
+    return list.first;
+  }
+
+  /// Delete a specific backup.
+  Future<void> deleteBackup(String id) async {
+    if (_uid == null) throw Exception('Not authenticated');
+    await _backupDoc(id).delete();
+  }
+
+  /// Restore from a backup. If [replace] is true, existing collections are cleared first.
+  Future<void> restoreBackup(String backupId, {bool replace = false}) async {
+    if (_uid == null) throw Exception('Not authenticated');
+
+    final doc = await _backupDoc(backupId).get();
+    if (!doc.exists) throw Exception('Backup not found');
+
+    final data = doc.data()!;
+    final payload = Map<String, dynamic>.from(data['payload'] ?? {});
+    final collections = payload.keys.where(
+      (key) => key != 'bikes' && key != 'bike_entries' && key != 'bike_trips',
+    );
+
+    if (replace) {
+      for (final col in collections) {
+        await _deleteCollection(col);
+      }
     }
 
-    batch.delete(_backupCollection.doc(userId));
-    await batch.commit();
+    for (final col in collections) {
+      final List list = payload[col] as List;
+      await _writeBatch(col, list.cast<Map<String, dynamic>>());
+    }
+
+    // Restore bikes with their subcollections
+    await _restoreBikesWithSubcollections(payload, replace);
+  }
+
+  /// Check if the user has any data in primary collections.
+  Future<bool> hasAnyUserData() async {
+    if (_uid == null) return false;
+    final collections = <String>[
+      'accounts',
+      'transactions',
+      'budgets',
+      'goals',
+      'debts',
+      'subscriptions',
+      'investments',
+      'bikes',
+    ];
+
+    for (final col in collections) {
+      final snap = await _collection(col).limit(1).get();
+      if (snap.docs.isNotEmpty) return true;
+    }
+    return false;
+  }
+
+  Future<void> _deleteCollection(String name) async {
+    const chunk = 400;
+    while (true) {
+      final snap = await _collection(name).limit(chunk).get();
+      if (snap.docs.isEmpty) break;
+      final batch = _firestore.batch();
+      for (final d in snap.docs) {
+        batch.delete(d.reference);
+      }
+      await batch.commit();
+    }
+  }
+
+  Future<void> _writeBatch(
+    String name,
+    List<Map<String, dynamic>> items,
+  ) async {
+    const chunk = 400;
+    for (var i = 0; i < items.length; i += chunk) {
+      final batch = _firestore.batch();
+      final part = items.skip(i).take(chunk);
+      for (final item in part) {
+        final id = item['id'] as String?;
+        if (id == null || id.isEmpty) continue;
+        final data = Map<String, dynamic>.from(item)..remove('id');
+        batch.set(_collection(name).doc(id), data, SetOptions(merge: true));
+      }
+      await batch.commit();
+    }
+  }
+
+  /// Backup bikes with their subcollections (entries and trips)
+  Future<void> _backupBikesWithSubcollections(
+    Map<String, List<Map<String, dynamic>>> payload,
+    Map<String, int> counts,
+  ) async {
+    final bikesSnap = await _collection('bikes').get();
+    final bikesList = <Map<String, dynamic>>[];
+    final entriesList = <Map<String, dynamic>>[];
+    final tripsList = <Map<String, dynamic>>[];
+
+    for (final bikeDoc in bikesSnap.docs) {
+      // Add bike itself
+      bikesList.add({'id': bikeDoc.id, ...bikeDoc.data()});
+
+      // Add bike entries
+      final entriesSnap = await _collection(
+        'bikes',
+      ).doc(bikeDoc.id).collection('entries').get();
+      for (final entryDoc in entriesSnap.docs) {
+        entriesList.add({
+          'id': entryDoc.id,
+          'bikeId': bikeDoc.id,
+          ...entryDoc.data(),
+        });
+      }
+
+      // Add bike trips
+      final tripsSnap = await _collection(
+        'bikes',
+      ).doc(bikeDoc.id).collection('trips').get();
+      for (final tripDoc in tripsSnap.docs) {
+        tripsList.add({
+          'id': tripDoc.id,
+          'bikeId': bikeDoc.id,
+          ...tripDoc.data(),
+        });
+      }
+    }
+
+    payload['bikes'] = bikesList;
+    payload['bike_entries'] = entriesList;
+    payload['bike_trips'] = tripsList;
+    counts['bikes'] = bikesList.length;
+    counts['bike_entries'] = entriesList.length;
+    counts['bike_trips'] = tripsList.length;
+  }
+
+  /// Restore bikes with their subcollections
+  Future<void> _restoreBikesWithSubcollections(
+    Map<String, dynamic> payload,
+    bool replace,
+  ) async {
+    if (replace) {
+      await _deleteCollection('bikes');
+    }
+
+    // Restore bikes first
+    final bikesList =
+        (payload['bikes'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    await _writeBatch('bikes', bikesList);
+
+    // Restore bike entries
+    final entriesList =
+        (payload['bike_entries'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    for (final entry in entriesList) {
+      final bikeId = entry['bikeId'] as String?;
+      if (bikeId == null || bikeId.isEmpty) continue;
+
+      final entryId = entry['id'] as String?;
+      if (entryId == null || entryId.isEmpty) continue;
+
+      final data = Map<String, dynamic>.from(entry)
+        ..remove('id')
+        ..remove('bikeId');
+
+      await _firestore
+          .collection('users')
+          .doc(_uid)
+          .collection('bikes')
+          .doc(bikeId)
+          .collection('entries')
+          .doc(entryId)
+          .set(data, SetOptions(merge: true));
+    }
+
+    // Restore bike trips
+    final tripsList =
+        (payload['bike_trips'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    for (final trip in tripsList) {
+      final bikeId = trip['bikeId'] as String?;
+      if (bikeId == null || bikeId.isEmpty) continue;
+
+      final tripId = trip['id'] as String?;
+      if (tripId == null || tripId.isEmpty) continue;
+
+      final data = Map<String, dynamic>.from(trip)
+        ..remove('id')
+        ..remove('bikeId');
+
+      await _firestore
+          .collection('users')
+          .doc(_uid)
+          .collection('bikes')
+          .doc(bikeId)
+          .collection('trips')
+          .doc(tripId)
+          .set(data, SetOptions(merge: true));
+    }
   }
 }
