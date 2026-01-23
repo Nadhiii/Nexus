@@ -33,7 +33,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<BikeProvider>();
       provider.fetchBikes();
-      
+
       // 2. If there's a selected bike, ensure entries are loaded
       final userId = provider.auth.currentUser?.uid;
       if (userId != null && provider.selectedBikeId != null) {

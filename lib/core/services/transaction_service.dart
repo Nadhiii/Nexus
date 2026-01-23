@@ -59,6 +59,47 @@ class TransactionService {
     await batch.commit();
   }
 
+  /// Delete all transactions linked to a specific account
+  Future<int> deleteTransactionsByAccountId(
+    String userId,
+    String accountId,
+  ) async {
+    final snapshot = await _getTransactionsCollection(
+      userId,
+    ).where('accountId', isEqualTo: accountId).get();
+    final snapshot2 = await _getTransactionsCollection(
+      userId,
+    ).where('toAccountId', isEqualTo: accountId).get();
+
+    final batch = _firestore.batch();
+    int count = 0;
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+      count++;
+    }
+    for (final doc in snapshot2.docs) {
+      batch.delete(doc.reference);
+      count++;
+    }
+    if (count > 0) {
+      await batch.commit();
+    }
+    return count;
+  }
+
+  /// Bulk delete transactions by IDs
+  Future<void> deleteTransactionsBatch(
+    String userId,
+    List<String> transactionIds,
+  ) async {
+    if (transactionIds.isEmpty) return;
+    final batch = _firestore.batch();
+    for (final id in transactionIds) {
+      batch.delete(_getTransactionsCollection(userId).doc(id));
+    }
+    await batch.commit();
+  }
+
   Future<void> restoreTransactions(
     String userId,
     List<Transaction> transactions,

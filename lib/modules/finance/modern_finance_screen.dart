@@ -24,12 +24,70 @@ class ModernFinanceScreen extends StatefulWidget {
 
 class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
   WalletView _currentView = WalletView.accounts;
+  bool _isSelectionMode = false;
+  final Set<String> _selectedTransactionIds = {};
 
   @override
   void initState() {
     super.initState();
     if (widget.initialTabIndex == 1) {
       _currentView = WalletView.history;
+    }
+  }
+
+  void _toggleSelectionMode() {
+    setState(() {
+      _isSelectionMode = !_isSelectionMode;
+      if (!_isSelectionMode) {
+        _selectedTransactionIds.clear();
+      }
+    });
+  }
+
+  void _selectAll(List<Transaction> transactions) {
+    setState(() {
+      _selectedTransactionIds.clear();
+      _selectedTransactionIds.addAll(transactions.map((t) => t.id));
+    });
+  }
+
+  void _deleteSelected(TransactionProvider provider) async {
+    if (_selectedTransactionIds.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        title: Text(
+          'Delete ${_selectedTransactionIds.length} Transaction(s)?',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          'This action cannot be undone.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      for (final id in _selectedTransactionIds) {
+        await provider.deleteTransaction(id);
+      }
+      setState(() {
+        _selectedTransactionIds.clear();
+        _isSelectionMode = false;
+      });
     }
   }
 
@@ -57,14 +115,53 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                 flexibleSpace: FlexibleSpaceBar(
                   centerTitle: false,
                   titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
-                  title: Text(
-                    'Wallet',
-                    style: AppTypography.headlineMedium.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                  title: _isSelectionMode
+                      ? Text(
+                          '${_selectedTransactionIds.length} selected',
+                          style: AppTypography.headlineMedium.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        )
+                      : Text(
+                          'Wallet',
+                          style: AppTypography.headlineMedium.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                 ),
+                actions: _currentView == WalletView.history
+                    ? [
+                        if (_isSelectionMode) ...[
+                          IconButton(
+                            icon: const Icon(Icons.select_all),
+                            onPressed: () =>
+                                _selectAll(txnProvider.transactions),
+                            tooltip: 'Select All',
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete,
+                              color: AppColors.error,
+                            ),
+                            onPressed: () => _deleteSelected(txnProvider),
+                            tooltip: 'Delete Selected',
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: _toggleSelectionMode,
+                            tooltip: 'Cancel',
+                          ),
+                        ] else ...[
+                          IconButton(
+                            icon: const Icon(Icons.checklist),
+                            onPressed: _toggleSelectionMode,
+                            tooltip: 'Select Transactions',
+                          ),
+                        ],
+                      ]
+                    : null,
               ),
 
               // 2. TOTAL CASH HERO (Only show on Accounts view, or always? Let's show always for context)
@@ -445,6 +542,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
   ) {
     final isIncome = t.type == TransactionType.income;
     final isTransfer = t.type == TransactionType.transfer;
+    final isSelected = _selectedTransactionIds.contains(t.id);
 
     final color = isTransfer
         ? Colors.blue
@@ -454,72 +552,109 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
         : (isIncome ? Icons.arrow_downward : Icons.arrow_upward);
     final sign = isIncome ? "+" : (isTransfer ? "" : "-");
 
-    return SwipeToDelete(
-      itemKey: ValueKey(t.id),
-      itemId: t.id,
-      itemName: "Transaction",
-      onDelete: () => provider.deleteTransaction(t.id),
-      child: GestureDetector(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ModernAddTransactionScreen(transaction: t),
-          ),
-        ),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.cardSurface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      t.description?.isNotEmpty == true
-                          ? t.description!
-                          : (isTransfer ? "Transfer" : "Transaction"),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      t.categoryId ?? "General",
-                      style: TextStyle(
-                        color: AppColors.textTertiary,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                "$sign₹${t.amount.toStringAsFixed(0)}",
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
+    Widget tile = Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _isSelectionMode && isSelected
+            ? AppColors.primaryBlue.withOpacity(0.2)
+            : AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: _isSelectionMode && isSelected
+              ? AppColors.primaryBlue
+              : Colors.white.withOpacity(0.05),
+          width: _isSelectionMode && isSelected ? 2 : 1,
         ),
       ),
+      child: Row(
+        children: [
+          if (_isSelectionMode) ...[
+            Checkbox(
+              value: isSelected,
+              onChanged: (val) {
+                setState(() {
+                  if (val == true) {
+                    _selectedTransactionIds.add(t.id);
+                  } else {
+                    _selectedTransactionIds.remove(t.id);
+                  }
+                });
+              },
+              activeColor: AppColors.primaryBlue,
+            ),
+            const SizedBox(width: 8),
+          ],
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t.description?.isNotEmpty == true
+                      ? t.description!
+                      : (isTransfer ? "Transfer" : "Transaction"),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  t.categoryId ?? "General",
+                  style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            "$sign₹${t.amount.toStringAsFixed(0)}",
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
     );
+
+    if (_isSelectionMode) {
+      return GestureDetector(
+        onTap: () {
+          setState(() {
+            if (isSelected) {
+              _selectedTransactionIds.remove(t.id);
+            } else {
+              _selectedTransactionIds.add(t.id);
+            }
+          });
+        },
+        child: tile,
+      );
+    } else {
+      return SwipeToDelete(
+        itemKey: ValueKey(t.id),
+        itemId: t.id,
+        itemName: "Transaction",
+        onDelete: () => provider.deleteTransaction(t.id),
+        child: GestureDetector(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ModernAddTransactionScreen(transaction: t),
+            ),
+          ),
+          child: tile,
+        ),
+      );
+    }
   }
 
   Widget _buildDateHeader(DateTime date) {

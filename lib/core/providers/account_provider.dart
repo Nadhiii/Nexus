@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/account.dart';
 import '../services/account_service.dart';
+import '../services/transaction_service.dart';
 
 class AccountProvider with ChangeNotifier {
   final AccountService _accountService = AccountService();
@@ -108,6 +109,13 @@ class AccountProvider with ChangeNotifier {
 
     _setLoading(true);
     try {
+      // First, delete all transactions linked to this account
+      final TransactionService transactionService = TransactionService();
+      final deletedCount = await transactionService
+          .deleteTransactionsByAccountId(user.uid, accountId);
+      print('🗑️ Deleted $deletedCount transaction(s) for account $accountId');
+
+      // Then delete the account
       await _accountService.deleteAccount(user.uid, accountId);
     } catch (e) {
       _setError(e.toString());
