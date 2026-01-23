@@ -9,31 +9,36 @@ class BikeStatsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Monochromatic aesthetic - single accent color
     const accentColor = AppColors.primaryBlue;
+
+    // Use provider's mileage calculation for consistency
+    final avgMileage = provider.getAverageMileage();
+    final totalFuelCost = provider.getTotalFuelCost();
+    final totalFillups = provider.getTotalFillups();
+    final totalDistance = provider.getKmTraveled();
 
     final stats = [
       _StatData(
-        'Mileage',
-        provider.getAverageMileage().toStringAsFixed(1),
+        'Avg Mileage',
+        avgMileage > 0 ? avgMileage.toStringAsFixed(1) : '-',
         'km/l',
         Icons.speed,
       ),
       _StatData(
         'Cost',
-        '₹${provider.getTotalFuelCost().toStringAsFixed(0)}',
+        '₹${totalFuelCost.toStringAsFixed(0)}',
         '',
         Icons.account_balance_wallet_outlined,
       ),
       _StatData(
         'Fill-ups',
-        '${provider.getTotalFillups()}',
+        '$totalFillups',
         '',
         Icons.local_gas_station_outlined,
       ),
       _StatData(
         'Distance',
-        provider.getKmTraveled().toStringAsFixed(0),
+        totalDistance > 0 ? totalDistance.toStringAsFixed(1) : '-',
         'km',
         Icons.add_road,
       ),
@@ -46,7 +51,7 @@ class BikeStatsWidget extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.6, // Wider cards look more modern
+        childAspectRatio: 1.6,
       ),
       itemCount: stats.length,
       itemBuilder: (context, index) {
@@ -54,9 +59,8 @@ class BikeStatsWidget extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E1E1E), // Surface color
+            color: const Color(0xFF1E1E1E),
             borderRadius: BorderRadius.circular(16),
-            // Very subtle border instead of heavy stroke
             border: Border.all(color: AppColors.white.withOpacity(0.05)),
           ),
           child: Column(
@@ -122,6 +126,5 @@ class _StatData {
   final String value;
   final String unit;
   final IconData icon;
-
   _StatData(this.label, this.value, this.unit, this.icon);
 }
