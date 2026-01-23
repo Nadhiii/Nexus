@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../../core/models/bike.dart';
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/services/rto_service.dart';
 
 class AddBikeDialog extends StatefulWidget {
   final Bike? bikeToEdit;
@@ -49,12 +51,82 @@ class _AddBikeDialogState extends State<AddBikeDialog> {
   // ... (Keep _fetchVehicleDetails, _parseDate logic same as before) ...
   // Simplified here for brevity, assume logic block is preserved
 
+  DateTime? _parseDate(String dateString) {
+    if (dateString.isEmpty) return null;
+    try {
+      // Try parsing different date formats
+      // Format: "05-Sep-2027"
+      final formats = [
+        DateFormat('dd-MMM-yyyy'),
+        DateFormat('dd/MM/yyyy'),
+        DateFormat('yyyy-MM-dd'),
+      ];
+
+      for (var format in formats) {
+        try {
+          return format.parse(dateString);
+        } catch (_) {
+          continue;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<void> _fetchVehicleDetails() async {
-    // ... (Paste your existing RTO Fetch Logic here) ...
-    setState(() => _isFetching = true);
-    // Mock delay for UI demo
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isFetching = false);
+    final regNo = _registrationController.text.trim();
+    if (regNo.isEmpty) {
+      setState(() => _errorMessage = 'Enter registration number first');
+      return;
+    }
+
+    setState(() {
+      _isFetching = true;
+      _errorMessage = null;
+      _fetchSuccess = false;
+    });
+
+    try {
+      final rtoService = RTOService();
+      final details = await rtoService.getVehicleDetails(regNo);
+
+      if (details != null) {
+        setState(() {
+          // Store RTO data in hidden vars
+          _fetchedMake = details.make;
+          _fetchedOwner = details.ownerName;
+          _fetchedInsurer = details.insurer;
+          _fetchedFuelType = details.fuelType;
+          _fetchedRtoLocation = details.rtoLocation;
+          _fetchedChassis = details.chassisNumber;
+          _fetchedEngine = details.engineNumber;
+          _fetchedExpiry = _parseDate(details.policyExpiry);
+
+          // Auto-populate visible fields for convenience
+          if (_modelController.text.isEmpty) {
+            _modelController.text = details.model;
+          }
+          if (_yearController.text.isEmpty) {
+            _yearController.text = details.modelYear;
+          }
+
+          _fetchSuccess = true;
+          _isFetching = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'Vehicle not found. Please check number.';
+          _isFetching = false;
+          _fetchSuccess = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Network error. Try again later.';
+        _isFetching = false;
+        _fetchSuccess = false;
+      });
+    }
   }
 
   void _saveBike() {

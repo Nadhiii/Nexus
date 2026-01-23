@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/pdf_statement.dart';
 import '../models/account.dart';
+import '../models/transaction.dart';
 import '../services/pdf_parsing_service.dart';
 import '../services/pdf_password_manager.dart';
+import '../providers/account_provider.dart';
+import '../providers/transaction_provider.dart';
 
-/// State management for PDF import workflow
 class PDFImportProvider extends ChangeNotifier {
   final PDFParsingService _parsingService = PDFParsingService();
 
-  // Current state
   PDFStatement? _currentStatement;
   PDFParseResult? _lastParseResult;
   Map<ExtractedTransaction, DuplicateCheckResult>? _duplicateResults;
@@ -20,7 +23,6 @@ class PDFImportProvider extends ChangeNotifier {
   String _currentPassword = '';
   int _savedPasswordCount = 0;
 
-  // Getters
   PDFStatement? get currentStatement => _currentStatement;
   PDFParseResult? get lastParseResult => _lastParseResult;
   Map<ExtractedTransaction, DuplicateCheckResult>? get duplicateResults =>
@@ -33,27 +35,22 @@ class PDFImportProvider extends ChangeNotifier {
   String get currentPassword => _currentPassword;
   int get savedPasswordCount => _savedPasswordCount;
 
-  /// Count of transactions that will be imported (excluding duplicates)
   int get importableCount {
-    if (_duplicateResults == null) {
+    if (_duplicateResults == null)
       return _currentStatement?.transactionCount ?? 0;
-    }
     return _duplicateResults!.values.where((r) => !r.isDuplicate).length;
   }
 
-  /// Count of detected duplicates
   int get duplicateCount {
     if (_duplicateResults == null) return 0;
     return _duplicateResults!.values.where((r) => r.isDuplicate).length;
   }
 
-  /// Load saved password count on init
   Future<void> loadSavedPasswordCount() async {
     _savedPasswordCount = await PDFPasswordManager.getPasswordCount();
     notifyListeners();
   }
 
-  // Step 1: Parse PDF with optional password
   Future<void> parsePDF(
     String filePath, {
     String? userSelectedBank,
@@ -80,11 +77,8 @@ class PDFImportProvider extends ChangeNotifier {
         _duplicateResults = null;
         _selectedAccount = null;
         _accountToCreate = null;
-
-        // Reload password count in case one was saved
         await loadSavedPasswordCount();
       } else if (result.requiresPassword) {
-        // Show password input dialog
         _showPasswordInput = true;
         _status = 'PDF is password-protected. Please enter the password.';
       } else {
@@ -102,13 +96,11 @@ class PDFImportProvider extends ChangeNotifier {
     }
   }
 
-  /// Set current password and show/hide input
   void setPassword(String password) {
     _currentPassword = password;
     notifyListeners();
   }
 
-  /// Submit password for PDF parsing
   Future<void> submitPassword(
     String filePath, {
     String? userSelectedBank,
@@ -118,37 +110,30 @@ class PDFImportProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-
     await parsePDF(
       filePath,
       userSelectedBank: userSelectedBank,
       userPassword: _currentPassword,
     );
-
     _currentPassword = '';
   }
 
-  /// Hide password input
   void hidePasswordInput() {
     _showPasswordInput = false;
     _currentPassword = '';
     notifyListeners();
   }
 
-  // Step 2: Check for duplicates
   Future<void> checkDuplicates(dynamic existingTransactions) async {
     if (_currentStatement == null) return;
-
     _isLoading = true;
     _status = 'Checking for duplicates...';
     notifyListeners();
-
     try {
       _duplicateResults = await _parsingService.checkDuplicates(
         _currentStatement!.transactions,
         existingTransactions,
       );
-
       _status = 'Duplicate check complete. $duplicateCount duplicates found.';
     } catch (e) {
       _status = 'Error checking duplicates: $e';
@@ -158,8 +143,7 @@ class PDFImportProvider extends ChangeNotifier {
     }
   }
 
-  // Step 3: Select or create account
-  void selectExistingAccount(Account account) {
+  void selectAccount(Account account) {
     _selectedAccount = account;
     _accountToCreate = null;
     _status = 'Account selected: ${account.name}';
@@ -176,10 +160,9 @@ class PDFImportProvider extends ChangeNotifier {
     double initialBalance = 0,
   }) {
     if (_currentStatement == null) return;
-
     _accountToCreate = Account(
-      id: '', // Will be set by provider
-      userId: '', // Will be set by provider
+      id: '',
+      userId: '',
       name: accountName,
       type: accountType,
       balance: initialBalance,
@@ -192,29 +175,11 @@ class PDFImportProvider extends ChangeNotifier {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-
     _selectedAccount = null;
     _status = 'New account configured: $accountName';
     notifyListeners();
   }
 
-  // Step 4: Get importable transactions (excluding duplicates if user chose to skip them)
-  List<ExtractedTransaction> getImportableTransactions({
-    bool skipDuplicates = true,
-  }) {
-    if (_currentStatement == null) return [];
-
-    if (!skipDuplicates || _duplicateResults == null) {
-      return _currentStatement!.transactions;
-    }
-
-    // Filter out duplicates
-    return _currentStatement!.transactions
-        .where((tx) => !(_duplicateResults![tx]?.isDuplicate ?? false))
-        .toList();
-  }
-
-  // Reset for next import
   void reset() {
     _currentStatement = null;
     _lastParseResult = null;
@@ -228,7 +193,143 @@ class PDFImportProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Helper: Get bank list for manual selection
+  Future<void> _confirmImport(
+    BuildContext context,
+    PDFImportProvider provider,
+  ) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Processing...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final accountProvider = context.read<AccountProvider>();
+      final transactionProvider = context.read<TransactionProvider>();
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) throw Exception('User not logged in');
+
+      String accountId;
+      if (provider.accountToCreate != null) {
+        await accountProvider.addAccount(provider.accountToCreate!);
+        final newAccount = accountProvider.accounts.firstWhere(
+          (acc) => acc.name == provider.accountToCreate!.name,
+        );
+        accountId = newAccount.id;
+      } else if (provider.selectedAccount != null) {
+        accountId = provider.selectedAccount!.id;
+      } else {
+        throw Exception('No account selected');
+      }
+
+      int importedCount = 0;
+      int skippedCount = 0;
+      int updatedCount = 0;
+      final now = DateTime.now();
+
+      for (final entry in provider.duplicateResults!.entries) {
+        final pdfTransaction = entry.key;
+        final duplicateCheck = entry.value;
+
+        // --- FAILSAFE TYPE CHECK ---
+        bool isExpense =
+            pdfTransaction.type.toLowerCase() == 'debit' ||
+            pdfTransaction.type.toLowerCase() == 'expense';
+        // Failsafe: if parser missed it, check description manually
+        if (pdfTransaction.description.toUpperCase().contains('UPIOUT')) {
+          isExpense = true;
+        }
+
+        final correctType = isExpense
+            ? TransactionType.expense
+            : TransactionType.income;
+
+        if (duplicateCheck.isDuplicate) {
+          if (duplicateCheck.needsTypeUpdate &&
+              duplicateCheck.matchingTransactionId != null) {
+            final existingTransaction = transactionProvider.transactions
+                .firstWhere(
+                  (t) => t.id == duplicateCheck.matchingTransactionId,
+                );
+
+            final updatedTransaction = Transaction(
+              id: existingTransaction.id,
+              userId: existingTransaction.userId,
+              type: correctType, // Use Failsafe Type
+              amount: existingTransaction.amount,
+              description: existingTransaction.description,
+              categoryId: existingTransaction.categoryId,
+              accountId: existingTransaction.accountId,
+              date: existingTransaction.date,
+              metadata: existingTransaction.metadata,
+              attachments: existingTransaction.attachments,
+              createdAt: existingTransaction.createdAt,
+              updatedAt: now,
+            );
+
+            await transactionProvider.updateTransaction(
+              updatedTransaction,
+              existingTransaction,
+            );
+            updatedCount++;
+          } else {
+            skippedCount++;
+          }
+          continue;
+        }
+
+        final transaction = Transaction(
+          id: '',
+          userId: currentUser.uid,
+          type: correctType, // Use Failsafe Type
+          amount: pdfTransaction.amount,
+          description: pdfTransaction.description,
+          categoryId: null,
+          accountId: accountId,
+          date: DateTime.tryParse(pdfTransaction.date) ?? now,
+          metadata: {'importedFromPDF': true, 'pdfSource': 'bank_statement'},
+          attachments: null,
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        await transactionProvider.addTransaction(transaction);
+        importedCount++;
+      }
+
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Import complete: $importedCount added, $updatedCount updated, $skippedCount skipped.',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+        provider.reset();
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (context.mounted) Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Import failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   static const List<String> supportedBanks = [
     'SBI',
     'HDFC',
@@ -240,6 +341,8 @@ class PDFImportProvider extends ChangeNotifier {
     'IDBI',
     'INDUSIND',
     'YES BANK',
+    'FEDERAL',
+    'FI MONEY',
     'OTHER',
   ];
 }

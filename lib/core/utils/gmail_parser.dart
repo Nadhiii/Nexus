@@ -88,38 +88,46 @@ class GmailParser {
   // --- STRICT FILTERING ---
   static bool _isIgnorable(String lower) {
     // 1. Security / OTPs
-    if (lower.contains('otp') || lower.contains('verification code'))
+    if (lower.contains('otp') || lower.contains('verification code')) {
       return true;
+    }
 
     // 2. Debt / Missed Payments (Flipkart Example)
     if (lower.contains('not made your payment')) return true;
     if (lower.contains('overdue')) return true;
 
     // 3. Low Balance (Surfshark Example)
-    if (lower.contains('balance is too low') || lower.contains('add credit'))
+    if (lower.contains('balance is too low') || lower.contains('add credit')) {
       return true;
+    }
 
     // 4. Future / Requests / Setup
     if (lower.contains('autopay') &&
         (lower.contains('registered') ||
             lower.contains('request') ||
-            lower.contains('setup')))
+            lower.contains('setup'))) {
       return true;
+    }
     if (lower.contains('mandate') && lower.contains('success')) return true;
-    if (lower.contains('request received') || lower.contains('will be debited'))
+    if (lower.contains('request received') ||
+        lower.contains('will be debited')) {
       return true;
+    }
 
     // 5. Failures
     if (lower.contains('payment failed') ||
-        lower.contains('transaction declined'))
+        lower.contains('transaction declined')) {
       return true;
+    }
 
     // 6. Not a Transaction
     if (lower.contains('statement generated') ||
-        lower.contains('total outstanding'))
+        lower.contains('total outstanding')) {
       return true;
-    if (lower.contains('payment due') || lower.contains('bill generated'))
+    }
+    if (lower.contains('payment due') || lower.contains('bill generated')) {
       return true;
+    }
 
     return false;
   }

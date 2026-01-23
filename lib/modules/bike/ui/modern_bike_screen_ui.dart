@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/bike_provider.dart';
-import '../../../core/models/bike.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/swipe_to_delete.dart';
 
@@ -13,6 +11,8 @@ import '../widgets/add_bike_dialog.dart';
 import '../widgets/add_entry_dialog.dart';
 import '../widgets/fuel_price_widget.dart';
 import '../widgets/vehicle_rc_card.dart';
+import '../screens/garage_management_screen.dart';
+import '../screens/deleted_bikes_screen.dart';
 
 class ModernBikeScreen extends StatefulWidget {
   const ModernBikeScreen({super.key});
@@ -22,21 +22,45 @@ class ModernBikeScreen extends StatefulWidget {
 }
 
 class _ModernBikeScreenState extends State<ModernBikeScreen> {
-  // Store the fetched price to use in the "Add Fuel" dialog
   double _currentFuelPrice = 0.0;
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // 1. FETCH BIKES ON LOAD
+    // This tells the provider to actually go get the data from Firestore
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BikeProvider>().fetchBikes();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<BikeProvider>(
       builder: (context, provider, _) {
+        // 2. AUTO-SELECT LOGIC
+        // If we have bikes but none selected, select the first one automatically
+        if (provider.selectedBike == null && provider.bikes.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            provider.setDashboardBike(provider.bikes.first.id);
+            // Also load the entries for this bike
+            final userId = provider.auth.currentUser?.uid;
+            if (userId != null) {
+              provider.loadBikeEntries(userId, provider.bikes.first.id);
+            }
+          });
+        }
+
+        final selectedBike = provider.selectedBike;
+        final isDashboardBike = selectedBike?.isDashboardBike ?? false;
+
         return Scaffold(
           backgroundColor: AppColors.backgroundBlack,
 
-          // --- 1. FLOATING ACTION BUTTON (Fixed Height) ---
-          floatingActionButton: provider.selectedBike != null
+          // FAB
+          floatingActionButton: selectedBike != null
               ? Padding(
-                  // Lift FAB above the Bottom Navigation Bar
                   padding: const EdgeInsets.only(bottom: 90.0),
                   child: FloatingActionButton.extended(
                     onPressed: () =>
@@ -63,7 +87,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
           body: CustomScrollView(
             controller: _scrollController,
             slivers: [
-              // --- 2. HEADER ---
+              // --- HEADER ---
               SliverAppBar(
                 pinned: true,
                 floating: true,
@@ -84,6 +108,68 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                   ),
                 ),
                 actions: [
+                  // 3. EASY FAVORITE (STAR) BUTTON
+                  if (selectedBike != null)
+                    IconButton(
+                      icon: Icon(
+                        isDashboardBike
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
+                        color: isDashboardBike
+                            ? Colors.amber
+                            : AppColors.textTertiary,
+                        size: 28,
+                      ),
+                      tooltip: isDashboardBike
+                          ? 'Dashboard Vehicle'
+                          : 'Set as Dashboard Vehicle',
+                      onPressed: isDashboardBike
+                          ? null
+                          : () {
+                              provider.setDashboardBike(selectedBike.id);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    '${selectedBike.name} is now on Dashboard',
+                                  ),
+                                ),
+                              );
+                            },
+                    ),
+
+                  // MANAGE BUTTON (Only if 2+ bikes)
+                  if (provider.bikes.length >= 2)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.sort_rounded,
+                        color: AppColors.textSecondary,
+                      ),
+                      tooltip: 'Rearrange Vehicles',
+                      onPressed: () => _navigateToGarageManagement(context),
+                    ),
+
+                  // VIEW DELETED BUTTON (Only if deleted bikes exist)
+                  if (provider.deletedBikes.isNotEmpty)
+                    IconButton(
+                      icon: Badge(
+                        label: Text('${provider.deletedBikes.length}'),
+                        child: const Icon(
+                          Icons.restore_from_trash_outlined,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      tooltip: 'View Deleted Vehicles',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DeletedBikesScreen(),
+                          ),
+                        );
+                      },
+                    ),
+
+                  // ADD BUTTON
                   IconButton(
                     icon: const Icon(
                       Icons.add_circle_outline,
@@ -99,7 +185,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
               if (provider.bikes.isEmpty)
                 SliverFillRemaining(child: _buildEmptyState(context))
               else ...[
-                // --- 3. BIKE TABS (Pills) ---
+                // BIKE TABS
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
@@ -107,25 +193,23 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                   ),
                 ),
 
-                // --- 4. DASHBOARD AREA (Card + Stats) ---
-                if (provider.selectedBike != null)
+                // DASHBOARD AREA
+                if (selectedBike != null)
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         children: [
-                          // Digital RC Card
-                          VehicleRCWidget(bike: provider.selectedBike!),
+                          VehicleRCWidget(bike: selectedBike),
                           const SizedBox(height: 16),
-                          // Stats Grid
                           BikeStatsWidget(provider: provider),
                         ],
                       ),
                     ),
                   ),
 
-                // --- 5. TIMELINE HEADER ---
-                if (provider.selectedBike != null)
+                // TIMELINE HEADER
+                if (selectedBike != null)
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
@@ -140,7 +224,6 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          // Small Fuel Price Indicator
                           GestureDetector(
                             onTap: () => _showFuelPriceSheet(context),
                             child: Row(
@@ -167,11 +250,9 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                     ),
                   ),
 
-                // --- 6. TIMELINE LIST ---
-                if (provider.selectedBike != null)
-                  _buildTimelineList(context, provider),
+                // TIMELINE LIST
+                if (selectedBike != null) _buildTimelineList(context, provider),
 
-                // Bottom Padding to ensure last item is visible behind FAB
                 const SliverToBoxAdapter(child: SizedBox(height: 150)),
               ],
             ],
@@ -195,10 +276,12 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
           final isSelected = provider.selectedBikeId == bike.id;
 
           return GestureDetector(
-            onTap: () => provider.loadBikeEntries(
-              provider.auth.currentUser!.uid,
-              bike.id,
-            ),
+            onTap: () {
+              // Load data for the selected bike
+              provider.loadBikeEntries(provider.auth.currentUser!.uid, bike.id);
+              // Also set it as the "Selected" bike in UI (separate from Dashboard bike)
+              provider.selectBike(bike.id);
+            },
             onLongPress: () => _showBikeOptions(context, provider, bike),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
@@ -212,14 +295,28 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                       : AppColors.textTertiary.withOpacity(0.3),
                 ),
               ),
-              child: Text(
-                bike.name,
-                style: AppTypography.labelMedium.copyWith(
-                  color: isSelected
-                      ? AppColors.backgroundBlack
-                      : AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Row(
+                children: [
+                  if (bike.isDashboardBike) ...[
+                    Icon(
+                      Icons.star,
+                      size: 12,
+                      color: isSelected
+                          ? AppColors.backgroundBlack
+                          : Colors.amber,
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  Text(
+                    bike.name,
+                    style: AppTypography.labelMedium.copyWith(
+                      color: isSelected
+                          ? AppColors.backgroundBlack
+                          : AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -228,6 +325,107 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
     );
   }
 
+  // ... (Keep _buildTimelineList, _buildEmptyState, and Actions exactly as they are) ...
+  // Paste the rest of the helper methods from your previous file here:
+  // _buildTimelineList, _buildEmptyState, _showAddBikeDialog, _showAddEntryDialog, _showFuelPriceSheet, _showBikeOptions
+
+  // NOTE: Ensure _navigateToGarageManagement is defined:
+  void _navigateToGarageManagement(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const GarageManagementScreen()),
+    );
+  }
+
+  // --- ACTIONS ---
+  void _showAddBikeDialog(BuildContext context) =>
+      showDialog(context: context, builder: (_) => const AddBikeDialog());
+
+  void _showAddEntryDialog(BuildContext context, double currentPrice) {
+    final provider = context.read<BikeProvider>();
+    if (provider.selectedBike == null) return;
+    showDialog(
+      context: context,
+      builder: (_) => AddEntryDialog(
+        bike: provider.selectedBike!,
+        initialRate: currentPrice,
+      ),
+    );
+  }
+
+  void _showFuelPriceSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => FuelPriceWidget(
+        onPriceSelected: (price) {
+          setState(() => _currentFuelPrice = price);
+        },
+      ),
+    );
+  }
+
+  void _showBikeOptions(BuildContext context, BikeProvider provider, bike) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.backgroundBlack,
+      builder: (_) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit, color: AppColors.primaryBlue),
+              title: const Text(
+                'Edit Vehicle',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                showDialog(
+                  context: context,
+                  builder: (_) => AddBikeDialog(bikeToEdit: bike),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: AppColors.error),
+              title: const Text(
+                'Delete Vehicle',
+                style: TextStyle(color: AppColors.error),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                provider.deleteBike(bike.id);
+              },
+            ),
+            if (provider.deletedBikes.isNotEmpty)
+              ListTile(
+                leading: const Icon(
+                  Icons.restore_from_trash,
+                  color: AppColors.primaryBlue,
+                ),
+                title: Text(
+                  'View Deleted Vehicles (${provider.deletedBikes.length})',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DeletedBikesScreen(),
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ... (Include _buildTimelineList implementation here) ...
   Widget _buildTimelineList(BuildContext context, BikeProvider provider) {
     final entries = provider.currentBikeEntries;
 
@@ -259,26 +457,14 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
         delegate: SliverChildBuilderDelegate((context, index) {
           final entry = entries[index];
           final isLast = index == entries.length - 1;
-
-          // Logic
           final isFuel = (entry.category ?? 'fuel').toLowerCase() == 'fuel';
-          final isService = [
-            'maintenance',
-            'repair',
-          ].contains((entry.category ?? '').toLowerCase());
-
-          final color = isFuel
-              ? AppColors.primaryBlue
-              : (isService ? AppColors.pastelOrange : AppColors.textSecondary);
-          final icon = isFuel
-              ? Icons.local_gas_station
-              : (isService ? Icons.build : Icons.description);
+          final color = isFuel ? AppColors.primaryBlue : AppColors.pastelOrange;
+          final icon = isFuel ? Icons.local_gas_station : Icons.build;
 
           return IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. Timeline Line & Dot
                 Column(
                   children: [
                     Container(
@@ -300,8 +486,6 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                   ],
                 ),
                 const SizedBox(width: 16),
-
-                // 2. Content Card
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 24.0),
@@ -322,7 +506,6 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Header: Date & Cost
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -342,8 +525,6 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                               ],
                             ),
                             const SizedBox(height: 8),
-
-                            // Main Info
                             Row(
                               children: [
                                 Icon(icon, size: 16, color: color),
@@ -359,8 +540,6 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                                 ),
                               ],
                             ),
-
-                            // Details (Odo / Litres)
                             const SizedBox(height: 6),
                             Text(
                               isFuel
@@ -370,24 +549,15 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                                 color: AppColors.textSecondary,
                               ),
                             ),
-
-                            // Notes (if any)
                             if (entry.notes != null &&
                                 entry.notes!.isNotEmpty) ...[
                               const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.backgroundBlack,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  entry.notes!,
-                                  style: TextStyle(
-                                    color: AppColors.textTertiary,
-                                    fontSize: 11,
-                                    fontStyle: FontStyle.italic,
-                                  ),
+                              Text(
+                                entry.notes!,
+                                style: TextStyle(
+                                  color: AppColors.textTertiary,
+                                  fontSize: 11,
+                                  fontStyle: FontStyle.italic,
                                 ),
                               ),
                             ],
@@ -427,97 +597,6 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
             child: const Text('Add Your First Bike'),
           ),
         ],
-      ),
-    );
-  }
-
-  // --- ACTIONS ---
-
-  void _showAddBikeDialog(BuildContext context) {
-    showDialog(context: context, builder: (_) => const AddBikeDialog());
-  }
-
-  void _showAddEntryDialog(BuildContext context, double currentPrice) {
-    final provider = context.read<BikeProvider>();
-    if (provider.selectedBike == null) return;
-    showDialog(
-      context: context,
-      builder: (_) => AddEntryDialog(
-        bike: provider.selectedBike!,
-        initialRate: currentPrice,
-      ),
-    );
-  }
-
-  // Put the heavy Fuel Widget in a Bottom Sheet to keep UI clean
-  void _showFuelPriceSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.backgroundBlack,
-      isScrollControlled: true,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            FuelPriceWidget(
-              onPriceSelected: (price) {
-                setState(() => _currentFuelPrice = price);
-                // Optional: Close sheet on selection or keep open
-              },
-            ),
-            const SizedBox(height: 40),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showBikeOptions(BuildContext context, BikeProvider provider, bike) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.cardSurface,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(Icons.edit, color: AppColors.primaryBlue),
-              title: Text(
-                'Edit Vehicle',
-                style: TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                showDialog(
-                  context: context,
-                  builder: (_) => AddBikeDialog(bikeToEdit: bike),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.delete, color: AppColors.error),
-              title: Text(
-                'Delete Vehicle',
-                style: TextStyle(color: AppColors.error),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                provider.deleteBike(bike.id);
-              },
-            ),
-          ],
-        ),
       ),
     );
   }

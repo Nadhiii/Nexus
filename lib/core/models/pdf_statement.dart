@@ -213,6 +213,7 @@ class DuplicateCheckResult {
   final double confidenceScore; // 0-100
   final String reason; // Why it's a duplicate
   final List<String> matchingFields; // Which fields matched
+  final bool needsTypeUpdate; // If duplicate has wrong transaction type
 
   DuplicateCheckResult({
     required this.isDuplicate,
@@ -220,5 +221,6 @@ class DuplicateCheckResult {
     required this.confidenceScore,
     required this.reason,
     this.matchingFields = const [],
+    this.needsTypeUpdate = false,
   });
 }

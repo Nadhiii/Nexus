@@ -66,10 +66,11 @@ class LocationService {
             placemark.subAdministrativeArea ??
             placemark.administrativeArea;
 
-        if (city.isNotEmpty) {
+        final normalizedCity = city?.trim();
+        if (normalizedCity?.isNotEmpty ?? false) {
           // Save detected city
-          await setSelectedCity(city);
-          return city;
+          await setSelectedCity(normalizedCity!);
+          return normalizedCity;
         }
       }
     } catch (e) {
