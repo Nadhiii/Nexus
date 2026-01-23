@@ -246,11 +246,24 @@ class BikeEntry {
   }
 
   factory BikeEntry.fromMap(Map<String, dynamic> map, String docId) {
+    // Handle date field that could be either Timestamp or String
+    DateTime date;
+    final dateField = map['date'];
+    if (dateField is Timestamp) {
+      date = dateField.toDate();
+    } else if (dateField is String) {
+      // Parse ISO 8601 string
+      date = DateTime.parse(dateField);
+    } else {
+      // Fallback to now if date is missing or invalid
+      date = DateTime.now();
+    }
+
     return BikeEntry(
       id: docId,
       userId: map['userId'] ?? '',
       bikeName: map['bikeName'] ?? '',
-      date: (map['date'] as Timestamp).toDate(),
+      date: date,
       odometerReading: (map['odometerReading'] ?? 0).toDouble(),
       fuelQuantity: (map['fuelQuantity'] ?? 0).toDouble(),
       fuelAmount: (map['fuelAmount'] ?? 0).toDouble(),
