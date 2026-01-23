@@ -299,20 +299,32 @@ class _EditEntryDialogState extends State<EditEntryDialog> {
       return;
     }
 
+    final odometer = double.tryParse(_odometerController.text.trim());
+    final quantity = double.tryParse(_fuelQuantityController.text.trim());
+    final amount = double.tryParse(_fuelAmountController.text.trim());
+
+    if (odometer == null || quantity == null || amount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter valid numeric values')),
+      );
+      return;
+    }
+
     final updatedEntry = BikeEntry(
       id: widget.entry.id,
       userId: widget.entry.userId,
       bikeName: widget.entry.bikeName,
       date: _selectedDate,
-      fuelQuantity: double.parse(_fuelQuantityController.text),
-      fuelAmount: double.parse(_fuelAmountController.text),
-      odometerReading: double.parse(_odometerController.text),
+      fuelQuantity: quantity,
+      fuelAmount: amount,
+      odometerReading: odometer,
       notes: _notesController.text.isEmpty ? null : _notesController.text,
       mileage: widget.entry.mileage, // Keep existing mileage
       category: _selectedCategory,
     );
 
     widget.provider.updateBikeEntry(updatedEntry).then((_) {
+      if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Entry updated successfully')),
