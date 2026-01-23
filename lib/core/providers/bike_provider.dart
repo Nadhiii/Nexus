@@ -63,10 +63,14 @@ class BikeProvider with ChangeNotifier {
 
   // Method to select a specific bike (separate from dashboard bike)
   void selectBike(String bikeId) {
+    print('🏍️ BikeProvider: selectBike called with bikeId: $bikeId');
     _selectedBikeId = bikeId;
     final user = _auth.currentUser;
     if (user != null) {
+      print('🏍️ BikeProvider: Loading entries for user ${user.uid}');
       loadBikeEntries(user.uid, bikeId);
+    } else {
+      print('❌ BikeProvider: No current user!');
     }
     notifyListeners();
   }
@@ -119,6 +123,7 @@ class BikeProvider with ChangeNotifier {
   }
 
   void loadBikeEntries(String userId, String bikeId) {
+    print('📊 BikeProvider: loadBikeEntries called for bikeId: $bikeId');
     _setLoading(true);
     // Cancel previous subscription if it exists
     _entriesSubscription?.cancel();
@@ -127,12 +132,19 @@ class BikeProvider with ChangeNotifier {
         .watchBikeEntries(userId, bikeId)
         .listen(
           (entries) {
+            print('📊 BikeProvider: Received ${entries.length} entries');
+            for (var entry in entries) {
+              print(
+                '  - Entry: ${entry.category}, amount: ${entry.fuelAmount}, qty: ${entry.fuelQuantity}',
+              );
+            }
             _currentBikeEntries = entries;
             _selectedBikeId = bikeId;
             _setLoading(false);
             notifyListeners();
           },
           onError: (e) {
+            print('❌ BikeProvider: Error loading entries: $e');
             _setError('Error loading entries: $e');
             _setLoading(false);
           },
@@ -321,27 +333,38 @@ class BikeProvider with ChangeNotifier {
 
   // Statistics
   double getTotalFuelCost() {
-    return _currentBikeEntries.fold<double>(
+    final total = _currentBikeEntries.fold<double>(
       0,
       (sum, entry) =>
           sum +
           ((entry.category?.toLowerCase() == 'fuel') ? entry.fuelAmount : 0),
     );
+    print(
+      '💰 getTotalFuelCost: $total (from ${_currentBikeEntries.length} entries)',
+    );
+    return total;
   }
 
   double getAverageMileage() {
     final entries = _currentBikeEntries
         .where((e) => e.mileage != null && e.mileage! > 0)
         .toList();
-    if (entries.isEmpty) return 0;
-    return entries.fold<double>(0, (sum, e) => sum + e.mileage!) /
-        entries.length;
+    if (entries.isEmpty) {
+      print('⛽ getAverageMileage: 0 (no entries with mileage)');
+      return 0;
+    }
+    final avg =
+        entries.fold<double>(0, (sum, e) => sum + e.mileage!) / entries.length;
+    print('⛽ getAverageMileage: $avg (from ${entries.length} entries)');
+    return avg;
   }
 
   int getTotalFillups() {
-    return _currentBikeEntries
+    final count = _currentBikeEntries
         .where((e) => e.category?.toLowerCase() == 'fuel')
         .length;
+    print('🔢 getTotalFillups: $count');
+    return count;
   }
 
   double getKmTraveled() {
