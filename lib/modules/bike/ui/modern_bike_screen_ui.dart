@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/models/bike.dart';
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -9,6 +10,7 @@ import '../../../core/widgets/swipe_to_delete.dart';
 import '../widgets/bike_stats_widget.dart';
 import '../widgets/add_bike_dialog.dart';
 import '../widgets/add_entry_dialog.dart';
+import '../widgets/edit_entry_dialog.dart';
 import '../widgets/fuel_price_widget.dart';
 import '../widgets/vehicle_rc_card.dart';
 import '../screens/garage_management_screen.dart';
@@ -359,6 +361,17 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
     );
   }
 
+  void _showEditEntryDialog(
+    BuildContext context,
+    BikeProvider provider,
+    BikeEntry entry,
+  ) {
+    showDialog(
+      context: context,
+      builder: (_) => EditEntryDialog(entry: entry, provider: provider),
+    );
+  }
+
   void _showFuelPriceSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -495,79 +508,84 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 24.0),
-                    child: SwipeToDelete(
-                      itemKey: ValueKey(entry.id),
-                      itemId: entry.id,
-                      itemName: "Entry",
-                      onDelete: () => provider.deleteBikeEntry(entry.id),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.cardSurface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.03),
+                    child: GestureDetector(
+                      onTap: () =>
+                          _showEditEntryDialog(context, provider, entry),
+                      child: SwipeToDelete(
+                        itemKey: ValueKey(entry.id),
+                        itemId: entry.id,
+                        itemName: "Entry",
+                        onDelete: () => provider.deleteBikeEntry(entry.id),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.cardSurface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.03),
+                            ),
                           ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  "${entry.date.day}/${entry.date.month}/${entry.date.year}",
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: AppColors.textTertiary,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    "${entry.date.day}/${entry.date.month}/${entry.date.year}",
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: AppColors.textTertiary,
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  "₹${entry.fuelAmount.toStringAsFixed(0)}",
-                                  style: AppTypography.titleMedium.copyWith(
-                                    color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.bold,
+                                  Text(
+                                    "₹${entry.fuelAmount.toStringAsFixed(0)}",
+                                    style: AppTypography.titleMedium.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(icon, size: 16, color: color),
-                                const SizedBox(width: 8),
-                                Text(
-                                  isFuel
-                                      ? "Fuel Top-up"
-                                      : (entry.category ?? 'Expense')
-                                            .toUpperCase(),
-                                  style: AppTypography.bodyLarge.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              isFuel
-                                  ? "${entry.fuelQuantity} Litres  •  ${entry.odometerReading.toStringAsFixed(0)} km"
-                                  : "Odometer: ${entry.odometerReading.toStringAsFixed(0)} km",
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.textSecondary,
+                                ],
                               ),
-                            ),
-                            if (entry.notes != null &&
-                                entry.notes!.isNotEmpty) ...[
                               const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(icon, size: 16, color: color),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    isFuel
+                                        ? "Fuel Top-up"
+                                        : (entry.category ?? 'Expense')
+                                              .toUpperCase(),
+                                    style: AppTypography.bodyLarge.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
                               Text(
-                                entry.notes!,
-                                style: TextStyle(
-                                  color: AppColors.textTertiary,
-                                  fontSize: 11,
-                                  fontStyle: FontStyle.italic,
+                                isFuel
+                                    ? "${entry.fuelQuantity} Litres  •  ${entry.odometerReading.toStringAsFixed(0)} km${entry.mileage != null ? '  •  ${entry.mileage!.toStringAsFixed(1)} km/l' : ''}"
+                                    : "Odometer: ${entry.odometerReading.toStringAsFixed(0)} km",
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: AppColors.textSecondary,
                                 ),
                               ),
+                              if (entry.notes != null &&
+                                  entry.notes!.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  entry.notes!,
+                                  style: TextStyle(
+                                    color: AppColors.textTertiary,
+                                    fontSize: 11,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
                       ),
                     ),
