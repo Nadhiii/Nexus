@@ -66,7 +66,7 @@ class LocationService {
             placemark.subAdministrativeArea ??
             placemark.administrativeArea;
 
-        if (city != null && city.isNotEmpty) {
+        if (city.isNotEmpty) {
           // Save detected city
           await setSelectedCity(city);
           return city;
