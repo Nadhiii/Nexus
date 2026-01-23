@@ -56,6 +56,7 @@ dependencies:
   flutter_sms_inbox: ^1.0.4
   file_picker: ^10.3.8
   pdf: ^3.10.8
+  pdfx: ^2.4.2
   
   # Location & Geolocation
   geolocator: ^14.0.2
@@ -71,6 +72,7 @@ dependencies:
   googleapis_auth: ^1.6.0
   extension_google_sign_in_as_googleapis_auth: ^2.0.13
   flutter_dotenv: ^6.0.0
+  syncfusion_flutter_pdf: ^26.2.14
 
   # Android Auto - Package not available on pub.dev
   # car_app: ^0.6.0 # Commented out - not available

@@ -796,9 +796,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   Widget _buildDateHeader(DateTime date) {
     String label = DateFormat('MMM dd').format(date);
     final now = DateTime.now();
-    if (_isSameDay(date, now))
+    if (_isSameDay(date, now)) {
       label = "Today";
-    else if (_isSameDay(date, now.subtract(const Duration(days: 1))))
+    } else if (_isSameDay(date, now.subtract(const Duration(days: 1))))
       label = "Yesterday";
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),

@@ -76,7 +76,8 @@ class BackupService {
   }
 
   /// Create a full backup of all primary collections for the current user.
-  Future<BackupSummary> createBackup() async {
+  /// If [isAutoBackup] is true, deletes old auto-backups and marks this one as auto.
+  Future<BackupSummary> createBackup({bool isAutoBackup = false}) async {
     if (_uid == null) throw Exception('Not authenticated');
 
     final collections = <String>[
@@ -104,6 +105,11 @@ class BackupService {
     // Backup bikes with their subcollections (entries and trips)
     await _backupBikesWithSubcollections(payload, counts);
 
+    // If auto-backup, delete previous auto-backup first
+    if (isAutoBackup) {
+      await _deleteOldAutoBackups();
+    }
+
     final docRef = _firestore
         .collection('users')
         .doc(_uid)
@@ -116,6 +122,7 @@ class BackupService {
       'counts': counts,
       'payload': payload,
       'schemaVersion': 1,
+      'isAutoBackup': isAutoBackup,
     });
 
     // Update last-backup timestamp
@@ -155,6 +162,97 @@ class BackupService {
   Future<void> deleteBackup(String id) async {
     if (_uid == null) throw Exception('Not authenticated');
     await _backupDoc(id).delete();
+  }
+
+  /// Delete all previous auto-backups (keeps only manual backups)
+  Future<void> _deleteOldAutoBackups() async {
+    if (_uid == null) return;
+
+    final snap = await _firestore
+        .collection('users')
+        .doc(_uid)
+        .collection('backups')
+        .where('isAutoBackup', isEqualTo: true)
+        .get();
+
+    final batch = _firestore.batch();
+    for (final doc in snap.docs) {
+      batch.delete(doc.reference);
+    }
+
+    if (snap.docs.isNotEmpty) {
+      await batch.commit();
+      print('Deleted ${snap.docs.length} old auto-backup(s)');
+    }
+  }
+
+  /// Perform auto-backup if enabled and last backup is older than 24 hours.
+  /// Replaces the previous auto-backup.
+  Future<void> performAutoBackupIfNeeded() async {
+    if (_uid == null) return;
+
+    final isEnabled = await getAutoBackupEnabled();
+    if (!isEnabled) {
+      print('[Auto-Backup] Disabled, skipping');
+      return;
+    }
+
+    final lastBackup = await getLastBackupAt();
+    final now = DateTime.now();
+
+    if (lastBackup != null) {
+      final hoursSinceLastBackup = now.difference(lastBackup).inHours;
+      if (hoursSinceLastBackup < 24) {
+        print(
+          '[Auto-Backup] Last backup was $hoursSinceLastBackup hours ago, skipping',
+        );
+        return;
+      }
+    }
+
+    print('[Auto-Backup] Creating auto-backup...');
+    try {
+      await createBackup(isAutoBackup: true);
+      print('[Auto-Backup] Successfully created auto-backup');
+    } catch (e) {
+      print('[Auto-Backup] Error: $e');
+    }
+  }
+
+  /// Perform auto-restore if enabled and user has no data.
+  /// Restores latest backup in merge mode.
+  /// Returns true if data was restored, false otherwise.
+  Future<bool> performAutoRestoreIfNeeded() async {
+    if (_uid == null) return false;
+
+    final isEnabled = await getAutoRestoreEnabled();
+    if (!isEnabled) {
+      print('[Auto-Restore] Disabled, skipping');
+      return false;
+    }
+
+    final hasData = await hasAnyUserData();
+    if (hasData) {
+      print('[Auto-Restore] User has data, skipping');
+      return false;
+    }
+
+    print('[Auto-Restore] No data found, checking for backups...');
+    final latest = await latestBackup();
+    if (latest == null) {
+      print('[Auto-Restore] No backups available');
+      return false;
+    }
+
+    print('[Auto-Restore] Restoring latest backup (merge mode)...');
+    try {
+      await restoreBackup(latest.id, replace: false);
+      print('[Auto-Restore] Successfully restored backup');
+      return true;
+    } catch (e) {
+      print('[Auto-Restore] Error: $e');
+      return false;
+    }
   }
 
   /// Restore from a backup. If [replace] is true, existing collections are cleared first.
@@ -248,8 +346,16 @@ class BackupService {
     final tripsList = <Map<String, dynamic>>[];
 
     for (final bikeDoc in bikesSnap.docs) {
+      final bikeData = bikeDoc.data();
+      // Only backup active bikes (skip deleted ones)
+      final isActive = bikeData['isActive'] ?? true;
+      if (!isActive) {
+        print('Skipping deleted bike: ${bikeData['name']}');
+        continue;
+      }
+
       // Add bike itself
-      bikesList.add({'id': bikeDoc.id, ...bikeDoc.data()});
+      bikesList.add({'id': bikeDoc.id, ...bikeData});
 
       // Add bike entries
       final entriesSnap = await _collection(
@@ -293,57 +399,128 @@ class BackupService {
       await _deleteCollection('bikes');
     }
 
-    // Restore bikes first
-    final bikesList =
+    // Get bikes list - handle both old and new backup formats
+    List<Map<String, dynamic>> bikesList =
         (payload['bikes'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-    await _writeBatch('bikes', bikesList);
 
-    // Restore bike entries
+    // Check if we have bike entries - extract unique bikes from entries if needed
     final entriesList =
         (payload['bike_entries'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+    print(
+      'Restore: Found ${bikesList.length} bikes and ${entriesList.length} entries',
+    );
+
+    // If we have entries but no bikes, try to reconstruct bikes from entries
+    if (bikesList.isEmpty && entriesList.isNotEmpty) {
+      print(
+        'Warning: No bikes found but have entries. Creating bikes from entries...',
+      );
+      final bikeMap = <String, Map<String, dynamic>>{};
+
+      for (final entry in entriesList) {
+        final bikeId = entry['bikeId'] as String?;
+        final bikeName = entry['bikeName'] as String?;
+
+        if (bikeId != null && !bikeMap.containsKey(bikeId)) {
+          // Create a basic bike structure from the entry
+          bikeMap[bikeId] = {
+            'id': bikeId,
+            'name': bikeName ?? 'Restored Bike',
+            'make': '',
+            'model': '',
+            'year': 2020,
+            'registrationNumber': '',
+            'currentOdometer': entry['odometerReading'] ?? 0,
+            'isActive': true,
+            'createdAt': entry['date'] ?? Timestamp.now(),
+            'userId': entry['userId'] ?? '',
+            'isDashboardBike': false,
+            'displayOrder': 0,
+          };
+        }
+      }
+
+      bikesList = bikeMap.values.toList();
+      print('Reconstructed ${bikesList.length} bikes from entries');
+    }
+
+    // Restore bikes as-is (preserving their isActive status)
+    print('Restoring ${bikesList.length} bikes...');
+    await _writeBatch('bikes', bikesList);
+
+    // Restore bike entries - wait a bit to ensure bikes are written
+    print('Restoring ${entriesList.length} bike entries...');
+    int entriesRestored = 0;
     for (final entry in entriesList) {
       final bikeId = entry['bikeId'] as String?;
-      if (bikeId == null || bikeId.isEmpty) continue;
+      if (bikeId == null || bikeId.isEmpty) {
+        print('  Skipping entry: missing bikeId');
+        continue;
+      }
 
       final entryId = entry['id'] as String?;
-      if (entryId == null || entryId.isEmpty) continue;
+      if (entryId == null || entryId.isEmpty) {
+        print('  Skipping entry: missing entryId');
+        continue;
+      }
 
       final data = Map<String, dynamic>.from(entry)
         ..remove('id')
         ..remove('bikeId');
 
-      await _firestore
-          .collection('users')
-          .doc(_uid)
-          .collection('bikes')
-          .doc(bikeId)
-          .collection('entries')
-          .doc(entryId)
-          .set(data, SetOptions(merge: true));
+      try {
+        await _firestore
+            .collection('users')
+            .doc(_uid)
+            .collection('bikes')
+            .doc(bikeId)
+            .collection('entries')
+            .doc(entryId)
+            .set(data, SetOptions(merge: true));
+        entriesRestored++;
+      } catch (e) {
+        print('  Error restoring entry $entryId: $e');
+      }
     }
+    print('Successfully restored $entriesRestored entries');
 
     // Restore bike trips
     final tripsList =
         (payload['bike_trips'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    print('Restoring ${tripsList.length} bike trips...');
+    int tripsRestored = 0;
     for (final trip in tripsList) {
       final bikeId = trip['bikeId'] as String?;
-      if (bikeId == null || bikeId.isEmpty) continue;
+      if (bikeId == null || bikeId.isEmpty) {
+        print('  Skipping trip: missing bikeId');
+        continue;
+      }
 
       final tripId = trip['id'] as String?;
-      if (tripId == null || tripId.isEmpty) continue;
+      if (tripId == null || tripId.isEmpty) {
+        print('  Skipping trip: missing tripId');
+        continue;
+      }
 
       final data = Map<String, dynamic>.from(trip)
         ..remove('id')
         ..remove('bikeId');
 
-      await _firestore
-          .collection('users')
-          .doc(_uid)
-          .collection('bikes')
-          .doc(bikeId)
-          .collection('trips')
-          .doc(tripId)
-          .set(data, SetOptions(merge: true));
+      try {
+        await _firestore
+            .collection('users')
+            .doc(_uid)
+            .collection('bikes')
+            .doc(bikeId)
+            .collection('trips')
+            .doc(tripId)
+            .set(data, SetOptions(merge: true));
+        tripsRestored++;
+      } catch (e) {
+        print('  Error restoring trip $tripId: $e');
+      }
     }
+    print('Successfully restored $tripsRestored trips');
   }
 }

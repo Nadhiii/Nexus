@@ -178,7 +178,8 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                   }
 
                   final bike =
-                      bikeProvider.selectedBike ?? bikeProvider.bikes.first;
+                      bikeProvider.getDashboardBike() ??
+                      bikeProvider.bikes.first;
                   final mileage = bikeProvider.getAverageMileage();
 
                   return Padding(
@@ -543,44 +544,51 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            // Glass Icon
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: color.withOpacity(0.1),
-                                shape: BoxShape.circle,
+                        Expanded(
+                          child: Row(
+                            children: [
+                              // Glass Icon
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(icon, color: color, size: 16),
                               ),
-                              child: Icon(icon, color: color, size: 16),
-                            ),
-                            const SizedBox(width: 12),
-                            // Details
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  t.description?.isNotEmpty == true
-                                      ? t.description!
-                                      : (isTransfer
-                                            ? "Transfer"
-                                            : "Transaction"),
-                                  style: AppTypography.bodyLarge.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              const SizedBox(width: 12),
+                              // Details
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      t.description?.isNotEmpty == true
+                                          ? t.description!
+                                          : (isTransfer
+                                                ? "Transfer"
+                                                : "Transaction"),
+                                      style: AppTypography.bodyLarge.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    // NEW: Pretty Date Format
+                                    Text(
+                                      _formatPrettyDate(t.date),
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: AppColors.textTertiary,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 2),
-                                // NEW: Pretty Date Format
-                                Text(
-                                  _formatPrettyDate(t.date),
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: AppColors.textTertiary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         // Amount
                         Text(
                           "$sign₹${t.amount.toStringAsFixed(0)}",

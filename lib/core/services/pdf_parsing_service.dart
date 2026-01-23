@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart'; // REQUIRED LIBRARY
 import '../models/pdf_statement.dart';
 import '../models/transaction.dart';
 import 'pdf_parser.dart';
@@ -7,7 +8,6 @@ import 'duplicate_detector.dart';
 import 'pdf_password_manager.dart';
 
 /// Main PDF Parsing Service
-/// Handles file reading, text extraction, and delegating to specific bank parsers
 class PDFParsingService extends ChangeNotifier {
   PDFParseResult? _lastParseResult;
   PDFImportProgress? _importProgress;
@@ -16,157 +16,103 @@ class PDFParsingService extends ChangeNotifier {
   PDFImportProgress? get importProgress => _importProgress;
 
   /// Parse a PDF file with optional password
-  /// Tries saved passwords first, then user-provided password
-  /// Returns PDFParseResult with parsed statement or errors
   Future<PDFParseResult> parsePDF(
     String filePath, {
     String? userSelectedBank,
     String? userProvidedPassword,
   }) async {
     try {
-      // 1. Read PDF file
       if (kDebugMode) print('[PDFParsingService] Reading PDF: $filePath');
 
-      // Try to extract text, attempting saved passwords first if needed
       String pdfText = '';
       String? workingPassword;
 
+      // 1. Attempt Extraction (Try User Password -> Saved Passwords -> No Password)
       try {
-        pdfText = await _extractTextFromPDF(
-          filePath,
-          password: userProvidedPassword,
-        );
+        // A. Try User Provided Password First
         if (userProvidedPassword != null) {
+          pdfText = await _extractTextWithLibrary(
+            filePath,
+            userProvidedPassword,
+          );
           workingPassword = userProvidedPassword;
         }
-      } catch (e) {
-        // If extraction failed and no password provided, try saved passwords
-        if (userProvidedPassword == null) {
-          final savedPasswords = await PDFPasswordManager.getSavedPasswords();
+        // B. Try No Password (or Saved Passwords)
+        else {
+          try {
+            // Try open without password
+            pdfText = await _extractTextWithLibrary(filePath, "");
+          } catch (e) {
+            // If failed, it might be password protected. Try saved passwords.
+            final savedPasswords = await PDFPasswordManager.getSavedPasswords();
+            bool unlocked = false;
 
-          if (savedPasswords.isNotEmpty && kDebugMode) {
-            print(
-              '[PDFParsingService] Trying ${savedPasswords.length} saved passwords...',
-            );
-          }
-
-          for (final savedPassword in savedPasswords) {
-            try {
-              pdfText = await _extractTextFromPDF(
-                filePath,
-                password: savedPassword,
-              );
-              workingPassword = savedPassword;
-              if (kDebugMode) {
-                print(
-                  '[PDFParsingService] Successfully unlocked PDF with saved password',
-                );
+            for (final saved in savedPasswords) {
+              try {
+                pdfText = await _extractTextWithLibrary(filePath, saved);
+                workingPassword = saved;
+                unlocked = true;
+                break;
+              } catch (_) {
+                continue;
               }
-              break;
-            } catch (e) {
-              if (kDebugMode) {
-                print(
-                  '[PDFParsingService] Saved password failed, trying next...',
-                );
-              }
-              continue;
             }
+
+            if (!unlocked) throw Exception("Password required");
           }
         }
-
-        // If still no success and we tried everything, indicate password needed
-        if (pdfText.isEmpty &&
-            userProvidedPassword == null &&
-            workingPassword == null) {
-          return PDFParseResult(
-            success: false,
-            errors: ['PDF is password-protected. Please provide the password.'],
-            requiresPassword: true,
-            requiresManualBankSelection: true,
-          );
-        }
-
-        if (pdfText.isEmpty) {
-          rethrow;
-        }
+      } catch (e) {
+        // If we still can't open it, report password required
+        return PDFParseResult(
+          success: false,
+          errors: ['PDF is password-protected. Please provide the password.'],
+          requiresPassword: true,
+          requiresManualBankSelection: true,
+        );
       }
 
       if (pdfText.isEmpty) {
         return PDFParseResult(
           success: false,
-          errors: [
-            'Failed to extract text from PDF. File may be corrupted or image-based.',
-          ],
-          requiresManualBankSelection: true,
-        );
-      }
-
-      // 2. Detect bank (unless user provided one)
-      String? detectedBank =
-          userSelectedBank ?? GenericPDFParser.detectBank(pdfText);
-
-      final requiresManualSelection = detectedBank == null;
-      if (requiresManualSelection && userSelectedBank == null) {
-        return PDFParseResult(
-          success: false,
-          errors: [
-            'Could not automatically detect bank. Please select manually.',
-          ],
-          warnings: [
-            'Statement format not recognized. You can still proceed with manual selection.',
-          ],
-          requiresManualBankSelection: true,
-        );
-      }
-
-      if (kDebugMode) print('[PDFParsingService] Detected bank: $detectedBank');
-
-      // 3. Extract metadata
-      final metadata = GenericPDFParser.extractMetadata(pdfText, detectedBank);
-
-      if (metadata.accountNumber == null) {
-        if (kDebugMode) {
-          print(
-            '[PDFParsingService] Warning: Could not extract account number',
-          );
-        }
-      }
-
-      // 4. Extract transactions
-      final transactions = GenericPDFParser.extractTransactions(pdfText);
-
-      if (transactions.isEmpty) {
-        return PDFParseResult(
-          success: false,
-          errors: [
-            'No transactions found in PDF. Please verify the file format.',
-          ],
+          errors: ['Extracted text is empty. File may be image-based/scanned.'],
           requiresManualBankSelection: true,
         );
       }
 
       if (kDebugMode) {
         print(
-          '[PDFParsingService] Extracted ${transactions.length} transactions',
+          '[PDFParsingService] Success! Extracted ${pdfText.length} characters.',
         );
       }
 
-      // 5. Save working password for future use
-      if (workingPassword != null) {
-        await PDFPasswordManager.savePassword(workingPassword);
-        if (kDebugMode) {
-          print('[PDFParsingService] Password saved for future PDFs');
-        }
+      // 2. Detect bank
+      String? detectedBank =
+          userSelectedBank ?? GenericPDFParser.detectBank(pdfText);
+
+      // 3. Extract Metadata & Transactions
+      final metadata = GenericPDFParser.extractMetadata(pdfText, detectedBank);
+      final transactions = GenericPDFParser.extractTransactions(pdfText);
+
+      if (transactions.isEmpty) {
+        return PDFParseResult(
+          success: false,
+          errors: ['No transactions found. Verify the statement format.'],
+          requiresManualBankSelection: true,
+        );
       }
 
-      // 6. Create PDFStatement
+      // 4. Save working password if successful
+      if (workingPassword != null) {
+        await PDFPasswordManager.savePassword(workingPassword);
+      }
+
       final statement = PDFStatement(
-        id: '${detectedBank}_${DateTime.now().millisecondsSinceEpoch}',
+        id: '${detectedBank ?? "Unknown"}_${DateTime.now().millisecondsSinceEpoch}',
         filePath: filePath,
         metadata: metadata,
         transactions: transactions,
         uploadedAt: DateTime.now(),
-        fileHash: '', // TODO: Add file hashing
+        fileHash: '',
       );
 
       _lastParseResult = PDFParseResult(
@@ -180,98 +126,61 @@ class PDFParsingService extends ChangeNotifier {
       notifyListeners();
       return _lastParseResult!;
     } catch (e) {
-      if (kDebugMode) print('[PDFParsingService] Error: $e');
-
+      if (kDebugMode) print('[PDFParsingService] Critical Error: $e');
       _lastParseResult = PDFParseResult(
         success: false,
         errors: ['Error parsing PDF: $e'],
         requiresManualBankSelection: true,
       );
-
       notifyListeners();
       return _lastParseResult!;
     }
   }
 
-  /// Extract text from PDF file with optional password support
-  /// This requires installing and using a PDF library
-  /// Recommended: Use pdfx or syncfusion_flutter_pdf for better text extraction
-  Future<String> _extractTextFromPDF(
-    String filePath, {
-    String? password,
-  }) async {
+  /// REAL IMPLEMENTATION using Syncfusion PDF
+  Future<String> _extractTextWithLibrary(
+    String filePath,
+    String password,
+  ) async {
     try {
-      // Check if file exists
-      final file = File(filePath);
-      if (!file.existsSync()) {
-        throw Exception('PDF file not found: $filePath');
-      }
+      final File file = File(filePath);
+      final List<int> bytes = await file.readAsBytes();
 
-      // TODO: Implement actual PDF text extraction using:
-      // 1. pdfx package - Simple and lightweight
-      // 2. syncfusion_flutter_pdf - More powerful, requires license
-      // 3. pdf package - For reading PDF structure
+      // Load the PDF document
+      final PdfDocument document = PdfDocument(
+        inputBytes: bytes,
+        password: password,
+      );
 
-      // For now, we return empty string as placeholder
-      // Integration steps:
-      // 1. Add package to pubspec.yaml: pdfx: ^2.5.0
-      // 2. Read PDF bytes: final bytes = await file.readAsBytes();
-      // 3. For password-protected PDFs, use the password parameter:
-      //    final pdfDocument = PdfDocument(
-      //      bytes: bytes,
-      //      password: password,
-      //    );
-      // 4. Extract text from pages
-      // 5. Return the extracted text
+      // Extract text from all pages
+      String text = PdfTextExtractor(document).extractText();
 
-      if (kDebugMode) {
-        print('[PDFParsingService] PDF file size: ${file.lengthSync()} bytes');
-        if (password != null) {
-          print('[PDFParsingService] Attempting extraction with password');
-        }
-        print(
-          '[PDFParsingService] PDF text extraction not implemented. Install pdfx package for full support.',
-        );
-      }
+      // Dispose the document
+      document.dispose();
 
-      return '';
+      return text;
     } catch (e) {
-      if (kDebugMode) {
-        print('[PDFParsingService] Error extracting PDF text: $e');
+      // Syncfusion throws specific errors for passwords
+      if (e.toString().toLowerCase().contains('password')) {
+        throw Exception("Password required");
       }
       rethrow;
     }
   }
 
-  /// Generate warnings for data quality
+  // --- PRESERVED HELPER METHODS ---
+
   List<String> _generateWarnings(
     PDFStatementMetadata metadata,
     List<ExtractedTransaction> transactions,
   ) {
     final warnings = <String>[];
-
-    if (metadata.accountNumber == null) {
-      warnings.add(
-        'Account number not found in PDF. You may need to verify it.',
-      );
-    }
-
-    if (metadata.accountHolder == null) {
-      warnings.add('Account holder name not found. Please enter it manually.');
-    }
-
-    if (transactions.isEmpty) {
-      warnings.add('No transactions detected. Verify PDF format.');
-    }
-
-    if (metadata.statementPeriodStart == null) {
-      warnings.add('Statement period not detected. Check dates manually.');
-    }
-
+    if (metadata.accountNumber == null)
+      warnings.add('Account number not detected.');
+    if (transactions.isEmpty) warnings.add('No transactions detected.');
     return warnings;
   }
 
-  /// Check for duplicates in batch before import
   Future<Map<ExtractedTransaction, DuplicateCheckResult>> checkDuplicates(
     List<ExtractedTransaction> pdfTransactions,
     List<Transaction> existingTransactions,
@@ -280,16 +189,12 @@ class PDFParsingService extends ChangeNotifier {
       totalTransactions: pdfTransactions.length,
       currentStatus: 'Checking for duplicates...',
     );
-
-    final results = await DuplicateDetector.checkBatch(
+    return await DuplicateDetector.checkBatch(
       pdfTransactions,
       existingTransactions,
     );
-
-    return results;
   }
 
-  /// Update import progress
   void _updateProgress({
     required int totalTransactions,
     int processedTransactions = 0,
@@ -310,15 +215,5 @@ class PDFParsingService extends ChangeNotifier {
           : 0,
     );
     notifyListeners();
-  }
-}
-
-// Extension for null safety
-extension NullSafety<T> on T? {
-  R? let<R>(R Function(T) fn) {
-    if (this != null) {
-      return fn(this as T);
-    }
-    return null;
   }
 }

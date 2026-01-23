@@ -11,11 +11,47 @@ class BikeService {
         .collection('users')
         .doc(userId)
         .collection('bikes')
+        .where('isActive', isEqualTo: true)
+        .orderBy('displayOrder')
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            return Bike.fromFirestore(doc.data(), doc.id);
-          }).toList();
+          print('BikeService: Found ${snapshot.docs.length} active bikes');
+          final bikes = <Bike>[];
+          for (var doc in snapshot.docs) {
+            try {
+              bikes.add(Bike.fromFirestore(doc));
+            } catch (e) {
+              print('Error parsing bike ${doc.id}: $e');
+              // Skip bikes that fail to parse
+            }
+          }
+          return bikes;
+        });
+  }
+
+  // Watch ALL bikes including deleted ones (for restore functionality)
+  Stream<List<Bike>> watchAllBikes(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('bikes')
+        .orderBy('displayOrder')
+        .snapshots()
+        .map((snapshot) {
+          print(
+            'BikeService: Found ${snapshot.docs.length} total bikes (including deleted)',
+          );
+          final bikes = <Bike>[];
+          for (var doc in snapshot.docs) {
+            try {
+              final bike = Bike.fromFirestore(doc);
+              print('  - ${bike.name}: isActive=${bike.isActive}');
+              bikes.add(bike);
+            } catch (e) {
+              print('Error parsing bike ${doc.id}: $e');
+            }
+          }
+          return bikes;
         });
   }
 
@@ -31,7 +67,7 @@ class BikeService {
         .snapshots()
         .map((snapshot) {
           return snapshot.docs.map((doc) {
-            return BikeEntry.fromFirestore(doc.data(), doc.id);
+            return BikeEntry.fromFirestore(doc);
           }).toList();
         });
   }
@@ -54,6 +90,21 @@ class BikeService {
         .collection('bikes')
         .doc(bike.id)
         .update(bike.toJson());
+  }
+
+  // Get a single bike by ID
+  Future<Bike?> getBike(String userId, String bikeId) async {
+    final doc = await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('bikes')
+        .doc(bikeId)
+        .get();
+
+    if (doc.exists) {
+      return Bike.fromFirestore(doc);
+    }
+    return null;
   }
 
   // Delete a bike

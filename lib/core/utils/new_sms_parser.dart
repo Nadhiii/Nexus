@@ -53,14 +53,16 @@ class NewSmsParser {
     // --- CATEGORY A: SECURITY / AUTH ---
     if (lower.contains('otp') ||
         lower.contains('code is') ||
-        lower.contains('verification'))
+        lower.contains('verification')) {
       return true;
+    }
 
     // --- CATEGORY B: FAILURE / DECLINED ---
     if (lower.contains('failed') ||
         lower.contains('declined') ||
-        lower.contains('could not'))
+        lower.contains('could not')) {
       return true;
+    }
     if (lower.contains('reversed')) return true;
 
     // --- CATEGORY C: FUTURE / REQUESTS (The "Autopay" Problem) ---
@@ -78,8 +80,9 @@ class NewSmsParser {
     if (lower.contains('mandate') && lower.contains('success')) return true;
 
     // Example: "We've registered a as requested auto-payment"
-    if (lower.contains('registered') && lower.contains('auto-payment'))
+    if (lower.contains('registered') && lower.contains('auto-payment')) {
       return true;
+    }
 
     // Example: "e-mandate declined" (Caught by 'declined' above, but good to be specific)
     if (lower.contains('e-mandate')) return true;
@@ -87,17 +90,20 @@ class NewSmsParser {
     if (lower.contains('autopay') &&
         (lower.contains('registered') ||
             lower.contains('set') ||
-            lower.contains('setup')))
+            lower.contains('setup'))) {
       return true;
+    }
     if (lower.contains('limit') &&
-        (lower.contains('set') || lower.contains('updated')))
+        (lower.contains('set') || lower.contains('updated'))) {
       return true;
+    }
 
     // --- CATEGORY E: MARKETING ---
     if (lower.contains('offer') ||
         lower.contains('apply now') ||
-        lower.contains('eligible'))
+        lower.contains('eligible')) {
       return true;
+    }
 
     return false;
   }

@@ -132,34 +132,22 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
   Future<void> _maybeAutoBackupAndRestore() async {
     final service = BackupService();
     try {
-      final autoBackup = await service.getAutoBackupEnabled();
-      final autoRestore = await service.getAutoRestoreEnabled();
+      // Auto-restore first (if user has no data)
+      final restored = await service.performAutoRestoreIfNeeded();
 
-      // Auto-backup if last backup older than 24h
-      if (autoBackup) {
-        final latest = await service.latestBackup();
-        final lastBackupAt =
-            latest?.createdAt ?? await service.getLastBackupAt();
-        final now = DateTime.now();
-        final needsBackup =
-            lastBackupAt == null || now.difference(lastBackupAt).inHours >= 24;
-        if (needsBackup) {
-          await service.createBackup();
-        }
+      // If data was restored, reload all providers to refresh their caches
+      if (restored && mounted) {
+        print('[Backup] Data restored, refreshing providers...');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _initializeProviders(context);
+        });
+        return;
       }
 
-      // Auto-restore if user has zero data and a backup exists
-      if (autoRestore) {
-        final hasData = await service.hasAnyUserData();
-        if (!hasData) {
-          final latest = await service.latestBackup();
-          if (latest != null) {
-            await service.restoreBackup(latest.id, replace: false);
-          }
-        }
-      }
+      // Then auto-backup (creates single auto-backup, replaces old one)
+      await service.performAutoBackupIfNeeded();
     } catch (e) {
-      debugPrint('Auto backup/restore skipped: $e');
+      debugPrint('Auto backup/restore error: $e');
     }
   }
 

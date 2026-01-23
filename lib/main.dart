@@ -20,6 +20,7 @@ import 'core/providers/goal_provider.dart';
 import 'core/providers/category_provider.dart';
 import 'core/providers/bike_provider.dart';
 import 'core/providers/fuel_price_provider.dart';
+import 'core/providers/pdf_import_provider.dart';
 import 'core/auth/auth_gate.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -52,6 +53,7 @@ class NexusApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
         ChangeNotifierProvider(create: (_) => BikeProvider()),
         ChangeNotifierProvider(create: (_) => FuelPriceProvider()),
+        ChangeNotifierProvider(create: (_) => PDFImportProvider()),
         ChangeNotifierProxyProvider<GmailProvider, NewNboxProvider>(
           create: (context) => NewNboxProvider(),
           update: (context, gmailProvider, nboxProvider) {

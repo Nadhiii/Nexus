@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/swipe_to_delete.dart';
@@ -11,6 +10,7 @@ import '../../core/providers/transaction_provider.dart';
 import '../accounts/modern_add_account_screen.dart';
 import '../accounts/modern_account_detail_screen.dart';
 import '../transactions/modern_add_transaction_screen.dart';
+import '../pdf_import/pdf_import_screen.dart';
 
 enum WalletView { accounts, history }
 
@@ -58,7 +58,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                   centerTitle: false,
                   titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
                   title: Text(
-                    'My Wallet',
+                    'Wallet',
                     style: AppTypography.headlineMedium.copyWith(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w800,
@@ -289,7 +289,33 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
     }
     if (provider.transactions.isEmpty) {
       return SliverFillRemaining(
-        child: _buildEmptyState("No Recent Activity", Icons.receipt),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildEmptyState("No Recent Activity", Icons.receipt),
+            const SizedBox(height: 32),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const PDFImportScreen(),
+                  ),
+                ),
+                icon: const Icon(Icons.picture_as_pdf),
+                label: const Text('Import from PDF'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryBlue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -297,12 +323,48 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
       ..sort((a, b) => b.date.compareTo(a.date));
 
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(0, 10, 0, 140),
+      padding: const EdgeInsets.fromLTRB(0, 10, 0, 200),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
-          final t = transactions[index];
+          // Add PDF import button at the top
+          if (index == 0) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const PDFImportScreen(),
+                      ),
+                    ),
+                    icon: const Icon(Icons.picture_as_pdf),
+                    label: const Text('Import from PDF'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryBlue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            );
+          }
+
+          // Adjust index for transactions list
+          final txnIndex = index - 1;
+          final t = transactions[txnIndex];
           final showHeader =
-              index == 0 || !_isSameDay(t.date, transactions[index - 1].date);
+              txnIndex == 0 ||
+              !_isSameDay(t.date, transactions[txnIndex - 1].date);
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,7 +373,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
               _buildTransactionTile(context, t, provider),
             ],
           );
-        }, childCount: transactions.length),
+        }, childCount: transactions.length + 1), // +1 for the PDF button
       ),
     );
   }

@@ -124,7 +124,7 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
     // Scooter keywords
     const scooter = [
       'activa',
-      'dio',
+      'Honda dio',
       'jupiter',
       'maestro',
       'access',

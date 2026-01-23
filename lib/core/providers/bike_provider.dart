@@ -10,6 +10,7 @@ class BikeProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   List<Bike> _bikes = [];
+  List<Bike> _deletedBikes = [];
   List<BikeEntry> _currentBikeEntries = [];
   List<Trip> _currentTrips = [];
   String? _selectedBikeId;
@@ -18,10 +19,12 @@ class BikeProvider with ChangeNotifier {
 
   // Stream subscriptions for proper cleanup
   StreamSubscription? _bikesSubscription;
+  StreamSubscription? _deletedBikesSubscription;
   StreamSubscription? _entriesSubscription;
   StreamSubscription? _tripsSubscription;
 
   List<Bike> get bikes => _bikes;
+  List<Bike> get deletedBikes => _deletedBikes;
   List<BikeEntry> get currentBikeEntries => _currentBikeEntries;
   List<Trip> get currentTrips => _currentTrips;
   String? get selectedBikeId => _selectedBikeId;
@@ -45,7 +48,27 @@ class BikeProvider with ChangeNotifier {
     final user = _auth.currentUser;
     if (user != null) {
       loadBikes(user.uid);
+      loadDeletedBikes(user.uid);
     }
+  }
+
+  // Public method to manually fetch bikes
+  void fetchBikes() {
+    final user = _auth.currentUser;
+    if (user != null) {
+      loadBikes(user.uid);
+      loadDeletedBikes(user.uid);
+    }
+  }
+
+  // Method to select a specific bike (separate from dashboard bike)
+  void selectBike(String bikeId) {
+    _selectedBikeId = bikeId;
+    final user = _auth.currentUser;
+    if (user != null) {
+      loadBikeEntries(user.uid, bikeId);
+    }
+    notifyListeners();
   }
 
   void loadBikes(String userId) {
@@ -70,6 +93,27 @@ class BikeProvider with ChangeNotifier {
           onError: (e) {
             _setError('Error loading bikes: $e');
             _setLoading(false);
+          },
+        );
+  }
+
+  void loadDeletedBikes(String userId) {
+    // Cancel previous subscription if it exists
+    _deletedBikesSubscription?.cancel();
+
+    _deletedBikesSubscription = _bikeService
+        .watchAllBikes(userId)
+        .listen(
+          (allBikes) {
+            _deletedBikes = allBikes.where((b) => !b.isActive).toList();
+            print('BikeProvider: Found ${_deletedBikes.length} deleted bikes');
+            for (var bike in _deletedBikes) {
+              print('  Deleted: ${bike.name} (${bike.id})');
+            }
+            notifyListeners();
+          },
+          onError: (e) {
+            print('Error loading deleted bikes: $e');
           },
         );
   }
@@ -157,7 +201,17 @@ class BikeProvider with ChangeNotifier {
     }
     _setLoading(true);
     try {
-      await _bikeService.deleteBike(user.uid, bikeId);
+      // Soft delete: set isActive to false instead of permanently deleting
+      final bikeIndex = _bikes.indexWhere((b) => b.id == bikeId);
+      if (bikeIndex != -1) {
+        final deletedBike = _bikes[bikeIndex].copyWith(isActive: false);
+        await _bikeService.updateBike(user.uid, deletedBike);
+        // Remove from active list and add to deleted list
+        _bikes.removeAt(bikeIndex);
+        _deletedBikes.add(deletedBike);
+        notifyListeners();
+        print('Bike deleted: $bikeId');
+      }
       if (_selectedBikeId == bikeId) {
         _selectedBikeId = null;
         _currentBikeEntries = [];
@@ -165,6 +219,50 @@ class BikeProvider with ChangeNotifier {
       _setError(null);
     } catch (e) {
       _setError('Error deleting bike: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> restoreBike(String bikeId) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      _setError('User not logged in');
+      return;
+    }
+    _setLoading(true);
+    try {
+      // Get the bike and restore it by setting isActive to true
+      final bike = await _bikeService.getBike(user.uid, bikeId);
+
+      if (bike != null) {
+        await _bikeService.updateBike(user.uid, bike.copyWith(isActive: true));
+      }
+      _setError(null);
+    } catch (e) {
+      _setError('Error restoring bike: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> permanentlyDeleteBike(String bikeId) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      _setError('User not logged in');
+      return;
+    }
+    _setLoading(true);
+    try {
+      // Permanently delete the bike document
+      await _bikeService.deleteBike(user.uid, bikeId);
+      if (_selectedBikeId == bikeId) {
+        _selectedBikeId = null;
+        _currentBikeEntries = [];
+      }
+      _setError(null);
+    } catch (e) {
+      _setError('Error permanently deleting bike: $e');
     } finally {
       _setLoading(false);
     }
@@ -243,10 +341,19 @@ class BikeProvider with ChangeNotifier {
   }
 
   double getKmTraveled() {
-    if (_currentBikeEntries.isEmpty) return 0;
-    final oldest = _currentBikeEntries.last.odometerReading;
-    final newest = _currentBikeEntries.first.odometerReading;
-    return (newest - oldest).abs();
+    double totalDistance = 0;
+
+    // Calculate from odometer difference if we have entries
+    if (_currentBikeEntries.isNotEmpty) {
+      final oldest = _currentBikeEntries.last.odometerReading;
+      final newest = _currentBikeEntries.first.odometerReading;
+      totalDistance += (newest - oldest).abs();
+    }
+
+    // Add trip distances
+    totalDistance += getTotalDistanceFromTrips();
+
+    return totalDistance;
   }
 
   double calculateMileage(double fuelQuantity, double kmTraveled) {
@@ -322,9 +429,11 @@ class BikeProvider with ChangeNotifier {
 
   void clear() {
     _bikesSubscription?.cancel();
+    _deletedBikesSubscription?.cancel();
     _entriesSubscription?.cancel();
     _tripsSubscription?.cancel();
     _bikes = [];
+    _deletedBikes = [];
     _currentBikeEntries = [];
     _currentTrips = [];
     _selectedBikeId = null;
@@ -333,9 +442,98 @@ class BikeProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Set a bike as the dashboard bike (only one can be dashboard bike)
+  Future<void> setDashboardBike(String bikeId) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      _setError('User not logged in');
+      return;
+    }
+    _setLoading(true);
+    try {
+      // Remove dashboard flag from all bikes
+      for (var bike in _bikes) {
+        if (bike.isDashboardBike) {
+          await _bikeService.updateBike(
+            user.uid,
+            bike.copyWith(isDashboardBike: false),
+          );
+        }
+      }
+
+      // Set new dashboard bike
+      final bikeIndex = _bikes.indexWhere((b) => b.id == bikeId);
+      if (bikeIndex != -1) {
+        await _bikeService.updateBike(
+          user.uid,
+          _bikes[bikeIndex].copyWith(isDashboardBike: true),
+        );
+      }
+      _setError(null);
+    } catch (e) {
+      _setError('Error setting dashboard bike: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Get the dashboard bike
+  Bike? getDashboardBike() {
+    try {
+      return _bikes.firstWhere((b) => b.isDashboardBike);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Reorder bikes - moves bike at [fromIndex] to [toIndex]
+  Future<void> reorderBikes(int fromIndex, int toIndex) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      _setError('User not logged in');
+      return;
+    }
+
+    // Perform local reordering for immediate UI update
+    if (fromIndex < _bikes.length && toIndex < _bikes.length) {
+      final List<Bike> reorderedBikes = List.from(_bikes);
+      final bike = reorderedBikes.removeAt(fromIndex);
+      reorderedBikes.insert(toIndex, bike);
+      _bikes = reorderedBikes;
+      notifyListeners();
+    }
+
+    _setLoading(true);
+    try {
+      // Update display order for all bikes
+      for (int i = 0; i < _bikes.length; i++) {
+        final bike = _bikes[i];
+        if (bike.displayOrder != i) {
+          await _bikeService.updateBike(
+            user.uid,
+            bike.copyWith(displayOrder: i),
+          );
+        }
+      }
+      _setError(null);
+    } catch (e) {
+      _setError('Error reordering bikes: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Get bikes sorted by display order
+  List<Bike> getBikesSortedByOrder() {
+    final sorted = List<Bike>.from(_bikes);
+    sorted.sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
+    return sorted;
+  }
+
   @override
   void dispose() {
     _bikesSubscription?.cancel();
+    _deletedBikesSubscription?.cancel();
     _entriesSubscription?.cancel();
     _tripsSubscription?.cancel();
     super.dispose();
