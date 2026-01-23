@@ -31,7 +31,14 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
     // 1. FETCH BIKES ON LOAD
     // This tells the provider to actually go get the data from Firestore
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BikeProvider>().fetchBikes();
+      final provider = context.read<BikeProvider>();
+      provider.fetchBikes();
+      
+      // 2. If there's a selected bike, ensure entries are loaded
+      final userId = provider.auth.currentUser?.uid;
+      if (userId != null && provider.selectedBikeId != null) {
+        provider.loadBikeEntries(userId, provider.selectedBikeId!);
+      }
     });
   }
 
@@ -41,13 +48,12 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
       builder: (context, provider, _) {
         // 2. AUTO-SELECT LOGIC
         // If we have bikes but none selected, select the first one automatically
-        if (provider.selectedBike == null && provider.bikes.isNotEmpty) {
+        if (provider.selectedBikeId == null && provider.bikes.isNotEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            provider.setDashboardBike(provider.bikes.first.id);
-            // Also load the entries for this bike
             final userId = provider.auth.currentUser?.uid;
             if (userId != null) {
-              provider.loadBikeEntries(userId, provider.bikes.first.id);
+              // Use selectBike instead of setDashboardBike to ensure entries load
+              provider.selectBike(provider.bikes.first.id);
             }
           });
         }

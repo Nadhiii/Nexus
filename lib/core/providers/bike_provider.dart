@@ -323,7 +323,9 @@ class BikeProvider with ChangeNotifier {
   double getTotalFuelCost() {
     return _currentBikeEntries.fold<double>(
       0,
-      (sum, entry) => sum + (entry.category == 'fuel' ? entry.fuelAmount : 0),
+      (sum, entry) =>
+          sum +
+          ((entry.category?.toLowerCase() == 'fuel') ? entry.fuelAmount : 0),
     );
   }
 
@@ -337,7 +339,9 @@ class BikeProvider with ChangeNotifier {
   }
 
   int getTotalFillups() {
-    return _currentBikeEntries.where((e) => e.category == 'fuel').length;
+    return _currentBikeEntries
+        .where((e) => e.category?.toLowerCase() == 'fuel')
+        .length;
   }
 
   double getKmTraveled() {
