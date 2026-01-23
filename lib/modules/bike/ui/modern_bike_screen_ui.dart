@@ -368,7 +368,9 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
   ) {
     showDialog(
       context: context,
-      builder: (_) => EditEntryDialog(entry: entry, provider: provider),
+      barrierDismissible: false,
+      builder: (dialogContext) =>
+          EditEntryDialog(entry: entry, provider: provider),
     );
   }
 

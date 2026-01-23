@@ -240,15 +240,9 @@ class PDFImportProvider extends ChangeNotifier {
         final pdfTransaction = entry.key;
         final duplicateCheck = entry.value;
 
-        // --- FAILSAFE TYPE CHECK ---
-        bool isExpense =
-            pdfTransaction.type.toLowerCase() == 'debit' ||
-            pdfTransaction.type.toLowerCase() == 'expense';
-        // Failsafe: if parser missed it, check description manually
-        if (pdfTransaction.description.toUpperCase().contains('UPIOUT')) {
-          isExpense = true;
-        }
-
+        // --- TYPE FIX ---
+        // Ensure strictly checks for 'expense' string from parser
+        final bool isExpense = pdfTransaction.type.toLowerCase() == 'expense';
         final correctType = isExpense
             ? TransactionType.expense
             : TransactionType.income;
@@ -264,7 +258,7 @@ class PDFImportProvider extends ChangeNotifier {
             final updatedTransaction = Transaction(
               id: existingTransaction.id,
               userId: existingTransaction.userId,
-              type: correctType, // Use Failsafe Type
+              type: correctType,
               amount: existingTransaction.amount,
               description: existingTransaction.description,
               categoryId: existingTransaction.categoryId,
@@ -290,7 +284,7 @@ class PDFImportProvider extends ChangeNotifier {
         final transaction = Transaction(
           id: '',
           userId: currentUser.uid,
-          type: correctType, // Use Failsafe Type
+          type: correctType,
           amount: pdfTransaction.amount,
           description: pdfTransaction.description,
           categoryId: null,

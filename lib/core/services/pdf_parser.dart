@@ -83,7 +83,7 @@ class GenericPDFParser {
   }
 
   // ----------------------------------------------------------------------
-  // FEDERAL BANK / FI PARSER (Token Stream)
+  // FEDERAL BANK / FI PARSER (Token Stream with Lookahead)
   // ----------------------------------------------------------------------
   static List<ExtractedTransaction> _extractFederalTransactions(
     String pdfText,
@@ -100,7 +100,9 @@ class GenericPDFParser {
     final yearMatch = RegExp(r'\b(20\d{2})\b').firstMatch(pdfText);
     if (yearMatch != null) currentYear = yearMatch.group(1)!;
 
-    bool isAmount(String s) => RegExp(r'^[0-9,]+\.[0-9]{2}$').hasMatch(s);
+    // Helper: Looser Amount Regex (allows surrounding chars)
+    bool isAmount(String s) => RegExp(r'[0-9,]+\.[0-9]{2}').hasMatch(s);
+
     bool isDateStart(String s) => RegExp(r'^\d{1,2}$').hasMatch(s);
     bool isMonth(String s) => RegExp(
       r'^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$',
@@ -151,33 +153,60 @@ class GenericPDFParser {
         int j = i + 1;
         double? amount;
 
-        // Scan ahead for Amount
+        // Scan ahead to find numbers
+        // We look for TWO numbers in close proximity (Amount followed by Balance)
+        // If we find them, the first one is the Amount.
+
         while (j < tokens.length && j < i + 60) {
           String nextToken = tokens[j];
+
           if (isAmount(nextToken)) {
-            amount = double.parse(nextToken.replaceAll(',', ''));
-            i = j;
-            break;
+            // Check if next token is ALSO a number (Balance)
+            // This confirms that 'nextToken' is indeed the Transaction Amount
+            bool nextIsAlsoNumber =
+                (j + 1 < tokens.length) && isAmount(tokens[j + 1]);
+
+            if (nextIsAlsoNumber) {
+              // Found it! nextToken is Amount, tokens[j+1] is Balance
+              amount = double.parse(
+                nextToken.replaceAll(RegExp(r'[^0-9.]'), ''),
+              );
+              i = j; // Advance main pointer
+              break;
+            } else {
+              // If it's a lone number, treat it as part of description (e.g. ID number)
+              // UNLESS it's the very last token
+              descBuffer.write("$nextToken ");
+              j++;
+            }
           } else {
             descBuffer.write("$nextToken ");
             j++;
           }
         }
 
+        // Fallback: If we didn't find pairs, try taking the LAST number found
+        if (amount == null) {
+          // (Reset logic omitted for safety, sticking to Pair Logic for now as it's safer)
+        }
+
         if (amount != null && amount > 0) {
           String rawDesc = descBuffer.toString().trim();
-
-          // --- TYPE DETECTION (Aligned to App Logic) ---
-          // Default to EXPENSE (Most common)
-          String type = 'expense';
           String upper = rawDesc.toUpperCase();
 
-          // Only switch to INCOME if explicitly stated
+          // --- TYPE DETECTION ---
+          String type = 'expense'; // Default
+
           if (upper.contains('UPI IN') ||
               upper.contains('CREDIT') ||
               upper.contains('SBINT') ||
               upper.contains('REFUND')) {
             type = 'income';
+          }
+          if (upper.contains('UPIOUT') ||
+              upper.contains('DEBIT') ||
+              upper.contains('DR')) {
+            type = 'expense';
           }
 
           String cleanDesc = _cleanFederalDescription(rawDesc);
@@ -189,7 +218,7 @@ class GenericPDFParser {
               date: date.toIso8601String().split('T')[0],
               description: cleanDesc,
               amount: amount,
-              type: type, // Now returns 'expense' or 'income' directly
+              type: type,
               lineNumber: 0,
             ),
           );

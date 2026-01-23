@@ -133,9 +133,10 @@ class BikeProvider with ChangeNotifier {
         .listen(
           (entries) {
             print('📊 BikeProvider: Received ${entries.length} entries');
-            for (var entry in entries) {
+            for (var i = 0; i < entries.length; i++) {
+              final entry = entries[i];
               print(
-                '  - Entry: ${entry.category}, amount: ${entry.fuelAmount}, qty: ${entry.fuelQuantity}',
+                '  [$i] ${entry.date.toIso8601String()} | ${entry.category}, ₹${entry.fuelAmount}, ${entry.fuelQuantity}L',
               );
             }
             _currentBikeEntries = entries;
