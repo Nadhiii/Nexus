@@ -623,8 +623,9 @@ class ReportExportService {
     return transactions.where((t) {
       if (startDate != null && t.date.isBefore(startDate)) return false;
       if (endDate != null &&
-          t.date.isAfter(endDate.add(const Duration(days: 1))))
+          t.date.isAfter(endDate.add(const Duration(days: 1)))) {
         return false;
+      }
       return true;
     }).toList();
   }

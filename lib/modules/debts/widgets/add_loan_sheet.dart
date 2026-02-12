@@ -415,7 +415,7 @@ class _AddLoanModalState extends State<AddLoanModal>
                                         ),
                                         const Spacer(),
                                         Text(
-                                          "${_paymentDay}${_getDaySuffix(_paymentDay)}",
+                                          "$_paymentDay${_getDaySuffix(_paymentDay)}",
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,

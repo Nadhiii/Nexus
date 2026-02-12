@@ -39,8 +39,9 @@ class GeminiAIService implements BaseAIService {
 
       // Add conversation history
       for (final msg in history) {
-        if (msg.role == MessageRole.system)
+        if (msg.role == MessageRole.system) {
           continue; // Gemini handles system differently
+        }
         contents.add({
           'role': msg.role == MessageRole.user ? 'user' : 'model',
           'parts': [
@@ -159,8 +160,9 @@ class ClaudeAIService implements BaseAIService {
 
       // Add conversation history
       for (final msg in history) {
-        if (msg.role == MessageRole.system)
+        if (msg.role == MessageRole.system) {
           continue; // Claude uses system parameter
+        }
         messages.add({
           'role': msg.role == MessageRole.user ? 'user' : 'assistant',
           'content': msg.content,

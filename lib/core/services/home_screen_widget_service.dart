@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 
 /// Service to communicate with Android Home Screen Widgets.
@@ -19,6 +20,9 @@ class HomeScreenWidgetService {
     required double fuelPrice,
   }) async {
     try {
+      debugPrint(
+        '🔄 Updating Garage Widget: $vehicleName, Odometer: ${odometer}km, Mileage: ${mileage}km/L',
+      );
       final result = await _channel.invokeMethod('updateGarageWidget', {
         'vehicleName': vehicleName,
         'odometer': odometer,
@@ -26,9 +30,10 @@ class HomeScreenWidgetService {
         'lastFuelDate': lastFuelDate,
         'fuelPrice': fuelPrice,
       });
+      debugPrint('✅ Garage widget updated: $result');
       return result == true;
     } catch (e) {
-      print('Error updating garage widget: $e');
+      debugPrint('❌ Error updating garage widget: $e');
       return false;
     }
   }
@@ -36,10 +41,11 @@ class HomeScreenWidgetService {
   /// Request the user to pin the Garage widget to home screen
   static Future<bool> requestPinGarageWidget() async {
     try {
+      debugPrint('📌 Requesting to pin Garage widget');
       final result = await _channel.invokeMethod('requestPinGarageWidget');
       return result == true;
     } catch (e) {
-      print('Error pinning widget: $e');
+      debugPrint('❌ Error pinning widget: $e');
       return false;
     }
   }
@@ -65,6 +71,9 @@ class HomeScreenWidgetService {
     required String topCategory,
   }) async {
     try {
+      debugPrint(
+        '🔄 Updating Quick Transaction Widget: Today: ₹$todaySpent, Week: ₹$weekSpent',
+      );
       final result = await _channel
           .invokeMethod('updateQuickTransactionWidget', {
             'todaySpent': todaySpent,
@@ -73,9 +82,10 @@ class HomeScreenWidgetService {
             'lastAmount': lastAmount,
             'topCategory': topCategory,
           });
+      debugPrint('✅ Quick Transaction widget updated: $result');
       return result == true;
     } catch (e) {
-      print('Error updating quick transaction widget: $e');
+      debugPrint('❌ Error updating quick transaction widget: $e');
       return false;
     }
   }
@@ -83,12 +93,13 @@ class HomeScreenWidgetService {
   /// Request the user to pin the Quick Transaction widget to home screen
   static Future<bool> requestPinQuickTransactionWidget() async {
     try {
+      debugPrint('📌 Requesting to pin Quick Transaction widget');
       final result = await _channel.invokeMethod(
         'requestPinQuickTransactionWidget',
       );
       return result == true;
     } catch (e) {
-      print('Error pinning widget: $e');
+      debugPrint('❌ Error pinning widget: $e');
       return false;
     }
   }
@@ -104,6 +115,9 @@ class HomeScreenWidgetService {
     required int pendingBills,
   }) async {
     try {
+      debugPrint(
+        '🔄 Updating Balance Widget: Balance: ₹$totalBalance, Savings: ${savingsRate.toStringAsFixed(1)}%',
+      );
       final result = await _channel.invokeMethod('updateBalanceWidget', {
         'totalBalance': totalBalance,
         'monthIncome': monthIncome,
@@ -111,9 +125,10 @@ class HomeScreenWidgetService {
         'savingsRate': savingsRate,
         'pendingBills': pendingBills,
       });
+      debugPrint('✅ Balance widget updated: $result');
       return result == true;
     } catch (e) {
-      print('Error updating balance widget: $e');
+      debugPrint('❌ Error updating balance widget: $e');
       return false;
     }
   }
@@ -121,10 +136,11 @@ class HomeScreenWidgetService {
   /// Request the user to pin the Balance widget to home screen
   static Future<bool> requestPinBalanceWidget() async {
     try {
+      debugPrint('📌 Requesting to pin Balance widget');
       final result = await _channel.invokeMethod('requestPinBalanceWidget');
       return result == true;
     } catch (e) {
-      print('Error pinning widget: $e');
+      debugPrint('❌ Error pinning widget: $e');
       return false;
     }
   }
@@ -144,9 +160,11 @@ class HomeScreenWidgetService {
   /// Force refresh all widgets
   static Future<void> refreshAllWidgets() async {
     try {
+      debugPrint('🔄 Refreshing all widgets');
       await _channel.invokeMethod('refreshAllWidgets');
+      debugPrint('✅ All widgets refreshed');
     } catch (e) {
-      print('Error refreshing widgets: $e');
+      debugPrint('❌ Error refreshing widgets: $e');
     }
   }
 }

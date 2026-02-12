@@ -262,17 +262,16 @@ Monthly Fixed Burn: ₹${_currencyFormat.format(monthlyBurn)}
     final activeDebts = debtProvider.debts
         .where((d) => d.currentBalance > 1.0)
         .toList();
-    if (activeDebts.isEmpty)
+    if (activeDebts.isEmpty) {
       return '--- DEBTS ---\nNo active debts. Debt-free! 🎉\n';
+    }
 
     final buffer = StringBuffer(
       '--- DEBTS (${activeDebts.length} active) ---\n',
     );
     for (final debt in activeDebts) {
       final nextPayment = debt.nextPaymentDate;
-      final daysUntilPayment = nextPayment != null
-          ? nextPayment.difference(DateTime.now()).inDays
-          : null;
+      final daysUntilPayment = nextPayment?.difference(DateTime.now()).inDays;
 
       buffer.writeln('• ${debt.name}');
       buffer.writeln(
@@ -293,8 +292,9 @@ Monthly Fixed Burn: ₹${_currencyFormat.format(monthlyBurn)}
 
   String _buildInvestmentsSummary() {
     final investments = investmentProvider.investments;
-    if (investments.isEmpty)
+    if (investments.isEmpty) {
       return '--- INVESTMENTS ---\nNo investments tracked.\n';
+    }
 
     final totalInvested = investments.fold(
       0.0,
@@ -334,8 +334,9 @@ Monthly Fixed Burn: ₹${_currencyFormat.format(monthlyBurn)}
     final activeSubs = subscriptionProvider.subscriptions
         .where((s) => s.isActive)
         .toList();
-    if (activeSubs.isEmpty)
+    if (activeSubs.isEmpty) {
       return '--- SUBSCRIPTIONS ---\nNo active subscriptions.\n';
+    }
 
     final buffer = StringBuffer(
       '--- SUBSCRIPTIONS (${activeSubs.length} active) ---\n',
@@ -367,8 +368,9 @@ Monthly Fixed Burn: ₹${_currencyFormat.format(monthlyBurn)}
         .where((t) => t.date.isAfter(sevenDaysAgo))
         .toList();
 
-    if (last30Days.isEmpty)
+    if (last30Days.isEmpty) {
       return '--- SPENDING ---\nNo transactions in last 30 days.\n';
+    }
 
     // Calculate spending by category (last 30 days)
     final expensesByCategory = <String, double>{};

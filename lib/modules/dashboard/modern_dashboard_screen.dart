@@ -492,7 +492,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    "${mileage.toStringAsFixed(1)}",
+                    mileage.toStringAsFixed(1),
                     style: TextStyle(
                       color: AppColors.pastelTeal,
                       fontWeight: FontWeight.w900,

@@ -364,7 +364,7 @@ class _AddAccountModalState extends State<AddAccountModal>
                                     _buildLabel("CARD DETAILS (OPTIONAL)"),
                                     Switch(
                                       value: _hasCardDetails,
-                                      activeColor: _selectedColor,
+                                      activeThumbColor: _selectedColor,
                                       onChanged: (val) {
                                         setState(() => _hasCardDetails = val);
                                       },

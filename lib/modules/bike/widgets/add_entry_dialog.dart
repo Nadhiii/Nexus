@@ -687,7 +687,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
               ),
               Switch(
                 value: _linkToExpense,
-                activeColor: AppColors.success,
+                activeThumbColor: AppColors.success,
                 onChanged: (val) => setState(() {
                   _linkToExpense = val;
                   if (!val) _selectedAccount = null;

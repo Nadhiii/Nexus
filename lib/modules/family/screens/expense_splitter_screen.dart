@@ -190,7 +190,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
               ),
               Switch(
                 value: _includesTip,
-                activeColor: AppColors.primaryBlue,
+                activeThumbColor: AppColors.primaryBlue,
                 onChanged: (val) => setState(() {
                   _includesTip = val;
                   if (!val) _tipPercentage = 0;

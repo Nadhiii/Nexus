@@ -305,7 +305,7 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
                                         ),
                                         const Spacer(),
                                         Text(
-                                          "${_dueDay}${_getDaySuffix(_dueDay)}",
+                                          "$_dueDay${_getDaySuffix(_dueDay)}",
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,

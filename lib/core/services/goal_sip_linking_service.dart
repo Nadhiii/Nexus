@@ -284,9 +284,9 @@ class GoalSipLinkingService {
 
     // Higher surplus = higher confidence
     double confidence = 0.5;
-    if (surplusRatio > 0.2)
+    if (surplusRatio > 0.2) {
       confidence = 0.9;
-    else if (surplusRatio > 0.1)
+    } else if (surplusRatio > 0.1)
       confidence = 0.8;
     else if (surplusRatio > 0)
       confidence = 0.7;

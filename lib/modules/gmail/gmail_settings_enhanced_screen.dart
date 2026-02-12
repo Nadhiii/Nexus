@@ -191,7 +191,7 @@ class _GmailSettingsEnhancedScreenState
                         _settings = _settings.copyWith(autoSyncEnabled: value),
                   );
                 },
-                activeColor: AppColors.accentTeal,
+                activeThumbColor: AppColors.accentTeal,
               ),
               if (_settings.autoSyncEnabled) ...[
                 Divider(color: Colors.white.withOpacity(0.05)),
@@ -313,7 +313,7 @@ class _GmailSettingsEnhancedScreenState
                     () => _settings = _settings.copyWith(scanPromotions: value),
                   );
                 },
-                activeColor: AppColors.accentTeal,
+                activeThumbColor: AppColors.accentTeal,
               ),
               Divider(color: Colors.white.withOpacity(0.05)),
               SwitchListTile(
@@ -327,7 +327,7 @@ class _GmailSettingsEnhancedScreenState
                     () => _settings = _settings.copyWith(scanSocial: value),
                   );
                 },
-                activeColor: AppColors.accentTeal,
+                activeThumbColor: AppColors.accentTeal,
               ),
             ],
           ),
@@ -378,7 +378,7 @@ class _GmailSettingsEnhancedScreenState
                     ),
                   );
                 },
-                activeColor: AppColors.accentTeal,
+                activeThumbColor: AppColors.accentTeal,
               ),
               Divider(color: Colors.white.withOpacity(0.05)),
               SwitchListTile(
@@ -403,7 +403,7 @@ class _GmailSettingsEnhancedScreenState
                     ),
                   );
                 },
-                activeColor: AppColors.accentTeal,
+                activeThumbColor: AppColors.accentTeal,
               ),
             ],
           ),

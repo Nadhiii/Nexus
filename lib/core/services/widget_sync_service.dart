@@ -78,7 +78,11 @@ class WidgetSyncService {
   /// Debounce rapid updates
   void _debouncedSync(VoidCallback callback) {
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), callback);
+    debugPrint('⏱️  Widget sync debounced (500ms)');
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      debugPrint('🚀 Executing debounced widget sync');
+      callback();
+    });
   }
 
   /// Sync all widgets at once

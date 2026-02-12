@@ -2,15 +2,36 @@
 <resources>
     <color name="ic_launcher_background">#0F172A</color>
     
-    <!-- Widget Colors -->
-    <color name="widget_background">#1E293B</color>
+    <!-- Widget Colors - Modern AppColors Theme -->
+    <color name="widget_background">#0F172A</color>
+    <color name="widget_card_surface">#1E293B</color>
+    <color name="widget_card_elevated">#334155</color>
     <color name="widget_border">#334155</color>
-    <color name="widget_text_primary">#FFFFFF</color>
+    <color name="widget_text_primary">#F8FAFC</color>
     <color name="widget_text_secondary">#94A3B8</color>
     <color name="widget_text_tertiary">#64748B</color>
-    <color name="widget_accent">#3B82F6</color>
     <color name="widget_divider">#334155</color>
-    <color name="widget_fuel_bg">#1E3A5F</color>
-    <color name="widget_fuel_icon">#F59E0B</color>
     <color name="widget_button_text">#FFFFFF</color>
+
+    <!-- Primary Colors -->
+    <color name="widget_primary_blue">#4B6BFB</color>
+    <color name="widget_primary_blue_dark">#324AB2</color>
+    <color name="widget_primary_blue_light">#7B92FF</color>
+
+    <!-- Pastel Accents -->
+    <color name="widget_pastel_teal">#2DD4BF</color>
+    <color name="widget_pastel_green">#34D399</color>
+    <color name="widget_pastel_purple">#A78BFA</color>
+    <color name="widget_pastel_orange">#FB923C</color>
+    <color name="widget_pastel_pink">#F472B6</color>
+
+    <!-- Semantic Colors -->
+    <color name="widget_success">#34D399</color>
+    <color name="widget_warning">#FBBF24</color>
+    <color name="widget_error">#F87171</color>
+    <color name="widget_info">#60A5FA</color>
+
+    <!-- Legacy colors for backwards compatibility -->
+    <color name="widget_accent">#3B82F6</color>
+    <color name="widget_fuel_bg">#1E3A5F</color>
 </resources>

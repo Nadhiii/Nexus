@@ -285,8 +285,9 @@ class _ExportReportsScreenState extends State<ExportReportsScreen> {
     final transactionsCount = transactionProvider.transactions.where((t) {
       if (dateRange.$1 != null && t.date.isBefore(dateRange.$1!)) return false;
       if (dateRange.$2 != null &&
-          t.date.isAfter(dateRange.$2!.add(const Duration(days: 1))))
+          t.date.isAfter(dateRange.$2!.add(const Duration(days: 1)))) {
         return false;
+      }
       return true;
     }).length;
 

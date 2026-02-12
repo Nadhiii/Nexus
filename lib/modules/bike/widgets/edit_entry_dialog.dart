@@ -193,7 +193,7 @@ class _EditEntryDialogState extends State<EditEntryDialog> {
                     children: [
                       Switch(
                         value: _isFullTank,
-                        activeColor: AppColors.primaryBlue,
+                        activeThumbColor: AppColors.primaryBlue,
                         onChanged: (val) => setState(() => _isFullTank = val),
                       ),
                       const SizedBox(width: 8),

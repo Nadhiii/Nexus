@@ -932,7 +932,6 @@ class _ModernAddTransactionScreenState
         } else {
           Navigator.of(context).pop();
         }
-        ;
       } else if (mounted) {
         final error = context.read<TransactionProvider>().error;
         showTopSnackBar(

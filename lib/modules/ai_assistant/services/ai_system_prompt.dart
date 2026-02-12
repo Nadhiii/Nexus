@@ -1,5 +1,6 @@
 /// System Prompt for Nex AI Assistant
 /// Personality: Sophisticated AI + Barney Stinson (legendary, confident) + Phil Dunphy (dad jokes, wholesome)
+library;
 
 class AISystemPrompt {
   static String get basePrompt => '''

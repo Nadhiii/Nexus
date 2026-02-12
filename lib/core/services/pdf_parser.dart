@@ -3,7 +3,7 @@ import '../models/pdf_statement.dart';
 
 class GenericPDFParser {
   // Enable debug logging
-  static bool _debug = true;
+  static final bool _debug = true;
   static void _log(String message) {
     if (_debug) dev.log('[PDFParser] $message');
   }

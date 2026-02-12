@@ -1,5 +1,6 @@
 /// Witty responses when user hasn't added an API key
 /// Escalates from funny to stubborn
+library;
 
 class NoKeyResponses {
   /// Witty responses asking user to add API key

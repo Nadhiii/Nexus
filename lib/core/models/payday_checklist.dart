@@ -1,5 +1,6 @@
 /// Payday Checklist Model
 /// Represents action items to handle after receiving income
+library;
 
 enum ChecklistItemType {
   debtEMI,

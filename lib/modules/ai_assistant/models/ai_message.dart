@@ -1,5 +1,6 @@
 /// AI Assistant Message Model
 /// Represents a single message in the conversation
+library;
 
 enum MessageRole { user, assistant, system }
 

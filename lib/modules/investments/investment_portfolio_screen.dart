@@ -315,12 +315,15 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
         // Large tile (full width) + 2 small tiles stacked
         final large = tiles[index];
         final smallTiles = <Widget>[];
-        if (index + 1 < tiles.length)
+        if (index + 1 < tiles.length) {
           smallTiles.add(Expanded(child: tiles[index + 1]));
-        if (index + 2 < tiles.length)
+        }
+        if (index + 2 < tiles.length) {
           smallTiles.add(const SizedBox(height: 12));
-        if (index + 2 < tiles.length)
+        }
+        if (index + 2 < tiles.length) {
           smallTiles.add(Expanded(child: tiles[index + 2]));
+        }
 
         rows.add(
           Padding(
