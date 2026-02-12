@@ -23,6 +23,16 @@ class AppSpacing {
   static const double radiusXl = 40.0;
   static const double radiusFull = 999.0; // Perfect circle/pill
 
+  // --- Pre-built BorderRadius (for consistency) ---
+  static final BorderRadius borderRadiusXs = BorderRadius.circular(radiusXs);
+  static final BorderRadius borderRadiusSm = BorderRadius.circular(radiusSm);
+  static final BorderRadius borderRadiusMd = BorderRadius.circular(radiusMd);
+  static final BorderRadius borderRadiusLg = BorderRadius.circular(radiusLg);
+  static final BorderRadius borderRadiusXl = BorderRadius.circular(radiusXl);
+  static final BorderRadius borderRadiusFull = BorderRadius.circular(
+    radiusFull,
+  );
+
   // --- Android Auto / Touch Targets ---
   static const double iconSm = 24.0;
   static const double iconMd = 32.0;
@@ -40,4 +50,11 @@ class AppSpacing {
   static const EdgeInsets cardPaddingLg = EdgeInsets.all(24.0);
   static const EdgeInsets cardPaddingXl = EdgeInsets.all(32.0);
   static const EdgeInsets screenPadding = EdgeInsets.all(20.0);
+
+  // --- Standard App Bar ---
+  static const double appBarExpandedHeight = 110.0;
+  static const EdgeInsets appBarTitlePadding = EdgeInsets.only(
+    left: 20,
+    bottom: 24,
+  );
 }

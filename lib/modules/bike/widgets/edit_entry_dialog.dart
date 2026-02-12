@@ -1,33 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../../core/models/bike.dart';
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 class EditEntryDialog extends StatefulWidget {
   final BikeEntry entry;
-  final BikeProvider provider;
 
-  const EditEntryDialog({
-    super.key,
-    required this.entry,
-    required this.provider,
-  });
+  const EditEntryDialog({super.key, required this.entry});
 
   @override
   State<EditEntryDialog> createState() => _EditEntryDialogState();
 }
 
 class _EditEntryDialogState extends State<EditEntryDialog> {
-  final _odometerController = TextEditingController();
-  final _fuelQuantityController = TextEditingController();
-  final _fuelAmountController = TextEditingController();
-  final _notesController = TextEditingController();
+  late final TextEditingController _odometerController;
+  late final TextEditingController _volumeController;
+  late final TextEditingController _costController;
+  late final TextEditingController _notesController;
 
-  String _selectedCategory = 'fuel';
-  DateTime _selectedDate = DateTime.now();
+  late String _selectedCategory;
+  late DateTime _selectedDate;
+  bool _isFullTank = true;
+  bool _isLoading = false;
 
-  // Define standard categories
-  final List<String> _categories = [
+  final _categories = [
     'fuel',
     'maintenance',
     'repair',
@@ -37,39 +36,58 @@ class _EditEntryDialogState extends State<EditEntryDialog> {
     'other',
   ];
 
+  bool get _isFuelCategory => _selectedCategory == 'fuel';
+
   @override
   void initState() {
     super.initState();
-    // 1. Safe Initialization
-    _odometerController.text = widget.entry.odometerReading.toString();
-    _fuelQuantityController.text = widget.entry.fuelQuantity.toString();
-    _fuelAmountController.text = widget.entry.fuelAmount.toString();
-    _notesController.text = widget.entry.notes ?? '';
+    _odometerController = TextEditingController(
+      text: widget.entry.odometerReading.toStringAsFixed(0),
+    );
+    _volumeController = TextEditingController(
+      text: widget.entry.fuelQuantity > 0
+          ? widget.entry.fuelQuantity.toString()
+          : '',
+    );
+    _costController = TextEditingController(
+      text: widget.entry.fuelAmount.toStringAsFixed(0),
+    );
+    _notesController = TextEditingController(text: widget.entry.notes ?? '');
     _selectedDate = widget.entry.date;
+    _selectedCategory = widget.entry.category ?? 'fuel';
+    _isFullTank = widget.entry.isFullTank;
 
-    // 2. CRASH FIX: Handle Category Mismatch
-    // Ensure the saved category exists in the dropdown list
-    String savedCat = (widget.entry.category ?? 'fuel').toLowerCase();
-    if (!_categories.contains(savedCat)) {
-      _categories.add(savedCat); // Add it dynamically if missing
+    // Add custom category if not in list
+    if (!_categories.contains(_selectedCategory)) {
+      _categories.add(_selectedCategory);
     }
-    _selectedCategory = savedCat;
   }
 
   @override
   void dispose() {
     _odometerController.dispose();
-    _fuelQuantityController.dispose();
-    _fuelAmountController.dispose();
+    _volumeController.dispose();
+    _costController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) setState(() => _selectedDate = picked);
   }
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF1E1E1E),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: AppColors.backgroundBlack,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+      insetPadding: const EdgeInsets.all(16),
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -77,117 +95,256 @@ class _EditEntryDialogState extends State<EditEntryDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Edit Entry',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              // HEADER
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Edit Entry',
+                    style: AppTypography.headlineSmall.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.close,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // ODOMETER CARD
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.cardSurface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "ODOMETER READING",
+                      style: AppTypography.labelSmall.copyWith(
+                        color: AppColors.primaryBlue,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextField(
+                      controller: _odometerController,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      decoration: const InputDecoration(
+                        hintText: '0',
+                        suffixText: 'km',
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Date Picker
-              GestureDetector(
-                onTap: () => _selectDate(context),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2A2A2A),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white10),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const Icon(
-                        Icons.calendar_today,
-                        color: AppColors.primaryBlue,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Category Dropdown
+              // CATEGORY SELECTOR
+              _buildLabel('Category'),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2A2A2A),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white10),
+                  color: AppColors.cardSurface,
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: Colors.white.withOpacity(0.05)),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _selectedCategory,
                     isExpanded: true,
-                    dropdownColor: const Color(0xFF2A2A2A),
+                    dropdownColor: AppColors.cardSurface,
                     style: const TextStyle(color: Colors.white),
-                    items: _categories.map((cat) {
-                      return DropdownMenuItem(
-                        value: cat,
-                        child: Text(cat.toUpperCase()),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null)
-                        setState(() => _selectedCategory = value);
-                    },
+                    items: _categories
+                        .map(
+                          (c) => DropdownMenuItem(
+                            value: c,
+                            child: Text(c[0].toUpperCase() + c.substring(1)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) =>
+                        setState(() => _selectedCategory = v ?? 'fuel'),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
 
-              _buildField('Odometer (km)', _odometerController, isNumber: true),
-              const SizedBox(height: 16),
+              // FUEL FIELDS (only show if fuel category)
+              if (_isFuelCategory) ...[
+                // Full Tank Toggle
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    children: [
+                      Switch(
+                        value: _isFullTank,
+                        activeColor: AppColors.primaryBlue,
+                        onChanged: (val) => setState(() => _isFullTank = val),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Full Tank",
+                        style: TextStyle(
+                          color: _isFullTank
+                              ? Colors.white
+                              : AppColors.textTertiary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-              // Show Fuel fields only if category is fuel
-              if (_selectedCategory == 'fuel') ...[
-                _buildField(
-                  'Fuel (Liters)',
-                  _fuelQuantityController,
-                  isNumber: true,
+                // Volume field
+                _buildLabel('Fuel Quantity'),
+                _buildGlassField(
+                  controller: _volumeController,
+                  hint: "Litres",
+                  suffix: "L",
                 ),
                 const SizedBox(height: 16),
               ],
 
-              _buildField('Amount (₹)', _fuelAmountController, isNumber: true),
+              // COST FIELD
+              _buildLabel('Total Cost'),
+              _buildGlassField(
+                controller: _costController,
+                hint: "Amount",
+                suffix: "₹",
+                isHighlight: true,
+              ),
               const SizedBox(height: 16),
 
-              _buildField('Notes', _notesController, maxLines: 2),
-              const SizedBox(height: 24),
-
+              // DATE & NOTES ROW
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      'Cancel',
-                      style: TextStyle(color: Colors.white.withOpacity(0.6)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLabel('Date'),
+                        GestureDetector(
+                          onTap: () => _selectDate(context),
+                          child: Container(
+                            height: 54,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            decoration: BoxDecoration(
+                              color: AppColors.cardSurface,
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.05),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.calendar_today,
+                                  size: 18,
+                                  color: AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  DateFormat(
+                                    'dd/MM/yyyy',
+                                  ).format(_selectedDate),
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: _updateEntry,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryBlue,
-                      foregroundColor: Colors.white,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLabel('Notes'),
+                        _buildGlassField(
+                          controller: _notesController,
+                          hint: "Optional",
+                          isNumber: false,
+                        ),
+                      ],
                     ),
-                    child: const Text('Update'),
                   ),
                 ],
+              ),
+
+              const SizedBox(height: 32),
+
+              // SAVE BUTTON
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _isFuelCategory
+                        ? AppColors.primaryBlue
+                        : AppColors.pastelOrange,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Save Changes',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // DELETE BUTTON
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: _isLoading ? null : _confirmDelete,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: BorderSide(color: AppColors.error.withOpacity(0.5)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  label: const Text(
+                    'Delete Entry',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
               ),
             ],
           ),
@@ -196,86 +353,147 @@ class _EditEntryDialogState extends State<EditEntryDialog> {
     );
   }
 
-  Widget _buildField(
-    String label,
-    TextEditingController controller, {
-    bool isNumber = false,
-    int maxLines = 1,
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Delete Entry',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this entry? This action cannot be undone.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() => _isLoading = true);
+      try {
+        await context.read<BikeProvider>().deleteBikeEntry(widget.entry.id);
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Entry deleted successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error deleting: $e')));
+        }
+      }
+    }
+  }
+
+  Widget _buildLabel(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: 8, left: 4),
+    child: Text(
+      text,
+      style: TextStyle(
+        color: AppColors.textTertiary,
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  );
+
+  Widget _buildGlassField({
+    required TextEditingController controller,
+    required String hint,
+    String? suffix,
+    bool isHighlight = false,
+    bool isNumber = true,
   }) {
-    return TextField(
-      controller: controller,
-      keyboardType: isNumber
-          ? const TextInputType.numberWithOptions(decimal: true)
-          : TextInputType.text,
-      maxLines: maxLines,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-        filled: true,
-        fillColor: const Color(0xFF2A2A2A),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(
+          color: isHighlight
+              ? (_isFuelCategory
+                    ? AppColors.primaryBlue
+                    : AppColors.pastelOrange)
+              : Colors.white.withOpacity(0.05),
+        ),
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.5)),
+          suffixText: suffix,
+          suffixStyle: TextStyle(color: AppColors.textTertiary),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
         ),
       ),
     );
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null) setState(() => _selectedDate = picked);
-  }
+  Future<void> _save() async {
+    final odometer = double.tryParse(_odometerController.text) ?? 0;
+    final cost = double.tryParse(_costController.text) ?? 0;
+    final volume = double.tryParse(_volumeController.text) ?? 0;
 
-  void _updateEntry() {
-    final odometer = double.tryParse(_odometerController.text.trim());
-    final amount = double.tryParse(_fuelAmountController.text.trim());
-    final quantity =
-        double.tryParse(_fuelQuantityController.text.trim()) ?? 0.0;
-
-    if (odometer == null || amount == null) {
+    if (odometer <= 0 || cost <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter valid numbers')),
+        const SnackBar(content: Text('Please enter valid odometer and cost')),
       );
       return;
     }
 
-    final updatedEntry = BikeEntry(
-      id: widget.entry.id,
-      userId: widget.entry.userId,
-      bikeName: widget.entry.bikeName,
+    setState(() => _isLoading = true);
+
+    final updatedEntry = widget.entry.copyWith(
       date: _selectedDate,
-      fuelQuantity: quantity,
-      fuelAmount: amount,
+      fuelQuantity: _isFuelCategory ? volume : 0,
+      fuelAmount: cost,
       odometerReading: odometer,
-      notes: _notesController.text.trim().isEmpty
-          ? null
-          : _notesController.text.trim(),
-      // Reset mileage to null so the list recalculates it properly
-      mileage: null,
+      notes: _notesController.text.trim(),
       category: _selectedCategory,
-      isFullTank: widget.entry.isFullTank,
+      isFullTank: _isFuelCategory ? _isFullTank : false,
     );
 
-    widget.provider
-        .updateBikeEntry(updatedEntry)
-        .then((_) {
-          if (!mounted) return;
-          Navigator.pop(context);
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Entry updated')));
-        })
-        .catchError((e) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error updating: $e')));
-        });
+    try {
+      await context.read<BikeProvider>().updateBikeEntry(updatedEntry);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Entry updated successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 }

@@ -1,7 +1,78 @@
 import 'package:intl/intl.dart';
 import '../models/detected_transaction.dart';
 
+class BankPattern {
+  final String name;
+  final String regex;
+
+  const BankPattern({required this.name, required this.regex});
+}
+
 class GmailParser {
+  // Bank pattern definitions for easy maintenance
+  static const List<BankPattern> bankPatterns = [
+    // SBI Card
+    BankPattern(
+      name: 'SBI Card',
+      regex:
+          r'(?:Rs\.?|INR)\s*(?<amount>[\d,.]+)\s+spent\s+on\s+.*?at\s+(?<merchant>.*?)\s+on\s+(?<date>\d{2}/\d{2}/\d{2})',
+    ),
+    // Axis Bank
+    BankPattern(
+      name: 'Axis Bank',
+      regex:
+          r'Transaction Amount:\s*(?:INR|Rs\.?)\s*(?<amount>[\d,.]+).*?Merchant Name:\s*(?<merchant>.*?)\s+(?:Axis|Date)',
+    ),
+    // IDFC Bank
+    BankPattern(
+      name: 'IDFC FIRST Bank',
+      regex:
+          r'(?:debited|credited)\s+(?:by|with)\s+(?:INR|Rs\.?)\s*(?<amount>[\d,.]+)(?:\s+to\s+(?<merchant>.*?))?\s+on\s+(?<date>[\d/-]+\s+[\d:]+)',
+    ),
+    // HDFC Bank
+    BankPattern(
+      name: 'HDFC Bank',
+      regex:
+          r'(?:credited|debited).*?(?:INR|Rs\.?|₹)\s*(?<amount>[\d,.]+).*?(?<merchant>.*?)\s+(?:on|at|HDFC)',
+    ),
+    // ICICI Bank
+    BankPattern(
+      name: 'ICICI Bank',
+      regex:
+          r'amount\s+(?:INR|Rs\.?)\s*(?<amount>[\d,.]+).*?(?<merchant>.*?)\s+(?:via|through|ICICI)',
+    ),
+    // Kotak Mahindra
+    BankPattern(
+      name: 'Kotak Mahindra Bank',
+      regex:
+          r'(?:INR|Rs\.?)\s*(?<amount>[\d,.]+).*?(?<merchant>.*?)\s+(?:on|debited|credited)',
+    ),
+    // PayTM
+    BankPattern(
+      name: 'PayTM',
+      regex:
+          r'PayTM.*?(?:amount|INR|Rs\.?)\s*(?<amount>[\d,.]+).*?(?<merchant>.*?)(?:\s+to|\s+on|$)',
+    ),
+    // Google Pay
+    BankPattern(
+      name: 'Google Pay',
+      regex:
+          r'Google Pay.*?(?:INR|Rs\.?)\s*(?<amount>[\d,.]+).*?(?<merchant>.*?)(?:\s+to|\s+received|$)',
+    ),
+    // PhonePe
+    BankPattern(
+      name: 'PhonePe',
+      regex:
+          r'PhonePe.*?(?:INR|Rs\.?)\s*(?<amount>[\d,.]+).*?(?<merchant>.*?)(?:\s+to|\s+on|$)',
+    ),
+    // Amazon Pay
+    BankPattern(
+      name: 'Amazon Pay',
+      regex:
+          r'Amazon Pay.*?(?:INR|Rs\.?)\s*(?<amount>[\d,.]+).*?(?<merchant>.*?)(?:\s+on|\s+for|$)',
+    ),
+  ];
+
   static DetectedTransaction? parse(
     String emailId,
     String body,
@@ -19,7 +90,7 @@ class GmailParser {
 
     final lower = cleanBody.toLowerCase();
 
-    // 2. STRICT GUARD (The New "Anti-Spam" Layer)
+    // 2. STRICT GUARD (The "Anti-Spam" Layer)
     if (_isIgnorable(lower)) {
       return null;
     }
@@ -31,54 +102,21 @@ class GmailParser {
       type = 'income';
     }
 
-    // --- BANK SPECIFIC PATTERNS (High Precision) ---
-
-    // PATTERN A: SBI Card
-    final sbiMatch = RegExp(
-      r'(?:Rs\.?|INR)\s*(?<amount>[\d,.]+)\s+spent\s+on\s+.*?at\s+(?<merchant>.*?)\s+on\s+(?<date>\d{2}/\d{2}/\d{2})',
-      caseSensitive: false,
-    ).firstMatch(cleanBody);
-    if (sbiMatch != null) {
-      return _buildTransaction(
-        emailId,
-        sbiMatch,
-        cleanBody,
-        'SBI Card',
-        emailDate,
-        type,
-      );
-    }
-
-    // PATTERN B: Axis Bank
-    final axisMatch = RegExp(
-      r'Transaction Amount:\s*(?:INR|Rs\.?)\s*(?<amount>[\d,.]+).*?Merchant Name:\s*(?<merchant>.*?)\s+(?:Axis|Date)',
-      caseSensitive: false,
-    ).firstMatch(cleanBody);
-    if (axisMatch != null) {
-      return _buildTransaction(
-        emailId,
-        axisMatch,
-        cleanBody,
-        'Axis Bank',
-        emailDate,
-        type,
-      );
-    }
-
-    // PATTERN C: IDFC
-    final idfcMatch = RegExp(
-      r'(?:debited|credited)\s+(?:by|with)\s+(?:INR|Rs\.?)\s*(?<amount>[\d,.]+)\s+(?:on|to)\s+(?<date>[\d/-]+\s+[\d:]+)',
-      caseSensitive: false,
-    ).firstMatch(cleanBody);
-    if (idfcMatch != null) {
-      return _buildTransaction(
-        emailId,
-        idfcMatch,
-        cleanBody,
-        'IDFC FIRST Bank',
-        emailDate,
-        type,
-      );
+    // --- BANK-SPECIFIC PATTERNS (High Precision) ---
+    for (var pattern in bankPatterns) {
+      final regex = RegExp(pattern.regex, caseSensitive: false);
+      final match = regex.firstMatch(cleanBody);
+      if (match != null) {
+        final transaction = _buildTransaction(
+          emailId,
+          match,
+          cleanBody,
+          pattern.name,
+          emailDate,
+          type,
+        );
+        if (transaction != null) return transaction;
+      }
     }
 
     // --- GENERIC FALLBACK (Context Aware) ---
@@ -202,12 +240,12 @@ class GmailParser {
   // --- HELPERS ---
 
   static String? _scanForBrands(String lower) {
-    // Add common Indian services here
+    // Expanded list of common Indian services and merchants
     final brands = {
       'jio': 'Jio',
       'airtel': 'Airtel',
       'vi ': 'Vodafone',
-      'act fibernet': 'ACT',
+      'act fibernet': 'ACT Fibernet',
       'bescom': 'BESCOM',
       'flipkart': 'Flipkart',
       'amazon': 'Amazon',
@@ -221,11 +259,81 @@ class GmailParser {
       'google ireland': 'Google',
       'surfshark': 'Surfshark',
       'apple': 'Apple',
+      'gym': 'Gym Membership',
+      'hospital': 'Hospital',
+      'pharmacy': 'Pharmacy',
+      'fuel': 'Fuel Station',
+      'petrol': 'Fuel Station',
+      'restaurant': 'Restaurant',
+      'cafe': 'Cafe',
+      'mall': 'Shopping',
+      'groceries': 'Groceries',
+      'supermarket': 'Supermarket',
+      'cinema': 'Entertainment',
+      'movie': 'Entertainment',
+      'hotel': 'Hotel',
+      'flights': 'Travel',
+      'train': 'Travel',
+      'bus': 'Travel',
+      'insurance': 'Insurance',
+      'electricity': 'Utilities',
+      'water': 'Utilities',
+      'internet': 'Utilities',
+      'mobile': 'Mobile Recharge',
     };
 
     for (var key in brands.keys) {
       if (lower.contains(key)) return brands[key];
     }
+    return null;
+  }
+
+  // Category detection based on merchant name
+  static String? _detectCategory(String merchant) {
+    final lower = merchant.toLowerCase();
+
+    final categoryMap = {
+      'food': [
+        'zomato',
+        'swiggy',
+        'restaurant',
+        'cafe',
+        'pizza',
+        'burger',
+        'bakery',
+      ],
+      'transportation': [
+        'uber',
+        'ola',
+        'uber eats',
+        'fuel',
+        'petrol',
+        'parking',
+        'taxi',
+      ],
+      'groceries': ['supermarket', 'grocery', 'dm', 'lulu', 'reliance fresh'],
+      'entertainment': [
+        'netflix',
+        'spotify',
+        'amazon prime',
+        'cinema',
+        'movie',
+      ],
+      'utilities': ['jio', 'airtel', 'vi', 'water', 'electricity', 'internet'],
+      'shopping': ['flipkart', 'amazon', 'mall', 'store', 'retail'],
+      'health': ['pharmacy', 'hospital', 'clinic', 'gym', 'meditation'],
+      'travel': ['hotel', 'flights', 'train', 'bus', 'booking'],
+      'subscriptions': ['subscription', 'membership', 'premium'],
+    };
+
+    for (var category in categoryMap.entries) {
+      for (var keyword in category.value) {
+        if (lower.contains(keyword)) {
+          return category.key;
+        }
+      }
+    }
+
     return null;
   }
 
@@ -243,11 +351,24 @@ class GmailParser {
       if (amount == 0) return null;
 
       String merchant = bankName;
+      List<String> warnings = [];
+      double confidence = 0.8; // Base confidence for bank-detected patterns
+
       if (match.groupNames.contains('merchant')) {
         String? m = match.namedGroup('merchant')?.trim();
         if (m != null && _isValidMerchant(m)) {
           merchant = m;
+          confidence = 0.95; // High confidence when merchant name extracted
+        } else if (m != null) {
+          warnings.add('Merchant name unclear');
+          confidence = 0.65;
         }
+      }
+
+      if (merchant == bankName && bankName.contains('IDFC')) {
+        warnings.add('Merchant not provided in email');
+        merchant = 'IDFC FIRST Bank';
+        confidence = 0.7;
       }
 
       // Intelligent Date Merging
@@ -270,6 +391,9 @@ class GmailParser {
         }
       }
 
+      // Auto-detect category
+      final detectedCategory = _detectCategory(merchant);
+
       return DetectedTransaction(
         id: id,
         amount: amount,
@@ -278,6 +402,9 @@ class GmailParser {
         type: type,
         source: 'email',
         body: fullBody,
+        confidence: confidence,
+        warnings: warnings,
+        detectedCategory: detectedCategory,
       );
     } catch (e) {
       return null;

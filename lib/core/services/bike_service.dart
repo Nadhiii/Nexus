@@ -165,6 +165,22 @@ class BikeService {
         .delete();
   }
 
+  // Restore (recreate) a bike entry using its original id
+  Future<void> restoreBikeEntry(
+    String userId,
+    String bikeId,
+    BikeEntry entry,
+  ) async {
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('bikes')
+        .doc(bikeId)
+        .collection('entries')
+        .doc(entry.id)
+        .set(entry.toJson());
+  }
+
   // Calculate mileage from two entries
   double calculateMileage(double fuelQuantity, double kmTraveled) {
     if (fuelQuantity <= 0 || kmTraveled <= 0) return 0;

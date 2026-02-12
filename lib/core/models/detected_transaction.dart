@@ -9,6 +9,10 @@ class DetectedTransaction {
   final String type; // 'income' or 'expense'
   final String source; // 'sms' or 'email'
   final String? body; // Full SMS or Email body
+  final double confidence; // 0.0 to 1.0, higher = more reliable
+  final List<String>
+  warnings; // e.g., ["Merchant unclear", "Amount incomplete"]
+  final String? detectedCategory; // Auto-detected category, if any
 
   const DetectedTransaction({
     required this.id,
@@ -18,10 +22,18 @@ class DetectedTransaction {
     required this.type,
     required this.source,
     this.body,
+    this.confidence = 0.8,
+    this.warnings = const [],
+    this.detectedCategory,
   });
 
+  // Quick check for reliability
+  bool get isHighConfidence => confidence >= 0.85;
+  bool get isLowConfidence => confidence < 0.65;
+  bool get needsReview => isLowConfidence || warnings.isNotEmpty;
+
   @override
-bool operator ==(Object other) =>
+  bool operator ==(Object other) =>
       identical(this, other) ||
       other is DetectedTransaction &&
           runtimeType == other.runtimeType &&
@@ -29,7 +41,7 @@ bool operator ==(Object other) =>
           source == other.source;
 
   @override
-int get hashCode => id.hashCode ^ source.hashCode;
+  int get hashCode => id.hashCode ^ source.hashCode;
 
   DetectedTransaction copyWith({
     String? id,
@@ -39,6 +51,9 @@ int get hashCode => id.hashCode ^ source.hashCode;
     String? type,
     String? source,
     String? body,
+    double? confidence,
+    List<String>? warnings,
+    String? detectedCategory,
   }) {
     return DetectedTransaction(
       id: id ?? this.id,
@@ -48,6 +63,9 @@ int get hashCode => id.hashCode ^ source.hashCode;
       type: type ?? this.type,
       source: source ?? this.source,
       body: body ?? this.body,
+      confidence: confidence ?? this.confidence,
+      warnings: warnings ?? this.warnings,
+      detectedCategory: detectedCategory ?? this.detectedCategory,
     );
   }
 }

@@ -1,6 +1,7 @@
 {
   "projects": {
-    "staging": "nexus-ccef7"
+    "staging": "nexus-ccef7",
+    "default": "nexus-ccef7"
   },
   "targets": {},
   "etags": {}

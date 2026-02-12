@@ -115,8 +115,12 @@ class DuplicateDetector {
       list1.length + 1,
       (i) => List<int>.generate(list2.length + 1, (j) => 0),
     );
-    for (int i = 0; i <= list1.length; i++) distances[i][0] = i;
-    for (int j = 0; j <= list2.length; j++) distances[0][j] = j;
+    for (int i = 0; i <= list1.length; i++) {
+      distances[i][0] = i;
+    }
+    for (int j = 0; j <= list2.length; j++) {
+      distances[0][j] = j;
+    }
     for (int i = 1; i <= list1.length; i++) {
       for (int j = 1; j <= list2.length; j++) {
         final cost = list1[i - 1] == list2[j - 1] ? 0 : 1;

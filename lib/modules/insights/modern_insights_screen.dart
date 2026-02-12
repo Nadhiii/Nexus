@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_spacing.dart';
 
 // Providers
 import '../../core/providers/account_provider.dart';
@@ -14,7 +15,7 @@ import '../../core/providers/subscription_provider.dart';
 
 // Screens
 import '../investments/investment_portfolio_screen.dart';
-import '../debts/modern_debts_screen.dart';
+import '../debts/screens/liabilities_screen.dart';
 import '../subscriptions/modern_subscription_screen.dart';
 import '../budgets/modern_budgets_screen.dart'; // Assuming this exists
 import '../goals/modern_goals_screen.dart'; // Assuming this exists
@@ -87,7 +88,7 @@ class ModernInsightsScreen extends StatelessWidget {
                       centerTitle: false,
                       titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
                       title: Text(
-                        'Command Center',
+                        'Wealth',
                         style: AppTypography.headlineMedium.copyWith(
                           color: AppColors.textPrimary,
                           fontWeight: FontWeight.w800,
@@ -115,112 +116,19 @@ class ModernInsightsScreen extends StatelessWidget {
                     ),
                   ),
 
-                  // 2. TOOLS GRID
+                  // 2. BENTO GRID - Financial Tools
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
-                    sliver: SliverGrid.count(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 1.1,
-                      children: [
-                        // INVESTMENTS
-                        _buildNavTile(
-                          context,
-                          title: "Investments",
-                          value:
-                              "₹${NumberFormat.compact().format(totalInvestments)}",
-                          subtitle: "${investments.investments.length} Assets",
-                          icon: Icons.show_chart,
-                          color: const Color(0xFF6366F1), // Indigo
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ModernInvestmentScreen(),
-                            ),
-                          ),
-                        ),
-
-                        // LIABILITIES
-                        _buildNavTile(
-                          context,
-                          title: "Liabilities",
-                          value:
-                              "₹${NumberFormat.compact().format(totalLiabilities)}",
-                          subtitle: "${activeDebts.length} Active Loans",
-                          icon: Icons.warning_amber_rounded,
-                          color: AppColors.error,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ModernDebtsScreen(),
-                            ),
-                          ),
-                        ),
-
-                        // SUBSCRIPTIONS
-                        _buildNavTile(
-                          context,
-                          title: "Subscriptions",
-                          value:
-                              "₹${NumberFormat.compact().format(subCost)}/mo",
-                          subtitle: "${activeSubs.length} Active Services",
-                          icon: Icons.autorenew,
-                          color: AppColors.accentOrange,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ModernSubscriptionScreen(),
-                            ),
-                          ),
-                        ),
-
-                        // LIQUID CASH
-                        _buildNavTile(
-                          context,
-                          title: "Liquid Cash",
-                          value: "₹${NumberFormat.compact().format(totalCash)}",
-                          subtitle: "${accounts.accounts.length} Accounts",
-                          icon: Icons.account_balance_wallet,
-                          color: Colors.blue,
-                          onTap: () {
-                            // Navigate to Accounts Screen if available
-                            // Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountsScreen()));
-                          },
-                        ),
-
-                        // BUDGETS
-                        _buildNavTile(
-                          context,
-                          title: "Budgets",
-                          value: "Plan",
-                          subtitle: "Track Spending",
-                          icon: Icons.pie_chart_outline,
-                          color: Colors.teal,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ModernBudgetsScreen(),
-                            ),
-                          ),
-                        ),
-
-                        // GOALS
-                        _buildNavTile(
-                          context,
-                          title: "Goals",
-                          value: "Targets",
-                          subtitle: "Save for Future",
-                          icon: Icons.flag_outlined,
-                          color: Colors.pinkAccent,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ModernGoalsScreen(),
-                            ),
-                          ),
-                        ),
-                      ],
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 130),
+                    sliver: SliverToBoxAdapter(
+                      child: _buildBentoGrid(
+                        context,
+                        totalInvestments: totalInvestments,
+                        investmentCount: investments.investments.length,
+                        totalLiabilities: totalLiabilities,
+                        activeDebtCount: activeDebts.length,
+                        subCost: subCost,
+                        activeSubCount: activeSubs.length,
+                      ),
                     ),
                   ),
                 ],
@@ -245,8 +153,8 @@ class ModernInsightsScreen extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isPositive
-              ? [const Color(0xFF0F172A), const Color(0xFF1E293B)] // Slate
-              : [const Color(0xFF450A0A), const Color(0xFF7F1D1D)], // Red
+              ? AppColors.netWorthPositiveGradient
+              : AppColors.netWorthNegativeGradient,
         ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white.withOpacity(0.1)),
@@ -294,9 +202,9 @@ class ModernInsightsScreen extends StatelessWidget {
           // Mini Breakdown
           Row(
             children: [
-              _buildMiniStat("Liquid", cash, Colors.blue),
+              _buildMiniStat("Liquid", cash, AppColors.info),
               const SizedBox(width: 16),
-              _buildMiniStat("Invested", invested, const Color(0xFF6366F1)),
+              _buildMiniStat("Invested", invested, AppColors.investmentIndigo),
               const SizedBox(width: 16),
               _buildMiniStat("Debt", debt, AppColors.error),
             ],
@@ -340,65 +248,274 @@ class ModernInsightsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNavTile(
+  Widget _buildBentoGrid(
+    BuildContext context, {
+    required double totalInvestments,
+    required int investmentCount,
+    required double totalLiabilities,
+    required int activeDebtCount,
+    required double subCost,
+    required int activeSubCount,
+  }) {
+    const double spacing = 12;
+
+    return Column(
+      children: [
+        // Row 1: Investments (large) + Liabilities (medium)
+        Row(
+          children: [
+            // INVESTMENTS - Large tile (takes more space)
+            Expanded(
+              flex: 3,
+              child: _buildBentoTile(
+                context,
+                title: "Investments",
+                value: "₹${NumberFormat.compact().format(totalInvestments)}",
+                subtitle: "$investmentCount Assets",
+                icon: Icons.show_chart,
+                color: AppColors.investmentIndigo,
+                height: 160,
+                isLarge: true,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ModernInvestmentScreen(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: spacing),
+            // LIABILITIES
+            Expanded(
+              flex: 2,
+              child: _buildBentoTile(
+                context,
+                title: "Liabilities",
+                value: "₹${NumberFormat.compact().format(totalLiabilities)}",
+                subtitle: "$activeDebtCount Loans",
+                icon: Icons.warning_amber_rounded,
+                color: AppColors.error,
+                height: 160,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LiabilitiesScreen()),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: spacing),
+
+        // Row 2: Subscriptions (wide)
+        _buildBentoTile(
+          context,
+          title: "Subscriptions",
+          value: "₹${NumberFormat.compact().format(subCost)}/mo",
+          subtitle: "$activeSubCount Active",
+          icon: Icons.autorenew,
+          color: AppColors.accentOrange,
+          height: 100,
+          isWide: true,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ModernSubscriptionScreen()),
+          ),
+        ),
+        const SizedBox(height: spacing),
+
+        // Row 3: Budgets + Goals (small tiles)
+        Row(
+          children: [
+            // BUDGETS
+            Expanded(
+              child: _buildBentoTile(
+                context,
+                title: "Budgets",
+                value: "Plan",
+                subtitle: "Spending",
+                icon: Icons.pie_chart_outline,
+                color: AppColors.pastelTeal,
+                height: 130,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ModernBudgetsScreen(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: spacing),
+            // GOALS
+            Expanded(
+              child: _buildBentoTile(
+                context,
+                title: "Goals",
+                value: "Targets",
+                subtitle: "Save",
+                icon: Icons.flag_outlined,
+                color: AppColors.pastelPink,
+                height: 130,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ModernGoalsScreen()),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBentoTile(
     BuildContext context, {
     required String title,
     required String value,
     required String subtitle,
     required IconData icon,
     required Color color,
+    required double height,
     required VoidCallback onTap,
+    bool isLarge = false,
+    bool isWide = false,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        height: height,
+        padding: EdgeInsets.all(isWide ? 16 : 14),
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(14),
+        child: isWide
+            ? _buildWideTileContent(title, value, subtitle, icon, color)
+            : _buildStandardTileContent(
+                title,
+                value,
+                subtitle,
+                icon,
+                color,
+                isLarge,
               ),
-              child: Icon(icon, color: color, size: 22),
+      ),
+    );
+  }
+
+  Widget _buildWideTileContent(
+    String title,
+    String value,
+    String subtitle,
+    IconData icon,
+    Color color,
+  ) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            subtitle,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(color: AppColors.textTertiary, fontSize: 10),
-                ),
-              ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 20),
+      ],
+    );
+  }
+
+  Widget _buildStandardTileContent(
+    String title,
+    String value,
+    String subtitle,
+    IconData icon,
+    Color color,
+    bool isLarge,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Container(
+          padding: EdgeInsets.all(isLarge ? 12 : 8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(isLarge ? 16 : 12),
+          ),
+          child: Icon(icon, color: color, size: isLarge ? 26 : 20),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: isLarge ? 22 : 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              title,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: isLarge ? 13 : 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: AppColors.textTertiary,
+                fontSize: isLarge ? 11 : 9,
+              ),
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 

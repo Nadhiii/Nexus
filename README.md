@@ -11,7 +11,9 @@ A comprehensive personal finance management application built with Flutter, desi
 - **AI-Powered Insights**: Spending pattern analysis and recommendations
 - **Goal Tracking**: SMART financial goals with progress visualization
 - **Reports & Analytics**: Comprehensive financial reports and charts
-- **Family Sharing**: Multi-user support for family financial management
+- **Investment Portfolio**: Track stocks, mutual funds, crypto, and more
+- **Vehicle Tracking**: Fuel efficiency and maintenance tracking
+- **Debt Management**: Track loans and payoff strategies
 
 ### Technical Features
 - **Dark-First Design**: Beautiful dark theme with light mode support
@@ -28,23 +30,25 @@ lib/
 ├── core/                          # Core services and utilities
 │   ├── auth/                      # Authentication services
 │   ├── theme/                     # Theme provider and design system
-│   └── services/                  # Core business services
-├── screens_new/                   # Clean screen architecture
-│   ├── main_screen.dart          # Main navigation controller
+│   ├── services/                  # Core business services
+│   ├── models/                    # Data models
+│   ├── providers/                 # State management
+│   └── widgets/                   # Reusable core widgets
+├── screens/                       # Main screens
+│   ├── login_screen.dart         # Authentication screen
+│   └── main_screen.dart          # Main navigation controller
+├── modules/                       # Feature modules
 │   ├── dashboard/                 # Dashboard and home screens
 │   ├── insights/                  # AI insights and analytics
-│   ├── reports/                   # Financial reports and charts
-│   ├── transactions/              # Transaction management
-│   └── settings/                  # App settings and preferences
-├── widgets/                       # Reusable UI components
-│   ├── dashboard/                 # Dashboard-specific widgets
-│   ├── charts/                    # Financial visualization components
-│   └── common/                    # Shared UI elements
-├── services/                      # Business logic services
-│   ├── ai/                        # AI analysis services
-│   ├── budget/                    # Budget management
-│   └── analytics/                 # Financial analytics
-└── utils/                         # Utility functions and helpers
+│   ├── finance/                   # Transactions and reports
+│   ├── bike/                      # Vehicle tracking module
+│   ├── investments/               # Investment portfolio
+│   ├── budgets/                   # Budget management
+│   ├── goals/                     # Goal tracking
+│   ├── debts/                     # Debt management
+│   ├── subscriptions/             # Subscription tracking
+│   └── more/                      # Settings and preferences
+└── firebase_options.dart          # Firebase configuration
 ```
 
 ### Data Models
@@ -130,7 +134,7 @@ lib/
 - Cash flow analysis
 - Category breakdown charts
 - Monthly comparisons
-- Export capabilities (PDF/Excel)
+- Detailed transaction history
 
 ## 🔧 Configuration
 

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart'; // For clipboard
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/swipe_to_delete.dart';
+import '../../core/widgets/top_snackbar.dart';
 import '../../core/models/account.dart';
 import '../../core/models/transaction.dart';
 import '../../core/providers/transaction_provider.dart';
+import '../../core/services/secure_card_service.dart';
 import '../transactions/modern_add_transaction_screen.dart';
 import 'modern_add_account_screen.dart';
 
@@ -21,6 +24,23 @@ class ModernAccountDetailScreen extends StatefulWidget {
 }
 
 class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
+  bool _showFullCardDetails = false;
+  String? _secureCvv;
+  final SecureCardService _secureCardService = SecureCardService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSecureCvv();
+  }
+
+  Future<void> _loadSecureCvv() async {
+    final cvv = await _secureCardService.getCvv(widget.account.id);
+    if (mounted) {
+      setState(() => _secureCvv = cvv);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,11 +74,38 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: _buildHeroCard(),
+              child: Column(
+                children: [
+                  _buildHeroCard(),
+                  if (widget.account.cardNumber != null) ...[
+                    const SizedBox(height: 12),
+                    TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _showFullCardDetails = !_showFullCardDetails;
+                        });
+                      },
+                      icon: Icon(
+                        _showFullCardDetails
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: AppColors.primaryBlue,
+                        size: 16,
+                      ),
+                      label: Text(
+                        _showFullCardDetails
+                            ? "Hide Details"
+                            : "Show Card Details",
+                        style: TextStyle(color: AppColors.primaryBlue),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
 
-          // 3. ACTION BUTTONS (Updated Labels & Colors)
+          // 3. ACTION BUTTONS
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -156,6 +203,12 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
   // --- WIDGETS ---
 
   Widget _buildHeroCard() {
+    // If user toggles "Show Card Details", we switch the content
+    if (_showFullCardDetails && widget.account.cardNumber != null) {
+      return _buildFullCardView();
+    }
+
+    // Default View (Balance)
     final displayNum = (widget.account.accountNumber ?? '0000')
         .padRight(4, '*')
         .substring(0, 4);
@@ -250,6 +303,139 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFullCardView() {
+    return GestureDetector(
+      onLongPress: () {
+        if (widget.account.cardNumber != null) {
+          Clipboard.setData(ClipboardData(text: widget.account.cardNumber!));
+          showTopSnackBar(context, "Card Number Copied");
+        }
+      },
+      child: Container(
+        height: 200,
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [const Color(0xFF1A1A1A), const Color(0xFF0D0D0D)],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+          border: Border.all(color: widget.account.color.withOpacity(0.5)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Icon(Icons.nfc, color: Colors.white54, size: 32),
+                Icon(Icons.credit_card, color: widget.account.color, size: 28),
+              ],
+            ),
+
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.account.cardNumber ?? "---- ---- ---- ----",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: "Monospace",
+                    fontSize: 22,
+                    letterSpacing: 2.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "CARD HOLDER",
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.4),
+                        fontSize: 8,
+                      ),
+                    ),
+                    Text(
+                      (widget.account.cardHolderName ?? "YOUR NAME")
+                          .toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "EXPIRES",
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.4),
+                            fontSize: 8,
+                          ),
+                        ),
+                        Text(
+                          widget.account.cardExpiry ?? "MM/YY",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 20),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "CVV",
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.4),
+                            fontSize: 8,
+                          ),
+                        ),
+                        Text(
+                          _secureCvv ?? "***",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

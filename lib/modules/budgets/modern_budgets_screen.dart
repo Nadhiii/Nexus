@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/providers/budget_provider.dart';
@@ -25,35 +24,84 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
   void _showDeleteConfirmation(BuildContext context, Budget budget) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardSurface,
-        title: Text(
-          'Delete Budget',
-          style: TextStyle(color: AppColors.textPrimary),
-        ),
-        content: Text(
-          'Are you sure you want to delete "${budget.categoryName}" budget?',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
+      builder: (context) => Dialog(
+        backgroundColor: AppColors.backgroundBlack,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+        insetPadding: const EdgeInsets.all(16),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Delete Budget',
+                style: AppTypography.headlineSmall.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Are you sure you want to delete "${budget.categoryName}" budget?',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: Colors.white.withOpacity(0.1),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Provider.of<BudgetProvider>(
+                            context,
+                            listen: false,
+                          ).deleteBudget(budget.id);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          'Delete',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Provider.of<BudgetProvider>(
-                context,
-                listen: false,
-              ).deleteBudget(budget.id);
-            },
-            child: Text('Delete', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -126,20 +174,14 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                   ),
                 ),
 
-              // 3. BUDGET LIST
+              // 3. BUDGET BENTO GRID
               if (budgets.isEmpty)
                 SliverFillRemaining(child: _buildEmptyState(context))
               else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final budget = budgets[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: _buildBudgetCard(context, budget),
-                      );
-                    }, childCount: budgets.length),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                    child: _buildBentoBudgetGrid(context, budgets),
                   ),
                 ),
             ],
@@ -190,17 +232,17 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.accentPurple.withOpacity(0.15),
-            AppColors.accentPurple.withOpacity(0.05),
+            AppColors.accentPurple.withOpacity(0.25),
+            AppColors.accentPurple.withOpacity(0.08),
+            AppColors.cardSurface,
           ],
         ),
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: AppColors.accentPurple.withOpacity(0.2)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 20,
+            color: AppColors.accentPurple.withOpacity(0.15),
+            blurRadius: 30,
             offset: const Offset(0, 10),
           ),
         ],
@@ -212,65 +254,97 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'REMAINING MONTHLY',
+                'BUDGET REMAINING',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.7),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
+                  letterSpacing: 1.5,
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 5,
                 ),
-                child: Text(
-                  '${(percentSpent * 100).clamp(0, 999).toStringAsFixed(0)}% Used',
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: statusColor.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isOver
+                          ? Icons.warning_amber
+                          : (percentSpent > 0.8
+                                ? Icons.info
+                                : Icons.check_circle),
+                      color: statusColor,
+                      size: 12,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${(percentSpent * 100).clamp(0, 999).toStringAsFixed(0)}% Used',
+                      style: TextStyle(
+                        color: statusColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
-            '₹${_formatAmount(totalRemaining)}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 32,
+            '₹${_formatAmount(totalRemaining.abs())}',
+            style: TextStyle(
+              color: isOver ? AppColors.error : Colors.white,
+              fontSize: 36,
               fontWeight: FontWeight.w900,
             ),
           ),
+          if (isOver)
+            Text(
+              'Over Budget',
+              style: TextStyle(
+                color: AppColors.error.withOpacity(0.8),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           const SizedBox(height: 20),
-          // Neon Progress Bar
+          // Premium Neon Progress Bar
           Stack(
             children: [
               Container(
-                height: 8,
+                height: 10,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.black26,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(5),
                 ),
               ),
               LayoutBuilder(
                 builder: (context, constraints) {
                   return Container(
-                    height: 8,
+                    height: 10,
                     width: constraints.maxWidth * percentSpent.clamp(0.0, 1.0),
                     decoration: BoxDecoration(
-                      color: statusColor,
-                      borderRadius: BorderRadius.circular(4),
+                      gradient: LinearGradient(
+                        colors: isOver
+                            ? [AppColors.error, AppColors.error]
+                            : [AppColors.accentPurple, statusColor],
+                      ),
+                      borderRadius: BorderRadius.circular(5),
                       boxShadow: [
                         BoxShadow(
                           color: statusColor.withOpacity(0.6),
-                          blurRadius: 10,
-                          spreadRadius: 1,
+                          blurRadius: 12,
+                          spreadRadius: 2,
                         ),
                       ],
                     ),
@@ -279,22 +353,30 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Spent: ₹${_formatAmount(totalSpent)}',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
-                  fontSize: 12,
+              Expanded(
+                child: _buildMiniStat(
+                  'Spent',
+                  '₹${_formatAmount(totalSpent)}',
+                  AppColors.error.withOpacity(0.8),
                 ),
               ),
-              Text(
-                'Cap: ₹${_formatAmount(totalAllocated)}',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
-                  fontSize: 12,
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildMiniStat(
+                  'Total Cap',
+                  '₹${_formatAmount(totalAllocated)}',
+                  AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildMiniStat(
+                  'Budgets',
+                  '${provider.budgets.length}',
+                  AppColors.accentPurple,
                 ),
               ),
             ],
@@ -304,161 +386,703 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
     );
   }
 
-  Widget _buildBudgetCard(BuildContext context, Budget budget) {
+  Widget _buildMiniStat(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.5),
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ========== BENTO GRID LAYOUT ==========
+  Widget _buildBentoBudgetGrid(BuildContext context, List<Budget> budgets) {
+    // Sort by amount allocated (highest first) for bento importance
+    final sorted = List<Budget>.from(budgets)
+      ..sort((a, b) => b.allocatedAmount.compareTo(a.allocatedAmount));
+
+    final List<Widget> rows = [];
+    int index = 0;
+
+    while (index < sorted.length) {
+      final remaining = sorted.length - index;
+
+      if (remaining == 1) {
+        // Single item: wide tile
+        rows.add(_buildBentoTile(context, sorted[index], isWide: true));
+        index++;
+      } else if (remaining == 2) {
+        // Two items: two large squares OR wide + compact
+        if (index == 0) {
+          // First two: two large squares side by side
+          rows.add(
+            Row(
+              children: [
+                Expanded(
+                  child: _buildBentoTile(context, sorted[index], isLarge: true),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildBentoTile(
+                    context,
+                    sorted[index + 1],
+                    isLarge: true,
+                  ),
+                ),
+              ],
+            ),
+          );
+        } else {
+          // Later: row of 2 compact
+          rows.add(
+            Row(
+              children: [
+                Expanded(
+                  child: _buildBentoTile(
+                    context,
+                    sorted[index],
+                    isCompact: true,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildBentoTile(
+                    context,
+                    sorted[index + 1],
+                    isCompact: true,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        index += 2;
+      } else if (remaining >= 3 && index == 0) {
+        // First row: 2 large squares
+        rows.add(
+          Row(
+            children: [
+              Expanded(
+                child: _buildBentoTile(context, sorted[index], isLarge: true),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildBentoTile(
+                  context,
+                  sorted[index + 1],
+                  isLarge: true,
+                ),
+              ),
+            ],
+          ),
+        );
+        index += 2;
+      } else if (remaining >= 3) {
+        // Pattern: 1 wide + 2 stacked compact
+        rows.add(
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: _buildBentoTile(context, sorted[index], isWide: true),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: _buildBentoTile(
+                          context,
+                          sorted[index + 1],
+                          isCompact: true,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: _buildBentoTile(
+                          context,
+                          sorted[index + 2],
+                          isCompact: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        index += 3;
+      }
+
+      rows.add(const SizedBox(height: 12));
+    }
+
+    return Column(children: rows);
+  }
+
+  Widget _buildBentoTile(
+    BuildContext context,
+    Budget budget, {
+    bool isLarge = false,
+    bool isWide = false,
+    bool isCompact = false,
+  }) {
     final progress = budget.progress;
     final isOverspent = budget.isOverspent;
     final statusColor = isOverspent
         ? AppColors.error
         : (progress > 0.85 ? AppColors.warning : AppColors.success);
+    final categoryColor = _getCategoryColor(budget.categoryId);
 
-    return Slidable(
-      key: ValueKey(budget.id),
-      endActionPane: ActionPane(
-        motion: const DrawerMotion(),
-        children: [
-          SlidableAction(
-            onPressed: (_) => showAddBudgetModal(context, budget: budget),
-            backgroundColor: AppColors.accentPurple,
-            foregroundColor: Colors.white,
-            icon: Icons.edit,
-            label: 'Edit',
-            borderRadius: BorderRadius.circular(20),
-          ),
-          SlidableAction(
-            onPressed: (_) => _showDeleteConfirmation(context, budget),
-            backgroundColor: AppColors.error,
-            foregroundColor: Colors.white,
-            icon: Icons.delete,
-            label: 'Delete',
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ],
-      ),
-      child: GestureDetector(
+    if (isLarge) {
+      // Large square tile (like subscription large tile)
+      return GestureDetector(
         onTap: () => showAddBudgetModal(context, budget: budget),
-        onLongPress: () => showAddBudgetModal(context, budget: budget),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.cardSurface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(16),
+        onLongPress: () => _showDeleteConfirmation(context, budget),
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [categoryColor.withOpacity(0.2), AppColors.cardSurface],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: categoryColor.withOpacity(0.2)),
+              boxShadow: [
+                BoxShadow(
+                  color: categoryColor.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: categoryColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        _getCategoryIcon(budget.categoryId),
+                        color: categoryColor,
+                        size: 18,
+                      ),
                     ),
-                    child: Icon(
-                      _getCategoryIcon(budget.categoryId),
-                      color: statusColor,
-                      size: 24,
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${(progress * 100).clamp(0, 999).toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  budget.categoryName,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '₹${_formatAmount(budget.allocatedAmount)}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 20,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+                const SizedBox(height: 8),
+                // Progress bar
+                Stack(
+                  children: [
+                    Container(
+                      height: 5,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    FractionallySizedBox(
+                      widthFactor: progress.clamp(0.0, 1.0),
+                      child: Container(
+                        height: 5,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [categoryColor, statusColor],
+                          ),
+                          borderRadius: BorderRadius.circular(3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: statusColor.withOpacity(0.5),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  isOverspent
+                      ? 'Over by ₹${_formatAmount(budget.spentAmount - budget.allocatedAmount)}'
+                      : '₹${_formatAmount(budget.remainingAmount)} left',
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else if (isWide) {
+      // Wide horizontal tile
+      return GestureDetector(
+        onTap: () => showAddBudgetModal(context, budget: budget),
+        onLongPress: () => _showDeleteConfirmation(context, budget),
+        child: Container(
+          height: 120,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [categoryColor.withOpacity(0.15), AppColors.cardSurface],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: categoryColor.withOpacity(0.15)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: categoryColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  _getCategoryIcon(budget.categoryId),
+                  color: categoryColor,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      budget.categoryName,
+                      style: AppTypography.titleMedium.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Progress bar
+                    Stack(
                       children: [
-                        Text(
-                          budget.categoryName,
-                          style: AppTypography.titleMedium.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
+                        Container(
+                          height: 6,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(3),
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          budget.isOverspent
-                              ? 'Over by ₹${_formatAmount(budget.spentAmount - budget.allocatedAmount)}'
-                              : '₹${_formatAmount(budget.remainingAmount)} left',
-                          style: TextStyle(
-                            color: statusColor,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                        FractionallySizedBox(
+                          widthFactor: progress.clamp(0.0, 1.0),
+                          child: Container(
+                            height: 6,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [categoryColor, statusColor],
+                              ),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 6),
+                    Text(
+                      isOverspent
+                          ? 'Over by ₹${_formatAmount(budget.spentAmount - budget.allocatedAmount)}'
+                          : '₹${_formatAmount(budget.remainingAmount)} of ₹${_formatAmount(budget.allocatedAmount)} left',
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${(progress * 100).clamp(0, 999).toStringAsFixed(0)}%',
+                      style: TextStyle(
+                        color: statusColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '₹${_formatAmount(budget.allocatedAmount)}',
-                        style: AppTypography.bodyLarge.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        budget.period.toUpperCase(),
-                        style: TextStyle(
-                          color: AppColors.textTertiary,
-                          fontSize: 10,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 8),
+                  Text(
+                    budget.period.toUpperCase(),
+                    style: TextStyle(
+                      color: AppColors.textTertiary,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 16),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: progress.clamp(0.0, 1.0),
-                  backgroundColor: Colors.white.withOpacity(0.05),
-                  color: statusColor,
-                  minHeight: 6,
-                ),
               ),
             ],
           ),
         ),
-      ),
-    );
+      );
+    } else {
+      // Compact tile
+      return GestureDetector(
+        onTap: () => showAddBudgetModal(context, budget: budget),
+        onLongPress: () => _showDeleteConfirmation(context, budget),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.cardSurface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: categoryColor.withOpacity(0.15)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    _getCategoryIcon(budget.categoryId),
+                    color: categoryColor,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      budget.categoryName,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Progress bar
+              Stack(
+                children: [
+                  Container(
+                    height: 4,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  FractionallySizedBox(
+                    widthFactor: progress.clamp(0.0, 1.0),
+                    child: Container(
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '₹${_formatAmount(budget.allocatedAmount)}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${(progress * 100).clamp(0, 999).toStringAsFixed(0)}%',
+                      style: TextStyle(
+                        color: statusColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  Color _getCategoryColor(String categoryId) {
+    final colors = {
+      'housing': Colors.blue,
+      'food': Colors.orange,
+      'transportation': Colors.purple,
+      'savings': AppColors.success,
+      'investments': Colors.teal,
+      'entertainment': Colors.pink,
+      'shopping': Colors.amber,
+      'health': Colors.red,
+      'personal': Colors.indigo,
+      'education': Colors.cyan,
+      'miscellaneous': Colors.grey,
+    };
+    return colors[categoryId] ?? AppColors.accentPurple;
   }
 
   Widget _buildEmptyState(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.account_balance_wallet_outlined,
-            size: 64,
-            color: AppColors.textTertiary.withOpacity(0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            "No budgets set",
-            style: TextStyle(color: AppColors.textTertiary),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "Take control of your spending",
-            style: TextStyle(
-              color: AppColors.textTertiary.withOpacity(0.5),
-              fontSize: 12,
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Animated gradient container
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.accentPurple.withOpacity(0.2),
+                    AppColors.accentPurple.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: AppColors.accentPurple.withOpacity(0.2),
+                ),
+              ),
+              child: Icon(
+                Icons.pie_chart_outline_rounded,
+                size: 56,
+                color: AppColors.accentPurple.withOpacity(0.6),
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          OutlinedButton.icon(
-            onPressed: () => showQuickSetupModal(context),
-            icon: const Icon(Icons.auto_fix_high, size: 16),
-            label: const Text("Auto Setup"),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.accentPurple,
-              side: const BorderSide(color: AppColors.accentPurple),
+            const SizedBox(height: 32),
+            Text(
+              "No Budgets Yet",
+              style: AppTypography.headlineSmall.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              "Set spending limits for categories\nand take control of your finances",
+              textAlign: TextAlign.center,
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.textTertiary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Auto Setup Button
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.accentPurple,
+                        AppColors.accentPurple.withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.accentPurple.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => showQuickSetupModal(context),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 14,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.auto_fix_high,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Auto Setup',
+                              style: AppTypography.labelLarge.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Manual Add Button
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.cardSurface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.accentPurple.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => showAddBudgetModal(context),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 14,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.add,
+                              color: AppColors.accentPurple,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Add',
+                              style: AppTypography.labelLarge.copyWith(
+                                color: AppColors.accentPurple,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

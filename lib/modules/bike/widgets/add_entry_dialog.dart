@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/models/bike.dart';
+import '../../../core/models/account.dart';
+import '../../../core/models/transaction.dart';
 import '../../../core/providers/bike_provider.dart';
+import '../../../core/providers/account_provider.dart';
+import '../../../core/providers/transaction_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -21,6 +26,8 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
   bool _isFuelMode = true;
   bool _isInputtingTrip = true;
   bool _isFullTank = true; // <--- NEW: State for Full Tank Toggle
+  bool _linkToExpense = true; // Link garage entries to expense transactions
+  Account? _selectedAccount;
 
   // Controllers
   final _mainInputController = TextEditingController();
@@ -31,21 +38,12 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
   final _customCategoryController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
-  String _selectedCategory = 'maintenance';
+  final String _selectedCategory = 'maintenance';
 
   // Math Helpers
   double _lastOdo = 0.0;
   double _calculatedOdo = 0.0;
   double _calculatedTrip = 0.0;
-
-  final List<String> _expenseCategories = [
-    'maintenance',
-    'repair',
-    'insurance',
-    'modification',
-    'fine',
-    'other',
-  ];
 
   @override
   void initState() {
@@ -146,12 +144,38 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
     return distance / totalFuelUsed;
   }
 
-  void _save() {
+  void _save() async {
     final provider = context.read<BikeProvider>();
 
     if (_costController.text.isEmpty || _mainInputController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill cost and distance fields")),
+      );
+      return;
+    }
+
+    // Validate cost is a valid number
+    final costParsed = double.tryParse(_costController.text);
+    if (costParsed == null || costParsed <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter a valid cost amount")),
+      );
+      return;
+    }
+
+    // Validate distance is a valid number
+    final mainInputParsed = double.tryParse(_mainInputController.text);
+    if (mainInputParsed == null || mainInputParsed < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter a valid distance")),
+      );
+      return;
+    }
+
+    // Validate account selection if linking to expense
+    if (_linkToExpense && _selectedAccount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select an account to debit")),
       );
       return;
     }
@@ -184,21 +208,77 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
       date: _selectedDate,
       odometerReading: _calculatedOdo,
       fuelQuantity: _isFuelMode ? currentFuelQty : 0,
-      fuelAmount: double.parse(_costController.text),
+      fuelAmount: costParsed,
       category: finalCategory,
-      notes: _notesController.text,
-      isFullTank: _isFullTank, // <--- Saving the flag
+      notes: _notesController.text.trim(),
+      isFullTank: _isFullTank,
       mileage: calculatedMileage,
     );
 
-    provider.addBikeEntry(entry);
+    try {
+      provider.addBikeEntry(entry);
 
-    if (_calculatedOdo > widget.bike.currentOdometer) {
-      final updatedBike = widget.bike.copyWith(currentOdometer: _calculatedOdo);
-      provider.updateBike(updatedBike);
+      if (_calculatedOdo > widget.bike.currentOdometer) {
+        final updatedBike = widget.bike.copyWith(
+          currentOdometer: _calculatedOdo,
+        );
+        provider.updateBike(updatedBike);
+      }
+
+      // Create expense transaction if linked
+      if (_linkToExpense && _selectedAccount != null) {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          final txnProvider = context.read<TransactionProvider>();
+
+          final transaction = Transaction(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            userId: user.uid,
+            type: TransactionType.expense,
+            amount: costParsed,
+            description: _isFuelMode
+                ? '${widget.bike.name} - Fuel (${currentFuelQty.toStringAsFixed(1)}L)'
+                : '${widget.bike.name} - $finalCategory',
+            categoryId: _isFuelMode
+                ? 'transportation'
+                : 'transportation', // Map to Transportation category
+            accountId: _selectedAccount!.id,
+            date: _selectedDate,
+            metadata: {
+              'source': 'garage',
+              'bikeName': widget.bike.name,
+              'entryId': entry.id,
+              'category': finalCategory,
+              if (_isFuelMode) 'fuelQuantity': currentFuelQty,
+              'odometer': _calculatedOdo,
+            },
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+
+          await txnProvider.addTransaction(transaction);
+        }
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _linkToExpense
+                  ? "Entry added & expense recorded"
+                  : "Entry added successfully",
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error adding entry: $e")));
+      }
     }
-
-    if (mounted) Navigator.pop(context);
   }
 
   @override
@@ -337,7 +417,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                     children: [
                       Switch(
                         value: _isFullTank,
-                        activeColor: AppColors.primaryBlue,
+                        activeThumbColor: AppColors.primaryBlue,
                         onChanged: (val) => setState(() => _isFullTank = val),
                       ),
                       const SizedBox(width: 8),
@@ -443,6 +523,11 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
               ),
 
               const SizedBox(height: 32),
+
+              // --- LINK TO EXPENSE SECTION ---
+              _buildExpenseLinkingSection(),
+
+              const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -456,9 +541,9 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  child: const Text(
-                    'Save Entry',
-                    style: TextStyle(
+                  child: Text(
+                    _linkToExpense ? 'Save & Record Expense' : 'Save Entry',
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: Colors.white,
@@ -516,7 +601,6 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
     String? suffix,
     bool isHighlight = false,
     Function(String)? onChanged,
-    bool isNumber = false,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -544,6 +628,164 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
             vertical: 16,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildExpenseLinkingSection() {
+    final accountProvider = context.watch<AccountProvider>();
+    final accounts = accountProvider.accounts;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: _linkToExpense
+              ? AppColors.success.withOpacity(0.3)
+              : Colors.white.withOpacity(0.05),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Toggle Row
+          Row(
+            children: [
+              Icon(
+                Icons.link,
+                color: _linkToExpense
+                    ? AppColors.success
+                    : AppColors.textTertiary,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Link to Expenses",
+                      style: TextStyle(
+                        color: _linkToExpense
+                            ? Colors.white
+                            : AppColors.textTertiary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      "Auto-create expense transaction",
+                      style: TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _linkToExpense,
+                activeColor: AppColors.success,
+                onChanged: (val) => setState(() {
+                  _linkToExpense = val;
+                  if (!val) _selectedAccount = null;
+                }),
+              ),
+            ],
+          ),
+
+          // Account Dropdown (when enabled)
+          if (_linkToExpense) ...[
+            const SizedBox(height: 16),
+            Text(
+              "DEBIT FROM",
+              style: AppTypography.labelSmall.copyWith(
+                color: AppColors.textTertiary,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundBlack,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(
+                  color: _selectedAccount != null
+                      ? AppColors.success.withOpacity(0.3)
+                      : Colors.white.withOpacity(0.1),
+                ),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<Account>(
+                  value: _selectedAccount,
+                  isExpanded: true,
+                  dropdownColor: AppColors.cardSurface,
+                  hint: Text(
+                    "Select Account",
+                    style: TextStyle(
+                      color: AppColors.textTertiary.withOpacity(0.7),
+                    ),
+                  ),
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down,
+                    color: AppColors.textTertiary,
+                  ),
+                  items: accounts.map((account) {
+                    return DropdownMenuItem<Account>(
+                      value: account,
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryBlue.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.account_balance_wallet,
+                              size: 16,
+                              color: AppColors.primaryBlue,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  account.name,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  "₹${account.balance.toStringAsFixed(0)}",
+                                  style: TextStyle(
+                                    color: AppColors.textTertiary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (account) =>
+                      setState(() => _selectedAccount = account),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

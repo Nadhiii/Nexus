@@ -146,7 +146,6 @@ Nexus is not just another expense tracker - it's a **financial intelligence plat
 - **Cash Flow Analysis**: Income vs expense trends
 - **Category Breakdown**: Detailed spending analysis
 - **Goal Progress Tracking**: Visual progress indicators
-- **Export Capabilities**: PDF/Excel report generation
 - **Time Period Analysis**: Daily, weekly, monthly, yearly views
 
 ### 9. Bills & Subscription Management
@@ -155,12 +154,19 @@ Nexus is not just another expense tracker - it's a **financial intelligence plat
 - **Payment Scheduling**: Schedule automatic payments
 - **Cost Analysis**: Identify expensive subscriptions to cancel
 
-### 10. Family Financial Sharing
-- **Multi-User Support**: Share financial data with family
-- **Permission Management**: Control what members can see/edit
-- **Shared Goals**: Collaborative savings goals
-- **Family Budget**: Household budget management
-- **Activity Feed**: Track family financial activities
+### 10. Investment Portfolio Management
+- **Multi-Asset Support**: Stocks, mutual funds, crypto, gold, real estate
+- **Real-time Valuation**: Track current values and profit/loss
+- **Portfolio Analytics**: Asset allocation and performance metrics
+- **Mutual Fund Integration**: Search and track Indian mutual funds with live NAV
+- **Investment Tracking**: Monitor invested amount vs current value
+
+### 11. Vehicle/Bike Tracking
+- **Multi-Vehicle Support**: Track multiple bikes/vehicles
+- **Fuel Efficiency**: Automatic mileage calculation
+- **Maintenance Tracking**: Record service and repairs
+- **Expense Management**: Track all vehicle-related costs
+- **Trip Logging**: Distance-based or odometer-based tracking
 
 ---
 
@@ -298,22 +304,6 @@ flutter pub add pdfx
 
 ---
 
-### Android Auto Integration
-
-**Purpose**: Access key financial information while driving safely.
-
-#### Features
-- Quick balance overview
-- Recent transactions view
-- Voice command support
-- Simplified driving-safe UI
-- Real-time sync with main app
-
-#### Setup Guide
-See [Android Auto Setup](#android-auto-setup) section for detailed configuration.
-
----
-
 ## Technical Architecture
 
 ### Project Structure
@@ -325,44 +315,43 @@ lib/
 │   ├── services/                  # Core business services
 │   │   ├── pdf_parsing_service.dart
 │   │   ├── transaction_service.dart
-│   │   └── ai_service.dart
+│   │   ├── ai_service.dart
+│   │   ├── bike_service.dart
+│   │   ├── budget_service.dart
+│   │   └── investment_service.dart
 │   ├── models/                    # Data models
 │   │   ├── transaction.dart
 │   │   ├── account.dart
 │   │   ├── bike.dart
-│   │   └── trip.dart
+│   │   ├── investment.dart
+│   │   ├── goal.dart
+│   │   └── debt.dart
+│   ├── providers/                 # State management
+│   │   ├── transaction_provider.dart
+│   │   ├── budget_provider.dart
+│   │   ├── investment_provider.dart
+│   │   └── bike_provider.dart
 │   └── widgets/                   # Reusable core widgets
 │       └── modern/                # Modern UI components
-│           └── modern_widgets.dart
+│
+├── screens/                       # Main screens
+│   ├── login_screen.dart         # Authentication
+│   └── main_screen.dart          # Navigation controller
 │
 ├── modules/                       # Feature modules
-│   ├── bike/                      # Bike tracking module
-│   │   ├── providers/
-│   │   ├── screens/
-│   │   ├── dialogs/
-│   │   └── ui/
-│   └── [other modules]
+│   ├── dashboard/                 # Dashboard screens
+│   ├── finance/                   # Transactions & accounts
+│   ├── insights/                  # AI insights
+│   ├── bike/                      # Vehicle tracking
+│   ├── investments/               # Portfolio management
+│   ├── budgets/                   # Budget management
+│   ├── goals/                     # Goal tracking
+│   ├── debts/                     # Debt management
+│   ├── subscriptions/             # Subscription tracking
+│   ├── nbox/                      # Notification inbox
+│   └── more/                      # Settings & preferences
 │
-├── screens_new/                   # Clean screen architecture
-│   ├── main_screen.dart          # Main navigation controller
-│   ├── dashboard/                 # Dashboard and home screens
-│   ├── insights/                  # AI insights and analytics
-│   ├── reports/                   # Financial reports and charts
-│   ├── transactions/              # Transaction management
-│   └── settings/                  # App settings and preferences
-│
-├── widgets/                       # Reusable UI components
-│   ├── dashboard/                 # Dashboard-specific widgets
-│   ├── charts/                    # Financial visualization components
-│   └── common/                    # Shared UI elements
-│
-├── services/                      # Business logic services
-│   ├── ai/                        # AI analysis services
-│   ├── budget/                    # Budget management
-│   ├── bike_service.dart          # Bike tracking service
-│   └── analytics/                 # Financial analytics
-│
-└── utils/                         # Utility functions and helpers
+└── firebase_options.dart          # Firebase configuration
 ```
 
 ### Architecture Principles
@@ -550,29 +539,32 @@ Key rules implemented in `firestore.rules`:
 
 ### ✅ Fully Implemented
 - Core dashboard with net worth tracking
-- Account management
+- Account management (assets/liabilities)
 - Transaction management (manual, SMS, PDF)
-- Budget management with rollover
-- Bike/vehicle tracking module
-- Trip tracking
-- PDF bank statement importer
-- Duplicate detection system
-- Modern design system
+- Budget management with salary-based allocation and rollover
+- Bike/vehicle tracking module with fuel efficiency
+- Trip tracking and odometer management
+- PDF bank statement importer with duplicate detection
+- Investment portfolio tracking (stocks, mutual funds, crypto, gold, real estate)
+- Goal tracking and progress monitoring
+- Debt/loan management
+- Subscription tracking and monitoring
+- Notification inbox (NBox) for pending transactions
+- Modern design system with dark theme
 - Google Sign-In authentication
-- Firebase integration
-- Dark theme UI
-- Family sharing basics
+- Firebase real-time sync
+- Biometric authentication
+- Gmail transaction sync (basic)
+- Backup to Google Drive
 
-### ⏳ In Progress / Planned
-- AI-powered insights (partial)
-- Advanced analytics reports
-- Goal tracking enhancements
-- Investment portfolio tracking
-- Cryptocurrency tracking
-- Bill reminders automation
-- Android Auto full integration
-- Export to PDF/Excel
+### ⏳ Planned / Future Features
+- Advanced AI-powered insights and predictions
+- Family sharing and multi-user support
+- Export to PDF/Excel reports
 - Multi-currency support
+- Voice commands
+- Enhanced analytics dashboards
+- Automated bill payment reminders
 
 ---
 

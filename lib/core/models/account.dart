@@ -20,6 +20,12 @@ class Account {
   final String? accountNumber;
   final String? notes;
 
+  // New Card Fields
+  final String? cardNumber;
+  final String? cardExpiry;
+  // Note: CVV is stored locally in SecureCardService, NOT in Firestore
+  final String? cardHolderName;
+
   Account({
     required this.id,
     required this.userId,
@@ -36,10 +42,12 @@ class Account {
     this.isActive = true,
     this.accountNumber,
     this.notes,
+    this.cardNumber,
+    this.cardExpiry,
+    this.cardHolderName,
   });
 
-  // Map known icon code points to constant IconData instances to avoid
-  // non-constant IconData instantiation (tree shaking requirement).
+  // Map known icon code points to constant IconData instances
   static final Map<int, IconData> _iconLookup = {
     Icons.account_balance.codePoint: Icons.account_balance,
     Icons.savings.codePoint: Icons.savings,
@@ -91,6 +99,9 @@ class Account {
       isActive: data['isActive'] ?? true,
       accountNumber: data['accountNumber'],
       notes: data['notes'],
+      cardNumber: data['cardNumber'],
+      cardExpiry: data['cardExpiry'],
+      cardHolderName: data['cardHolderName'],
     );
   }
 
@@ -118,6 +129,9 @@ class Account {
       isActive: data['isActive'] ?? true,
       accountNumber: data['accountNumber'],
       notes: data['notes'],
+      cardNumber: data['cardNumber'],
+      cardExpiry: data['cardExpiry'],
+      cardHolderName: data['cardHolderName'],
     );
   }
 
@@ -137,6 +151,9 @@ class Account {
       'isActive': isActive,
       'accountNumber': accountNumber,
       'notes': notes,
+      'cardNumber': cardNumber,
+      'cardExpiry': cardExpiry,
+      'cardHolderName': cardHolderName,
     };
   }
 
@@ -157,6 +174,9 @@ class Account {
       isActive: json['isActive'],
       accountNumber: json['accountNumber'],
       notes: json['notes'],
+      cardNumber: json['cardNumber'],
+      cardExpiry: json['cardExpiry'],
+      cardHolderName: json['cardHolderName'],
     );
   }
 
@@ -175,6 +195,9 @@ class Account {
     'isActive': isActive,
     'accountNumber': accountNumber,
     'notes': notes,
+    'cardNumber': cardNumber,
+    'cardExpiry': cardExpiry,
+    'cardHolderName': cardHolderName,
   };
 
   Account copyWith({
@@ -193,6 +216,9 @@ class Account {
     bool? isActive,
     String? accountNumber,
     String? notes,
+    String? cardNumber,
+    String? cardExpiry,
+    String? cardHolderName,
   }) {
     return Account(
       id: id ?? this.id,
@@ -210,6 +236,9 @@ class Account {
       isActive: isActive ?? this.isActive,
       accountNumber: accountNumber ?? this.accountNumber,
       notes: notes ?? this.notes,
+      cardNumber: cardNumber ?? this.cardNumber,
+      cardExpiry: cardExpiry ?? this.cardExpiry,
+      cardHolderName: cardHolderName ?? this.cardHolderName,
     );
   }
 }

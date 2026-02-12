@@ -109,6 +109,7 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
       context,
       listen: false,
     );
+    final bikeProvider = Provider.of<BikeProvider>(context, listen: false);
 
     // Initialize all providers
     accountProvider.initialize();
@@ -117,6 +118,7 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
     budgetProvider.initialize();
     goalProvider.loadGoals(user.uid);
     categoryProvider.refresh(); // Refresh categories after authentication
+    bikeProvider.fetchBikes();
 
     if (!_initializedNotifications) {
       _initializedNotifications = true;

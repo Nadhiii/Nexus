@@ -229,6 +229,9 @@ class _SwipeToDeleteState<T> extends State<SwipeToDelete<T>>
     // Capture the itemId and callback in local variables before any async operations
     final itemId = widget.itemId;
     final undoCallback = widget.onUndoDelete;
+    final itemName = widget.itemName;
+    final deleteCallback = widget.onDelete;
+    final undoDuration = widget.undoDuration;
 
     // Store the undo callback BEFORE deletion to capture current state
     if (undoCallback != null) {
@@ -237,55 +240,67 @@ class _SwipeToDeleteState<T> extends State<SwipeToDelete<T>>
       print('📋 Current stored callbacks: ${_undoCallbacks.keys.toList()}');
     }
 
-    // Delete the item immediately
-    print('🗑️ SwipeToDelete: Deleting item $itemId');
-    widget.onDelete();
+    // Delete the item with a small delay to allow animation to complete
+    print('🗑️ SwipeToDelete: Scheduling deletion for item $itemId');
+
+    // Schedule deletion after current frame to avoid conflicts with dismiss animation
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('🗑️ SwipeToDelete: Executing deletion for item $itemId');
+      deleteCallback();
+    });
+
+    // Safety check before showing snackbar
+    if (!context.mounted) {
+      print('⚠️ SwipeToDelete: Context not mounted, skipping snackbar');
+      return;
+    }
 
     // Show snackbar with or without undo using top snackbar (doesn't block navbar)
-    showTopSnackBar(
-      context,
-      '${widget.itemName} deleted',
-      icon: Icons.delete_outline_rounded,
-      backgroundColor: AppColors.cardDarkElevated,
-      duration: widget.undoDuration,
-      action: undoCallback != null
-          ? TopSnackBarAction(
-              label: 'UNDO',
-              onPressed: () {
-                print('↩️ SwipeToDelete: UNDO pressed for item $itemId');
-                print(
-                  '📋 Available callbacks: ${_undoCallbacks.keys.toList()}',
-                );
+    try {
+      showTopSnackBar(
+        context,
+        '$itemName deleted',
+        icon: Icons.delete_outline_rounded,
+        backgroundColor: AppColors.cardDarkElevated,
+        duration: undoDuration,
+        action: undoCallback != null
+            ? TopSnackBarAction(
+                label: 'UNDO',
+                onPressed: () {
+                  print('↩️ SwipeToDelete: UNDO pressed for item $itemId');
+                  print(
+                    '📋 Available callbacks: ${_undoCallbacks.keys.toList()}',
+                  );
 
-                // Retrieve the stored callback
-                final storedCallback = _undoCallbacks[itemId];
-                if (storedCallback == null) {
-                  print('❌ SwipeToDelete: No undo callback found for $itemId');
-                  return;
-                }
+                  // Retrieve the stored callback
+                  final storedCallback = _undoCallbacks[itemId];
+                  if (storedCallback == null) {
+                    print(
+                      '❌ SwipeToDelete: No undo callback found for $itemId',
+                    );
+                    return;
+                  }
 
-                // Mark this item for animation when it reappears
-                _recentlyRestoredItems.add(itemId);
+                  // Mark this item for animation when it reappears
+                  _recentlyRestoredItems.add(itemId);
 
-                // Restore the item using the stored callback
-                print('📞 SwipeToDelete: Calling stored onUndoDelete callback');
-                storedCallback();
-                print('✅ SwipeToDelete: onUndoDelete callback completed');
+                  // Restore the item using the stored callback
+                  print(
+                    '📞 SwipeToDelete: Calling stored onUndoDelete callback',
+                  );
+                  storedCallback();
+                  print('✅ SwipeToDelete: onUndoDelete callback completed');
 
-                // Clean up the stored callback
-                _undoCallbacks.remove(itemId);
+                  // Clean up the stored callback
+                  _undoCallbacks.remove(itemId);
 
-                // Show a brief "Restored" confirmation
-                showTopSnackBar(
-                  context,
-                  '${widget.itemName} restored',
-                  icon: Icons.check_circle_outline,
-                  backgroundColor: AppColors.success,
-                  duration: const Duration(seconds: 2),
-                );
-              },
-            )
-          : null,
-    );
+                  // Note: Skip showing restored snackbar - context may be invalid
+                },
+              )
+            : null,
+      );
+    } catch (e) {
+      print('⚠️ SwipeToDelete: Error showing snackbar: $e');
+    }
   }
 }

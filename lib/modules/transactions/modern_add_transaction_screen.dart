@@ -13,6 +13,7 @@ import '../../core/models/detected_transaction.dart';
 import '../../core/providers/new_nbox_provider.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/services/transaction_categorization_service.dart';
+import '../payday/payday_checklist_helper.dart';
 
 class ModernAddTransactionScreen extends StatefulWidget {
   final Transaction? transaction;
@@ -398,9 +399,22 @@ class _ModernAddTransactionScreenState
                               ),
                             );
                           }
+                          String? resolvedCategoryId = _selectedCategory;
+                          final hasId = categories.any(
+                            (c) => c.id == resolvedCategoryId,
+                          );
+                          if (!hasId) {
+                            final byName = categories
+                                .where((c) => c.name == resolvedCategoryId)
+                                .toList();
+                            resolvedCategoryId = byName.isNotEmpty
+                                ? byName.first.id
+                                : null;
+                          }
+
                           final selectedColor = categories
                               .firstWhere(
-                                (c) => c.id == _selectedCategory,
+                                (c) => c.id == resolvedCategoryId,
                                 orElse: () => categories.first,
                               )
                               .color;
@@ -442,7 +456,7 @@ class _ModernAddTransactionScreenState
                                 ),
                                 child: DropdownButtonFormField<String>(
                                   focusNode: _categoryFocus,
-                                  initialValue: _selectedCategory,
+                                  initialValue: resolvedCategoryId,
                                   dropdownColor: AppColors.cardDarkElevated,
                                   style: AppTypography.bodyLarge.copyWith(
                                     color: AppColors.textPrimary,
@@ -834,6 +848,21 @@ class _ModernAddTransactionScreenState
       final now = DateTime.now();
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
+      String? resolvedCategoryId = _selectedCategory;
+      if (_selectedType != TransactionType.transfer) {
+        final categories = context.read<CategoryProvider>().categories;
+        final hasId = categories.any((c) => c.id == resolvedCategoryId);
+        if (!hasId) {
+          final byName = categories
+              .where((c) => c.name == resolvedCategoryId)
+              .toList();
+          resolvedCategoryId = byName.isNotEmpty
+              ? byName.first.id
+              : resolvedCategoryId;
+        }
+        _selectedCategory = resolvedCategoryId;
+      }
+
       print('🔄 Creating transfer transaction:');
       print('   Type: $_selectedType');
       print('   From Account ID: $_selectedAccountId');
@@ -850,7 +879,7 @@ class _ModernAddTransactionScreenState
             : _descriptionController.text.trim(),
         categoryId: _selectedType == TransactionType.transfer
             ? 'transfer'
-            : _selectedCategory,
+            : resolvedCategoryId,
         accountId: _selectedAccountId!,
         toAccountId: _selectedType == TransactionType.transfer
             ? _toAccountId
@@ -875,6 +904,13 @@ class _ModernAddTransactionScreenState
             widget.detectedTransaction!.id,
             widget.detectedTransaction!.source,
           );
+          // Check for payday checklist before popping
+          if (!_isEditMode && transaction.type == TransactionType.income) {
+            await PaydayChecklistHelper.checkAndShowChecklist(
+              context,
+              transaction: transaction,
+            );
+          }
           Navigator.of(context).pop(true);
           return;
         }
@@ -885,7 +921,18 @@ class _ModernAddTransactionScreenState
               ? 'Transfer completed successfully!'
               : 'Transaction ${_isEditMode ? 'updated' : 'saved'} successfully!',
         );
-        Navigator.of(context).pop();
+
+        // Check for payday checklist for new income transactions
+        if (!_isEditMode && transaction.type == TransactionType.income) {
+          Navigator.of(context).pop();
+          await PaydayChecklistHelper.checkAndShowChecklist(
+            context,
+            transaction: transaction,
+          );
+        } else {
+          Navigator.of(context).pop();
+        }
+        ;
       } else if (mounted) {
         final error = context.read<TransactionProvider>().error;
         showTopSnackBar(

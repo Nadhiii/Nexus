@@ -6,7 +6,22 @@ void showTopNotification(
   String message, {
   bool isError = false,
 }) {
-  final overlay = Overlay.of(context);
+  // Safety check: ensure context is still valid and mounted
+  if (!context.mounted) {
+    debugPrint(
+      'showTopNotification: Context not mounted, skipping notification',
+    );
+    return;
+  }
+
+  OverlayState? overlay;
+  try {
+    overlay = Overlay.of(context);
+  } catch (e) {
+    debugPrint('showTopNotification: Could not get overlay - $e');
+    return;
+  }
+
   late OverlayEntry overlayEntry;
 
   overlayEntry = OverlayEntry(

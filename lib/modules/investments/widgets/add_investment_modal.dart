@@ -198,7 +198,7 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
                                 ),
                                 if (_isSearching)
                                   const LinearProgressIndicator(
-                                    color: Color(0xFF6366F1),
+                                    color: AppColors.investmentIndigo,
                                     backgroundColor: Colors.transparent,
                                   ),
                                 if (_searchResults.isNotEmpty)
@@ -298,7 +298,7 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
                                 child: ElevatedButton(
                                   onPressed: _isLoading ? null : _saveAsset,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF6366F1),
+                                    backgroundColor: AppColors.investmentIndigo,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(25),
                                     ),
@@ -361,11 +361,13 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF6366F1) : AppColors.cardSurface,
+          color: isSelected
+              ? AppColors.investmentIndigo
+              : AppColors.cardSurface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFF6366F1)
+                ? AppColors.investmentIndigo
                 : Colors.white.withOpacity(0.1),
           ),
         ),

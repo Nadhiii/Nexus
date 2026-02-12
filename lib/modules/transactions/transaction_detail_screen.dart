@@ -1,5 +1,6 @@
 import '../../core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/widgets/translucent_app_bar.dart';
 
@@ -76,29 +77,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     showTopSnackBar(context, 'Transaction updated successfully');
   }
 
-  void _deleteTransaction() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Transaction'),
-        content: Text('Are you sure you want to delete "${widget.title}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(
-                context,
-              ).pop('deleted');
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+  void _deleteTransaction() async {
+    final confirmed = await AppDialog.showDeleteConfirmation(
+      context,
+      itemName: widget.title,
     );
+    if (confirmed == true) {
+      Navigator.of(context).pop('deleted');
+    }
   }
 
   @override

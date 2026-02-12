@@ -109,6 +109,21 @@ class NewSmsParser {
   }
 
   static String _extractMerchant(String body, String sender) {
+    // 0. Federal Bank UPI format: "to MERCHANT.Ref:"
+    final federalUpiPattern = RegExp(
+      r'\b(?:sent|paid|debited|transferred)\b.*?\bto\s+([A-Za-z0-9\s&\-\.]{2,50}?)(?:\.Ref|\s+Ref|\.Ref:|\.|\s+on\b)',
+      caseSensitive: false,
+    );
+    final federalMatch = federalUpiPattern.firstMatch(body);
+    if (federalMatch != null) {
+      String candidate = federalMatch.group(1) ?? '';
+      candidate = candidate.replaceAll(RegExp(r'\s+'), ' ').trim();
+      candidate = candidate.replaceAll(RegExp(r'[\.,;]+$'), '').trim();
+      if (candidate.isNotEmpty) {
+        return candidate.toUpperCase();
+      }
+    }
+
     // 1. UPI Handles (Very Reliable)
     final upiPattern = RegExp(
       r'(?:\s|^)([a-zA-Z0-9\.\-_]+@[a-zA-Z]{3,})(?:\s|\.|$)',
@@ -119,12 +134,16 @@ class NewSmsParser {
 
     // 2. "At/To/Via" Keywords
     final atPattern = RegExp(
-      r'(?:at|to|via)\s+([A-Za-z0-9\s\&\.\-]{2,25})',
+      r'(?:at|to|via)\s+([A-Za-z0-9\s\&\.\-]{2,40})',
       caseSensitive: false,
     );
     final atMatch = atPattern.firstMatch(body);
     if (atMatch != null) {
       String candidate = atMatch.group(1)!.trim();
+      candidate = candidate.replaceAll(RegExp(r'\s+'), ' ').trim();
+      candidate = candidate
+          .replaceAll(RegExp(r'\s*\.?Ref.*$', caseSensitive: false), '')
+          .trim();
       // Filter out boring words that accidentally match
       if (!candidate.toLowerCase().contains('upi') &&
           !candidate.toLowerCase().contains('ref') &&

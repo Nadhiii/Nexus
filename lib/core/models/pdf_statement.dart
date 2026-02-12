@@ -115,6 +115,22 @@ class PDFStatement {
   /// Total transactions in this statement
   int get transactionCount => transactions.length;
 
+  /// Count of income and expense transactions
+  int get incomeCount => transactions
+    .where((t) => _isIncomeType(t.type))
+    .length;
+  int get expenseCount => transactions
+    .where((t) => _isExpenseType(t.type))
+    .length;
+
+  /// Totals for income and expense amounts
+  double get incomeTotal => transactions
+    .where((t) => _isIncomeType(t.type))
+    .fold(0.0, (sum, t) => sum + (t.amount.abs()));
+  double get expenseTotal => transactions
+    .where((t) => _isExpenseType(t.type))
+    .fold(0.0, (sum, t) => sum + (t.amount.abs()));
+
   /// Date range covered
   String get dateRange {
     if (metadata.statementPeriodStart == null ||
@@ -122,6 +138,17 @@ class PDFStatement {
       return 'Unknown Period';
     }
     return '${metadata.statementPeriodStart!.toIso8601String().split('T')[0]} to ${metadata.statementPeriodEnd!.toIso8601String().split('T')[0]}';
+  }
+
+  /// Helpers to interpret transaction type strings
+  bool _isIncomeType(String type) {
+    final t = type.toLowerCase();
+    return t.contains('income') || t.contains('credit') || t == 'cr';
+  }
+
+  bool _isExpenseType(String type) {
+    final t = type.toLowerCase();
+    return t.contains('expense') || t.contains('debit') || t == 'dr';
   }
 
   PDFStatement({

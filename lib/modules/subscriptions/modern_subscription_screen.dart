@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/subscription_provider.dart';
+import '../../core/providers/transaction_provider.dart';
 import '../../core/models/subscription.dart';
+import '../../core/models/transaction.dart' as txn;
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/swipe_to_delete.dart';
 import 'widgets/add_subscription_modal.dart';
-import 'widgets/log_subscription_payment_modal.dart';
 
-// Matches Debt Filter Logic
 enum SubscriptionFilter { active, history }
 
 class ModernSubscriptionScreen extends StatefulWidget {
@@ -22,12 +22,110 @@ class ModernSubscriptionScreen extends StatefulWidget {
 class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
   SubscriptionFilter _filter = SubscriptionFilter.active;
 
+  // Zombie detection: subscriptions without matching transactions in 60 days
+  Set<String> _zombieSubIds = {};
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SubscriptionProvider>().initialize();
+      _detectZombieSubscriptions();
     });
+  }
+
+  /// Detect subscriptions that haven't had matching transactions recently
+  Future<void> _detectZombieSubscriptions() async {
+    try {
+      final subProvider = context.read<SubscriptionProvider>();
+      final txnProvider = context.read<TransactionProvider>();
+
+      final activeSubs = subProvider.subscriptions
+          .where((s) => s.isActive)
+          .toList();
+      final recentTransactions = txnProvider.transactions.where((t) {
+        final sixtyDaysAgo = DateTime.now().subtract(const Duration(days: 60));
+        return t.date.isAfter(sixtyDaysAgo) &&
+            t.type == txn.TransactionType.expense;
+      }).toList();
+
+      final zombies = <String>{};
+
+      for (final sub in activeSubs) {
+        // Check if any transaction matches this subscription (by name similarity)
+        final hasMatchingTxn = recentTransactions.any((t) {
+          final desc = (t.description ?? '').toLowerCase();
+          final subName = sub.name.toLowerCase();
+          // Match if description contains subscription name or vice versa
+          return desc.contains(subName) ||
+              subName.contains(desc) ||
+              _fuzzyMatch(desc, subName);
+        });
+
+        if (!hasMatchingTxn) {
+          zombies.add(sub.id);
+        }
+      }
+
+      if (mounted) {
+        setState(() => _zombieSubIds = zombies);
+      }
+    } catch (e) {
+      debugPrint('Zombie detection error: $e');
+    }
+  }
+
+  /// Simple fuzzy matching for subscription names
+  bool _fuzzyMatch(String a, String b) {
+    // Common abbreviations
+    final abbrevMap = {
+      'netflix': ['nflx', 'netflix'],
+      'spotify': ['spotify', 'spot'],
+      'amazon': ['amzn', 'amazon', 'prime'],
+      'youtube': ['yt', 'youtube', 'ytube'],
+      'disney': ['disney', 'hotstar', 'd+'],
+      'apple': ['apple', 'icloud'],
+      'google': ['google', 'goog'],
+      'microsoft': ['msft', 'microsoft', 'office', '365'],
+    };
+
+    for (final entry in abbrevMap.entries) {
+      if (entry.value.any((v) => a.contains(v)) &&
+          entry.value.any((v) => b.contains(v))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Calculate days until due
+  int _daysUntilDue(DateTime dueDate) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    return due.difference(today).inDays;
+  }
+
+  /// Get due status info
+  ({String text, Color color, bool urgent})? _getDueStatus(Subscription sub) {
+    final days = _daysUntilDue(sub.nextDueDate);
+
+    if (days < 0) {
+      return (text: 'Overdue', color: AppColors.error, urgent: true);
+    } else if (days == 0) {
+      return (text: 'Today', color: AppColors.error, urgent: true);
+    } else if (days == 1) {
+      return (text: 'Tomorrow', color: AppColors.pastelOrange, urgent: true);
+    } else if (days <= 3) {
+      return (text: '${days}d', color: AppColors.pastelOrange, urgent: false);
+    } else if (days <= 7) {
+      return (
+        text: '${days}d',
+        color: AppColors.pastelYellow,
+        urgent: false,
+      ); // Amber/Yellow
+    }
+    return null; // Don't show badge for > 7 days
   }
 
   @override
@@ -42,35 +140,20 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
 
           final allSubs = provider.subscriptions;
           final activeSubs = allSubs.where((s) => s.isActive).toList();
-          final historySubs = allSubs.where((s) => !s.isActive).toList();
 
-          final displaySubs = _filter == SubscriptionFilter.active
-              ? activeSubs
-              : historySubs;
+          // Sort Active by Amount (High to Low) for the Bento Grid hierarchy
+          activeSubs.sort((a, b) => b.amount.compareTo(a.amount));
+
+          final historySubs = allSubs.where((s) => !s.isActive).toList();
 
           return CustomScrollView(
             slivers: [
-              _buildAppBar(context),
-
-              // Hero Summary (Active only)
-              if (_filter == SubscriptionFilter.active && activeSubs.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    child: _buildSmartSummaryCard(context, activeSubs),
-                  ),
-                ),
+              _buildAppBar(context, activeSubs.length),
 
               // Filter Pills
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
                   child: _buildFilterPills(
                     activeSubs.length,
                     historySubs.length,
@@ -78,53 +161,799 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                 ),
               ),
 
-              // List
-              if (displaySubs.isEmpty)
-                SliverFillRemaining(child: _buildEmptyState(context))
+              // --- BODY CONTENT ---
+              if (_filter == SubscriptionFilter.active)
+                ..._buildActiveBentoView(context, provider, activeSubs)
               else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final subscription = displaySubs[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: SwipeToDelete(
-                          itemKey: ValueKey(subscription.id),
-                          itemId: subscription.id,
-                          itemName: subscription.name,
-                          onDelete: () =>
-                              provider.deleteSubscription(subscription.id),
-                          child: _buildSubscriptionCard(context, subscription),
-                        ),
-                      );
-                    }, childCount: displaySubs.length),
-                  ),
-                ),
+                _buildHistoryListView(context, provider, historySubs),
+
+              // Bottom Padding for FAB
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           );
         },
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 20.0),
-        child: FloatingActionButton.extended(
-          onPressed: () => showAddSubscriptionModal(context),
-          backgroundColor: AppColors.accentOrange,
-          elevation: 4,
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text(
-            'New Sub',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => showAddSubscriptionModal(context),
+        backgroundColor: AppColors.primaryBlue,
+        elevation: 4,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: Text(
+          'New Sub',
+          style: AppTypography.labelLarge.copyWith(color: Colors.white),
         ),
       ),
     );
   }
 
-  Widget _buildAppBar(BuildContext context) {
+  // ================= ACTIVE VIEW (BENTO GRID) =================
+
+  List<Widget> _buildActiveBentoView(
+    BuildContext context,
+    SubscriptionProvider provider,
+    List<Subscription> subs,
+  ) {
+    if (subs.isEmpty) {
+      return [SliverFillRemaining(child: _buildEmptyState(context))];
+    }
+
+    final totalMonthly = provider.totalMonthlyCost;
+    final totalYearly = provider.totalYearlyCost;
+
+    // Collect alerts
+    final overdueSubs = subs.where((s) => s.isOverdue).toList();
+    final dueSoonSubs = subs.where((s) {
+      final days = _daysUntilDue(s.nextDueDate);
+      return days >= 0 && days <= 3 && !s.isOverdue;
+    }).toList();
+    final zombieSubs = subs.where((s) => _zombieSubIds.contains(s.id)).toList();
+
+    final hasAlerts =
+        overdueSubs.isNotEmpty ||
+        dueSoonSubs.isNotEmpty ||
+        zombieSubs.isNotEmpty;
+
+    return [
+      // 0. TOTAL SUMMARY CARD (At Top) - Dark Theme
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+          child: _buildTotalSummaryCard(totalMonthly, totalYearly),
+        ),
+      ),
+
+      // 1. ALERTS BANNER (if any)
+      if (hasAlerts)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+            child: _buildAlertsBanner(overdueSubs, dueSoonSubs, zombieSubs),
+          ),
+        ),
+
+      // 2. TOP BENTO ROW (Items 0 & 1 - Large Squares)
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildBentoTile(
+                      context,
+                      subs.elementAtOrNull(0),
+                      totalMonthly,
+                      isLarge: true,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildBentoTile(
+                      context,
+                      subs.elementAtOrNull(1),
+                      totalMonthly,
+                      isLarge: true,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // 2. MIDDLE BENTO ROW (Item 2 Wide, Items 3 & 4 Stacked)
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: _buildBentoTile(
+                        context,
+                        subs.elementAtOrNull(2),
+                        totalMonthly,
+                        isWide: true,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: _buildBentoTile(
+                              context,
+                              subs.elementAtOrNull(3),
+                              totalMonthly,
+                              isCompact: true,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Expanded(
+                            child: _buildBentoTile(
+                              context,
+                              subs.elementAtOrNull(4),
+                              totalMonthly,
+                              isCompact: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+
+      // 3. GRID FOR REMAINING ITEMS (Index 5+)
+      if (subs.length > 5) ...[
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+          sliver: SliverToBoxAdapter(
+            child: Text(
+              "Other Subscriptions",
+              style: AppTypography.labelLarge.copyWith(
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.5,
+            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              return _buildBentoTile(
+                context,
+                subs[index + 5],
+                totalMonthly,
+                isCompact: true,
+              );
+            }, childCount: subs.length - 5),
+          ),
+        ),
+      ],
+    ];
+  }
+
+  // ================= HISTORY VIEW (LIST) =================
+
+  Widget _buildHistoryListView(
+    BuildContext context,
+    SubscriptionProvider provider,
+    List<Subscription> subs,
+  ) {
+    if (subs.isEmpty) {
+      return SliverFillRemaining(child: _buildEmptyState(context));
+    }
+
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final subscription = subs[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: SwipeToDelete(
+              itemKey: ValueKey(subscription.id),
+              itemId: subscription.id,
+              itemName: subscription.name,
+              onDelete: () => provider.deleteSubscription(subscription.id),
+              child: _buildHistoryCard(context, subscription),
+            ),
+          );
+        }, childCount: subs.length),
+      ),
+    );
+  }
+
+  // ================= WIDGETS =================
+
+  Widget _buildBentoTile(
+    BuildContext context,
+    Subscription? sub,
+    double totalMonthly, {
+    bool isLarge = false,
+    bool isWide = false,
+    bool isCompact = false,
+  }) {
+    if (sub == null) {
+      return const SizedBox.shrink();
+    }
+
+    Color brandColor = AppColors.pastelOrange;
+    try {
+      if (sub.color.startsWith('#')) {
+        brandColor = Color(int.parse(sub.color.replaceFirst('#', '0xFF')));
+      }
+    } catch (_) {}
+
+    final percentage = totalMonthly > 0
+        ? (sub.amount / totalMonthly * 100).toStringAsFixed(0)
+        : '0';
+
+    // Due status for badge
+    final dueStatus = _getDueStatus(sub);
+    final isZombie = _zombieSubIds.contains(sub.id);
+
+    return GestureDetector(
+      onTap: () => showAddSubscriptionModal(context, subscriptionToEdit: sub),
+      child: Stack(
+        children: [
+          Container(
+            height: isLarge
+                ? 180
+                : (isWide ? null : null), // Let Expanded handle compact height
+            constraints: isCompact ? const BoxConstraints(minHeight: 70) : null,
+            padding: EdgeInsets.all(isCompact ? 10 : 16),
+            decoration: BoxDecoration(
+              color: AppColors.cardSurface,
+              borderRadius: BorderRadius.circular(isCompact ? 20 : 32),
+              border: Border.all(
+                color: dueStatus?.urgent == true
+                    ? dueStatus!.color.withOpacity(0.5)
+                    : isZombie
+                    ? Colors.grey.withOpacity(0.3)
+                    : Colors.white.withOpacity(0.05),
+                width: dueStatus?.urgent == true ? 2 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: dueStatus?.urgent == true
+                      ? dueStatus!.color.withOpacity(0.15)
+                      : brandColor.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: isCompact
+                  ? MainAxisAlignment.center
+                  : (isLarge
+                        ? MainAxisAlignment.spaceBetween
+                        : MainAxisAlignment.start),
+              mainAxisSize: (isWide || isCompact)
+                  ? MainAxisSize.min
+                  : MainAxisSize.max,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Icon with zombie indicator
+                    Stack(
+                      children: [
+                        Container(
+                          width: isCompact ? 28 : 44,
+                          height: isCompact ? 28 : 44,
+                          decoration: BoxDecoration(
+                            color: isZombie
+                                ? Colors.grey.withOpacity(0.2)
+                                : brandColor.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(
+                              isCompact ? 8 : 12,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              sub.name.isNotEmpty
+                                  ? sub.name[0].toUpperCase()
+                                  : 'S',
+                              style: AppTypography.headlineSmall.copyWith(
+                                color: isZombie ? Colors.grey : brandColor,
+                                fontSize: isCompact ? 14 : 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Zombie skull badge
+                        if (isZombie && !isCompact)
+                          Positioned(
+                            right: -4,
+                            top: -4,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: AppColors.backgroundBlack,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.grey.withOpacity(0.3),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.warning_amber_rounded,
+                                size: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    // Right side: percentage or due badge
+                    if (!isCompact)
+                      Flexible(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Due Soon Badge
+                            if (dueStatus != null) ...[
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: dueStatus.color.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: dueStatus.color.withOpacity(0.5),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        dueStatus.urgent
+                                            ? Icons.notifications_active
+                                            : Icons.schedule,
+                                        size: 12,
+                                        color: dueStatus.color,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          dueStatus.text,
+                                          style: AppTypography.labelSmall
+                                              .copyWith(
+                                                color: dueStatus.color,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            // Percentage badge
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.backgroundBlack,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                "$percentage%",
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (dueStatus != null)
+                      // Compact due badge
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: dueStatus.color.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            dueStatus.text,
+                            style: AppTypography.labelSmall.copyWith(
+                              color: dueStatus.color,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+
+                if (isLarge) const Spacer(),
+                if (!isLarge && !isCompact) const SizedBox(height: 6),
+                if (isWide) const SizedBox(height: 4),
+
+                Flexible(
+                  fit: FlexFit.loose,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!isCompact) ...[
+                        Text(
+                          sub.name,
+                          style: AppTypography.titleMedium.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                      ],
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            "₹${sub.amount.toStringAsFixed(0)}",
+                            style: isCompact
+                                ? AppTypography.titleMedium.copyWith(
+                                    color: AppColors.textPrimary,
+                                  )
+                                : AppTypography.headlineMedium.copyWith(
+                                    color: AppColors.textPrimary,
+                                  ),
+                          ),
+                          if (!isCompact)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Text(
+                                "/${sub.frequency == 'monthly' ? 'mo' : 'yr'}",
+                                style: AppTypography.bodySmall,
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (isLarge)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            "~₹${(sub.amount * (sub.frequency == 'monthly' ? 12 : 1)).toStringAsFixed(0)}/yr",
+                            style: AppTypography.bodySmall,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      // Zombie warning text for large tiles
+                      if (isZombie && isLarge)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            "⚠️ No matching payments in 60 days",
+                            style: AppTypography.labelSmall.copyWith(
+                              color: Colors.grey,
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Pulsing indicator for urgent due
+          if (dueStatus?.urgent == true)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: dueStatus!.color,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: dueStatus.color.withOpacity(0.5),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryCard(BuildContext context, Subscription sub) {
+    return Opacity(
+      opacity: 0.6,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.history, color: Colors.grey),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    sub.name,
+                    style: AppTypography.bodyLarge.copyWith(
+                      decoration: TextDecoration.lineThrough,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  Text("Cancelled", style: AppTypography.bodySmall),
+                ],
+              ),
+            ),
+            Text(
+              "₹${sub.amount.toStringAsFixed(0)}",
+              style: AppTypography.bodyLarge.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ================= ALERTS BANNER =================
+
+  Widget _buildAlertsBanner(
+    List<Subscription> overdue,
+    List<Subscription> dueSoon,
+    List<Subscription> zombies,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.cardSurface,
+            AppColors.cardSurface.withOpacity(0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: overdue.isNotEmpty
+              ? AppColors.error.withOpacity(0.3)
+              : dueSoon.isNotEmpty
+              ? AppColors.pastelOrange.withOpacity(0.3)
+              : Colors.grey.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Icon(
+                overdue.isNotEmpty
+                    ? Icons.warning_rounded
+                    : dueSoon.isNotEmpty
+                    ? Icons.notifications_active
+                    : Icons.info_outline,
+                color: overdue.isNotEmpty
+                    ? AppColors.error
+                    : dueSoon.isNotEmpty
+                    ? AppColors.pastelOrange
+                    : Colors.grey,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                overdue.isNotEmpty
+                    ? "Action Required"
+                    : dueSoon.isNotEmpty
+                    ? "Coming Up"
+                    : "Heads Up",
+                style: AppTypography.labelLarge.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Alert Items
+          if (overdue.isNotEmpty)
+            _buildAlertItem(
+              icon: Icons.error_outline,
+              color: AppColors.error,
+              text:
+                  "${overdue.length} subscription${overdue.length > 1 ? 's' : ''} overdue",
+              detail: overdue.map((s) => s.name).join(', '),
+            ),
+
+          if (dueSoon.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(top: overdue.isNotEmpty ? 8 : 0),
+              child: _buildAlertItem(
+                icon: Icons.schedule,
+                color: AppColors.pastelOrange,
+                text: "${dueSoon.length} due in next 3 days",
+                detail: dueSoon.map((s) => s.name).join(', '),
+              ),
+            ),
+
+          if (zombies.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(
+                top: (overdue.isNotEmpty || dueSoon.isNotEmpty) ? 8 : 0,
+              ),
+              child: _buildAlertItem(
+                icon: Icons.warning_amber_rounded,
+                color: Colors.grey,
+                text:
+                    "${zombies.length} unused subscription${zombies.length > 1 ? 's' : ''}",
+                detail: "No matching payments in 60 days",
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAlertItem({
+    required IconData icon,
+    required Color color,
+    required String text,
+    required String detail,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: color, size: 16),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                text,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              Text(
+                detail,
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTotalSummaryCard(double monthly, double yearly) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        // Aligned with Dashboard: Dark Gradient or Card Surface
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: AppColors.summaryCardGradient,
+        ),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "TOTAL / MONTH",
+                style: AppTypography.labelSmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "₹${monthly.toStringAsFixed(0)}",
+                style: AppTypography.displaySmall.copyWith(
+                  color: AppColors.textPrimary, // White text
+                ),
+              ),
+            ],
+          ),
+          Container(width: 1, height: 50, color: Colors.white.withOpacity(0.1)),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                "YEARLY",
+                style: AppTypography.labelSmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "₹${yearly.toStringAsFixed(0)}",
+                style: AppTypography.headlineSmall.copyWith(
+                  color: AppColors.pastelTeal, // Subtle pop of color
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppBar(BuildContext context, int count) {
     return SliverAppBar(
       pinned: true,
       expandedHeight: 110,
@@ -139,7 +968,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
           'Subscriptions',
           style: AppTypography.headlineMedium.copyWith(
             color: AppColors.textPrimary,
-            fontWeight: FontWeight.w800,
           ),
         ),
       ),
@@ -149,16 +977,16 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
   Widget _buildFilterPills(int activeCount, int historyCount) {
     return Row(
       children: [
-        _buildPill("Active ($activeCount)", SubscriptionFilter.active),
+        _buildPill("Active", SubscriptionFilter.active),
         const SizedBox(width: 12),
-        _buildPill("Inactive / History", SubscriptionFilter.history),
+        _buildPill("History", SubscriptionFilter.history),
       ],
     );
   }
 
   Widget _buildPill(String label, SubscriptionFilter value) {
     final isSelected = _filter == value;
-    final color = isSelected ? AppColors.accentOrange : AppColors.cardSurface;
+    final color = isSelected ? AppColors.primaryBlue : AppColors.cardSurface;
     final textColor = isSelected ? Colors.white : AppColors.textSecondary;
 
     return GestureDetector(
@@ -177,379 +1005,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
         ),
         child: Text(
           label,
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSmartSummaryCard(
-    BuildContext context,
-    List<Subscription> activeSubs,
-  ) {
-    double monthlyTotal = 0.0;
-    double yearlyTotal = 0.0;
-    Subscription? upcomingBigBill;
-    int daysUntilBill = 999;
-
-    // 1. Calculate Totals & Find Spikes
-    for (var sub in activeSubs) {
-      // Monthly Calc
-      if (sub.frequency.toLowerCase() == 'monthly') {
-        monthlyTotal += sub.amount;
-        yearlyTotal += sub.amount * 12;
-      } else if (sub.frequency.toLowerCase() == 'yearly') {
-        monthlyTotal += sub.amount / 12;
-        yearlyTotal += sub.amount;
-
-        // Smart Alert: Check if an annual bill is due in < 30 days
-        final days = sub.nextDueDate.difference(DateTime.now()).inDays;
-        if (days >= 0 && days < 30 && days < daysUntilBill) {
-          daysUntilBill = days;
-          upcomingBigBill = sub;
-        }
-      } else if (sub.frequency.toLowerCase() == 'weekly') {
-        monthlyTotal += sub.amount * 4.33;
-        yearlyTotal += sub.amount * 52;
-      }
-    }
-
-    final dailyCost = monthlyTotal / 30;
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEA580C), // Orange 600
-            Color(0xFF9A3412), // Orange 800
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // HEADER
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'MONTHLY BURN',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '~₹${dailyCost.toStringAsFixed(0)} / day',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${activeSubs.length} Active',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // BIG AMOUNT
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                '₹',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                monthlyTotal.toStringAsFixed(0),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 42,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-          Container(height: 1, color: Colors.white.withOpacity(0.2)),
-          const SizedBox(height: 12),
-
-          // FOOTER: Yearly + Alerts
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Yearly Impact',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 11,
-                      ),
-                    ),
-                    Text(
-                      '₹${(yearlyTotal / 1000).toStringAsFixed(1)}K',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // SMART ALERT (Only shows if an annual bill is near)
-              if (upcomingBigBill != null)
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.warning_amber_rounded,
-                          color: AppColors.warning,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Upcoming Spike",
-                                style: TextStyle(
-                                  color: AppColors.warning,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                "${upcomingBigBill.name} due in $daysUntilBill days",
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubscriptionCard(BuildContext context, Subscription sub) {
-    final daysLeft = sub.nextDueDate.difference(DateTime.now()).inDays;
-    final isDueSoon = daysLeft >= 0 && daysLeft <= 3;
-    final isOverdue = daysLeft < 0;
-
-    final cardOpacity = sub.isActive ? 1.0 : 0.6;
-
-    return Opacity(
-      opacity: cardOpacity,
-      child: GestureDetector(
-        onTap: () => showAddSubscriptionModal(context, subscriptionToEdit: sub),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.cardSurface,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: isOverdue && sub.isActive
-                  ? AppColors.error.withOpacity(0.5)
-                  : Colors.white.withOpacity(0.05),
-            ),
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: AppColors.accentOrange.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Center(
-                      child: Text(
-                        sub.name.isNotEmpty ? sub.name[0].toUpperCase() : 'S',
-                        style: const TextStyle(
-                          color: AppColors.accentOrange,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          sub.name,
-                          style: AppTypography.titleMedium.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            _buildSmallPill(
-                              sub.frequency.toUpperCase(),
-                              AppColors.textTertiary,
-                            ),
-                            const SizedBox(width: 8),
-                            if (sub.isActive)
-                              Text(
-                                isOverdue
-                                    ? 'Overdue!'
-                                    : (daysLeft == 0
-                                          ? 'Due Today'
-                                          : 'In $daysLeft days'),
-                                style: TextStyle(
-                                  color: isOverdue
-                                      ? AppColors.error
-                                      : (isDueSoon
-                                            ? AppColors.warning
-                                            : AppColors.textTertiary),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              )
-                            else
-                              const Text(
-                                "Cancelled",
-                                style: TextStyle(
-                                  color: AppColors.error,
-                                  fontSize: 11,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    '₹${sub.amount.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                ],
-              ),
-
-              // Pay Button (Only if Active)
-              if (sub.isActive) ...[
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () =>
-                        showLogSubscriptionPaymentModal(context, sub),
-                    icon: const Icon(Icons.check_circle_outline, size: 16),
-                    label: const Text("Log Renewal Payment"),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.accentOrange,
-                      side: BorderSide(
-                        color: AppColors.accentOrange.withOpacity(0.3),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSmallPill(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 9,
-          color: color,
-          fontWeight: FontWeight.bold,
+          style: AppTypography.labelLarge.copyWith(color: textColor),
         ),
       ),
     );
@@ -569,20 +1025,26 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
           const SizedBox(height: 16),
           Text(
             isHistory ? "No History" : "No Subscriptions",
-            style: TextStyle(color: AppColors.textTertiary),
+            style: AppTypography.titleMedium.copyWith(
+              color: AppColors.textTertiary,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             isHistory
                 ? "Cancelled items appear here"
                 : "Add your recurring bills",
-            style: TextStyle(
-              color: AppColors.textTertiary.withOpacity(0.5),
-              fontSize: 12,
-            ),
+            style: AppTypography.bodySmall,
           ),
         ],
       ),
     );
+  }
+}
+
+// Helper Extension
+extension ListExtension<T> on List<T> {
+  T? elementAtOrNull(int index) {
+    return index < length ? this[index] : null;
   }
 }

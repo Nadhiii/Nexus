@@ -1,12 +1,22 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
 import 'dart:ui'; // Required for ImageFilter
 import 'package:animations/animations.dart'; // Required for PageTransitionSwitcher
 
 import '../core/providers/is_popup_active_provider.dart';
 import '../core/providers/new_nbox_provider.dart';
+import '../core/providers/account_provider.dart';
+import '../core/providers/debt_provider.dart';
+import '../core/providers/investment_provider.dart';
+import '../core/providers/subscription_provider.dart';
+import '../core/providers/transaction_provider.dart';
+import '../core/providers/budget_provider.dart';
+import '../core/providers/goal_provider.dart';
+import '../core/providers/bike_provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_spacing.dart'; // Using the new Spacing file
+import '../modules/ai_assistant/providers/ai_assistant_provider.dart';
 
 // Screens
 import '../modules/dashboard/modern_dashboard_screen.dart';
@@ -15,6 +25,7 @@ import '../modules/insights/modern_insights_screen.dart';
 import '../modules/more/modern_more_screen.dart';
 import '../modules/bike/ui/modern_bike_screen_ui.dart';
 import '../modules/nbox/new_modern_nbox_screen.dart';
+import '../core/services/intent_navigation_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -23,19 +34,74 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen>
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
   int _financeScreenInitialTab = 0;
+  bool _aiInitialized = false;
+  AnimationController? _navAnimationController;
+  Animation<double>? _navAnimation;
+  int _previousIndex = 0;
+  StreamSubscription<int>? _intentSub;
 
-  void _navigateToScreen(int index, {int? financeTab}) {
-    setState(() {
-      _financeScreenInitialTab = financeTab ?? 0;
-      _currentIndex = index;
+  @override
+  void initState() {
+    super.initState();
+    _navAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _navAnimation = CurvedAnimation(
+      parent: _navAnimationController!,
+      curve: Curves.easeOutCubic,
+    );
+
+    _intentSub = IntentNavigationService.tabStream.listen((tabIndex) {
+      if (!mounted) return;
+      _navigateToScreen(tabIndex);
     });
   }
 
   @override
+  void dispose() {
+    _navAnimationController?.dispose();
+    _intentSub?.cancel();
+    super.dispose();
+  }
+
+  void _navigateToScreen(int index, {int? financeTab}) {
+    if (index == _currentIndex) return;
+    setState(() {
+      _previousIndex = _currentIndex;
+      _financeScreenInitialTab = financeTab ?? 0;
+      _currentIndex = index;
+    });
+    _navAnimationController?.forward(from: 0);
+  }
+
+  void _initializeAI(BuildContext context) {
+    if (_aiInitialized) return;
+    _aiInitialized = true;
+
+    final aiProvider = context.read<AIAssistantProvider>();
+    aiProvider.initialize();
+    aiProvider.setContextProviders(
+      accountProvider: context.read<AccountProvider>(),
+      debtProvider: context.read<DebtProvider>(),
+      investmentProvider: context.read<InvestmentProvider>(),
+      subscriptionProvider: context.read<SubscriptionProvider>(),
+      transactionProvider: context.read<TransactionProvider>(),
+      budgetProvider: context.read<BudgetProvider>(),
+      goalProvider: context.read<GoalProvider>(),
+      bikeProvider: context.read<BikeProvider>(),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Initialize AI with context providers
+    _initializeAI(context);
+
     // Watch NBox for notifications
     final nbox = context.watch<NewNboxProvider>();
     final pendingNbox = nbox.pendingSms.length + nbox.pendingEmails.length;
@@ -122,9 +188,13 @@ class _MainScreenState extends State<MainScreen> {
                     width: 1,
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: _buildNavItems(currentIndex, pendingNbox),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: _buildNavItems(currentIndex, pendingNbox),
+                  ),
                 ),
               ),
             );
@@ -139,32 +209,38 @@ class _MainScreenState extends State<MainScreen> {
       {
         'icon': Icons.dashboard_outlined,
         'selectedIcon': Icons.dashboard_rounded,
+        'label': 'Home',
         'index': 0,
       },
       {
         'icon': Icons.account_balance_wallet_outlined,
         'selectedIcon': Icons.account_balance_wallet_rounded,
+        'label': 'Wallet',
         'index': 1,
       },
       {
-        'icon': Icons.pie_chart_outline, // Cleaner Icon for Insights
+        'icon': Icons.pie_chart_outline,
         'selectedIcon': Icons.pie_chart_rounded,
+        'label': 'Wealth',
         'index': 2,
       },
       {
         'icon': Icons.two_wheeler_outlined,
         'selectedIcon': Icons.two_wheeler_rounded,
+        'label': 'Garage',
         'index': 3,
       },
       {
         'icon': Icons.inbox_outlined,
         'selectedIcon': Icons.inbox_rounded,
+        'label': 'Inbox',
         'index': 4,
         'badgeCount': pendingNbox,
       },
       {
         'icon': Icons.more_horiz_outlined,
         'selectedIcon': Icons.more_horiz_rounded,
+        'label': 'More',
         'index': 5,
       },
     ];
@@ -172,90 +248,125 @@ class _MainScreenState extends State<MainScreen> {
     return items.map((item) {
       final index = item['index'] as int;
       final isSelected = currentIndex == index;
+      final wasSelected = _previousIndex == index;
       final badgeCount = item['badgeCount'] as int? ?? 0;
+      final label = item['label'] as String;
 
-      return Expanded(
-        child: GestureDetector(
-          onTap: () => _navigateToScreen(index),
-          behavior:
-              HitTestBehavior.opaque, // Ensures the whole area is tappable
-          child: SizedBox(
-            height: double.infinity,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Icon Animation
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 1.0, end: isSelected ? 1.0 : 0.0),
-                  duration: const Duration(milliseconds: 200),
-                  builder: (context, value, child) {
-                    return Icon(
-                      isSelected
-                          ? item['selectedIcon'] as IconData
-                          : item['icon'] as IconData,
-                      color: isSelected
-                          ? AppColors
-                                .primaryBlue // Active: Blue
-                          : AppColors.textTertiary, // Inactive: Grey
-                      size: isSelected ? 28 : 24, // Subtle size change
-                    );
-                  },
+      return GestureDetector(
+        onTap: () => _navigateToScreen(index),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedBuilder(
+          animation: _navAnimation ?? const AlwaysStoppedAnimation(1.0),
+          builder: (context, child) {
+            // Calculate interpolated selection state
+            double selectionProgress;
+            final animValue = _navAnimation?.value ?? 1.0;
+            final isAnimating = _navAnimationController?.isAnimating ?? false;
+
+            if (isSelected) {
+              selectionProgress = animValue;
+            } else if (wasSelected) {
+              selectionProgress = 1.0 - animValue;
+            } else {
+              selectionProgress = 0.0;
+            }
+
+            // If animation is complete, use final state
+            if (!isAnimating) {
+              selectionProgress = isSelected ? 1.0 : 0.0;
+            }
+
+            return Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: 12 + (4 * selectionProgress),
+                vertical: 12,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.primaryBlue.withOpacity(
+                  0.15 * selectionProgress,
                 ),
-
-                // Notification Badge
-                if (badgeCount > 0)
-                  Positioned(
-                    right: 12,
-                    top: 15,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.error, // Pastel Pink/Red
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.radiusFull,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Icon with badge
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(
+                        selectionProgress > 0.5
+                            ? item['selectedIcon'] as IconData
+                            : item['icon'] as IconData,
+                        color: Color.lerp(
+                          AppColors.textTertiary,
+                          AppColors.primaryBlue,
+                          selectionProgress,
                         ),
-                        border: Border.all(
-                          color: AppColors.cardSurface,
-                          width: 1.5,
-                        ), // Cutout effect
+                        size: 22 + (2 * selectionProgress),
                       ),
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
-                      child: Text(
-                        '$badgeCount',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 9,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                      // Badge
+                      if (badgeCount > 0)
+                        Positioned(
+                          right: -6,
+                          top: -4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.error,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: AppColors.cardSurface,
+                                width: 1.5,
+                              ),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 14,
+                              minHeight: 14,
+                            ),
+                            child: Text(
+                              '$badgeCount',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 8,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  // Animated label
+                  ClipRect(
+                    child: AnimatedAlign(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      alignment: Alignment.centerLeft,
+                      widthFactor: selectionProgress,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Opacity(
+                          opacity: selectionProgress,
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              color: AppColors.primaryBlue,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-
-                // Optional: Active Indicator Dot (Uncomment if you want a dot below active icon)
-                /*
-                if (isSelected)
-                  Positioned(
-                    bottom: 12,
-                    child: Container(
-                      width: 4,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryBlue,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                */
-              ],
-            ),
-          ),
+                ],
+              ),
+            );
+          },
         ),
       );
     }).toList();

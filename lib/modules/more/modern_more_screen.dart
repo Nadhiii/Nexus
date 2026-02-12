@@ -8,6 +8,9 @@ import '../../core/widgets/top_snackbar.dart';
 import '../backup/backup_settings_screen.dart';
 import '../notifications/notification_settings_screen.dart';
 import '../gmail/gmail_settings_screen.dart';
+import '../family/screens/family_dashboard_screen.dart';
+import '../family/screens/expense_splitter_screen.dart';
+import '../ai_assistant/screens/ai_chat_screen.dart';
 import 'about_screen.dart';
 import 'reports_and_analytics_screen.dart';
 import 'manage_categories_screen.dart';
@@ -99,44 +102,96 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
   }
 
   Widget _buildToolsGrid() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _ToolCard(
-            icon: Icons.pie_chart_rounded,
-            color: AppColors.primaryBlue,
-            label: "Analytics",
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const ReportsAndAnalyticsScreen(),
+        Row(
+          children: [
+            Expanded(
+              child: _ToolCard(
+                icon: Icons.pie_chart_rounded,
+                color: AppColors.primaryBlue,
+                label: "Analytics",
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ReportsAndAnalyticsScreen(),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _ToolCard(
-            icon: Icons.category_rounded,
-            color: AppColors.pastelOrange,
-            label: "Categories",
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ManageCategoriesScreen()),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _ToolCard(
+                icon: Icons.category_rounded,
+                color: AppColors.pastelOrange,
+                label: "Categories",
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ManageCategoriesScreen(),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _ToolCard(
-            icon: Icons.cloud_upload_rounded,
-            color: AppColors.accentTeal,
-            label: "Backup",
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const BackupSettingsScreen()),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _ToolCard(
+                icon: Icons.cloud_upload_rounded,
+                color: AppColors.accentTeal,
+                label: "Backup",
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const BackupSettingsScreen(),
+                  ),
+                ),
+              ),
             ),
-          ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _ToolCard(
+                icon: Icons.family_restroom_rounded,
+                color: AppColors.accentPink,
+                label: "Family",
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FamilyDashboardScreen(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _ToolCard(
+                icon: Icons.call_split_rounded,
+                color: AppColors.success,
+                label: "Split Bill",
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ExpenseSplitterScreen(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _ToolCard(
+                icon: Icons.smart_toy_rounded,
+                color: Colors.purple,
+                label: "Nex",
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AIChatScreen()),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -162,6 +217,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                     ? (v) => bio.setAllBiometricFeatures(v)
                     : null,
                 activeThumbColor: AppColors.primaryBlue,
+                activeTrackColor: AppColors.primaryBlue.withOpacity(0.4),
               ),
             ),
           ),

@@ -123,7 +123,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
               displayList = nbox.rejected;
               break;
             case NBoxFilter.all:
-            default:
               displayList = allPending;
               break;
           }
@@ -289,10 +288,18 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         : const Color(0xFF3B82F6);
     final borderColor = isSelected
         ? AppColors.primaryBlue
-        : (isExpanded ? Colors.white.withOpacity(0.15) : Colors.transparent);
-    final bgColor = isSelected
-        ? AppColors.primaryBlue.withOpacity(0.1)
-        : (isExpanded ? AppColors.cardSurface : Colors.transparent);
+        : (isExpanded
+              ? highlightColor.withOpacity(0.3)
+              : Colors.white.withOpacity(0.05));
+    final bgGradient = isExpanded
+        ? LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [highlightColor.withOpacity(0.15), AppColors.cardSurface],
+          )
+        : LinearGradient(
+            colors: [AppColors.cardSurface, AppColors.cardSurface],
+          );
 
     // FIX: Replaced IntrinsicHeight with Stack
     return Stack(
@@ -304,7 +311,18 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           bottom: 0,
           child: Container(
             width: 2,
-            color: isLast ? Colors.transparent : AppColors.cardSurface,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: isLast
+                    ? [highlightColor.withOpacity(0.3), Colors.transparent]
+                    : [
+                        highlightColor.withOpacity(0.3),
+                        highlightColor.withOpacity(0.1),
+                      ],
+              ),
+            ),
           ),
         ),
 
@@ -324,8 +342,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                   padding: const EdgeInsets.only(top: 18),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    width: 20,
-                    height: 20,
+                    width: 22,
+                    height: 22,
                     decoration: BoxDecoration(
                       color: isSelected
                           ? AppColors.primaryBlue
@@ -334,18 +352,16 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                         color: isSelected
                             ? AppColors.primaryBlue
                             : highlightColor,
-                        width: 2,
+                        width: 2.5,
                       ),
                       shape: BoxShape.circle,
-                      boxShadow: isSelected
-                          ? []
-                          : [
-                              BoxShadow(
-                                color: highlightColor.withOpacity(0.4),
-                                blurRadius: 4,
-                                spreadRadius: 1,
-                              ),
-                            ],
+                      boxShadow: [
+                        BoxShadow(
+                          color: highlightColor.withOpacity(0.5),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ],
                     ),
                     child: isSelected
                         ? const Icon(Icons.check, size: 12, color: Colors.white)
@@ -364,9 +380,18 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
-                        color: bgColor,
-                        borderRadius: BorderRadius.circular(16),
+                        gradient: bgGradient,
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: borderColor),
+                        boxShadow: isExpanded
+                            ? [
+                                BoxShadow(
+                                  color: highlightColor.withOpacity(0.15),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ]
+                            : [],
                       ),
                       // FIX: Clip content to prevent overflow during shrink
                       clipBehavior: Clip.antiAlias,
@@ -383,15 +408,44 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
-                                      child: Text(
-                                        t.merchant,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  t.merchant,
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color:
+                                                        AppColors.textPrimary,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              // Confidence Badge (Email only)
+                                              if (t.source == 'email') ...[
+                                                const SizedBox(width: 8),
+                                                _buildConfidenceBadge(t),
+                                              ],
+                                            ],
+                                          ),
+                                          if (t.detectedCategory != null) ...[
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'Category: ${t.detectedCategory}',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: AppColors.accentTeal,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ),
                                     const SizedBox(width: 8),
@@ -422,6 +476,15 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                         fontSize: 11,
                                       ),
                                     ),
+                                    // Show warnings if any
+                                    if (t.warnings.isNotEmpty) ...[
+                                      const SizedBox(width: 8),
+                                      Icon(
+                                        Icons.warning_amber_rounded,
+                                        size: 14,
+                                        color: AppColors.pastelOrange,
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ],
@@ -626,16 +689,28 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
   Widget _buildAnalysisChip(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primaryBlue.withOpacity(0.15),
+            AppColors.primaryBlue.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: AppColors.textSecondary),
+          Icon(icon, size: 14, color: AppColors.primaryBlue),
           const SizedBox(width: 6),
           Text(
             label,
@@ -657,17 +732,43 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     Color bg,
     VoidCallback onTap,
   ) {
-    return ElevatedButton.icon(
-      onPressed: onTap,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: bg,
-        foregroundColor: fg,
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        padding: const EdgeInsets.symmetric(vertical: 14),
+    final isPrimary = bg == AppColors.primaryBlue;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: isPrimary
+            ? LinearGradient(
+                colors: [
+                  AppColors.primaryBlue,
+                  AppColors.primaryBlue.withOpacity(0.8),
+                ],
+              )
+            : null,
+        boxShadow: isPrimary
+            ? [
+                BoxShadow(
+                  color: AppColors.primaryBlue.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : [],
       ),
-      icon: Icon(icon, size: 18),
-      label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+      child: ElevatedButton.icon(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isPrimary ? Colors.transparent : bg,
+          foregroundColor: fg,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+        ),
+        icon: Icon(icon, size: 18),
+        label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+      ),
     );
   }
 
@@ -675,11 +776,24 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6D28D9), Color(0xFF4C1D95)],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF6D28D9).withOpacity(0.9),
+            const Color(0xFF4C1D95),
+            AppColors.cardSurface,
+          ],
         ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.purple.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.purple.withOpacity(0.2),
+            blurRadius: 30,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -688,35 +802,43 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'ACTION REQUIRED',
+                'PENDING REVIEW',
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: Colors.white.withOpacity(0.7),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
+                  letterSpacing: 1.5,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: 12,
+                  vertical: 5,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.black26,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.purple.withOpacity(0.3)),
                 ),
-                child: Text(
-                  '$count Items',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.inbox_rounded, color: Colors.white70, size: 12),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$count Items',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             '₹${NumberFormat('#,##,###').format(totalValue)}',
             style: const TextStyle(
@@ -724,6 +846,20 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
               fontSize: 36,
               fontWeight: FontWeight.w900,
             ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.purple.shade200, size: 14),
+              const SizedBox(width: 6),
+              Text(
+                'Detected from messages',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -775,19 +911,69 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
   Widget _buildTag(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+        gradient: LinearGradient(
+          colors: [color.withOpacity(0.2), color.withOpacity(0.1)],
+        ),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.15),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Text(
         text,
         style: TextStyle(
-          fontSize: 9,
+          fontSize: 10,
           fontWeight: FontWeight.bold,
           color: color,
-          letterSpacing: 0.5,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConfidenceBadge(DetectedTransaction t) {
+    Color bgColor;
+    Color textColor;
+    String label;
+
+    if (t.isHighConfidence) {
+      bgColor = AppColors.accentTeal.withOpacity(0.15);
+      textColor = AppColors.accentTeal;
+      label = '✓ High';
+    } else if (t.isLowConfidence) {
+      bgColor = AppColors.pastelOrange.withOpacity(0.15);
+      textColor = AppColors.pastelOrange;
+      label = '⚠ Low';
+    } else {
+      bgColor = Colors.white.withOpacity(0.1);
+      textColor = AppColors.textSecondary;
+      label = 'Medium';
+    }
+
+    return Tooltip(
+      message: 'Confidence: ${(t.confidence * 100).toStringAsFixed(0)}%',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: textColor.withOpacity(0.3), width: 0.5),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
     );
@@ -815,17 +1001,57 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   }
 
   Widget _buildEmptyState() => Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.inbox,
-          size: 64,
-          color: AppColors.textTertiary.withOpacity(0.2),
+    child: Container(
+      padding: const EdgeInsets.all(40),
+      margin: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.purple.withOpacity(0.1), AppColors.cardSurface],
         ),
-        const SizedBox(height: 16),
-        Text("All Caught Up", style: TextStyle(color: AppColors.textTertiary)),
-      ],
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.purple.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.purple.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.purple.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.inbox_rounded,
+              size: 48,
+              color: Colors.purple.shade300,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            "All Caught Up",
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "No pending transactions to review",
+            style: TextStyle(color: AppColors.textTertiary, fontSize: 14),
+          ),
+        ],
+      ),
     ),
   );
 

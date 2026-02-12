@@ -18,7 +18,20 @@ void showTopSnackBar(
   TopSnackBarAction? action,
   Duration duration = const Duration(seconds: 3),
 }) {
-  final overlay = Overlay.of(context, rootOverlay: true);
+  // Safety check: ensure context is still valid and mounted
+  if (!context.mounted) {
+    debugPrint('showTopSnackBar: Context not mounted, skipping snackbar');
+    return;
+  }
+
+  OverlayState? overlay;
+  try {
+    overlay = Overlay.of(context, rootOverlay: true);
+  } catch (e) {
+    debugPrint('showTopSnackBar: Could not get overlay - $e');
+    return;
+  }
+
   final key = GlobalKey<TopSnackBarState>();
   OverlayEntry? overlayEntry;
 

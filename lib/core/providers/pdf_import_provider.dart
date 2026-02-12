@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../models/pdf_statement.dart';
 import '../models/account.dart';
-import '../models/transaction.dart';
 import '../services/pdf_parsing_service.dart';
 import '../services/pdf_password_manager.dart';
-import '../providers/account_provider.dart';
-import '../providers/transaction_provider.dart';
 
 class PDFImportProvider extends ChangeNotifier {
   final PDFParsingService _parsingService = PDFParsingService();
@@ -36,8 +31,9 @@ class PDFImportProvider extends ChangeNotifier {
   int get savedPasswordCount => _savedPasswordCount;
 
   int get importableCount {
-    if (_duplicateResults == null)
+    if (_duplicateResults == null) {
       return _currentStatement?.transactionCount ?? 0;
+    }
     return _duplicateResults!.values.where((r) => !r.isDuplicate).length;
   }
 
@@ -72,8 +68,11 @@ class PDFImportProvider extends ChangeNotifier {
 
       if (result.success && result.statement != null) {
         _currentStatement = result.statement;
+        final s = result.statement!;
         _status =
-            'PDF parsed successfully. ${result.statement!.transactionCount} transactions found.';
+            'PDF parsed successfully. '
+            '${s.transactionCount} transactions found. '
+            'Income: ${s.incomeCount}, Expenses: ${s.expenseCount}.';
         _duplicateResults = null;
         _selectedAccount = null;
         _accountToCreate = null;
@@ -191,137 +190,6 @@ class PDFImportProvider extends ChangeNotifier {
     _showPasswordInput = false;
     _currentPassword = '';
     notifyListeners();
-  }
-
-  Future<void> _confirmImport(
-    BuildContext context,
-    PDFImportProvider provider,
-  ) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Processing...'),
-          ],
-        ),
-      ),
-    );
-
-    try {
-      final accountProvider = context.read<AccountProvider>();
-      final transactionProvider = context.read<TransactionProvider>();
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) throw Exception('User not logged in');
-
-      String accountId;
-      if (provider.accountToCreate != null) {
-        await accountProvider.addAccount(provider.accountToCreate!);
-        final newAccount = accountProvider.accounts.firstWhere(
-          (acc) => acc.name == provider.accountToCreate!.name,
-        );
-        accountId = newAccount.id;
-      } else if (provider.selectedAccount != null) {
-        accountId = provider.selectedAccount!.id;
-      } else {
-        throw Exception('No account selected');
-      }
-
-      int importedCount = 0;
-      int skippedCount = 0;
-      int updatedCount = 0;
-      final now = DateTime.now();
-
-      for (final entry in provider.duplicateResults!.entries) {
-        final pdfTransaction = entry.key;
-        final duplicateCheck = entry.value;
-
-        // --- TYPE FIX ---
-        // Ensure strictly checks for 'expense' string from parser
-        final bool isExpense = pdfTransaction.type.toLowerCase() == 'expense';
-        final correctType = isExpense
-            ? TransactionType.expense
-            : TransactionType.income;
-
-        if (duplicateCheck.isDuplicate) {
-          if (duplicateCheck.needsTypeUpdate &&
-              duplicateCheck.matchingTransactionId != null) {
-            final existingTransaction = transactionProvider.transactions
-                .firstWhere(
-                  (t) => t.id == duplicateCheck.matchingTransactionId,
-                );
-
-            final updatedTransaction = Transaction(
-              id: existingTransaction.id,
-              userId: existingTransaction.userId,
-              type: correctType,
-              amount: existingTransaction.amount,
-              description: existingTransaction.description,
-              categoryId: existingTransaction.categoryId,
-              accountId: existingTransaction.accountId,
-              date: existingTransaction.date,
-              metadata: existingTransaction.metadata,
-              attachments: existingTransaction.attachments,
-              createdAt: existingTransaction.createdAt,
-              updatedAt: now,
-            );
-
-            await transactionProvider.updateTransaction(
-              updatedTransaction,
-              existingTransaction,
-            );
-            updatedCount++;
-          } else {
-            skippedCount++;
-          }
-          continue;
-        }
-
-        final transaction = Transaction(
-          id: '',
-          userId: currentUser.uid,
-          type: correctType,
-          amount: pdfTransaction.amount,
-          description: pdfTransaction.description,
-          categoryId: null,
-          accountId: accountId,
-          date: DateTime.tryParse(pdfTransaction.date) ?? now,
-          metadata: {'importedFromPDF': true, 'pdfSource': 'bank_statement'},
-          attachments: null,
-          createdAt: now,
-          updatedAt: now,
-        );
-
-        await transactionProvider.addTransaction(transaction);
-        importedCount++;
-      }
-
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Import complete: $importedCount added, $updatedCount updated, $skippedCount skipped.',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-        provider.reset();
-        Navigator.of(context).pop();
-      }
-    } catch (e) {
-      if (context.mounted) Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Import failed: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 
   static const List<String> supportedBanks = [

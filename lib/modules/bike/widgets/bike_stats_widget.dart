@@ -9,13 +9,42 @@ class BikeStatsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const accentColor = AppColors.primaryBlue;
+    // --- SIMPLE AVERAGE CALCULATION (matches spreadsheet) ---
+    double avgMileage = 0.0;
+    double totalFuel = 0.0;
+    double totalKm = 0.0;
 
-    // Use provider's mileage calculation for consistency
-    final avgMileage = provider.getAverageMileage();
-    final totalFuelCost = provider.getTotalFuelCost();
-    final totalFillups = provider.getTotalFillups();
-    final totalDistance = provider.getKmTraveled();
+    final fuelEntries = provider.currentBikeEntries
+        .where((e) => (e.category ?? 'fuel').toLowerCase() == 'fuel')
+        .toList();
+
+    if (fuelEntries.isNotEmpty) {
+      // Sort by odometer reading for distance calculation
+      fuelEntries.sort(
+        (a, b) => a.odometerReading.compareTo(b.odometerReading),
+      );
+
+      double minOdo = fuelEntries.first.odometerReading;
+      double maxOdo = fuelEntries.last.odometerReading;
+      totalKm = maxOdo - minOdo;
+
+      // Calculate total fuel (all entries)
+      for (final entry in fuelEntries) {
+        totalFuel += entry.fuelQuantity;
+      }
+
+      // Simple average of individual mileages (matches spreadsheet AVERAGE)
+      final entriesWithMileage = fuelEntries
+          .where((e) => e.mileage != null && e.mileage! > 0)
+          .toList();
+      if (entriesWithMileage.isNotEmpty) {
+        final totalMileage = entriesWithMileage.fold<double>(
+          0,
+          (sum, e) => sum + e.mileage!,
+        );
+        avgMileage = totalMileage / entriesWithMileage.length;
+      }
+    }
 
     final stats = [
       _StatData(
@@ -26,19 +55,19 @@ class BikeStatsWidget extends StatelessWidget {
       ),
       _StatData(
         'Cost',
-        '₹${totalFuelCost.toStringAsFixed(0)}',
+        '₹${provider.getTotalFuelCost().toStringAsFixed(0)}',
         '',
         Icons.account_balance_wallet_outlined,
       ),
       _StatData(
         'Fill-ups',
-        '$totalFillups',
+        '${provider.getTotalFillups()}',
         '',
         Icons.local_gas_station_outlined,
       ),
       _StatData(
         'Distance',
-        totalDistance > 0 ? totalDistance.toStringAsFixed(1) : '-',
+        totalKm > 0 ? totalKm.toStringAsFixed(1) : '-',
         'km',
         Icons.add_road,
       ),
@@ -56,12 +85,24 @@ class BikeStatsWidget extends StatelessWidget {
       itemCount: stats.length,
       itemBuilder: (context, index) {
         final stat = stats[index];
+        final statColor = _getStatColor(index);
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E1E1E),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.white.withOpacity(0.05)),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [statColor.withOpacity(0.15), const Color(0xFF1E1E1E)],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: statColor.withOpacity(0.2)),
+            boxShadow: [
+              BoxShadow(
+                color: statColor.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,15 +115,18 @@ class BikeStatsWidget extends StatelessWidget {
                     stat.label.toUpperCase(),
                     style: TextStyle(
                       fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.0,
-                      color: AppColors.white.withOpacity(0.4),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                      color: AppColors.white.withOpacity(0.5),
                     ),
                   ),
-                  Icon(
-                    stat.icon,
-                    size: 18,
-                    color: accentColor.withOpacity(0.7),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: statColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(stat.icon, size: 16, color: statColor),
                   ),
                 ],
               ),
@@ -92,8 +136,8 @@ class BikeStatsWidget extends StatelessWidget {
                   Text(
                     stat.value,
                     style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
                       color: AppColors.white,
                       height: 1.0,
                     ),
@@ -101,12 +145,13 @@ class BikeStatsWidget extends StatelessWidget {
                   if (stat.unit.isNotEmpty) ...[
                     const SizedBox(width: 4),
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 2.0),
+                      padding: const EdgeInsets.only(bottom: 3.0),
                       child: Text(
                         stat.unit,
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.white.withOpacity(0.5),
+                          color: statColor,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -118,6 +163,16 @@ class BikeStatsWidget extends StatelessWidget {
         );
       },
     );
+  }
+
+  Color _getStatColor(int index) {
+    final colors = [
+      AppColors.primaryBlue,
+      AppColors.pastelGreen,
+      AppColors.pastelOrange,
+      AppColors.pastelPurple,
+    ];
+    return colors[index % colors.length];
   }
 }
 

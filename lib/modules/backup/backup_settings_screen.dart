@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/services/backup_service.dart';
@@ -77,23 +78,114 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
   Future<void> _restoreBackup(String backupId, {bool replace = false}) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Restore Backup'),
-        content: Text(
-          replace
-              ? 'This will replace all your current data with the backup. This action cannot be undone.'
-              : 'This will merge the backup data with your current data.',
+      builder: (context) => Dialog(
+        backgroundColor: AppColors.backgroundBlack,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+        insetPadding: const EdgeInsets.all(16),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Restore Backup',
+                style: AppTypography.headlineSmall.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: replace
+                      ? AppColors.error.withOpacity(0.1)
+                      : AppColors.primaryBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: replace
+                        ? AppColors.error.withOpacity(0.3)
+                        : AppColors.primaryBlue.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      replace ? Icons.warning_amber : Icons.info_outline,
+                      color: replace ? AppColors.error : AppColors.primaryBlue,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        replace
+                            ? 'This will replace all your current data with the backup. This action cannot be undone.'
+                            : 'This will merge the backup data with your current data.',
+                        style: TextStyle(
+                          color: replace
+                              ? AppColors.error
+                              : AppColors.primaryBlue,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: Colors.white.withOpacity(0.1),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: replace
+                              ? AppColors.error
+                              : AppColors.primaryBlue,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          'Restore',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Restore'),
-          ),
-        ],
       ),
     );
 
@@ -121,22 +213,78 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
   Future<void> _deleteBackup(String backupId) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Backup'),
-        content: const Text('Are you sure you want to delete this backup?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      builder: (context) => Dialog(
+        backgroundColor: AppColors.backgroundBlack,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+        insetPadding: const EdgeInsets.all(16),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Delete Backup',
+                style: AppTypography.headlineSmall.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Are you sure you want to delete this backup?',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: Colors.white.withOpacity(0.1),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          'Delete',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
+        ),
       ),
     );
 
@@ -157,6 +305,141 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
         ).showSnackBar(SnackBar(content: Text('Error deleting backup: $e')));
       }
     }
+  }
+
+  void _showRestoreOptions(BuildContext context, String backupId) {
+    final theme = Theme.of(context);
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Restore Backup',
+              style: AppTypography.headlineSmall.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _buildRestoreOptionCard(
+              icon: Icons.merge,
+              title: 'Merge',
+              description:
+                  'Add backup data to your current data. Keeps both old and new entries.',
+              onTap: () {
+                Navigator.pop(context);
+                _restoreBackup(backupId, replace: false);
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _buildRestoreOptionCard(
+              icon: Icons.restore,
+              title: 'Replace',
+              description:
+                  'Replace all current data with backup. This action cannot be undone.',
+              onTap: () {
+                Navigator.pop(context);
+                _restoreBackup(backupId, replace: true);
+              },
+              isDangerous: true,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _deleteBackup(backupId);
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.error,
+                ),
+                child: const Text('Delete Backup'),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRestoreOptionCard({
+    required IconData icon,
+    required String title,
+    required String description,
+    required VoidCallback onTap,
+    bool isDangerous = false,
+  }) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isDangerous
+                ? theme.colorScheme.error.withOpacity(0.3)
+                : theme.colorScheme.outline.withOpacity(0.2),
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          color: isDangerous
+              ? theme.colorScheme.error.withOpacity(0.05)
+              : theme.colorScheme.surface,
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: isDangerous
+                    ? theme.colorScheme.error.withOpacity(0.1)
+                    : theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: isDangerous
+                    ? theme.colorScheme.error
+                    : theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTypography.titleMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isDangerous ? theme.colorScheme.error : null,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    description,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Icon(
+              Icons.chevron_right,
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -333,61 +616,10 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                                     ),
                                   ],
                                 ),
-                                trailing: PopupMenuButton(
-                                  itemBuilder: (context) => [
-                                    const PopupMenuItem(
-                                      value: 'merge',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.merge),
-                                          SizedBox(width: AppSpacing.sm),
-                                          Text('Restore (Merge)'),
-                                        ],
-                                      ),
-                                    ),
-                                    const PopupMenuItem(
-                                      value: 'replace',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.restore),
-                                          SizedBox(width: AppSpacing.sm),
-                                          Text('Restore (Replace)'),
-                                        ],
-                                      ),
-                                    ),
-                                    const PopupMenuItem(
-                                      value: 'delete',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.delete, color: Colors.red),
-                                          SizedBox(width: AppSpacing.sm),
-                                          Text(
-                                            'Delete',
-                                            style: TextStyle(color: Colors.red),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                  onSelected: (value) {
-                                    switch (value) {
-                                      case 'merge':
-                                        _restoreBackup(
-                                          backup.id,
-                                          replace: false,
-                                        );
-                                        break;
-                                      case 'replace':
-                                        _restoreBackup(
-                                          backup.id,
-                                          replace: true,
-                                        );
-                                        break;
-                                      case 'delete':
-                                        _deleteBackup(backup.id);
-                                        break;
-                                    }
-                                  },
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.more_vert),
+                                  onPressed: () =>
+                                      _showRestoreOptions(context, backup.id),
                                 ),
                               ),
                             );

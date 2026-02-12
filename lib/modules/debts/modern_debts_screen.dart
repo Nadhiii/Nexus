@@ -194,10 +194,17 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
 
   Widget _buildSummaryCard(BuildContext context, List<Debt> activeDebts) {
     final totalDebt = activeDebts.fold(0.0, (sum, d) => sum + d.currentBalance);
+    final totalOriginal = activeDebts.fold(
+      0.0,
+      (sum, d) => sum + d.originalAmount,
+    );
     final totalEMI = activeDebts.fold(
       0.0,
       (sum, item) => sum + (item.monthlyEMI ?? 0),
     );
+    final overallProgress = totalOriginal > 0
+        ? ((totalOriginal - totalDebt) / totalOriginal).clamp(0.0, 1.0)
+        : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -205,61 +212,104 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.error.withOpacity(0.15),
-            AppColors.error.withOpacity(0.05),
-          ],
+          colors: AppColors.lossGradient,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 30,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'TOTAL OUTSTANDING',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'TOTAL OUTSTANDING',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${activeDebts.length} Active',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
             '₹${NumberFormat('#,##,###').format(totalDebt)}',
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 32,
+              fontSize: 36,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 20),
+          // Progress bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: overallProgress,
+              backgroundColor: Colors.black26,
+              color: AppColors.success,
+              minHeight: 8,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.calendar_month,
-                  color: AppColors.error,
-                  size: 16,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${(overallProgress * 100).toStringAsFixed(0)}% Paid Off',
+                style: TextStyle(
+                  color: AppColors.success,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Monthly Commitments: ₹${NumberFormat('#,##,###').format(totalEMI)}',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+              ),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.calendar_month,
+                    color: Colors.white70,
+                    size: 14,
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'EMI: ₹${NumberFormat.compact().format(totalEMI)}/mo',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),
@@ -279,174 +329,212 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
     final isPaidOff = _isDebtSettled(debt);
 
     // Visual Style changes if Settled
-    final cardOpacity = isPaidOff ? 0.6 : 1.0;
     final accentColor = isPaidOff ? AppColors.success : AppColors.error;
+    final typeColor = _getColorForType(debt.type);
 
-    return Opacity(
-      opacity: cardOpacity,
-      child: SwipeToDelete(
-        itemKey: ValueKey(debt.id),
-        itemId: debt.id,
-        itemName: debt.name,
-        onDelete: () => context.read<DebtProvider>().deleteDebt(debt.id),
-        child: GestureDetector(
-          onTap: () => showAddDebtModal(context, debtToEdit: debt),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.cardSurface,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.05)),
+    return SwipeToDelete(
+      itemKey: ValueKey(debt.id),
+      itemId: debt.id,
+      itemName: debt.name,
+      onDelete: () => context.read<DebtProvider>().deleteDebt(debt.id),
+      child: GestureDetector(
+        onTap: () => showAddDebtModal(context, debtToEdit: debt),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: isPaidOff
+                ? null
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      typeColor.withOpacity(0.12),
+                      AppColors.cardSurface,
+                    ],
+                  ),
+            color: isPaidOff ? AppColors.cardSurface.withOpacity(0.5) : null,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isPaidOff
+                  ? AppColors.success.withOpacity(0.3)
+                  : typeColor.withOpacity(0.2),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: accentColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        isPaidOff
-                            ? Icons.check_circle
-                            : _getIconForType(debt.type),
-                        color: accentColor,
-                        size: 20,
+            boxShadow: isPaidOff
+                ? null
+                : [
+                    BoxShadow(
+                      color: typeColor.withOpacity(0.1),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: (isPaidOff ? AppColors.success : typeColor)
+                          .withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: (isPaidOff ? AppColors.success : typeColor)
+                            .withOpacity(0.2),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            debt.name,
-                            style: AppTypography.titleMedium.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if (debt.lenderName != null)
-                            Text(
-                              debt.lenderName!,
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.textTertiary,
-                              ),
-                            ),
-                        ],
-                      ),
+                    child: Icon(
+                      isPaidOff
+                          ? Icons.check_circle
+                          : _getIconForType(debt.type),
+                      color: isPaidOff ? AppColors.success : typeColor,
+                      size: 22,
                     ),
-                    if (isPaidOff)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.success.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          "CLEARED",
-                          style: TextStyle(
-                            color: AppColors.success,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          debt.name,
+                          style: AppTypography.titleMedium.copyWith(
+                            color: isPaidOff
+                                ? AppColors.textSecondary
+                                : AppColors.textPrimary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 10,
                           ),
                         ),
-                      )
-                    else
-                      Text(
-                        '₹${NumberFormat('#,##,###').format(debt.currentBalance)}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                // Neon Progress Bar
-                Stack(
-                  children: [
-                    Container(
-                      height: 6,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                    FractionallySizedBox(
-                      widthFactor: progress,
-                      child: Container(
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: accentColor,
-                          borderRadius: BorderRadius.circular(3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: accentColor.withOpacity(0.5),
-                              blurRadius: 6,
+                        if (debt.lenderName != null)
+                          Text(
+                            debt.lenderName!,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.textTertiary,
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (isPaidOff)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            "CLEARED",
+                            style: TextStyle(
+                              color: AppColors.success,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        )
+                      else ...[
+                        Text(
+                          '₹${NumberFormat('#,##,###').format(debt.currentBalance)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        if (debt.monthlyEMI != null)
+                          Text(
+                            '₹${NumberFormat.compact().format(debt.monthlyEMI)}/mo',
+                            style: TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 11,
+                            ),
+                          ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
 
-                // Action Buttons (Only show if NOT settled)
-                if (!isPaidOff) ...[
-                  const SizedBox(height: 16),
-                  SizedBox(
+              // Premium Progress Bar with glow
+              Stack(
+                children: [
+                  Container(
+                    height: 8,
                     width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => showPayDebtModal(context, debt),
-                      icon: const Icon(Icons.check, size: 16),
-                      label: const Text("Record Payment"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.success,
-                        side: BorderSide(
-                          color: AppColors.success.withOpacity(0.3),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  FractionallySizedBox(
+                    widthFactor: progress,
+                    child: Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isPaidOff
+                              ? [AppColors.success, AppColors.success]
+                              : [typeColor.withOpacity(0.8), accentColor],
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        borderRadius: BorderRadius.circular(4),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isPaidOff ? AppColors.success : accentColor)
+                                .withOpacity(0.5),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ],
+              ),
 
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '$percentage% Paid Off',
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accentColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '$percentage% Paid',
                       style: TextStyle(
                         color: accentColor,
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    if (debt.monthlyEMI != null && !isPaidOff)
-                      Text(
-                        'EMI: ₹${NumberFormat('#,##,###').format(debt.monthlyEMI)}',
-                        style: TextStyle(
-                          color: AppColors.textTertiary,
-                          fontSize: 11,
-                        ),
+                  ),
+                  if (!isPaidOff)
+                    TextButton.icon(
+                      onPressed: () => showPayDebtModal(context, debt),
+                      icon: const Icon(Icons.add_circle_outline, size: 16),
+                      label: const Text("Pay"),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.success,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        visualDensity: VisualDensity.compact,
                       ),
-                  ],
-                ),
-              ],
-            ),
+                    ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -496,6 +584,21 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
         return Icons.school;
       default:
         return Icons.account_balance_wallet;
+    }
+  }
+
+  Color _getColorForType(DebtType type) {
+    switch (type) {
+      case DebtType.creditCard:
+        return Colors.purple;
+      case DebtType.homeLoan:
+        return Colors.blue;
+      case DebtType.carLoan:
+        return Colors.orange;
+      case DebtType.educationLoan:
+        return Colors.teal;
+      default:
+        return AppColors.error;
     }
   }
 }

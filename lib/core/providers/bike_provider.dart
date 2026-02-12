@@ -4,6 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/bike.dart';
 import '../models/trip.dart';
 import '../services/bike_service.dart';
+import '../services/home_screen_widget_service.dart';
+import '../services/android_auto_service.dart';
+import 'package:intl/intl.dart';
 
 class BikeProvider with ChangeNotifier {
   final BikeService _bikeService = BikeService();
@@ -93,6 +96,9 @@ class BikeProvider with ChangeNotifier {
               _selectedBikeId = bikes.first.id;
               loadBikeEntries(userId, bikes.first.id);
             }
+
+            // Sync to widgets when bikes update
+            _syncToWidgets();
           },
           onError: (e) {
             _setError('Error loading bikes: $e');
@@ -143,6 +149,9 @@ class BikeProvider with ChangeNotifier {
             _selectedBikeId = bikeId;
             _setLoading(false);
             notifyListeners();
+
+            // Sync to widgets whenever entries update
+            _syncToWidgets();
           },
           onError: (e) {
             print('❌ BikeProvider: Error loading entries: $e');
@@ -291,6 +300,7 @@ class BikeProvider with ChangeNotifier {
     try {
       await _bikeService.addBikeEntry(user.uid, _selectedBikeId!, entry);
       _setError(null);
+      // Firestore listener will automatically pick up the new entry
     } catch (e) {
       _setError('Error adding entry: $e');
     } finally {
@@ -308,6 +318,7 @@ class BikeProvider with ChangeNotifier {
     try {
       await _bikeService.updateBikeEntry(user.uid, _selectedBikeId!, entry);
       _setError(null);
+      // Firestore listener will automatically pick up the updated entry
     } catch (e) {
       _setError('Error updating entry: $e');
     } finally {
@@ -327,6 +338,23 @@ class BikeProvider with ChangeNotifier {
       _setError(null);
     } catch (e) {
       _setError('Error deleting entry: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> undoDeleteBikeEntry(BikeEntry entry) async {
+    final user = _auth.currentUser;
+    if (user == null || _selectedBikeId == null) {
+      _setError('User or bike not selected');
+      return;
+    }
+    _setLoading(true);
+    try {
+      await _bikeService.restoreBikeEntry(user.uid, _selectedBikeId!, entry);
+      _setError(null);
+    } catch (e) {
+      _setError('Error restoring entry: $e');
     } finally {
       _setLoading(false);
     }
@@ -358,6 +386,39 @@ class BikeProvider with ChangeNotifier {
         entries.fold<double>(0, (sum, e) => sum + e.mileage!) / entries.length;
     print('⛽ getAverageMileage: $avg (from ${entries.length} entries)');
     return avg;
+  }
+
+  /// Calculate mileage using simple average of individual entry mileages
+  /// Matches spreadsheet formula: AVERAGE of all (trip/fuel) values
+  double getReliableAverageMileage() {
+    final fuelEntries = _currentBikeEntries
+        .where((e) => (e.category ?? 'fuel').toLowerCase() == 'fuel')
+        .toList();
+
+    if (fuelEntries.isEmpty) {
+      return 0.0;
+    }
+
+    // Get entries that have valid mileage calculated
+    final entriesWithMileage = fuelEntries
+        .where((e) => e.mileage != null && e.mileage! > 0)
+        .toList();
+
+    if (entriesWithMileage.isNotEmpty) {
+      // Simple average: sum of mileages / count (matches spreadsheet AVERAGE)
+      final totalMileage = entriesWithMileage.fold<double>(
+        0,
+        (sum, e) => sum + e.mileage!,
+      );
+      final avg = totalMileage / entriesWithMileage.length;
+
+      print(
+        '⛽ getReliableAverageMileage: $avg km/l (simple avg of ${entriesWithMileage.length} entries)',
+      );
+      return avg;
+    }
+
+    return 0.0;
   }
 
   int getTotalFillups() {
@@ -453,6 +514,50 @@ class BikeProvider with ChangeNotifier {
   void _setError(String? error) {
     _error = error;
     notifyListeners();
+  }
+
+  /// Sync current bike data to Android widgets and Android Auto
+  Future<void> _syncToWidgets() async {
+    final bike = selectedBike ?? getDashboardBike();
+    if (bike == null) return;
+
+    // Get latest fuel entry for this bike
+    final fuelEntries = _currentBikeEntries
+        .where((e) => (e.category ?? 'fuel').toLowerCase() == 'fuel')
+        .toList();
+
+    String lastFuelDate = 'N/A';
+    double lastFuelPrice = 0;
+
+    if (fuelEntries.isNotEmpty) {
+      final lastEntry = fuelEntries.first;
+      lastFuelDate = DateFormat('dd MMM').format(lastEntry.date);
+      if (lastEntry.fuelQuantity > 0) {
+        lastFuelPrice = lastEntry.fuelAmount / lastEntry.fuelQuantity;
+      }
+    }
+
+    final mileage = getReliableAverageMileage();
+
+    // Update Home Screen Widget
+    await HomeScreenWidgetService.updateGarageWidget(
+      vehicleName: bike.name,
+      odometer: bike.currentOdometer,
+      mileage: mileage,
+      lastFuelDate: lastFuelDate,
+      fuelPrice: lastFuelPrice,
+    );
+
+    // Update Android Auto
+    await AndroidAutoService.updateGarageData(
+      vehicleName: bike.name,
+      odometer: bike.currentOdometer,
+      mileage: mileage,
+      lastFuelPrice: lastFuelPrice,
+      lastFuelDate: lastFuelDate,
+    );
+
+    print('🔄 Synced bike data to widgets: ${bike.name}');
   }
 
   void clear() {

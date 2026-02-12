@@ -14,6 +14,8 @@ import '../../core/providers/bike_provider.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/swipe_to_delete.dart';
+import '../../core/widgets/financial_health_widget.dart';
+import '../../core/widgets/upcoming_week_widget.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/models/account.dart';
 import '../../core/models/transaction.dart';
@@ -169,7 +171,35 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
               ),
             ),
 
-            // 4. GARAGE SECTION (New "Status" Card)
+            // 4. FINANCIAL HEALTH SCORE
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
+                child: FinancialHealthWidget(
+                  onTap: () => widget.onNavigate(1, financeTab: 2),
+                ),
+              ),
+            ),
+
+            // 4b. UPCOMING WEEK PREVIEW
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
+                child: UpcomingWeekWidget(
+                  onViewAll: () => widget.onNavigate(1, financeTab: 2),
+                ),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+            // 5. GARAGE SECTION (New "Status" Card)
             SliverToBoxAdapter(
               child: Consumer<BikeProvider>(
                 builder: (context, bikeProvider, _) {
@@ -180,7 +210,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                   final bike =
                       bikeProvider.getDashboardBike() ??
                       bikeProvider.bikes.first;
-                  final mileage = bikeProvider.getAverageMileage();
+                  final mileage = bikeProvider.getReliableAverageMileage();
 
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -199,7 +229,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
 
             const SliverToBoxAdapter(child: SizedBox(height: 32)),
 
-            // 5. RECENT ACTIVITY HEADER
+            // 6. RECENT ACTIVITY HEADER
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -246,20 +276,24 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
   }
 
   Widget _buildPremiumBalanceCard(double balance) {
+    final isPositive = balance > 0; // Only positive if actually has money
+    final isEmpty = balance == 0;
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+          colors: isPositive
+              ? AppColors.netWorthPositiveGradient
+              : AppColors.netWorthNegativeGradient,
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 20,
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 30,
             offset: const Offset(0, 10),
           ),
         ],
@@ -267,18 +301,74 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Total Balance',
-            style: AppTypography.labelMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'TOTAL BALANCE',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isEmpty
+                          ? Icons.remove
+                          : (isPositive
+                                ? Icons.trending_up
+                                : Icons.trending_down),
+                      color: isEmpty
+                          ? Colors.white54
+                          : (isPositive ? AppColors.success : AppColors.error),
+                      size: 12,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      isEmpty ? 'Empty' : (isPositive ? 'Healthy' : 'Low'),
+                      style: TextStyle(
+                        color: isEmpty
+                            ? Colors.white54
+                            : (isPositive
+                                  ? AppColors.success
+                                  : AppColors.error),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             '₹${balance.toStringAsFixed(2)}',
             style: AppTypography.displaySmall.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w900,
+              fontSize: 36,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Available across all accounts',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.5),
+              fontSize: 12,
             ),
           ),
         ],
@@ -293,14 +383,21 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.primaryBlue.withOpacity(0.15),
+              AppColors.cardSurface,
+            ],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.primaryBlue.withOpacity(0.2)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: AppColors.primaryBlue.withOpacity(0.1),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -308,19 +405,31 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
           children: [
             // Icon / Avatar
             Container(
-              width: 50,
-              height: 50,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
-                color: AppColors.primaryBlue.withOpacity(0.1),
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primaryBlue.withOpacity(0.3),
+                    AppColors.primaryBlue.withOpacity(0.1),
+                  ],
+                ),
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: AppColors.primaryBlue.withOpacity(0.3),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryBlue.withOpacity(0.2),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
               child: const Icon(
                 Icons.two_wheeler,
                 color: AppColors.primaryBlue,
-                size: 24,
+                size: 26,
               ),
             ),
             const SizedBox(width: 16),
@@ -341,18 +450,26 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                   Row(
                     children: [
                       Container(
-                        width: 6,
-                        height: 6,
+                        width: 8,
+                        height: 8,
                         decoration: BoxDecoration(
                           color: AppColors.success,
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.success.withOpacity(0.5),
+                              blurRadius: 4,
+                              spreadRadius: 1,
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 6),
                       Text(
                         "Active",
                         style: AppTypography.labelSmall.copyWith(
-                          color: AppColors.textTertiary,
+                          color: AppColors.success,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -362,28 +479,36 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
             ),
 
             // Mileage Stat
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  "EFFICIENCY",
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textTertiary,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: AppColors.pastelTeal.withOpacity(0.3),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  "${mileage.toStringAsFixed(1)} km/L",
-                  style: TextStyle(
-                    color: AppColors.pastelTeal,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    "${mileage.toStringAsFixed(1)}",
+                    style: TextStyle(
+                      color: AppColors.pastelTeal,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                    ),
                   ),
-                ),
-              ],
+                  Text(
+                    "km/L",
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textTertiary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -400,16 +525,34 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 80,
+        height: 88,
         decoration: BoxDecoration(
-          color: AppColors.cardSurface,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [color.withOpacity(0.15), AppColors.cardSurface],
+          ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: color.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 24),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
             const SizedBox(height: 8),
             Text(
               label,

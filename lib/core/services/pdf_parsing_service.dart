@@ -175,8 +175,9 @@ class PDFParsingService extends ChangeNotifier {
     List<ExtractedTransaction> transactions,
   ) {
     final warnings = <String>[];
-    if (metadata.accountNumber == null)
+    if (metadata.accountNumber == null) {
       warnings.add('Account number not detected.');
+    }
     if (transactions.isEmpty) warnings.add('No transactions detected.');
     return warnings;
   }

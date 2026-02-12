@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nexus</string>
+    <string name="widget_description">View your vehicle status, mileage, and quickly log fuel entries.</string>
+    <string name="garage_widget_name">Nexus Garage</string>
+    <string name="quick_transaction_widget_name">Quick Transaction</string>
+    <string name="quick_transaction_widget_description">Track spending and quickly add transactions.</string>
+    <string name="balance_widget_name">Balance Overview</string>
+    <string name="balance_widget_description">View your total balance, income, and expenses at a glance.</string>
+</resources>

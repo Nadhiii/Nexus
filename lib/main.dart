@@ -21,7 +21,13 @@ import 'core/providers/category_provider.dart';
 import 'core/providers/bike_provider.dart';
 import 'core/providers/fuel_price_provider.dart';
 import 'core/providers/pdf_import_provider.dart';
+import 'core/providers/shared_expense_provider.dart';
+import 'core/providers/financial_health_provider.dart';
+import 'modules/ai_assistant/providers/ai_assistant_provider.dart';
 import 'core/auth/auth_gate.dart';
+import 'core/services/crash_reporting_service.dart';
+import 'core/services/widget_sync_service.dart';
+import 'core/services/intent_navigation_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
@@ -29,7 +35,12 @@ void main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  // Initialize Crashlytics for error reporting
+  await CrashReportingService().initialize();
+
   await dotenv.load(fileName: ".env");
+
+  IntentNavigationService.initialize();
 
   runApp(const NexusApp());
 }
@@ -54,6 +65,9 @@ class NexusApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BikeProvider()),
         ChangeNotifierProvider(create: (_) => FuelPriceProvider()),
         ChangeNotifierProvider(create: (_) => PDFImportProvider()),
+        ChangeNotifierProvider(create: (_) => SharedExpenseProvider()),
+        ChangeNotifierProvider(create: (_) => FinancialHealthProvider()),
+        ChangeNotifierProvider(create: (_) => AIAssistantProvider()),
         ChangeNotifierProxyProvider<GmailProvider, NewNboxProvider>(
           create: (context) => NewNboxProvider(),
           update: (context, gmailProvider, nboxProvider) {
@@ -99,17 +113,43 @@ class NexusApp extends StatelessWidget {
               },
         ),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          return MaterialApp(
-            title: 'Nexus',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.darkTheme,
-            themeMode: ThemeMode.dark,
-            home: const AuthGate(),
-          );
-        },
-      ),
+      child:
+          Consumer4<
+            ThemeProvider,
+            TransactionProvider,
+            AccountProvider,
+            SubscriptionProvider
+          >(
+            builder:
+                (
+                  context,
+                  themeProvider,
+                  transactionProvider,
+                  accountProvider,
+                  subscriptionProvider,
+                  child,
+                ) {
+                  // Initialize WidgetSyncService with providers
+                  final debtProvider = Provider.of<DebtProvider>(
+                    context,
+                    listen: false,
+                  );
+                  WidgetSyncService.instance.initialize(
+                    transactionProvider: transactionProvider,
+                    accountProvider: accountProvider,
+                    subscriptionProvider: subscriptionProvider,
+                    debtProvider: debtProvider,
+                  );
+
+                  return MaterialApp(
+                    title: 'Nexus',
+                    debugShowCheckedModeBanner: false,
+                    theme: AppTheme.darkTheme,
+                    themeMode: ThemeMode.dark,
+                    home: const AuthGate(),
+                  );
+                },
+          ),
     );
   }
 }

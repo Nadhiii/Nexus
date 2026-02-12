@@ -1,45 +1,117 @@
 package com.mahanadhi.nexus
 
 import android.content.Context
+import androidx.car.app.CarAppService
 import androidx.car.app.Screen
 import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.model.Action
 import androidx.car.app.model.MessageTemplate
+import androidx.car.app.model.Pane
+import androidx.car.app.model.PaneTemplate
+import androidx.car.app.model.Row
 import androidx.car.app.model.ParkedOnlyOnClickListener
 import androidx.car.app.model.Template
+import androidx.car.app.Session
+import androidx.car.app.validation.HostValidator
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 /**
  * Main screen for Android Auto integration in Nexus app.
- * Displays financial dashboard information suitable for car display.
+ * Displays Garage information - vehicle details, mileage, and fuel logging.
  */
 class NexusAndroidAutoScreen(carContext: CarContext) : Screen(carContext) {
-  private var currentTitle = "Nexus"
-  private var currentContent = "Loading Dashboard..."
+  private var currentMode = DisplayMode.GARAGE
+  private var garageData: GarageDisplayData? = null
   private var dashboardData: Map<String, String>? = null
 
+  enum class DisplayMode {
+    GARAGE,
+    DASHBOARD
+  }
+
   override fun onGetTemplate(): Template {
-    val message = buildDisplayMessage()
-    
-    return MessageTemplate.Builder(message)
-      .setTitle("Nexus Dashboard")
-      .setHeaderAction(Action.APP_ICON)
-      .addAction(
-        Action.Builder()
-          .setTitle("Refresh")
-          .setOnClickListener(ParkedOnlyOnClickListener.create {
-            CarToast.makeText(carContext, "Refreshing Dashboard...", CarToast.LENGTH_SHORT).show()
-            invalidate()
-          })
+    return when (currentMode) {
+      DisplayMode.GARAGE -> buildGarageTemplate()
+      DisplayMode.DASHBOARD -> buildDashboardTemplate()
+    }
+  }
+
+  private fun buildGarageTemplate(): Template {
+    val paneBuilder = Pane.Builder()
+
+    garageData?.let { data ->
+      // Vehicle Name Row
+      paneBuilder.addRow(
+        Row.Builder()
+          .setTitle(data.vehicleName)
+          .addText("🏍️ Your Vehicle")
           .build()
       )
+
+      // Odometer Row
+      paneBuilder.addRow(
+        Row.Builder()
+          .setTitle("Odometer")
+          .addText("${data.formattedOdometer} km")
+          .build()
+      )
+
+      // Mileage Row
+      paneBuilder.addRow(
+        Row.Builder()
+          .setTitle("Average Mileage")
+          .addText("${data.formattedMileage} km/L")
+          .build()
+      )
+
+      // Last Fuel Row
+      paneBuilder.addRow(
+        Row.Builder()
+          .setTitle("Last Fuel")
+          .addText("₹${data.lastFuelPrice}/L • ${data.lastFuelDate}")
+          .build()
+      )
+
+      // Service reminder if due
+      if (data.serviceDueSoon) {
+        paneBuilder.addRow(
+          Row.Builder()
+            .setTitle("⚠️ Service Reminder")
+            .addText("Service due at ${data.nextServiceKm} km")
+            .build()
+        )
+      }
+    } ?: run {
+      paneBuilder.addRow(
+        Row.Builder()
+          .setTitle("No Vehicle Data")
+          .addText("Open Nexus to sync your garage")
+          .build()
+      )
+    }
+
+    // Add Log Fuel action
+    paneBuilder.addAction(
+      Action.Builder()
+        .setTitle("🛢️ Log Fuel")
+        .setOnClickListener(ParkedOnlyOnClickListener.create {
+          CarToast.makeText(carContext, "Opening Fuel Log...", CarToast.LENGTH_SHORT).show()
+          // This would trigger the Flutter side to handle fuel logging
+          notifyFuelLogRequested()
+        })
+        .build()
+    )
+
+    return PaneTemplate.Builder(paneBuilder.build())
+      .setTitle("Nexus Garage")
+      .setHeaderAction(Action.APP_ICON)
       .build()
   }
 
-  private fun buildDisplayMessage(): String {
-    return if (dashboardData != null) {
+  private fun buildDashboardTemplate(): Template {
+    val message = if (dashboardData != null) {
       """
       Balance: ${dashboardData!!["totalBalance"] ?: "N/A"}
       Income: ${dashboardData!!["monthlyIncome"] ?: "N/A"}
@@ -47,17 +119,41 @@ class NexusAndroidAutoScreen(carContext: CarContext) : Screen(carContext) {
       Savings: ${dashboardData!!["savingsRate"] ?: "N/A"}
       """.trimIndent()
     } else {
-      currentContent
+      "Loading Dashboard..."
     }
+    
+    return MessageTemplate.Builder(message)
+      .setTitle("Nexus Dashboard")
+      .setHeaderAction(Action.APP_ICON)
+      .addAction(
+        Action.Builder()
+          .setTitle("Garage")
+          .setOnClickListener(ParkedOnlyOnClickListener.create {
+            currentMode = DisplayMode.GARAGE
+            invalidate()
+          })
+          .build()
+      )
+      .addAction(
+        Action.Builder()
+          .setTitle("Refresh")
+          .setOnClickListener(ParkedOnlyOnClickListener.create {
+            CarToast.makeText(carContext, "Refreshing...", CarToast.LENGTH_SHORT).show()
+            invalidate()
+          })
+          .build()
+      )
+      .build()
   }
 
-  fun updateTitle(title: String) {
-    currentTitle = title
-    invalidate()
+  private fun notifyFuelLogRequested() {
+    // This would communicate back to Flutter
+    // For now, show a toast
+    CarToast.makeText(carContext, "Please complete fuel log in the app", CarToast.LENGTH_LONG).show()
   }
 
-  fun updateContent(content: String) {
-    currentContent = content
+  fun updateGarageData(data: GarageDisplayData) {
+    garageData = data
     invalidate()
   }
 
@@ -65,6 +161,55 @@ class NexusAndroidAutoScreen(carContext: CarContext) : Screen(carContext) {
     dashboardData = data
     invalidate()
   }
+
+  fun switchToGarage() {
+    currentMode = DisplayMode.GARAGE
+    invalidate()
+  }
+
+  fun switchToDashboard() {
+    currentMode = DisplayMode.DASHBOARD
+    invalidate()
+  }
+}
+
+/**
+ * Android Auto CarAppService entry point.
+ */
+class NexusCarAppService : CarAppService() {
+  override fun createHostValidator(): HostValidator {
+    // Allow all hosts for development; tighten for production.
+    return HostValidator.ALLOW_ALL_HOSTS_VALIDATOR
+  }
+
+  override fun onCreateSession(): Session {
+    return object : Session() {
+      override fun onCreateScreen(intent: android.content.Intent): Screen {
+        val screen = NexusAndroidAutoScreen(carContext)
+        AndroidAutoMethodChannelHandler.activeScreen = screen
+        return screen
+      }
+    }
+  }
+}
+
+/**
+ * Data class for Garage display on Android Auto
+ */
+data class GarageDisplayData(
+  val vehicleName: String,
+  val odometer: Double,
+  val mileage: Double,
+  val lastFuelPrice: Double,
+  val lastFuelDate: String,
+  val nextServiceKm: Int,
+  val serviceDueSoon: Boolean
+) {
+  val formattedOdometer: String
+    get() = String.format("%,.0f", odometer)
+  
+  val formattedMileage: String
+    get() = if (mileage > 0) String.format("%.1f", mileage) else "--"
 }
 
 /**
@@ -75,9 +220,9 @@ class AndroidAutoMethodChannelHandler(
 ) {
   companion object {
     private const val CHANNEL_NAME = "com.mahanadhi.nexus/android_auto"
+    var activeScreen: NexusAndroidAutoScreen? = null
   }
 
-  private var currentScreen: NexusAndroidAutoScreen? = null
   private var methodChannel: MethodChannel? = null
 
   /**
@@ -94,6 +239,18 @@ class AndroidAutoMethodChannelHandler(
         "initializeAndroidAuto" -> {
           initializeAndroidAuto(result)
         }
+        "updateGarageData" -> {
+          val data = GarageDisplayData(
+            vehicleName = call.argument<String>("vehicleName") ?: "My Vehicle",
+            odometer = call.argument<Double>("odometer") ?: 0.0,
+            mileage = call.argument<Double>("mileage") ?: 0.0,
+            lastFuelPrice = call.argument<Double>("lastFuelPrice") ?: 0.0,
+            lastFuelDate = call.argument<String>("lastFuelDate") ?: "No data",
+            nextServiceKm = call.argument<Int>("nextServiceKm") ?: 0,
+            serviceDueSoon = call.argument<Boolean>("serviceDueSoon") ?: false
+          )
+          updateGarageData(data, result)
+        }
         "updateAppState" -> {
           val title = call.argument<String>("title") ?: "Nexus"
           val content = call.argument<String>("content") ?: ""
@@ -109,19 +266,19 @@ class AndroidAutoMethodChannelHandler(
           )
           updateDashboardSummary(summary, result)
         }
-        "updateRecentTransactions" -> {
-          val transactions = call.argument<List<Map<String, Any>>>("transactions") ?: emptyList()
-          updateRecentTransactions(transactions, result)
+        "switchToGarage" -> {
+          activeScreen?.switchToGarage()
+          result.success(true)
+        }
+        "switchToDashboard" -> {
+          activeScreen?.switchToDashboard()
+          result.success(true)
         }
         "sendAlert" -> {
           val title = call.argument<String>("title") ?: "Alert"
           val message = call.argument<String>("message") ?: ""
           val alertType = call.argument<String>("alertType") ?: "info"
           sendAlert(title, message, alertType, result)
-        }
-        "handleAction" -> {
-          val actionId = call.argument<String>("actionId") ?: ""
-          handleAction(actionId, result)
         }
         "isConnected" -> {
           result.success(true)
@@ -141,6 +298,15 @@ class AndroidAutoMethodChannelHandler(
     }
   }
 
+  private fun updateGarageData(data: GarageDisplayData, result: MethodChannel.Result) {
+    try {
+      activeScreen?.updateGarageData(data)
+      result.success(true)
+    } catch (e: Exception) {
+      result.error("UPDATE_FAILED", "Failed to update garage: ${e.message}", null)
+    }
+  }
+
   private fun updateAppState(
     title: String,
     content: String,
@@ -148,10 +314,6 @@ class AndroidAutoMethodChannelHandler(
     result: MethodChannel.Result
   ) {
     try {
-      currentScreen?.apply {
-        updateTitle(title)
-        updateContent(content)
-      }
       result.success(true)
     } catch (e: Exception) {
       result.error("UPDATE_FAILED", "Failed to update app state: ${e.message}", null)
@@ -163,21 +325,10 @@ class AndroidAutoMethodChannelHandler(
     result: MethodChannel.Result
   ) {
     try {
-      currentScreen?.updateDashboardData(summary)
+      activeScreen?.updateDashboardData(summary)
       result.success(true)
     } catch (e: Exception) {
       result.error("UPDATE_FAILED", "Failed to update dashboard: ${e.message}", null)
-    }
-  }
-
-  private fun updateRecentTransactions(
-    transactions: List<Map<String, Any>>,
-    result: MethodChannel.Result
-  ) {
-    try {
-      result.success(true)
-    } catch (e: Exception) {
-      result.error("UPDATE_FAILED", "Failed to update transactions: ${e.message}", null)
     }
   }
 
@@ -191,18 +342,6 @@ class AndroidAutoMethodChannelHandler(
       result.success(true)
     } catch (e: Exception) {
       result.error("ALERT_FAILED", "Failed to send alert: ${e.message}", null)
-    }
-  }
-
-  private fun handleAction(
-    actionId: String,
-    result: MethodChannel.Result
-  ) {
-    try {
-      println("Android Auto action handled: $actionId")
-      result.success(true)
-    } catch (e: Exception) {
-      result.error("ACTION_FAILED", "Failed to handle action: ${e.message}", null)
     }
   }
 }

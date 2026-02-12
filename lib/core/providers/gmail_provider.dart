@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/detected_transaction.dart';
+import '../models/gmail_sync_settings.dart';
 import '../utils/gmail_parser.dart';
 
 class GmailProvider extends ChangeNotifier {
@@ -17,6 +20,8 @@ class GmailProvider extends ChangeNotifier {
   String? _error;
   List<DetectedTransaction> _detectedTransactions = [];
   DateTime? _lastSyncTime;
+  GmailSyncSettings _settings = const GmailSyncSettings();
+  Timer? _syncTimer;
 
   GoogleSignInAccount? get currentUser => _currentUser;
   bool get isLinked => _currentUser != null;
@@ -25,19 +30,79 @@ class GmailProvider extends ChangeNotifier {
   List<DetectedTransaction> get detectedTransactions =>
       List.unmodifiable(_detectedTransactions);
   DateTime? get lastSyncTime => _lastSyncTime;
+  GmailSyncSettings get settings => _settings;
 
   GmailProvider() {
+    _initializeSettings();
     _googleSignIn.onCurrentUserChanged.listen((account) {
       _currentUser = account;
       if (_currentUser == null) {
         _detectedTransactions.clear();
         _lastSyncTime = null;
+        _stopAutoSync();
       } else {
-        Future.microtask(() => scanEmails());
+        Future.microtask(() {
+          scanEmails();
+          _startAutoSync();
+        });
       }
       notifyListeners();
     });
     _googleSignIn.signInSilently();
+  }
+
+  Future<void> _initializeSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final settingsJson = prefs.getString('gmail_sync_settings');
+      if (settingsJson != null) {
+        _settings = GmailSyncSettings.fromJson(jsonDecode(settingsJson));
+      }
+    } catch (e) {
+      if (kDebugMode) print('[GmailProvider] Failed to load settings: $e');
+    }
+  }
+
+  Future<void> updateSettings(GmailSyncSettings newSettings) async {
+    try {
+      _settings = newSettings;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        'gmail_sync_settings',
+        jsonEncode(_settings.toJson()),
+      );
+
+      // Restart sync timer if auto-sync is enabled
+      _stopAutoSync();
+      if (_settings.autoSyncEnabled && isLinked) {
+        _startAutoSync();
+      }
+
+      notifyListeners();
+    } catch (e) {
+      _error = 'Failed to save settings: $e';
+      notifyListeners();
+    }
+  }
+
+  void _startAutoSync() {
+    if (!_settings.autoSyncEnabled || _syncTimer != null) return;
+
+    if (kDebugMode) {
+      print(
+        '[GmailProvider] Starting auto-sync with interval: ${_settings.syncFrequency.displayName}',
+      );
+    }
+
+    _syncTimer = Timer.periodic(_settings.syncFrequency.interval, (_) {
+      scanEmails();
+    });
+  }
+
+  void _stopAutoSync() {
+    _syncTimer?.cancel();
+    _syncTimer = null;
+    if (kDebugMode) print('[GmailProvider] Auto-sync stopped');
   }
 
   Future<void> linkAccount() async {
@@ -51,6 +116,7 @@ class GmailProvider extends ChangeNotifier {
 
   Future<void> unlinkAccount() async {
     try {
+      _stopAutoSync();
       await _googleSignIn.disconnect();
     } catch (e) {
       _error = 'Failed to unlink Gmail account: $e';
@@ -74,21 +140,38 @@ class GmailProvider extends ChangeNotifier {
 
       final gmailApi = gmail.GmailApi(client);
 
-      final thirtyDaysAgo = DateTime.now()
-          .subtract(const Duration(days: 30))
-          .toIso8601String()
-          .split('T')
-          .first;
+      // Incremental sync: Only fetch emails since last sync
+      final startDate =
+          _lastSyncTime ??
+          DateTime.now().subtract(Duration(days: _settings.daysToScan));
 
-      // FIX: Aggressive filtering in the query itself.
-      // We explicitly block "OTP", "Reminder", "Statement", "Due".
-      final query =
+      final formattedDate = startDate.toIso8601String().split('T').first;
+
+      // Build query with filters
+      final baseQuery =
           'subject:(receipt OR "transaction" OR "payment" OR "spent" OR "debited" OR "credited") -subject:("OTP" OR "One Time Password" OR "statement" OR "bill due" OR "payment due" OR "reminder")';
+
+      String finalQuery = '$baseQuery after:$formattedDate';
+
+      // Add category filters if enabled
+      if (!_settings.scanPromotions) {
+        finalQuery += ' -category:promotions';
+      }
+      if (!_settings.scanSocial) {
+        finalQuery += ' -category:social';
+      }
+
+      // Add excluded senders
+      for (var sender in _settings.excludedSenders) {
+        finalQuery += ' -from:$sender';
+      }
+
+      if (kDebugMode) print('[GmailProvider] Query: $finalQuery');
 
       final listResponse = await gmailApi.users.messages.list(
         'me',
         maxResults: 150,
-        q: '$query after:$thirtyDaysAgo',
+        q: finalQuery,
       );
 
       final List<DetectedTransaction> freshTransactions = [];
@@ -139,7 +222,7 @@ class GmailProvider extends ChangeNotifier {
         }
       }
 
-      // --- DEDUPLICATION ---
+      // --- DEDUPLICATION & FILTERING ---
       final Set<String> uniqueSignatures = {};
       final List<DetectedTransaction> finalTransactions = [];
 

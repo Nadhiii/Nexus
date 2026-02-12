@@ -1,355 +1,125 @@
-# Vehicle Dashboard & Garage Management - Setup Guide
+# Garage Management System - API & Architecture Guide
 
-## ✅ Features Implemented
+## Overview
+The garage/vehicle management system handles bike/vehicle tracking with entries for fuel, maintenance, repairs, and other expenses. It includes mileage calculations and trip tracking.
 
-### 1. **Dashboard Vehicle Selection**
-- Choose which vehicle appears on the main dashboard
-- Only one vehicle can be the "dashboard vehicle" at a time
-- Quick visual indicator (star icon) shows selected vehicle
-
-### 2. **Vehicle Reordering**
-- Drag-and-drop reordering in garage view
-- Custom display order saved to database
-- Persisted across app sessions
-
----
-
-## 📦 What Was Added
-
-### **Model Updates** (`lib/core/models/bike.dart`)
-```dart
-final bool isDashboardBike;    // Is this the dashboard vehicle?
-final int displayOrder;         // Order in garage (0 = first)
-```
-
-### **Provider Methods** (`lib/core/providers/bike_provider.dart`)
-```dart
-// Set a vehicle as dashboard vehicle (removes from others)
-Future<void> setDashboardBike(String bikeId)
-
-// Get the current dashboard vehicle
-Bike? getDashboardBike()
-
-// Reorder vehicles with drag-and-drop
-Future<void> reorderBikes(int fromIndex, int toIndex)
-
-// Get vehicles sorted by display order
-List<Bike> getBikesSortedByOrder()
-```
-
-### **New Screen** (`lib/modules/bike/screens/garage_management_screen.dart`)
-- Complete garage management with:
-  - Dashboard selection
-  - Drag-and-drop reordering
-  - Visual indicators for selected vehicle
-  - Confirmation dialogs
-
----
-
-## 🚀 How to Use
-
-### **1. Navigate to Garage Management Screen**
-
-Add to your navigation:
-```dart
-// In your bike garage screen or menu
-GestureDetector(
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const GarageManagementScreen(),
-      ),
-    );
-  },
-  child: const Text('Manage Garage'),
-)
-```
-
-### **2. Select Dashboard Vehicle**
-
-```dart
-// In your code
-final provider = context.read<BikeProvider>();
-
-// Set a vehicle as dashboard vehicle
-await provider.setDashboardBike('bike-id-123');
-
-// Get current dashboard vehicle
-final dashboardBike = provider.getDashboardBike();
-```
-
-### **3. Reorder Vehicles**
-
-The garage management screen handles this automatically with drag-and-drop.
-
-Manually reorder:
-```dart
-// Move bike from position 0 to position 2
-await provider.reorderBikes(0, 2);
-```
-
-### **4. Get Ordered Vehicles**
-
-```dart
-// Get vehicles in display order
-final orderedBikes = provider.getBikesSortedByOrder();
-
-// Loop through in correct order
-for (var bike in orderedBikes) {
-  print('${bike.displayOrder}: ${bike.name}');
-}
-```
-
----
-
-## 📱 Usage in Dashboard
-
-### **Show Dashboard Vehicle**
-
-```dart
-class DashboardScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<BikeProvider>(
-      builder: (context, provider, _) {
-        final dashboardBike = provider.getDashboardBike();
-        
-        if (dashboardBike == null) {
-          return Center(
-            child: Text('Select a vehicle for dashboard'),
-          );
-        }
-
-        return Column(
-          children: [
-            // Show dashboard vehicle details
-            Text(dashboardBike.name),
-            Text('${dashboardBike.make} ${dashboardBike.model}'),
-            // ... more vehicle info
-          ],
-        );
-      },
-    );
-  }
-}
-```
-
----
-
-## 🎯 Complete Example Flow
-
-```dart
-// 1. Open garage management
-Navigator.push(
-  context,
-  MaterialPageRoute(builder: (_) => const GarageManagementScreen()),
-);
-
-// 2. User sees all vehicles in order
-// 3. User clicks "Reorder" button
-// 4. User drags vehicles to new positions
-// 5. User clicks "Done" - order saves to Firestore
-// 6. User clicks on a vehicle - confirmation dialog
-// 7. Vehicle becomes dashboard vehicle (star appears)
-// 8. Close screen - dashboard now shows selected vehicle
-```
-
----
-
-## 💾 Database Structure
-
-### **Bike Document in Firestore**
-
-```json
-{
-  "id": "bike-123",
-  "userId": "user-456",
-  "name": "Daily Commuter",
-  "model": "Royal Enfield Himalayan 450",
-  "year": 2023,
-  "registrationNumber": "KA01AB1234",
-  "make": "Royal Enfield",
-  "isDashboardBike": true,        ← NEW
-  "displayOrder": 0,              ← NEW
-  "currentOdometer": 5234,
-  "createdAt": "2025-01-15T10:00:00Z",
-  "isActive": true,
-  "... other fields ..."
-}
-```
-
----
-
-## 🎨 UI Features
-
-### **Dashboard Section**
-- Shows selected vehicle with star icon
-- Displays make, model, year
-- "Shown on dashboard" label
-- Fallback message if no vehicle selected
-
-### **Vehicle List**
-- Shows all vehicles in order
-- Current dashboard vehicle highlighted
-- Visual indicators (star icon for selected)
-- Click to select vehicle
-
-### **Reorder Mode**
-- Toggle with "Reorder" button
-- Drag handles appear
-- "Drag to reorder" tooltip
-- Click "Done" to save changes
-
----
-
-## ✨ Key Features
-
-✅ **Persistent Selection**
-- Dashboard choice saved to Firestore
-- Survives app restart
-- Only one vehicle can be dashboard vehicle
-
-✅ **Ordered Display**
-- Vehicles maintain custom order
-- DisplayOrder synced with Firestore
-- Easily rearrange with drag-and-drop
-
-✅ **Visual Feedback**
-- Star icon for dashboard vehicle
-- Color-coded selection
-- Smooth animations
-
-✅ **Safe Updates**
-- Mutual exclusion - new selection removes old
-- Validation before database update
-- Error handling and feedback
-
----
-
-## 🔄 How It Works
-
-### **Setting Dashboard Vehicle**
+## Firebase Collection Structure
 
 ```
-User taps vehicle
-     ↓
-Confirmation dialog
-     ↓
-Provider.setDashboardBike(id)
-     ↓
-Remove isDashboardBike from all bikes
-     ↓
-Set isDashboardBike = true on selected bike
-     ↓
-Update Firestore
-     ↓
-UI refreshes with new selection
+users/{uid}/
+  bikes/{bikeId}/
+    - id, userId, name, make, model, year, registrationNumber
+    - currentOdometer, isActive, createdAt
+    - isDashboardBike, displayOrder
+    entries/{entryId}/
+      - id, userId, bikeName, date, odometerReading
+      - fuelQuantity, fuelAmount, category, notes
+      - mileage (calculated), isFullTank
+    trips/{tripId}/
+      - startOdometer, endOdometer, distance, duration
+      - startTime, endTime, routePolyline, notes
 ```
 
-### **Reordering Vehicles**
+## Core Models
 
-```
-User enters reorder mode
-     ↓
-User drags bike from position 0 to 2
-     ↓
-Local list reorders immediately
-     ↓
-Provider.reorderBikes(0, 2)
-     ↓
-All bikes get new displayOrder
-     ↓
-Update Firestore for each bike
-     ↓
-UI updates, order persists
-```
+### Bike
+- **Key Fields**: id, userId, name, make, model, year, registrationNumber, currentOdometer
+- **Display Fields**: isDashboardBike (featured on dashboard), displayOrder (for reordering)
+- **Optional Fields**: ownerName, fuelType, rtoLocation, chassisNumber, engineNumber, insurer, policyExpiry
 
----
+### BikeEntry
+- **Type**: Represents fuel fillups, maintenance, repairs, or expenses
+- **Key Fields**: id, userId, bikeName, date, odometerReading, fuelQuantity, fuelAmount, category
+- **Important**: isFullTank flag for accurate mileage calculation
+- **Categories**: 'fuel', 'maintenance', 'repair', 'insurance', 'modification', 'fine', 'other'
 
-## 🐛 Troubleshooting
+### Trip (Partially Implemented)
+- Tracks individual rides/journeys
+- Fields: startOdometer, endOdometer, distance, duration, startTime, endTime
 
-**Problem:** Dashboard vehicle doesn't change
-- Make sure `setDashboardBike()` completes successfully
-- Check Firestore permissions for write access
-- Verify `isDashboardBike` field exists in documents
+## Mileage Calculation Logic
 
-**Problem:** Reorder doesn't save
-- Check that `reorderBikes()` completes without error
-- Verify displayOrder fields are being updated
-- Check network connectivity
+The system uses **full tank methodology** for accurate fuel efficiency:
 
-**Problem:** Order resets after app restart
-- Make sure `displayOrder` is being saved to Firestore
-- Check that `getBikesSortedByOrder()` is sorting correctly
+1. When `isFullTank = true`, the app looks for the previous full tank entry
+2. Calculates total distance since last full tank
+3. Calculates total fuel consumed (including partial fillups between full tanks)
+4. Mileage = Distance / Total Fuel Used
 
----
+**Example**:
+- Full tank at 1000 km, 50L (Start)
+- Partial top-up at 1200 km, 10L
+- Full tank at 1400 km, 35L (Current)
+- Distance: 1400 - 1000 = 400 km
+- Total Fuel: 35L + 10L = 45L
+- Mileage: 400 / 45 ≈ 8.89 km/l
 
-## 📝 Implementation Checklist
+## State Management (Provider Pattern)
 
-- ✅ Updated Bike model with `isDashboardBike` and `displayOrder`
-- ✅ Added provider methods for dashboard selection
-- ✅ Added provider methods for reordering
-- ✅ Created `GarageManagementScreen` with full UI
-- ✅ Added drag-and-drop reordering
-- ✅ Added confirmation dialogs
-- ✅ All code compiles without errors
+### BikeProvider
+- **Extends**: ChangeNotifier
+- **Purpose**: Centralized state management for bikes and entries
+- **Key Methods**:
+  - `fetchBikes()` - Load all bikes
+  - `selectBike(bikeId)` - Set active bike
+  - `loadBikeEntries(userId, bikeId)` - Subscribe to entries stream
+  - `addBikeEntry(entry)` - Create new entry
+  - `updateBikeEntry(entry)` - Modify existing entry
+  - `deleteBikeEntry(entryId)` - Remove entry
+  - `updateBike(bike)` - Modify bike details
 
----
+### Listeners
+- Uses Firestore Stream listeners for real-time updates
+- `_entriesSubscription` - Watches entries for selected bike
+- `_tripsSubscription` - Watches trips for selected bike
+- Automatic cleanup on bike selection change
 
-## 🔗 Navigation Integration
+## UI Components
 
-Add to your garage screen:
+### ModernBikeScreen
+- Main garage/vehicle management screen
+- Shows selected bike stats and entry history
+- Floating action button to add entries
 
-```dart
-Padding(
-  padding: const EdgeInsets.all(16),
-  child: ElevatedButton(
-    onPressed: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const GarageManagementScreen(),
-        ),
-      );
-    },
-    child: const Text('Manage Garage & Dashboard'),
-  ),
-)
-```
+### GarageManagementScreen
+- Reorderable list for organizing bikes
+- Drag-and-drop to change displayOrder
+- Dashboard bike starring feature
 
----
+### AddEntryDialog / EditEntryDialog
+- Modal for adding/editing fuel and expense entries
+- Full tank toggle for mileage calculation
+- Category selection with custom category support
+- Date picker for backdated entries
 
-## 📊 Data Persistence
+## Known API Details
 
-- **Firestore Collection:** `bikes/{userId}/bikes/{bikeId}`
-- **Fields Updated:**
-  - `isDashboardBike` (boolean)
-  - `displayOrder` (integer)
-- **Automatic Sync:** Changes reflected in UI immediately
-- **Cloud Sync:** Changes saved to Firestore within seconds
+### Firestore Rules
+- Users can only access their own bikes and entries
+- Real-time listeners provide live updates
+- Batch operations for efficient multi-entry updates
 
----
+### Rate Limiting
+- No documented rate limits, standard Firestore limits apply
+- Consider pagination for users with 1000+ entries
 
-## 🎯 Future Enhancements
+## Troubleshooting
 
-Possible additions:
-- Widget customization for dashboard
-- Default dashboard selection on first vehicle add
-- Bulk reorder import/export
-- Dashboard statistics and quick actions
-- Pinned vs unpinned vehicles
-- Custom dashboard layouts per vehicle
+### "Edit crashes app"
+- Usually caused by null values in category dropdown
+- Fix-Safe: The editEntry dialog ensures all categories exist before rendering
 
----
+### "Can't add new log"
+- Validate odometer and cost fields are non-empty
+- Check that selectedBikeId is set before adding
+- Verify Firestore write permissions
 
-## 📞 API Reference
+### "Entries not appearing"
+- Check that loadBikeEntries() was called after selectBike()
+- Verify Firestore collection path: users/{uid}/bikes/{bikeId}/entries
+- Check network connectivity and Firestore permissions
 
-See inline documentation in:
-- `BikeProvider.setDashboardBike()`
-- `BikeProvider.getDashboardBike()`
-- `BikeProvider.reorderBikes()`
-- `BikeProvider.getBikesSortedByOrder()`
-- `GarageManagementScreen`
-
-All methods are fully documented with examples and error handling!
+### "Mileage showing 0"
+- isFullTank must be TRUE and previous full tank entry must exist
+- Ensure at least 2 full tank entries exist for calculation
+- Check that fuelQuantity is > 0

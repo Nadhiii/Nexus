@@ -156,7 +156,7 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        '📍 Location: ${priceProvider.selectedCity}',
+                                        'Location: ${priceProvider.selectedCity}',
                                       ),
                                       duration: const Duration(seconds: 2),
                                     ),

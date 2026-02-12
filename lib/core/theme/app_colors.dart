@@ -12,6 +12,16 @@ class AppColors {
   static const Color pastelPink = Color(0xFFF472B6); // Soft Rose
   static const Color pastelOrange = Color(0xFFFB923C); // Soft Apricot
   static const Color pastelGreen = Color(0xFF34D399); // Soft Emerald
+  static const Color pastelYellow = Color(0xFFFACC15); // Soft Amber
+  static const Color pastelIndigo = Color(0xFF6366F1); // Soft Indigo
+
+  // --- Premium/Special Colors ---
+  static const Color premiumAmber = Color(0xFFD97706); // Premium badge
+  static const Color investmentIndigo = Color(0xFF6366F1); // Investment screens
+  static const Color profitEmerald = Color(0xFF065F46); // Profit indicators
+  static const Color profitEmeraldDark = Color(0xFF064E3B);
+  static const Color lossRose = Color(0xFF9F1239); // Loss indicators
+  static const Color lossRoseDark = Color(0xFF881337);
 
   // --- Backgrounds (Dark Grey/Blue) ---
   static const Color backgroundBlack = Color(0xFF0F172A); // Main Background
@@ -40,10 +50,14 @@ class AppColors {
   static const Color green = pastelGreen;
   static const Color red = error;
   static const Color orange = pastelOrange;
+  static const Color yellow = pastelYellow;
+  static const Color indigo = pastelIndigo;
   static const Color accentTeal = pastelTeal;
   static const Color accentPurple = pastelPurple;
   static const Color accentPink = pastelPink;
   static const Color accentOrange = pastelOrange;
+  static const Color accentIndigo = pastelIndigo;
+  static const Color accentYellow = pastelYellow;
 
   // Card colors aliases
   static const Color cardDark = cardSurface;
@@ -57,6 +71,28 @@ class AppColors {
   static const List<Color> tealGradient = [pastelTeal, Color(0xFF14B8A6)];
 
   static const List<Color> purpleGradient = [pastelPurple, Color(0xFF8B5CF6)];
+
+  static const List<Color> indigoGradient = [pastelIndigo, Color(0xFF4F46E5)];
+
+  static const List<Color> profitGradient = [profitEmerald, profitEmeraldDark];
+
+  static const List<Color> lossGradient = [lossRose, lossRoseDark];
+
+  static const List<Color> summaryCardGradient = [
+    Color(0xFF1E293B),
+    Color(0xFF0F172A),
+  ];
+
+  // Net Worth Card Gradients
+  static const List<Color> netWorthPositiveGradient = [
+    Color(0xFF0F172A), // Dark slate
+    Color(0xFF1E293B), // Slate
+  ];
+
+  static const List<Color> netWorthNegativeGradient = [
+    Color(0xFF450A0A), // Dark red
+    Color(0xFF7F1D1D), // Red
+  ];
 
   // Opacity variations
   static const Color whiteDim = Color(0x99FFFFFF); // white 60%

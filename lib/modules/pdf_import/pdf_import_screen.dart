@@ -357,6 +357,14 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
                   'Transactions:',
                   '${statement.transactionCount}',
                 ),
+                _buildDetailRow(
+                  'Income / Expenses:',
+                  '${statement.incomeCount} income • ${statement.expenseCount} expenses',
+                ),
+                _buildDetailRow(
+                  'Totals:',
+                  '₹${statement.incomeTotal.toStringAsFixed(2)} income • ₹${statement.expenseTotal.toStringAsFixed(2)} expenses',
+                ),
                 _buildDetailRow('Period:', statement.dateRange),
               ],
             ),
@@ -464,6 +472,26 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
                 'To Import',
                 '${provider.importableCount}',
                 Colors.green,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSummaryCard(
+                'Income',
+                '${statement.incomeCount} • ₹${statement.incomeTotal.toStringAsFixed(2)}',
+                Colors.green,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.lg),
+            Expanded(
+              child: _buildSummaryCard(
+                'Expenses',
+                '${statement.expenseCount} • ₹${statement.expenseTotal.toStringAsFixed(2)}',
+                AppColors.error,
               ),
             ),
           ],
@@ -637,63 +665,117 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Select Account'),
-        content: SingleChildScrollView(
+      builder: (context) => Dialog(
+        backgroundColor: AppColors.backgroundBlack,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+        insetPadding: const EdgeInsets.all(16),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (matchedAccount != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.check_circle, color: Colors.green),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Matched: ${matchedAccount.name}',
-                            style: const TextStyle(
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Select Account',
+                    style: AppTypography.headlineSmall.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.close,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (matchedAccount != null)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.success.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.check_circle,
+                        color: AppColors.success,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Matched: ${matchedAccount.name}',
+                          style: TextStyle(
+                            color: AppColors.success,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ...existingAccounts.map((account) {
-                final isMatched = account.id == matchedAccount?.id;
-                return ListTile(
-                  title: Text(account.name),
-                  subtitle: Text(account.typeDisplayName),
-                  trailing: isMatched
-                      ? const Icon(Icons.check_circle, color: Colors.green)
-                      : null,
-                  selected: isMatched,
-                  onTap: () {
-                    provider.selectAccount(account);
-                    Navigator.pop(context);
-                  },
-                );
-              }).toList(),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 300),
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: existingAccounts.map((account) {
+                      final isMatched = account.id == matchedAccount?.id;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: isMatched
+                              ? AppColors.primaryBlue.withOpacity(0.1)
+                              : AppColors.cardSurface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isMatched
+                                ? AppColors.primaryBlue.withOpacity(0.3)
+                                : Colors.white.withOpacity(0.05),
+                          ),
+                        ),
+                        child: ListTile(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          title: Text(
+                            account.name,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          subtitle: Text(
+                            account.typeDisplayName,
+                            style: TextStyle(color: AppColors.textTertiary),
+                          ),
+                          trailing: isMatched
+                              ? const Icon(
+                                  Icons.check_circle,
+                                  color: AppColors.success,
+                                )
+                              : null,
+                          onTap: () {
+                            provider.selectAccount(account);
+                            Navigator.pop(context);
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
       ),
     );
   }
@@ -712,80 +794,176 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Create New Account'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    initialValue: accountName,
-                    decoration: const InputDecoration(
-                      labelText: 'Account Name',
-                    ),
-                    onChanged: (v) => accountName = v,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  TextFormField(
-                    initialValue: bankName,
-                    decoration: const InputDecoration(labelText: 'Bank Name'),
-                    onChanged: (v) => bankName = v,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  TextFormField(
-                    initialValue: accountNumber,
-                    decoration: const InputDecoration(
-                      labelText: 'Account Number',
-                    ),
-                    onChanged: (v) => accountNumber = v,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  DropdownButton<AccountType>(
-                    value: selectedAccountType,
-                    onChanged: (v) => setState(
-                      () => selectedAccountType = v ?? AccountType.savings,
-                    ),
-                    items: AccountType.values
-                        .map(
-                          (type) => DropdownMenuItem(
-                            value: type,
-                            child: Text(
-                              type.name.replaceFirst(
-                                type.name[0],
-                                type.name[0].toUpperCase(),
-                              ),
-                            ),
+          return Dialog(
+            backgroundColor: AppColors.backgroundBlack,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(32),
+            ),
+            insetPadding: const EdgeInsets.all(16),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Create Account',
+                          style: AppTypography.headlineSmall.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
                           ),
-                        )
-                        .toList(),
-                  ),
-                ],
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(
+                            Icons.close,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    _buildDialogLabel('ACCOUNT NAME'),
+                    _buildDialogGlassField(
+                      initialValue: accountName,
+                      hint: 'Account Name',
+                      onChanged: (v) => accountName = v,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildDialogLabel('BANK NAME'),
+                    _buildDialogGlassField(
+                      initialValue: bankName,
+                      hint: 'Bank Name',
+                      onChanged: (v) => bankName = v,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildDialogLabel('ACCOUNT NUMBER'),
+                    _buildDialogGlassField(
+                      initialValue: accountNumber,
+                      hint: 'Account Number (optional)',
+                      onChanged: (v) => accountNumber = v,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildDialogLabel('ACCOUNT TYPE'),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardSurface,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.05),
+                        ),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<AccountType>(
+                          value: selectedAccountType,
+                          isExpanded: true,
+                          dropdownColor: AppColors.cardSurface,
+                          style: const TextStyle(color: Colors.white),
+                          items: AccountType.values
+                              .map(
+                                (type) => DropdownMenuItem(
+                                  value: type,
+                                  child: Text(
+                                    type.name.replaceFirst(
+                                      type.name[0],
+                                      type.name[0].toUpperCase(),
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (v) => setState(
+                            () =>
+                                selectedAccountType = v ?? AccountType.savings,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          provider.createNewAccount(
+                            accountName: accountName,
+                            bankName: bankName,
+                            accountType: selectedAccountType,
+                            accountColor: AppColors.info,
+                            accountIcon: Icons.account_balance,
+                            accountNumber: accountNumber.isNotEmpty
+                                ? accountNumber
+                                : null,
+                          );
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryBlue,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          'Create Account',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () {
-                  provider.createNewAccount(
-                    accountName: accountName,
-                    bankName: bankName,
-                    accountType: selectedAccountType,
-                    accountColor: AppColors.info,
-                    accountIcon: Icons.account_balance,
-                    accountNumber: accountNumber.isNotEmpty
-                        ? accountNumber
-                        : null,
-                  );
-                  Navigator.pop(context);
-                },
-                child: const Text('Create'),
-              ),
-            ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildDialogLabel(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: 8, left: 4),
+    child: Text(
+      text,
+      style: TextStyle(
+        color: AppColors.textTertiary,
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  );
+
+  Widget _buildDialogGlassField({
+    required String hint,
+    String? initialValue,
+    Function(String)? onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: TextFormField(
+        initialValue: initialValue,
+        style: const TextStyle(color: Colors.white),
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.5)),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
+        ),
       ),
     );
   }
@@ -800,52 +978,124 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Select Bank'),
-            content: SingleChildScrollView(
+          return Dialog(
+            backgroundColor: AppColors.backgroundBlack,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(32),
+            ),
+            insetPadding: const EdgeInsets.all(16),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Select the bank for this statement',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 16),
-                  ...PDFImportProvider.supportedBanks.map((bank) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: ChoiceChip(
-                        label: Text(bank),
-                        selected: selectedBank == bank,
-                        onSelected: (selected) {
-                          setState(() => selectedBank = selected ? bank : null);
-                        },
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Select Bank',
+                        style: AppTypography.headlineSmall.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    );
-                  }).toList(),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(
+                          Icons.close,
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Select the bank for this statement',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: PDFImportProvider.supportedBanks.map((bank) {
+                      final isSelected = selectedBank == bank;
+                      return GestureDetector(
+                        onTap: () => setState(
+                          () => selectedBank = isSelected ? null : bank,
+                        ),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primaryBlue.withOpacity(0.2)
+                                : AppColors.cardSurface,
+                            borderRadius: BorderRadius.circular(30),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primaryBlue
+                                  : Colors.white.withOpacity(0.05),
+                            ),
+                          ),
+                          child: Text(
+                            bank,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? AppColors.primaryBlue
+                                  : Colors.white,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: selectedBank != null
+                          ? () async {
+                              Navigator.pop(context);
+                              if (_selectedFilePath != null) {
+                                await provider.parsePDF(
+                                  _selectedFilePath!,
+                                  userSelectedBank: selectedBank,
+                                );
+                              }
+                            }
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryBlue,
+                        disabledBackgroundColor: AppColors.cardSurface,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: Text(
+                        'Continue',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: selectedBank != null
+                              ? Colors.white
+                              : AppColors.textTertiary,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: selectedBank != null
-                    ? () async {
-                        Navigator.pop(context);
-                        if (_selectedFilePath != null) {
-                          await provider.parsePDF(
-                            _selectedFilePath!,
-                            userSelectedBank: selectedBank,
-                          );
-                        }
-                      }
-                    : null,
-                child: const Text('Continue'),
-              ),
-            ],
           );
         },
       ),
@@ -886,17 +1136,22 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(
-              'Importing ${provider.importableCount} transactions...',
-              style: AppTypography.bodyMedium,
-            ),
-          ],
+      builder: (context) => Dialog(
+        backgroundColor: AppColors.backgroundBlack,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: AppColors.primaryBlue),
+              const SizedBox(height: 24),
+              Text(
+                'Importing ${provider.importableCount} transactions...',
+                style: AppTypography.bodyMedium.copyWith(color: Colors.white),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -312,7 +312,7 @@ class BikeListWidget extends StatelessWidget {
   void _showEditEntryDialog(BuildContext context, BikeEntry entry) {
     showDialog(
       context: context,
-      builder: (_) => EditEntryDialog(entry: entry, provider: provider),
+      builder: (_) => EditEntryDialog(entry: entry),
     );
   }
 }

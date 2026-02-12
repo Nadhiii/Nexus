@@ -2,47 +2,81 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 class AppTypography {
-  static const String fontFamily = 'Inter';
+  // --- Font Families ---
+  static const String bodyFont = 'Inter';
+  static const String headerFont = 'RammettoOne'; // Bold, playful display font
 
-  // --- Headlines ---
+  // --- Headlines (RammettoOne) ---
   static const TextStyle displayLarge = TextStyle(
-    fontFamily: fontFamily,
+    fontFamily: headerFont,
     fontSize: 48,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w400,
     height: 1.1,
-    letterSpacing: -1.0,
+    color: AppColors.textPrimary,
+  );
+
+  static const TextStyle displayMedium = TextStyle(
+    fontFamily: headerFont,
+    fontSize: 40,
+    fontWeight: FontWeight.w400,
+    height: 1.15,
+    color: AppColors.textPrimary,
+  );
+
+  static const TextStyle displaySmall = TextStyle(
+    fontFamily: headerFont,
+    fontSize: 36,
+    fontWeight: FontWeight.w400,
+    height: 1.2,
     color: AppColors.textPrimary,
   );
 
   static const TextStyle headlineLarge = TextStyle(
-    fontFamily: fontFamily,
+    fontFamily: headerFont,
     fontSize: 32,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w400,
     height: 1.2,
-    letterSpacing: -0.5,
     color: AppColors.textPrimary,
   );
 
   static const TextStyle headlineMedium = TextStyle(
-    fontFamily: fontFamily,
+    fontFamily: headerFont,
     fontSize: 24,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w400,
     height: 1.3,
-    letterSpacing: -0.5,
     color: AppColors.textPrimary,
   );
 
   static const TextStyle headlineSmall = TextStyle(
-    fontFamily: fontFamily,
+    fontFamily: headerFont,
     fontSize: 20,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w400,
     height: 1.3,
     color: AppColors.textPrimary,
   );
 
-  // --- Body ---
+  // --- Currency Styles (Inter Bold for numbers) ---
+  static const TextStyle currencyLarge = TextStyle(
+    fontFamily: bodyFont,
+    fontSize: 36,
+    fontWeight: FontWeight.w900,
+    height: 1.2,
+    letterSpacing: -1.0,
+    color: AppColors.textPrimary,
+  );
+
+  static const TextStyle currencyMedium = TextStyle(
+    fontFamily: bodyFont,
+    fontSize: 26,
+    fontWeight: FontWeight.w800,
+    height: 1.3,
+    color: AppColors.textPrimary,
+  );
+
+  // --- Body & Lists (Inter) ---
+  // Inter Variable font handles all these weights (400, 600) perfectly
   static const TextStyle bodyLarge = TextStyle(
-    fontFamily: fontFamily,
+    fontFamily: bodyFont,
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 1.5,
@@ -50,7 +84,7 @@ class AppTypography {
   );
 
   static const TextStyle bodyMedium = TextStyle(
-    fontFamily: fontFamily,
+    fontFamily: bodyFont,
     fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 1.5,
@@ -58,33 +92,16 @@ class AppTypography {
   );
 
   static const TextStyle bodySmall = TextStyle(
-    fontFamily: fontFamily,
+    fontFamily: bodyFont,
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.5,
     color: AppColors.textSecondary,
   );
 
-  // --- Labels ---
-  static const TextStyle labelLarge = TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
-    letterSpacing: 0.5,
-    color: AppColors.textPrimary,
-  );
-
-  static const TextStyle labelMedium = TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 12,
-    fontWeight: FontWeight.w600,
-    letterSpacing: 0.5,
-    color: AppColors.textPrimary,
-  );
-
-  // --- Title styles (missing) ---
+  // --- Titles (Inter) ---
   static const TextStyle titleLarge = TextStyle(
-    fontFamily: fontFamily,
+    fontFamily: bodyFont,
     fontSize: 22,
     fontWeight: FontWeight.w600,
     height: 1.3,
@@ -92,7 +109,7 @@ class AppTypography {
   );
 
   static const TextStyle titleMedium = TextStyle(
-    fontFamily: fontFamily,
+    fontFamily: bodyFont,
     fontSize: 16,
     fontWeight: FontWeight.w600,
     height: 1.4,
@@ -101,7 +118,7 @@ class AppTypography {
   );
 
   static const TextStyle titleSmall = TextStyle(
-    fontFamily: fontFamily,
+    fontFamily: bodyFont,
     fontSize: 14,
     fontWeight: FontWeight.w600,
     height: 1.4,
@@ -109,49 +126,29 @@ class AppTypography {
     color: AppColors.textPrimary,
   );
 
+  // --- Labels (Inter) ---
+  static const TextStyle labelLarge = TextStyle(
+    fontFamily: bodyFont,
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.5,
+    color: AppColors.textPrimary,
+  );
+
+  static const TextStyle labelMedium = TextStyle(
+    fontFamily: bodyFont,
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.5,
+    color: AppColors.textPrimary,
+  );
+
   static const TextStyle labelSmall = TextStyle(
-    fontFamily: fontFamily,
+    fontFamily: bodyFont,
     fontSize: 11,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.5,
     color: AppColors.textSecondary,
-  );
-
-  // --- Display styles ---
-  static const TextStyle displayMedium = TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 40,
-    fontWeight: FontWeight.w600,
-    height: 1.15,
-    letterSpacing: -0.75,
-    color: AppColors.textPrimary,
-  );
-
-  static const TextStyle displaySmall = TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 36,
-    fontWeight: FontWeight.w600,
-    height: 1.2,
-    letterSpacing: -0.5,
-    color: AppColors.textPrimary,
-  );
-
-  // --- Currency styles ---
-  static const TextStyle currencyLarge = TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 32,
-    fontWeight: FontWeight.w700,
-    height: 1.2,
-    letterSpacing: -0.5,
-    color: AppColors.textPrimary,
-  );
-
-  static const TextStyle currencyMedium = TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 24,
-    fontWeight: FontWeight.w600,
-    height: 1.3,
-    color: AppColors.textPrimary,
   );
 
   // --- TextTheme Definitions ---

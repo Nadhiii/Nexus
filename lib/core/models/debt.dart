@@ -1,17 +1,105 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Debt types for formal liabilities (banks, NBFCs, credit cards)
+/// For personal IOUs (money lent/borrowed from people), use Family module
 enum DebtType {
+  // Credit Cards
   creditCard,
+
+  // Loans
   personalLoan,
   homeLoan,
   carLoan,
   educationLoan,
-  businessLoan, // Restored
-  goldLoan, // Restored
-  owedByMe, // I owe someone
-  owedToMe, // Someone owes me
-  custom, // Restored
+  businessLoan,
+  goldLoan,
+  twoWheelerLoan,
+
+  // Legacy (kept for backward compatibility with existing data)
+  @Deprecated('Use Family module for IOUs')
+  owedByMe,
+  @Deprecated('Use Family module for IOUs')
+  owedToMe,
+
+  custom,
   other,
+}
+
+/// Helper extension for DebtType categorization
+extension DebtTypeExtension on DebtType {
+  bool get isLoan => [
+    DebtType.personalLoan,
+    DebtType.homeLoan,
+    DebtType.carLoan,
+    DebtType.educationLoan,
+    DebtType.businessLoan,
+    DebtType.goldLoan,
+    DebtType.twoWheelerLoan,
+    DebtType.other,
+    DebtType.custom,
+  ].contains(this);
+
+  bool get isCreditCard => this == DebtType.creditCard;
+
+  // ignore: deprecated_member_use_from_same_package
+  bool get isLegacyIOU =>
+      this == DebtType.owedByMe || this == DebtType.owedToMe;
+
+  String get displayName {
+    switch (this) {
+      case DebtType.creditCard:
+        return 'Credit Card';
+      case DebtType.personalLoan:
+        return 'Personal Loan';
+      case DebtType.homeLoan:
+        return 'Home Loan';
+      case DebtType.carLoan:
+        return 'Car Loan';
+      case DebtType.educationLoan:
+        return 'Education Loan';
+      case DebtType.businessLoan:
+        return 'Business Loan';
+      case DebtType.goldLoan:
+        return 'Gold Loan';
+      case DebtType.twoWheelerLoan:
+        return 'Two Wheeler Loan';
+      case DebtType.owedByMe:
+        return 'Personal (Legacy)';
+      case DebtType.owedToMe:
+        return 'Personal (Legacy)';
+      case DebtType.custom:
+        return 'Custom';
+      case DebtType.other:
+        return 'Other';
+    }
+  }
+
+  String get icon {
+    switch (this) {
+      case DebtType.creditCard:
+        return '💳';
+      case DebtType.personalLoan:
+        return '🏦';
+      case DebtType.homeLoan:
+        return '🏠';
+      case DebtType.carLoan:
+        return '🚗';
+      case DebtType.educationLoan:
+        return '🎓';
+      case DebtType.businessLoan:
+        return '💼';
+      case DebtType.goldLoan:
+        return '🥇';
+      case DebtType.twoWheelerLoan:
+        return '🏍️';
+      case DebtType.owedByMe:
+      case DebtType.owedToMe:
+        return '👤';
+      case DebtType.custom:
+      case DebtType.other:
+        return '📄';
+    }
+  }
 }
 
 enum PaymentStatus { pending, paid, overdue, partiallyPaid }

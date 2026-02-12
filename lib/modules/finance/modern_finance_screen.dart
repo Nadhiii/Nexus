@@ -56,27 +56,94 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardSurface,
-        title: Text(
-          'Delete ${_selectedTransactionIds.length} Transaction(s)?',
-          style: TextStyle(color: AppColors.textPrimary),
-        ),
-        content: Text(
-          'This action cannot be undone.',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      builder: (context) => Dialog(
+        backgroundColor: AppColors.backgroundBlack,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+        insetPadding: const EdgeInsets.all(16),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Delete ${_selectedTransactionIds.length} Transaction(s)?',
+                style: AppTypography.headlineSmall.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber, color: AppColors.error, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'This action cannot be undone.',
+                        style: TextStyle(color: AppColors.error, fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: Colors.white.withOpacity(0.1),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          'Delete',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete'),
-          ),
-        ],
+        ),
       ),
     );
 
@@ -233,6 +300,8 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
   }
 
   Widget _buildTotalCashCard(double total, int count) {
+    final isPositive = total > 0; // Only positive if actually has money
+    final isEmpty = total == 0;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -240,16 +309,17 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.blue.shade900.withOpacity(0.8),
-            const Color(0xFF1E3A8A), // Dark Blue
+            Colors.blue.shade900.withOpacity(0.9),
+            const Color(0xFF1E3A8A),
+            AppColors.cardSurface,
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.blue.withOpacity(0.2)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 20,
+            color: Colors.blue.withOpacity(0.2),
+            blurRadius: 30,
             offset: const Offset(0, 10),
           ),
         ],
@@ -266,30 +336,42 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                   color: Colors.white.withOpacity(0.7),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
+                  letterSpacing: 1.5,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: 12,
+                  vertical: 5,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.black26,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
                 ),
-                child: Text(
-                  '$count Accounts',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.account_balance_wallet_outlined,
+                      color: Colors.white70,
+                      size: 12,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$count Accounts',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             '₹${NumberFormat('#,##,###').format(total)}',
             style: const TextStyle(
@@ -297,6 +379,35 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
               fontSize: 36,
               fontWeight: FontWeight.w900,
             ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                isEmpty
+                    ? Icons.remove
+                    : (isPositive ? Icons.trending_up : Icons.trending_down),
+                color: isEmpty
+                    ? Colors.white54
+                    : (isPositive ? AppColors.success : AppColors.error),
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                isEmpty
+                    ? 'Empty Accounts'
+                    : (isPositive ? 'Healthy Balance' : 'Low Balance'),
+                style: TextStyle(
+                  color: isEmpty
+                      ? Colors.white54
+                      : (isPositive
+                            ? AppColors.success.withOpacity(0.8)
+                            : AppColors.error.withOpacity(0.8)),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -485,17 +596,34 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.cardSurface,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [account.color.withOpacity(0.15), AppColors.cardSurface],
+          ),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: account.color.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: account.color.withOpacity(0.1),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: account.color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [
+                    account.color.withOpacity(0.3),
+                    account.color.withOpacity(0.15),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: account.color.withOpacity(0.3)),
               ),
               child: Icon(account.icon, color: account.color, size: 24),
             ),
@@ -511,23 +639,63 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Text(
-                    account.typeDisplayName,
-                    style: TextStyle(
-                      color: AppColors.textTertiary,
-                      fontSize: 12,
+                  const SizedBox(height: 2),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: account.color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      account.typeDisplayName,
+                      style: TextStyle(
+                        color: account.color,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            Text(
-              "₹${account.balance.toStringAsFixed(0)}",
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  "₹${account.balance.toStringAsFixed(0)}",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: account.isActive
+                            ? AppColors.success
+                            : AppColors.textTertiary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      account.isActive ? 'Active' : 'Inactive',
+                      style: TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
         ),
@@ -556,16 +724,32 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _isSelectionMode && isSelected
-            ? AppColors.primaryBlue.withOpacity(0.2)
-            : AppColors.cardSurface,
+        gradient: _isSelectionMode && isSelected
+            ? LinearGradient(
+                colors: [
+                  AppColors.primaryBlue.withOpacity(0.2),
+                  AppColors.primaryBlue.withOpacity(0.1),
+                ],
+              )
+            : LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [color.withOpacity(0.08), AppColors.cardSurface],
+              ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: _isSelectionMode && isSelected
               ? AppColors.primaryBlue
-              : Colors.white.withOpacity(0.05),
+              : color.withOpacity(0.15),
           width: _isSelectionMode && isSelected ? 2 : 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -586,10 +770,13 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
             const SizedBox(width: 8),
           ],
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                colors: [color.withOpacity(0.2), color.withOpacity(0.1)],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: color.withOpacity(0.2)),
             ),
             child: Icon(icon, color: color, size: 18),
           ),
@@ -607,20 +794,40 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
-                  t.categoryId ?? "General",
-                  style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
+                const SizedBox(height: 2),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    t.categoryId ?? "General",
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          Text(
-            "$sign₹${t.amount.toStringAsFixed(0)}",
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                "$sign₹${t.amount.toStringAsFixed(0)}",
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                ),
+              ),
+            ],
           ),
         ],
       ),

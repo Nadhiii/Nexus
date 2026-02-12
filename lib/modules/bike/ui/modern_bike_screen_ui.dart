@@ -4,7 +4,6 @@ import '../../../core/models/bike.dart';
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/widgets/swipe_to_delete.dart';
 
 import '../widgets/bike_stats_widget.dart';
 import '../widgets/add_bike_dialog.dart';
@@ -13,7 +12,6 @@ import '../widgets/edit_entry_dialog.dart';
 import '../widgets/fuel_price_widget.dart';
 import '../widgets/vehicle_rc_card.dart';
 import '../screens/garage_management_screen.dart';
-import '../screens/deleted_bikes_screen.dart';
 
 class ModernBikeScreen extends StatefulWidget {
   const ModernBikeScreen({super.key});
@@ -25,29 +23,45 @@ class ModernBikeScreen extends StatefulWidget {
 class _ModernBikeScreenState extends State<ModernBikeScreen> {
   double _currentFuelPrice = 0.0;
   final ScrollController _scrollController = ScrollController();
+  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.read<BikeProvider>();
-      provider.fetchBikes();
-      final userId = provider.auth.currentUser?.uid;
-      if (userId != null && provider.selectedBikeId != null) {
-        provider.loadBikeEntries(userId, provider.selectedBikeId!);
-      }
+      _initializeBikes();
     });
+  }
+
+  void _initializeBikes() {
+    if (_initialized) return;
+    _initialized = true;
+
+    final provider = context.read<BikeProvider>();
+    provider.fetchBikes();
+    final userId = provider.auth.currentUser?.uid;
+    if (userId != null && provider.selectedBikeId != null) {
+      provider.loadBikeEntries(userId, provider.selectedBikeId!);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<BikeProvider>(
       builder: (context, provider, _) {
-        if (provider.selectedBikeId == null && provider.bikes.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final userId = provider.auth.currentUser?.uid;
-            if (userId != null) provider.selectBike(provider.bikes.first.id);
-          });
+        // Only select first bike once, not on every rebuild
+        if (provider.selectedBikeId == null &&
+            provider.bikes.isNotEmpty &&
+            _initialized) {
+          final userId = provider.auth.currentUser?.uid;
+          if (userId != null) {
+            // Use Future.microtask to avoid calling during build
+            Future.microtask(() {
+              if (mounted && provider.selectedBikeId == null) {
+                provider.selectBike(provider.bikes.first.id);
+              }
+            });
+          }
         }
 
         final selectedBike = provider.selectedBike;
@@ -65,7 +79,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                     elevation: 4,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
-                      side: BorderSide(color: Colors.white10),
+                      side: const BorderSide(color: Colors.white10),
                     ),
                     icon: const Icon(Icons.add, color: Colors.white),
                     label: const Text(
@@ -185,7 +199,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                                   size: 14,
                                   color: AppColors.pastelGreen,
                                 ),
-                                SizedBox(width: 4),
+                                const SizedBox(width: 4),
                                 Text(
                                   "Check Rates",
                                   style: TextStyle(
@@ -250,12 +264,12 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
   }
 
   Widget _buildTimelineList(BuildContext context, BikeProvider provider) {
-    // 1. Sort OLDEST FIRST (Ascending)
+    // Sort entries by date DESCENDING (newest first for timeline display)
     final entries = List<BikeEntry>.from(provider.currentBikeEntries)
-      ..sort((a, b) => a.date.compareTo(b.date));
+      ..sort((a, b) => b.date.compareTo(a.date));
 
     if (entries.isEmpty) {
-      return SliverToBoxAdapter(
+      return const SliverToBoxAdapter(
         child: Padding(
           padding: EdgeInsets.all(40),
           child: Center(
@@ -278,15 +292,29 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
           final color = isFuel ? AppColors.primaryBlue : AppColors.pastelOrange;
           final icon = isFuel ? Icons.local_gas_station : Icons.build;
 
-          // 2. Mileage Calculation for THIS CARD
-          // Logic: (Current Odo - Previous Odo) / Current Fuel
+          // Mileage Calculation for THIS CARD
+          // Logic: (Current Odo - Previous Entry Odo) / Current Fuel
+          // Find the entry with the next lower odometer reading
           String mileageText = '';
-          if (isFuel && entry.fuelQuantity > 0 && index > 0) {
-            final prev = entries[index - 1]; // Previous entry in sorted list
-            final dist = entry.odometerReading - prev.odometerReading;
-            if (dist > 0) {
-              final mileage = dist / entry.fuelQuantity;
-              mileageText = '${mileage.toStringAsFixed(1)} km/L';
+          if (isFuel && entry.fuelQuantity > 0) {
+            // Find previous entry (one with lower odometer reading)
+            BikeEntry? prevEntry;
+            for (var e in entries) {
+              if (e.id != entry.id &&
+                  e.odometerReading < entry.odometerReading) {
+                if (prevEntry == null ||
+                    e.odometerReading > prevEntry.odometerReading) {
+                  prevEntry = e;
+                }
+              }
+            }
+
+            if (prevEntry != null) {
+              final dist = entry.odometerReading - prevEntry.odometerReading;
+              if (dist > 0) {
+                final mileage = dist / entry.fuelQuantity;
+                mileageText = '${mileage.toStringAsFixed(1)} km/L';
+              }
             }
           }
 
@@ -297,12 +325,19 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                 Column(
                   children: [
                     Container(
-                      width: 12,
-                      height: 12,
+                      width: 14,
+                      height: 14,
                       decoration: BoxDecoration(
                         color: AppColors.backgroundBlack,
-                        border: Border.all(color: color, width: 2),
+                        border: Border.all(color: color, width: 2.5),
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withOpacity(0.4),
+                            blurRadius: 6,
+                            spreadRadius: 1,
+                          ),
+                        ],
                       ),
                     ),
                     if (!isLast)
@@ -315,117 +350,177 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 24.0),
+                    // Note: SwipeToDelete removed due to crash with IntrinsicHeight in SliverList
+                    // Use the delete button in edit dialog instead
                     child: GestureDetector(
-                      onTap: () =>
-                          _showEditEntryDialog(context, provider, entry),
-                      child: SwipeToDelete(
-                        itemKey: ValueKey(entry.id),
-                        itemId: entry.id,
-                        itemName: "Entry",
-                        onDelete: () => provider.deleteBikeEntry(entry.id),
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.cardSurface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.03),
-                            ),
+                      onTap: () {
+                        debugPrint('Entry tapped: ${entry.id}');
+                        _showEditEntryDialog(context, provider, entry);
+                      },
+                      onLongPress: () => _showDeleteConfirmation(
+                        context,
+                        provider,
+                        entry,
+                        isFuel,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              color.withOpacity(0.12),
+                              AppColors.cardSurface,
+                            ],
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    "${entry.date.day}/${entry.date.month}/${entry.date.year}",
-                                    style: TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 12,
-                                    ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: color.withOpacity(0.2)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: color.withOpacity(0.08),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "${entry.date.day}/${entry.date.month}/${entry.date.year}",
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
                                   ),
-                                  Text(
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black38,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
                                     "₹${entry.fuelAmount.toStringAsFixed(0)}",
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                                      fontSize: 14,
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(icon, size: 16, color: color),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        isFuel
-                                            ? "Fuel Top-up"
-                                            : (entry.category ?? 'EXPENSE')
-                                                  .toUpperCase(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  // 3. SHOW TRIP MILEAGE
-                                  if (mileageText.isNotEmpty)
-                                    Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black54,
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(
-                                          color: color.withOpacity(0.5),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        mileageText,
-                                        style: TextStyle(
-                                          color: color,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                isFuel
-                                    ? "${entry.fuelQuantity} L  •  ${entry.odometerReading.toStringAsFixed(0)} km"
-                                    : "Odometer: ${entry.odometerReading.toStringAsFixed(0)} km",
-                                style: const TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              if (entry.notes != null &&
-                                  entry.notes!.isNotEmpty) ...[
-                                const SizedBox(height: 8),
-                                Text(
-                                  entry.notes!,
-                                  style: const TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: 12,
-                                    fontStyle: FontStyle.italic,
                                   ),
                                 ),
                               ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: color.withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(icon, size: 16, color: color),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      isFuel
+                                          ? "Fuel Top-up"
+                                          : (entry.category ?? 'EXPENSE')
+                                                .toUpperCase(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                // 3. SHOW TRIP MILEAGE
+                                if (mileageText.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          color.withOpacity(0.2),
+                                          color.withOpacity(0.1),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: color.withOpacity(0.3),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      mileageText,
+                                      style: TextStyle(
+                                        color: color,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.local_gas_station,
+                                  size: 12,
+                                  color: Colors.white38,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  isFuel
+                                      ? "${entry.fuelQuantity} L"
+                                      : "Service",
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Icon(
+                                  Icons.speed,
+                                  size: 12,
+                                  color: Colors.white38,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "${entry.odometerReading.toStringAsFixed(0)} km",
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (entry.notes != null &&
+                                entry.notes!.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                entry.notes!,
+                                style: const TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
                             ],
-                          ),
+                          ],
                         ),
                       ),
                     ),
@@ -440,7 +535,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
+    return const Center(
       child: Text('No Vehicles Found', style: TextStyle(color: Colors.white)),
     );
   }
@@ -472,10 +567,10 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
     BikeProvider provider,
     BikeEntry entry,
   ) {
+    debugPrint('Opening edit screen for entry: ${entry.id}');
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => EditEntryDialog(entry: entry, provider: provider),
+      builder: (_) => EditEntryDialog(entry: entry),
     );
   }
 
@@ -485,6 +580,49 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => FuelPriceWidget(
         onPriceSelected: (price) => setState(() => _currentFuelPrice = price),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(
+    BuildContext context,
+    BikeProvider provider,
+    BikeEntry entry,
+    bool isFuel,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Delete Entry',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Are you sure you want to delete this ${isFuel ? "fuel" : "log"} entry?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              provider.deleteBikeEntry(entry.id);
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Entry deleted')));
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
