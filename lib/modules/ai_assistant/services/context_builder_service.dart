@@ -7,6 +7,10 @@ import '../../../core/providers/transaction_provider.dart';
 import '../../../core/providers/budget_provider.dart';
 import '../../../core/providers/goal_provider.dart';
 import '../../../core/providers/bike_provider.dart';
+import '../../../core/providers/new_nbox_provider.dart';
+import '../../../core/providers/pdf_import_provider.dart';
+import '../../../core/providers/shared_expense_provider.dart';
+import '../../../core/providers/category_provider.dart';
 import '../../../core/models/investment.dart';
 
 /// Context Builder Service
@@ -28,6 +32,10 @@ class ContextBuilderService {
   final BudgetProvider? budgetProvider;
   final GoalProvider? goalProvider;
   final BikeProvider? bikeProvider;
+  final NewNboxProvider? nboxProvider;
+  final PDFImportProvider? pdfImportProvider;
+  final SharedExpenseProvider? sharedExpenseProvider;
+  final CategoryProvider? categoryProvider;
 
   ContextBuilderService({
     required this.accountProvider,
@@ -38,6 +46,10 @@ class ContextBuilderService {
     this.budgetProvider,
     this.goalProvider,
     this.bikeProvider,
+    this.nboxProvider,
+    this.pdfImportProvider,
+    this.sharedExpenseProvider,
+    this.categoryProvider,
   });
 
   final _currencyFormat = NumberFormat('#,##,###', 'en_IN');
@@ -86,7 +98,22 @@ class ContextBuilderService {
       buffer.writeln(_buildBikeSummary());
     }
 
-    // 10. UPCOMING ALERTS
+    // 10. INBOX (NBox - pending SMS/email transactions)
+    if (nboxProvider != null) {
+      buffer.writeln(_buildNboxSummary());
+    }
+
+    // 11. PDF STATEMENTS (last imported)
+    if (pdfImportProvider != null) {
+      buffer.writeln(_buildPdfSummary());
+    }
+
+    // 12. SHARED EXPENSES
+    if (sharedExpenseProvider != null) {
+      buffer.writeln(_buildSharedExpensesSummary());
+    }
+
+    // 13. UPCOMING ALERTS
     buffer.writeln(_buildUpcomingAlerts());
 
     return buffer.toString();
@@ -183,6 +210,41 @@ class ContextBuilderService {
       'expiry',
     ])) {
       buffer.writeln(_buildUpcomingAlerts());
+    }
+
+    if (_matchesAny(lowerQuery, [
+      'sms',
+      'inbox',
+      'email',
+      'pending',
+      'detected',
+      'message',
+      'nbox',
+    ])) {
+      if (nboxProvider != null) buffer.writeln(_buildNboxSummary());
+    }
+
+    if (_matchesAny(lowerQuery, [
+      'pdf',
+      'statement',
+      'bank statement',
+      'import',
+      'parse',
+    ])) {
+      if (pdfImportProvider != null) buffer.writeln(_buildPdfSummary());
+    }
+
+    if (_matchesAny(lowerQuery, [
+      'split',
+      'shared',
+      'owe',
+      'owes',
+      'group',
+      'friends',
+    ])) {
+      if (sharedExpenseProvider != null) {
+        buffer.writeln(_buildSharedExpensesSummary());
+      }
     }
 
     // If no specific match, include accounts and transactions
@@ -573,6 +635,98 @@ Monthly Fixed Burn: ₹${_currencyFormat.format(monthlyBurn)}
       for (final alert in alerts) {
         buffer.writeln(alert);
       }
+    }
+    buffer.writeln();
+    return buffer.toString();
+  }
+
+  String _buildNboxSummary() {
+    if (nboxProvider == null) return '';
+
+    final pendingSms = nboxProvider!.pendingSms;
+    final pendingEmails = nboxProvider!.pendingEmails;
+    final totalPending = pendingSms.length + pendingEmails.length;
+
+    if (totalPending == 0) {
+      return '--- INBOX (NBox) ---\nNo pending transactions detected from SMS/Email.\n';
+    }
+
+    final buffer = StringBuffer('--- INBOX (NBox) ---\n');
+    buffer.writeln('Pending review: $totalPending detected transactions');
+    buffer.writeln();
+
+    if (pendingSms.isNotEmpty) {
+      buffer.writeln('From SMS (${pendingSms.length}):');
+      for (final tx in pendingSms.take(5)) {
+        final type = tx.type == 'credit' ? '⬇️ Income' : '⬆️ Expense';
+        buffer.writeln(
+          '• $type: ₹${_currencyFormat.format(tx.amount)} - ${tx.merchant} (${_dateFormat.format(tx.date)})',
+        );
+      }
+      if (pendingSms.length > 5) {
+        buffer.writeln('  ... and ${pendingSms.length - 5} more');
+      }
+      buffer.writeln();
+    }
+
+    if (pendingEmails.isNotEmpty) {
+      buffer.writeln('From Email (${pendingEmails.length}):');
+      for (final tx in pendingEmails.take(5)) {
+        final type = tx.type == 'credit' ? '⬇️ Income' : '⬆️ Expense';
+        buffer.writeln(
+          '• $type: ₹${_currencyFormat.format(tx.amount)} - ${tx.merchant} (${_dateFormat.format(tx.date)})',
+        );
+      }
+      if (pendingEmails.length > 5) {
+        buffer.writeln('  ... and ${pendingEmails.length - 5} more');
+      }
+      buffer.writeln();
+    }
+
+    return buffer.toString();
+  }
+
+  String _buildPdfSummary() {
+    if (pdfImportProvider == null) return '';
+
+    final statement = pdfImportProvider!.currentStatement;
+    if (statement == null) {
+      return '--- PDF IMPORT ---\nNo bank statement currently loaded.\n';
+    }
+
+    final buffer = StringBuffer('--- PDF IMPORT (Last Loaded) ---\n');
+    buffer.writeln('Bank: ${statement.metadata.bankName ?? 'Unknown'}');
+    if (statement.metadata.accountNumber != null) {
+      buffer.writeln('Account: ${statement.metadata.accountNumber}');
+    }
+    buffer.writeln('Transactions: ${statement.transactionCount}');
+    buffer.writeln('Income entries: ${statement.incomeCount}');
+    buffer.writeln('Expense entries: ${statement.expenseCount}');
+
+    final importable = pdfImportProvider!.importableCount;
+    final duplicates = pdfImportProvider!.duplicateCount;
+    if (duplicates > 0) {
+      buffer.writeln(
+        'Importable: $importable ($duplicates duplicates detected)',
+      );
+    }
+    buffer.writeln();
+    return buffer.toString();
+  }
+
+  String _buildSharedExpensesSummary() {
+    if (sharedExpenseProvider == null) return '';
+
+    final expenses = sharedExpenseProvider!.expenses;
+    if (expenses.isEmpty) {
+      return '--- SHARED EXPENSES ---\nNo shared expenses tracked.\n';
+    }
+
+    final buffer = StringBuffer('--- SHARED EXPENSES ---\n');
+    buffer.writeln('Total: ${expenses.length} shared expenses');
+    final members = sharedExpenseProvider!.familyMembers;
+    if (members.isNotEmpty) {
+      buffer.writeln('Members: ${members.map((m) => m.name).join(', ')}');
     }
     buffer.writeln();
     return buffer.toString();

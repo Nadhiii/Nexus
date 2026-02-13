@@ -4,12 +4,10 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../models/ai_message.dart';
-import '../models/ai_settings.dart';
 import '../providers/ai_assistant_provider.dart';
 import 'ai_settings_screen.dart';
 
-/// AI Chat Screen
-/// Main interface for chatting with Nex
+/// Nex Chat Screen — embedded as a bottom navigation tab
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({super.key});
 
@@ -46,11 +44,15 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
     }
   }
 
@@ -58,143 +60,155 @@ class _AIChatScreenState extends State<AIChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundBlack,
-      appBar: _buildAppBar(),
-      body: Consumer<AIAssistantProvider>(
-        builder: (context, provider, _) {
-          // Always allow interaction - witty responses handle no-key case
-          return Column(
-            children: [
-              // Messages or Setup/Welcome
-              Expanded(
-                child: provider.currentConversation?.messages.isEmpty ?? true
-                    ? (provider.isReady
-                          ? _buildWelcomeScreen(provider)
-                          : _buildSetupPrompt(provider))
-                    : _buildMessageList(provider),
-              ),
-
-              // Quick Prompts (only when ready and no messages)
-              if (provider.isReady &&
-                  (provider.currentConversation?.messages.isEmpty ?? true))
-                _buildQuickPrompts(provider),
-
-              // Input - always show so user can try and get witty responses
-              _buildInputArea(provider),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  AppBar _buildAppBar() {
-    return AppBar(
-      backgroundColor: AppColors.backgroundBlack,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () => Navigator.pop(context),
-      ),
-      title: Consumer<AIAssistantProvider>(
-        builder: (context, provider, _) {
-          return Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.blue.shade600, Colors.purple.shade600],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.smart_toy,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Nex',
-                    style: AppTypography.labelLarge.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    provider.isReady
-                        ? provider.activeModelName
-                        : 'Not configured',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          );
-        },
-      ),
-      actions: [
-        // New Chat
-        Consumer<AIAssistantProvider>(
+      body: SafeArea(
+        child: Consumer<AIAssistantProvider>(
           builder: (context, provider, _) {
-            if (!provider.isReady) return const SizedBox();
-            return IconButton(
-              icon: const Icon(Icons.add_comment_outlined, color: Colors.white),
-              tooltip: 'New Chat',
-              onPressed: () => provider.startNewConversation(),
+            return Column(
+              children: [
+                // Header
+                _buildHeader(provider),
+
+                // Messages or Welcome
+                Expanded(
+                  child: provider.currentConversation?.messages.isEmpty ?? true
+                      ? (provider.isReady
+                            ? _buildWelcomeScreen(provider)
+                            : _buildSetupPrompt(provider))
+                      : _buildMessageList(provider),
+                ),
+
+                // Quick Prompts
+                if (provider.isReady &&
+                    (provider.currentConversation?.messages.isEmpty ?? true))
+                  _buildQuickPrompts(provider),
+
+                // Input
+                _buildInputArea(provider),
+              ],
             );
           },
         ),
-        // Settings
-        IconButton(
-          icon: const Icon(Icons.settings_outlined, color: Colors.white),
-          tooltip: 'Settings',
-          onPressed: () async {
-            try {
-              if (!mounted) return;
-              await Navigator.push(
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────────
+  // HEADER
+  // ──────────────────────────────────────────────
+
+  Widget _buildHeader(AIAssistantProvider provider) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
+      child: Row(
+        children: [
+          // Nex avatar
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Center(
+              child: Text(
+                'N',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Nex',
+                  style: AppTypography.headlineSmall.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (provider.isReady)
+                  Text(
+                    provider.activeModelName,
+                    style: TextStyle(
+                      color: AppColors.textTertiary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // New chat
+          if (provider.isReady)
+            IconButton(
+              icon: Icon(
+                Icons.add_comment_outlined,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
+              tooltip: 'New Chat',
+              onPressed: () => provider.startNewConversation(),
+            ),
+          // Settings
+          IconButton(
+            icon: Icon(
+              Icons.tune_rounded,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+            tooltip: 'Settings',
+            onPressed: () {
+              Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const AISettingsScreen()),
               );
-            } catch (e) {
-              debugPrint('Error navigating to settings: $e');
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error opening settings: $e')),
-                );
-              }
-            }
-          },
-        ),
-      ],
+            },
+          ),
+        ],
+      ),
     );
   }
+
+  // ──────────────────────────────────────────────
+  // SETUP (No API Key)
+  // ──────────────────────────────────────────────
 
   Widget _buildSetupPrompt(AIAssistantProvider provider) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.blue.shade600.withOpacity(0.2),
-                    Colors.purple.shade600.withOpacity(0.2),
-                  ],
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                 ),
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: const Icon(Icons.smart_toy, color: Colors.white, size: 64),
+              child: const Center(
+                child: Text(
+                  'N',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 40,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 24),
             Text(
@@ -206,41 +220,46 @@ class _AIChatScreenState extends State<AIChatScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'I\'m Nex, your personal finance AI. To get started, I\'ll need an API key — it\'s like giving me clearance to operate.\n\n🆓 Good news: Gemini is FREE!',
+              'I\'m Nex — I see everything in your app. Transactions, debts, investments, bank statements, all of it.\n\nJust need an API key to get started. Gemini is free!',
               textAlign: TextAlign.center,
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
+                height: 1.5,
               ),
             ),
             const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () async {
-                try {
-                  if (!mounted) return;
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AISettingsScreen()),
-                  );
-                } catch (e) {
-                  debugPrint('Error navigating to settings: $e');
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error opening settings: $e')),
-                    );
-                  }
-                }
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AISettingsScreen()),
+                );
               },
-              icon: const Icon(Icons.key),
-              label: const Text('Get Free API Key'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryBlue,
-                foregroundColor: Colors.white,
+              child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,
-                  vertical: 16,
+                  vertical: 14,
                 ),
-                shape: RoundedRectangleBorder(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                  ),
                   borderRadius: BorderRadius.circular(30),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.key_rounded, color: Colors.white, size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'Set Up API Key',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -250,74 +269,77 @@ class _AIChatScreenState extends State<AIChatScreen> {
     );
   }
 
+  // ──────────────────────────────────────────────
+  // WELCOME (Ready, empty chat)
+  // ──────────────────────────────────────────────
+
   Widget _buildWelcomeScreen(AIAssistantProvider provider) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         children: [
-          const SizedBox(height: 40),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.blue.shade600.withOpacity(0.15),
-                  Colors.purple.shade600.withOpacity(0.15),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Icon(Icons.smart_toy, color: Colors.white, size: 48),
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 60),
           Text(
             'At your service, Sir',
             style: AppTypography.headlineSmall.copyWith(
               color: Colors.white,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Ask me anything about your finances. I have access to your accounts, transactions, debts, investments, and more.',
+            'I have full access to your accounts, transactions, debts, investments, statements, inbox — everything.',
             textAlign: TextAlign.center,
             style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.textTertiary,
+              height: 1.5,
             ),
           ),
           const SizedBox(height: 32),
 
-          // Model indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: provider.settings.activeModel == AIModel.gemini
-                  ? AppColors.info.withOpacity(0.2)
-                  : AppColors.premiumAmber.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  provider.settings.activeModel == AIModel.gemini
-                      ? Icons.auto_awesome
-                      : Icons.psychology,
-                  size: 16,
-                  color: provider.settings.activeModel == AIModel.gemini
-                      ? AppColors.info
-                      : AppColors.premiumAmber,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Powered by ${provider.activeModelName}',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: provider.settings.activeModel == AIModel.gemini
-                        ? AppColors.info
-                        : AppColors.premiumAmber,
-                  ),
-                ),
-              ],
+          // Capability chips
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: [
+              _buildCapChip(Icons.account_balance_wallet, 'Accounts'),
+              _buildCapChip(Icons.receipt_long, 'Transactions'),
+              _buildCapChip(Icons.credit_card, 'Debts'),
+              _buildCapChip(Icons.trending_up, 'Investments'),
+              _buildCapChip(Icons.subscriptions, 'Subscriptions'),
+              _buildCapChip(Icons.pie_chart, 'Budgets'),
+              _buildCapChip(Icons.flag, 'Goals'),
+              _buildCapChip(Icons.two_wheeler, 'Garage'),
+              _buildCapChip(Icons.picture_as_pdf, 'PDF Statements'),
+              _buildCapChip(Icons.inbox, 'SMS & Email'),
+              _buildCapChip(Icons.group, 'Shared Expenses'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCapChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.textTertiary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -347,7 +369,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
     final isUser = message.role == MessageRole.user;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         mainAxisAlignment: isUser
             ? MainAxisAlignment.end
@@ -356,35 +378,45 @@ class _AIChatScreenState extends State<AIChatScreen> {
         children: [
           if (!isUser) ...[
             Container(
-              width: 32,
-              height: 32,
+              width: 28,
+              height: 28,
+              margin: const EdgeInsets.only(top: 4),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.blue.shade600, Colors.purple.shade600],
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.smart_toy, color: Colors.white, size: 18),
+              child: const Center(
+                child: Text(
+                  'N',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
           ],
           Flexible(
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: isUser
-                    ? AppColors.primaryBlue.withOpacity(0.2)
+                    ? const Color(0xFF6366F1).withOpacity(0.15)
                     : message.isError
-                    ? AppColors.error.withOpacity(0.1)
+                    ? AppColors.error.withOpacity(0.08)
                     : AppColors.cardSurface,
                 borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(20),
-                  topRight: const Radius.circular(20),
-                  bottomLeft: Radius.circular(isUser ? 20 : 4),
-                  bottomRight: Radius.circular(isUser ? 4 : 20),
+                  topLeft: const Radius.circular(18),
+                  topRight: const Radius.circular(18),
+                  bottomLeft: Radius.circular(isUser ? 18 : 4),
+                  bottomRight: Radius.circular(isUser ? 4 : 18),
                 ),
                 border: message.isError
-                    ? Border.all(color: AppColors.error.withOpacity(0.3))
+                    ? Border.all(color: AppColors.error.withOpacity(0.2))
                     : null,
               ),
               child: Column(
@@ -403,6 +435,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                       styleSheet: MarkdownStyleSheet(
                         p: AppTypography.bodyMedium.copyWith(
                           color: Colors.white,
+                          height: 1.5,
                         ),
                         strong: AppTypography.bodyMedium.copyWith(
                           color: Colors.white,
@@ -414,7 +447,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                         code: TextStyle(
                           fontFamily: 'monospace',
                           backgroundColor: AppColors.backgroundBlack,
-                          color: AppColors.primaryBlue,
+                          color: const Color(0xFF6366F1),
                         ),
                         codeblockDecoration: BoxDecoration(
                           color: AppColors.backgroundBlack,
@@ -423,21 +456,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
                       ),
                       selectable: true,
                     ),
-                  if (!isUser && message.metadata != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      message.metadata!['model'] ?? '',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textTertiary,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
           ),
-          if (isUser) const SizedBox(width: 44), // Balance for avatar space
+          if (isUser) const SizedBox(width: 40),
         ],
       ),
     );
@@ -445,30 +468,41 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   Widget _buildTypingIndicator() {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 28,
+            height: 28,
+            margin: const EdgeInsets.only(top: 4),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blue.shade600, Colors.purple.shade600],
+              gradient: const LinearGradient(
+                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
               ),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.smart_toy, color: Colors.white, size: 18),
+            child: const Center(
+              child: Text(
+                'N',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: AppColors.cardSurface,
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
                 bottomLeft: Radius.circular(4),
-                bottomRight: Radius.circular(20),
+                bottomRight: Radius.circular(18),
               ),
             ),
             child: Row(
@@ -489,14 +523,14 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   Widget _buildDot(int index) {
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
+      tween: Tween(begin: 0.3, end: 1.0),
       duration: Duration(milliseconds: 600 + (index * 200)),
       builder: (context, value, child) {
         return Container(
-          width: 8,
-          height: 8,
+          width: 7,
+          height: 7,
           decoration: BoxDecoration(
-            color: AppColors.textSecondary.withOpacity(0.3 + (0.7 * value)),
+            color: const Color(0xFF6366F1).withOpacity(value),
             shape: BoxShape.circle,
           ),
         );
@@ -511,35 +545,35 @@ class _AIChatScreenState extends State<AIChatScreen> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _buildQuickPromptChip(
-              icon: Icons.summarize,
-              label: 'Monthly Summary',
-              onTap: () => provider.sendQuickPrompt('summary'),
+            _buildPromptChip(
+              'Monthly Summary',
+              Icons.summarize,
+              () => provider.sendQuickPrompt('summary'),
             ),
-            _buildQuickPromptChip(
-              icon: Icons.local_fire_department,
-              label: 'Roast My Spending',
-              onTap: () => provider.sendQuickPrompt('roast'),
+            _buildPromptChip(
+              'Roast My Spending',
+              Icons.local_fire_department,
+              () => provider.sendQuickPrompt('roast'),
             ),
-            _buildQuickPromptChip(
-              icon: Icons.savings,
-              label: 'Where Can I Save?',
-              onTap: () => provider.sendQuickPrompt('save'),
+            _buildPromptChip(
+              'Where Can I Save?',
+              Icons.savings,
+              () => provider.sendQuickPrompt('save'),
             ),
-            _buildQuickPromptChip(
-              icon: Icons.calendar_today,
-              label: 'Upcoming Bills',
-              onTap: () => provider.sendQuickPrompt('upcoming'),
+            _buildPromptChip(
+              'Upcoming Bills',
+              Icons.calendar_today,
+              () => provider.sendQuickPrompt('upcoming'),
             ),
-            _buildQuickPromptChip(
-              icon: Icons.trending_down,
-              label: 'Debt Strategy',
-              onTap: () => provider.sendQuickPrompt('debt_strategy'),
+            _buildPromptChip(
+              'Debt Strategy',
+              Icons.trending_down,
+              () => provider.sendQuickPrompt('debt_strategy'),
             ),
-            _buildQuickPromptChip(
-              icon: Icons.health_and_safety,
-              label: 'Health Check',
-              onTap: () => provider.sendQuickPrompt('health_check'),
+            _buildPromptChip(
+              'Health Check',
+              Icons.health_and_safety,
+              () => provider.sendQuickPrompt('health_check'),
             ),
           ],
         ),
@@ -547,21 +581,34 @@ class _AIChatScreenState extends State<AIChatScreen> {
     );
   }
 
-  Widget _buildQuickPromptChip({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildPromptChip(String label, IconData icon, VoidCallback onTap) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: ActionChip(
-        avatar: Icon(icon, size: 18, color: AppColors.primaryBlue),
-        label: Text(label),
-        onPressed: onTap,
-        backgroundColor: AppColors.cardSurface,
-        labelStyle: AppTypography.bodySmall.copyWith(color: Colors.white),
-        side: BorderSide(color: Colors.white.withOpacity(0.1)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.cardSurface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.06)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: const Color(0xFF6366F1)),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -572,11 +619,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
         16,
         8,
         16,
-        MediaQuery.of(context).padding.bottom + 16,
+        MediaQuery.of(context).padding.bottom + 80,
       ),
       decoration: BoxDecoration(
         color: AppColors.backgroundBlack,
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.1))),
+        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.06))),
       ),
       child: Row(
         children: [
@@ -589,13 +636,16 @@ class _AIChatScreenState extends State<AIChatScreen> {
               child: TextField(
                 controller: _messageController,
                 focusNode: _focusNode,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.white, fontSize: 14),
                 maxLines: 4,
                 minLines: 1,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
                   hintText: 'Ask Nex anything...',
-                  hintStyle: TextStyle(color: AppColors.textTertiary),
+                  hintStyle: TextStyle(
+                    color: AppColors.textTertiary,
+                    fontSize: 14,
+                  ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -607,27 +657,33 @@ class _AIChatScreenState extends State<AIChatScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blue.shade600, Colors.purple.shade600],
+          GestureDetector(
+            onTap: provider.isLoading ? null : () => _sendMessage(provider),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                ),
+                borderRadius: BorderRadius.circular(22),
               ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: IconButton(
-              icon: provider.isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
+              child: Center(
+                child: provider.isLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(
+                        Icons.arrow_upward_rounded,
                         color: Colors.white,
+                        size: 20,
                       ),
-                    )
-                  : const Icon(Icons.send, color: Colors.white),
-              onPressed: provider.isLoading
-                  ? null
-                  : () => _sendMessage(provider),
+              ),
             ),
           ),
         ],

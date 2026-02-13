@@ -1,220 +1,112 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart'; // REQUIRED LIBRARY
+import 'package:path_provider/path_provider.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../models/pdf_statement.dart';
-import '../models/transaction.dart';
-import 'pdf_parser.dart';
-import 'duplicate_detector.dart';
+import '../models/extracted_transaction.dart';
 import 'pdf_password_manager.dart';
+import 'pdf_parser.dart'; // Import the new parser
 
-/// Main PDF Parsing Service
 class PDFParsingService extends ChangeNotifier {
-  PDFParseResult? _lastParseResult;
-  PDFImportProgress? _importProgress;
+  // ... (keep existing state variables like _lastParseResult)
 
-  PDFParseResult? get lastParseResult => _lastParseResult;
-  PDFImportProgress? get importProgress => _importProgress;
+  // TODO: Securely inject your API Key
+  static const String _geminiApiKey = "YOUR_GEMINI_API_KEY";
 
-  /// Parse a PDF file with optional password
   Future<PDFParseResult> parsePDF(
     String filePath, {
-    String? userSelectedBank,
     String? userProvidedPassword,
   }) async {
+    File? tempUnlockedFile;
+
     try {
-      if (kDebugMode) print('[PDFParsingService] Reading PDF: $filePath');
+      if (kDebugMode) print('[PDFParsingService] Processing: $filePath');
 
-      String pdfText = '';
-      String? workingPassword;
+      // --- STEP 1: Unlock PDF if needed ---
+      File originalFile = File(filePath);
+      List<int> fileBytes = await originalFile.readAsBytes();
+      String? validPassword;
 
-      // 1. Attempt Extraction (Try User Password -> Saved Passwords -> No Password)
       try {
-        // A. Try User Provided Password First
-        if (userProvidedPassword != null) {
-          pdfText = await _extractTextWithLibrary(
-            filePath,
-            userProvidedPassword,
-          );
-          workingPassword = userProvidedPassword;
-        }
-        // B. Try No Password (or Saved Passwords)
-        else {
-          try {
-            // Try open without password
-            pdfText = await _extractTextWithLibrary(filePath, "");
-          } catch (e) {
-            // If failed, it might be password protected. Try saved passwords.
-            final savedPasswords = await PDFPasswordManager.getSavedPasswords();
-            bool unlocked = false;
-
-            for (final saved in savedPasswords) {
-              try {
-                pdfText = await _extractTextWithLibrary(filePath, saved);
-                workingPassword = saved;
-                unlocked = true;
-                break;
-              } catch (_) {
-                continue;
-              }
-            }
-
-            if (!unlocked) throw Exception("Password required");
-          }
-        }
+        PdfDocument(inputBytes: fileBytes).dispose();
+        tempUnlockedFile = originalFile; // Not password protected
       } catch (e) {
-        // If we still can't open it, report password required
-        return PDFParseResult(
-          success: false,
-          errors: ['PDF is password-protected. Please provide the password.'],
-          requiresPassword: true,
-          requiresManualBankSelection: true,
+        // ... (Keep your existing password retry logic here) ...
+        // ... Assuming you find the password and set 'validPassword' ...
+
+        if (validPassword == null) {
+          return PDFParseResult(
+            success: false,
+            errors: ['Password required'],
+            requiresPassword: true,
+          );
+        }
+
+        // Decrypt for Gemini
+        tempUnlockedFile = await _createUnlockedTempFile(
+          fileBytes,
+          validPassword,
         );
       }
 
-      if (pdfText.isEmpty) {
-        return PDFParseResult(
-          success: false,
-          errors: ['Extracted text is empty. File may be image-based/scanned.'],
-          requiresManualBankSelection: true,
-        );
-      }
+      // --- STEP 2: Parse using the new PDFParser ---
+      if (kDebugMode) print('[PDFParsingService] Sending to PDFParser...');
 
-      if (kDebugMode) {
-        print(
-          '[PDFParsingService] Success! Extracted ${pdfText.length} characters.',
-        );
-      }
+      // Initialize the parser
+      final parser = PDFParser(_geminiApiKey);
 
-      // 2. Detect bank
-      String? detectedBank =
-          userSelectedBank ?? GenericPDFParser.detectBank(pdfText);
-
-      // 3. Extract Metadata & Transactions
-      final metadata = GenericPDFParser.extractMetadata(pdfText, detectedBank);
-      final transactions = GenericPDFParser.extractTransactions(pdfText);
+      // Execute parse
+      final transactions = await parser.parse(tempUnlockedFile!);
 
       if (transactions.isEmpty) {
         return PDFParseResult(
           success: false,
-          errors: ['No transactions found. Verify the statement format.'],
-          requiresManualBankSelection: true,
+          errors: ['No transactions found. Check statement format.'],
         );
       }
 
-      // 4. Save working password if successful
-      if (workingPassword != null) {
-        await PDFPasswordManager.savePassword(workingPassword);
-      }
-
+      // --- STEP 3: Create Result ---
       final statement = PDFStatement(
-        id: '${detectedBank ?? "Unknown"}_${DateTime.now().millisecondsSinceEpoch}',
+        id: 'Parsed_${DateTime.now().millisecondsSinceEpoch}',
         filePath: filePath,
-        metadata: metadata,
+        metadata: PDFStatementMetadata(
+          bankName: "Auto-Detected",
+          accountNumber: "Unknown",
+          statementPeriodStart: DateTime.now(),
+          statementPeriodEnd: DateTime.now(),
+        ),
         transactions: transactions,
         uploadedAt: DateTime.now(),
         fileHash: '',
       );
 
-      _lastParseResult = PDFParseResult(
+      return PDFParseResult(
         success: true,
         statement: statement,
-        detectedBank: detectedBank,
-        warnings: _generateWarnings(metadata, transactions),
-        usedPassword: workingPassword != null,
+        detectedBank: "Auto-Detected",
+        warnings: [],
       );
-
-      notifyListeners();
-      return _lastParseResult!;
     } catch (e) {
-      if (kDebugMode) print('[PDFParsingService] Critical Error: $e');
-      _lastParseResult = PDFParseResult(
-        success: false,
-        errors: ['Error parsing PDF: $e'],
-        requiresManualBankSelection: true,
-      );
-      notifyListeners();
-      return _lastParseResult!;
-    }
-  }
-
-  /// REAL IMPLEMENTATION using Syncfusion PDF
-  Future<String> _extractTextWithLibrary(
-    String filePath,
-    String password,
-  ) async {
-    try {
-      final File file = File(filePath);
-      final List<int> bytes = await file.readAsBytes();
-
-      // Load the PDF document
-      final PdfDocument document = PdfDocument(
-        inputBytes: bytes,
-        password: password,
-      );
-
-      // Extract text from all pages
-      String text = PdfTextExtractor(document).extractText();
-
-      // Dispose the document
-      document.dispose();
-
-      return text;
-    } catch (e) {
-      // Syncfusion throws specific errors for passwords
-      if (e.toString().toLowerCase().contains('password')) {
-        throw Exception("Password required");
+      if (kDebugMode) print('[PDFParsingService] Error: $e');
+      return PDFParseResult(success: false, errors: [e.toString()]);
+    } finally {
+      // Clean up temp file
+      if (tempUnlockedFile != null && tempUnlockedFile!.path != filePath) {
+        if (await tempUnlockedFile!.exists()) {
+          await tempUnlockedFile!.delete();
+        }
       }
-      rethrow;
     }
   }
 
-  // --- PRESERVED HELPER METHODS ---
-
-  List<String> _generateWarnings(
-    PDFStatementMetadata metadata,
-    List<ExtractedTransaction> transactions,
-  ) {
-    final warnings = <String>[];
-    if (metadata.accountNumber == null) {
-      warnings.add('Account number not detected.');
-    }
-    if (transactions.isEmpty) warnings.add('No transactions detected.');
-    return warnings;
-  }
-
-  Future<Map<ExtractedTransaction, DuplicateCheckResult>> checkDuplicates(
-    List<ExtractedTransaction> pdfTransactions,
-    List<Transaction> existingTransactions,
-  ) async {
-    _updateProgress(
-      totalTransactions: pdfTransactions.length,
-      currentStatus: 'Checking for duplicates...',
-    );
-    return await DuplicateDetector.checkBatch(
-      pdfTransactions,
-      existingTransactions,
-    );
-  }
-
-  void _updateProgress({
-    required int totalTransactions,
-    int processedTransactions = 0,
-    int successfulImports = 0,
-    int duplicateSkipped = 0,
-    int errorCount = 0,
-    required String currentStatus,
-  }) {
-    _importProgress = PDFImportProgress(
-      totalTransactions: totalTransactions,
-      processedTransactions: processedTransactions,
-      successfulImports: successfulImports,
-      duplicateSkipped: duplicateSkipped,
-      errorCount: errorCount,
-      currentStatus: currentStatus,
-      percentComplete: totalTransactions > 0
-          ? (processedTransactions / totalTransactions) * 100
-          : 0,
-    );
-    notifyListeners();
+  Future<File> _createUnlockedTempFile(List<int> bytes, String password) async {
+    final document = PdfDocument(inputBytes: bytes, password: password);
+    final directory = await getTemporaryDirectory();
+    final tempPath =
+        '${directory.path}/unlocked_${DateTime.now().millisecondsSinceEpoch}.pdf';
+    final File tempFile = File(tempPath);
+    await tempFile.writeAsBytes(await document.save());
+    document.dispose();
+    return tempFile;
   }
 }

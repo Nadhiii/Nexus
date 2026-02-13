@@ -10,7 +10,7 @@ import '../notifications/notification_settings_screen.dart';
 import '../gmail/gmail_settings_screen.dart';
 import '../family/screens/family_dashboard_screen.dart';
 import '../family/screens/expense_splitter_screen.dart';
-import '../ai_assistant/screens/ai_chat_screen.dart';
+import '../ai_assistant/screens/ai_settings_screen.dart';
 import 'about_screen.dart';
 import 'reports_and_analytics_screen.dart';
 import 'manage_categories_screen.dart';
@@ -180,17 +180,8 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: _ToolCard(
-                icon: Icons.smart_toy_rounded,
-                color: Colors.purple,
-                label: "Nex",
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AIChatScreen()),
-                ),
-              ),
-            ),
+            // Empty spacer to maintain grid alignment
+            Expanded(child: SizedBox()),
           ],
         ),
       ],
@@ -241,6 +232,16 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const GmailSettingsScreen()),
+            ),
+          ),
+          _divider(),
+          _buildTile(
+            icon: Icons.auto_awesome,
+            color: const Color(0xFF6366F1),
+            title: "Nex Settings",
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AISettingsScreen()),
             ),
           ),
         ],

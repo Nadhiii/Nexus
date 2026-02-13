@@ -7,6 +7,7 @@ enum NotificationType {
   goalProgress,
   budgetWarning,
   subscriptionReminder,
+  fuelLogged,
 }
 
 class AppNotification {
@@ -98,13 +99,12 @@ class AppNotification {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       type: NotificationType.budgetWarning,
       title: 'Budget Warning',
-      message: 'You have spent $percentage% of your $cycle budget for $category.',
+      message:
+          'You have spent $percentage% of your $cycle budget for $category.',
       createdAt: DateTime.now(),
       actionText: 'View Budget',
       actionRoute: '/budgets',
-      data: {
-        'category': category,
-      },
+      data: {'category': category},
     );
   }
 
@@ -120,9 +120,7 @@ class AppNotification {
       createdAt: DateTime.now(),
       actionText: 'View Subscriptions',
       actionRoute: '/subscriptions',
-      data: {
-        'subscriptionName': subscriptionName,
-      },
+      data: {'subscriptionName': subscriptionName},
     );
   }
 
@@ -136,7 +134,8 @@ class AppNotification {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       type: NotificationType.billReminder,
       title: 'Bill Reminder',
-      message: '$billName is due in $daysUntilDue days (₹${amount.toStringAsFixed(2)})',
+      message:
+          '$billName is due in $daysUntilDue days (₹${amount.toStringAsFixed(2)})',
       createdAt: DateTime.now(),
       actionText: 'Pay Now',
       actionRoute: '/bills',
@@ -156,14 +155,12 @@ class AppNotification {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       type: NotificationType.goalAchievement,
       title: 'Goal Achieved! 🎉',
-      message: 'Congratulations! You\'ve reached your goal: $goalName (₹${targetAmount.toStringAsFixed(2)})',
+      message:
+          'Congratulations! You\'ve reached your goal: $goalName (₹${targetAmount.toStringAsFixed(2)})',
       createdAt: DateTime.now(),
       actionText: 'View Goals',
       actionRoute: '/goals',
-      data: {
-        'goalName': goalName,
-        'targetAmount': targetAmount,
-      },
+      data: {'goalName': goalName, 'targetAmount': targetAmount},
     );
   }
 
@@ -175,14 +172,12 @@ class AppNotification {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       type: NotificationType.unusualSpending,
       title: 'Unusual Spending Alert',
-      message: 'High spending detected in $category: ₹${amount.toStringAsFixed(2)}',
+      message:
+          'High spending detected in $category: ₹${amount.toStringAsFixed(2)}',
       createdAt: DateTime.now(),
       actionText: 'View Transactions',
       actionRoute: '/transactions',
-      data: {
-        'amount': amount,
-        'category': category,
-      },
+      data: {'amount': amount, 'category': category},
     );
   }
 
@@ -217,7 +212,8 @@ class AppNotification {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       type: NotificationType.goalProgress,
       title: 'Goal Progress Update',
-      message: '$goalName is ${progressPercentage.toStringAsFixed(1)}% complete (₹${currentAmount.toStringAsFixed(2)} / ₹${targetAmount.toStringAsFixed(2)})',
+      message:
+          '$goalName is ${progressPercentage.toStringAsFixed(1)}% complete (₹${currentAmount.toStringAsFixed(2)} / ₹${targetAmount.toStringAsFixed(2)})',
       createdAt: DateTime.now(),
       actionText: 'View Goal',
       actionRoute: '/goals',
@@ -226,6 +222,47 @@ class AppNotification {
         'currentAmount': currentAmount,
         'targetAmount': targetAmount,
         'progressPercentage': progressPercentage,
+      },
+    );
+  }
+
+  static AppNotification fuelLogged({
+    required String vehicleName,
+    required double mileage,
+    required double fuelAmount,
+    required double cost,
+  }) {
+    String performanceEmoji = '⛽';
+    String performanceMessage = '';
+
+    if (mileage > 25) {
+      performanceEmoji = '🌟';
+      performanceMessage = 'Excellent fuel efficiency!';
+    } else if (mileage > 20) {
+      performanceEmoji = '✅';
+      performanceMessage = 'Good fuel efficiency!';
+    } else if (mileage > 15) {
+      performanceEmoji = '⚠️';
+      performanceMessage = 'Average fuel efficiency';
+    } else {
+      performanceEmoji = '⛽';
+      performanceMessage = 'Low fuel efficiency';
+    }
+
+    return AppNotification(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      type: NotificationType.fuelLogged,
+      title: '$performanceEmoji Fuel Logged - $vehicleName',
+      message:
+          '$performanceMessage\nMileage: ${mileage.toStringAsFixed(2)} km/L\nFilled: ${fuelAmount.toStringAsFixed(2)}L for ₹${cost.toStringAsFixed(2)}',
+      createdAt: DateTime.now(),
+      actionText: 'View Garage',
+      actionRoute: '/garage',
+      data: {
+        'vehicleName': vehicleName,
+        'mileage': mileage,
+        'fuelAmount': fuelAmount,
+        'cost': cost,
       },
     );
   }

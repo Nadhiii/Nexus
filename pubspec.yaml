@@ -61,8 +61,10 @@ dependencies:
   file_picker: ^10.3.8
   pdf: ^3.10.8
   pdfx: ^2.4.2
+  path_provider: ^2.1.2 # To handle temp files for unlocked PDFs
   share_plus: ^10.0.0
   flutter_markdown: ^0.7.4+3
+  google_generative_ai: ^0.4.0
   
   # Location & Geolocation
   geolocator: ^14.0.2

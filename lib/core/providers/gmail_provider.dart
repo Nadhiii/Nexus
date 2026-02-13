@@ -9,11 +9,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/detected_transaction.dart';
 import '../models/gmail_sync_settings.dart';
 import '../utils/gmail_parser.dart';
+import '../services/ai_categorization_service.dart';
+import '../../modules/ai_assistant/providers/ai_assistant_provider.dart';
+import 'category_provider.dart';
 
 class GmailProvider extends ChangeNotifier {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [gmail.GmailApi.gmailReadonlyScope],
   );
+
+  // Optional AI dependencies for smart categorization
+  final AIAssistantProvider? _aiAssistantProvider;
+  final CategoryProvider? _categoryProvider;
 
   GoogleSignInAccount? _currentUser;
   bool _isLoading = false;
@@ -32,8 +39,15 @@ class GmailProvider extends ChangeNotifier {
   DateTime? get lastSyncTime => _lastSyncTime;
   GmailSyncSettings get settings => _settings;
 
-  GmailProvider() {
-    _initializeSettings();
+  bool _isInitialized = false;
+
+  GmailProvider({
+    AIAssistantProvider? aiAssistantProvider,
+    CategoryProvider? categoryProvider,
+  }) : _aiAssistantProvider = aiAssistantProvider,
+       _categoryProvider = categoryProvider {
+    // Initialize asynchronously - don't block constructor
+    initialize();
     _googleSignIn.onCurrentUserChanged.listen((account) {
       _currentUser = account;
       if (_currentUser == null) {
@@ -49,6 +63,13 @@ class GmailProvider extends ChangeNotifier {
       notifyListeners();
     });
     _googleSignIn.signInSilently();
+  }
+
+  /// Initialize the provider - loads settings
+  Future<void> initialize() async {
+    if (_isInitialized) return;
+    await _initializeSettings();
+    _isInitialized = true;
   }
 
   Future<void> _initializeSettings() async {
@@ -133,6 +154,24 @@ class GmailProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Create AI categorization service if dependencies available
+      AICategorizationService? aiService;
+      if (_categoryProvider != null) {
+        aiService = AICategorizationService(
+          aiProvider: _aiAssistantProvider,
+          categoryProvider: _categoryProvider,
+        );
+        if (kDebugMode) {
+          print('[GmailProvider] AI categorization enabled');
+        }
+      } else {
+        if (kDebugMode) {
+          print(
+            '[GmailProvider] Using fallback categorization (no CategoryProvider)',
+          );
+        }
+      }
+
       final client = await _googleSignIn.authenticatedClient();
       if (client == null) {
         throw Exception('Authenticated client not available.');
@@ -147,9 +186,10 @@ class GmailProvider extends ChangeNotifier {
 
       final formattedDate = startDate.toIso8601String().split('T').first;
 
-      // Build query with filters
+      // Build query with filters - made less restrictive to catch more transaction emails
+      // Look for common transaction indicators in subject OR body
       final baseQuery =
-          'subject:(receipt OR "transaction" OR "payment" OR "spent" OR "debited" OR "credited") -subject:("OTP" OR "One Time Password" OR "statement" OR "bill due" OR "payment due" OR "reminder")';
+          '(subject:(receipt OR transaction OR payment OR spent OR debited OR credited OR "sent you" OR "paid" OR alert OR notification) OR body:(debited OR credited OR "account balance" OR "available balance")) -subject:("OTP" OR "One Time Password" OR "statement" OR "bill due" OR "payment due" OR "reminder" OR verification OR "verify your")';
 
       String finalQuery = '$baseQuery after:$formattedDate';
 
@@ -203,11 +243,12 @@ class GmailProvider extends ChangeNotifier {
             }
 
             if (body != null) {
-              final transaction = GmailParser.parse(
+              final transaction = await GmailParser.parse(
                 message.id!,
                 body,
                 msg.snippet ?? '',
                 emailDate,
+                aiCategorizationService: aiService,
               );
 
               if (transaction != null) {

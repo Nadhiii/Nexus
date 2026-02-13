@@ -13,14 +13,11 @@ import '../../core/providers/bike_provider.dart';
 // Theme & Widgets
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/widgets/swipe_to_delete.dart';
-import '../../core/widgets/financial_health_widget.dart';
-import '../../core/widgets/upcoming_week_widget.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/models/account.dart';
 import '../../core/models/transaction.dart';
 
-// Screens & Components
+// Screens
 import '../transactions/modern_add_transaction_screen.dart';
 import '../notifications/modern_notifications_screen.dart';
 
@@ -82,15 +79,16 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
         color: AppColors.primaryBlue,
         backgroundColor: AppColors.cardSurface,
         onRefresh: () async {
+          _recalculateAllBalances();
           await Future.delayed(const Duration(seconds: 1));
           if (mounted) setState(() {});
         },
         child: CustomScrollView(
           slivers: [
-            // 1. GOLDEN HEADER
+            // 1. HEADER
             _buildModernAppBar(context),
 
-            // Recalc Listener (Invisible)
+            // Recalc Listener (invisible)
             SliverToBoxAdapter(
               child: Consumer<TransactionProvider>(
                 builder: (context, txProvider, _) {
@@ -100,7 +98,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
               ),
             ),
 
-            // 2. TOTAL BALANCE CARD
+            // 2. COMPACT BALANCE CARD
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -120,116 +118,44 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                         (sum, account) => sum + account.balance,
                       );
                     }
-                    return _buildPremiumBalanceCard(totalBalance);
+                    return _buildCompactBalanceCard(totalBalance);
                   },
                 ),
               ),
             ),
 
-            // 3. QUICK ACTIONS
+            // 3. STREAMLINED ACTION BAR
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
-                  vertical: 24,
+                  vertical: 16,
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildQuickActionBtn(
-                        Icons.add,
-                        'Add',
-                        AppColors.primaryBlue,
-                        () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const ModernAddTransactionScreen(),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildQuickActionBtn(
-                        Icons.account_balance_wallet_outlined,
-                        'Accounts',
-                        AppColors.pastelPurple,
-                        () => widget.onNavigate(1),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildQuickActionBtn(
-                        Icons.history,
-                        'History',
-                        AppColors.pastelTeal,
-                        () => widget.onNavigate(1, financeTab: 1),
-                      ),
-                    ),
-                  ],
-                ),
+                child: _buildActionBar(),
               ),
             ),
 
-            // 4. FINANCIAL HEALTH SCORE
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
-                ),
-                child: FinancialHealthWidget(
-                  onTap: () => widget.onNavigate(1, financeTab: 2),
-                ),
-              ),
-            ),
-
-            // 4b. UPCOMING WEEK PREVIEW
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
-                ),
-                child: UpcomingWeekWidget(
-                  onViewAll: () => widget.onNavigate(1, financeTab: 2),
-                ),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-            // 5. GARAGE SECTION (New "Status" Card)
+            // 4. GARAGE WIDGET
             SliverToBoxAdapter(
               child: Consumer<BikeProvider>(
                 builder: (context, bikeProvider, _) {
                   if (bikeProvider.bikes.isEmpty) {
                     return const SizedBox.shrink();
                   }
-
-                  final bike =
-                      bikeProvider.getDashboardBike() ??
-                      bikeProvider.bikes.first;
-                  final mileage = bikeProvider.getReliableAverageMileage();
-
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("MY VEHICLE", style: _headerStyle()),
-                        const SizedBox(height: 12),
-                        _buildVehicleStatusCard(bike, mileage),
-                      ],
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 0,
                     ),
+                    child: _buildGarageWidget(bikeProvider),
                   );
                 },
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 32)),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-            // 6. RECENT ACTIVITY HEADER
+            // 6. RECENT ACTIVITY
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -255,8 +181,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
 
             const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
-            // 6. TRANSACTION STREAM
-            _buildRecentTransactionsList(),
+            _buildCleanRecentList(),
 
             const SliverToBoxAdapter(child: SizedBox(height: 120)),
           ],
@@ -265,7 +190,9 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     );
   }
 
-  // --- WIDGET HELPERS ---
+  // ──────────────────────────────────────────────
+  // HELPERS
+  // ──────────────────────────────────────────────
 
   TextStyle _headerStyle() {
     return AppTypography.labelSmall.copyWith(
@@ -275,11 +202,30 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     );
   }
 
-  Widget _buildPremiumBalanceCard(double balance) {
-    final isPositive = balance > 0; // Only positive if actually has money
+  // ──────────────────────────────────────────────
+  // 1. COMPACT BALANCE CARD
+  // ──────────────────────────────────────────────
+
+  Widget _buildCompactBalanceCard(double balance) {
+    final isPositive = balance > 0;
     final isEmpty = balance == 0;
+
+    // Monthly cash flow
+    final txProvider = context.watch<TransactionProvider>();
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+    final monthTxns = txProvider.transactions
+        .where((t) => t.date.isAfter(monthStart))
+        .toList();
+    final monthIncome = monthTxns
+        .where((t) => t.type == TransactionType.income)
+        .fold(0.0, (sum, t) => sum + t.amount);
+    final monthExpense = monthTxns
+        .where((t) => t.type == TransactionType.expense)
+        .fold(0.0, (sum, t) => sum + t.amount);
+
     return Container(
-      padding: const EdgeInsets.all(28),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -288,39 +234,37 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
               ? AppColors.netWorthPositiveGradient
               : AppColors.netWorthNegativeGradient,
         ),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withOpacity(0.1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.5),
-            blurRadius: 30,
-            offset: const Offset(0, 10),
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Top row: Label + Status badge
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'TOTAL BALANCE',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: 11,
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 10,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.black26,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -334,9 +278,9 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                       color: isEmpty
                           ? Colors.white54
                           : (isPositive ? AppColors.success : AppColors.error),
-                      size: 12,
+                      size: 11,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 3),
                     Text(
                       isEmpty ? 'Empty' : (isPositive ? 'Healthy' : 'Low'),
                       style: TextStyle(
@@ -345,7 +289,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                             : (isPositive
                                   ? AppColors.success
                                   : AppColors.error),
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -354,21 +298,126 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+
+          // Balance amount
           Text(
-            '₹${balance.toStringAsFixed(2)}',
+            '₹${_formatIndianNumber(balance)}',
             style: AppTypography.displaySmall.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w900,
-              fontSize: 36,
+              fontSize: 32,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Available across all accounts',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
-              fontSize: 12,
+          const SizedBox(height: 12),
+
+          // Cash flow row
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                // Income
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.arrow_downward,
+                          color: AppColors.success,
+                          size: 10,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Income',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.4),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              '₹${_formatCompactAmount(monthIncome)}',
+                              style: TextStyle(
+                                color: AppColors.success,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 24,
+                  color: Colors.white.withOpacity(0.1),
+                ),
+                const SizedBox(width: 8),
+                // Expense
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Expense',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.4),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              '₹${_formatCompactAmount(monthExpense)}',
+                              style: TextStyle(
+                                color: AppColors.error,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.arrow_upward,
+                          color: AppColors.error,
+                          size: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -376,147 +425,24 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     );
   }
 
-  // NEW: Sleek Vehicle Status Card (Replaces heavy RC Card)
-  Widget _buildVehicleStatusCard(dynamic bike, double mileage) {
-    return GestureDetector(
-      onTap: () => widget.onNavigate(3), // Navigate to Garage Tab
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.primaryBlue.withOpacity(0.15),
-              AppColors.cardSurface,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.primaryBlue.withOpacity(0.2)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primaryBlue.withOpacity(0.1),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Icon / Avatar
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primaryBlue.withOpacity(0.3),
-                    AppColors.primaryBlue.withOpacity(0.1),
-                  ],
-                ),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.primaryBlue.withOpacity(0.3),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryBlue.withOpacity(0.2),
-                    blurRadius: 10,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.two_wheeler,
-                color: AppColors.primaryBlue,
-                size: 26,
-              ),
-            ),
-            const SizedBox(width: 16),
+  // ──────────────────────────────────────────────
+  // 2. STREAMLINED ACTION BAR
+  // ──────────────────────────────────────────────
 
-            // Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    bike.name,
-                    style: AppTypography.titleMedium.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: AppColors.success,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.success.withOpacity(0.5),
-                              blurRadius: 4,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "Active",
-                        style: AppTypography.labelSmall.copyWith(
-                          color: AppColors.success,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Mileage Stat
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: AppColors.pastelTeal.withOpacity(0.3),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    mileage.toStringAsFixed(1),
-                    style: TextStyle(
-                      color: AppColors.pastelTeal,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 18,
-                    ),
-                  ),
-                  Text(
-                    "km/L",
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textTertiary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+  Widget _buildActionBar() {
+    return _buildActionIcon(
+      Icons.add_rounded,
+      'Add',
+      AppColors.primaryBlue,
+      () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const ModernAddTransactionScreen(),
         ),
       ),
     );
   }
 
-  Widget _buildQuickActionBtn(
+  Widget _buildActionIcon(
     IconData icon,
     String label,
     Color color,
@@ -525,39 +451,29 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 88,
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [color.withOpacity(0.15), AppColors.cardSurface],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.2)),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
-        child: Column(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withOpacity(0.12),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 22),
+              child: Icon(icon, color: color, size: 20),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(width: 10),
             Text(
               label,
-              style: AppTypography.labelMedium.copyWith(
+              style: TextStyle(
                 color: AppColors.textSecondary,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -567,7 +483,189 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     );
   }
 
-  Widget _buildRecentTransactionsList() {
+  // ──────────────────────────────────────────────
+  // GARAGE WIDGET
+  // ──────────────────────────────────────────────
+
+  Widget _buildGarageWidget(BikeProvider bikeProvider) {
+    final bike = bikeProvider.getDashboardBike() ?? bikeProvider.bikes.first;
+    final mileage = bikeProvider.getReliableAverageMileage();
+    final totalSpent = bikeProvider.getTotalFuelCost();
+    final totalKm = bikeProvider.getKmTraveled();
+    final fillups = bikeProvider.getTotalFillups();
+
+    return GestureDetector(
+      onTap: () => widget.onNavigate(3),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.06)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryBlue.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.two_wheeler,
+                    color: AppColors.primaryBlue,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        bike.name,
+                        style: AppTypography.bodyLarge.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        '$fillups fill-ups · ${totalKm.toStringAsFixed(0)} km',
+                        style: TextStyle(
+                          color: AppColors.textTertiary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textTertiary,
+                  size: 20,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Stats row
+            Row(
+              children: [
+                // Average Mileage
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.pastelTeal.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'AVG MILEAGE',
+                          style: TextStyle(
+                            color: AppColors.textTertiary,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              mileage > 0 ? mileage.toStringAsFixed(1) : '--',
+                              style: TextStyle(
+                                color: AppColors.pastelTeal,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 3),
+                              child: Text(
+                                'km/L',
+                                style: TextStyle(
+                                  color: AppColors.pastelTeal.withOpacity(0.7),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // Total Spent
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.pastelOrange.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'TOTAL SPENT',
+                          style: TextStyle(
+                            color: AppColors.textTertiary,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          totalSpent > 0
+                              ? '₹${_formatCompactAmount(totalSpent)}'
+                              : '--',
+                          style: TextStyle(
+                            color: AppColors.pastelOrange,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────────
+  // 4. CLEAN RECENT LIST (3 items, no timeline)
+  // ──────────────────────────────────────────────
+
+  Widget _buildCleanRecentList() {
     return Consumer<TransactionProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading && provider.transactions.isEmpty) {
@@ -581,7 +679,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
           );
         }
 
-        final recentTransactions = provider.transactions.take(5).toList();
+        final recentTransactions = provider.transactions.take(3).toList();
 
         if (recentTransactions.isEmpty) {
           return SliverToBoxAdapter(
@@ -604,19 +702,37 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
           );
         }
 
-        return SliverList(
-          delegate: SliverChildBuilderDelegate((context, index) {
-            final transaction = recentTransactions[index];
-            final isLast = index == recentTransactions.length - 1;
-            return _buildTimelineItem(transaction, isLast);
-          }, childCount: recentTransactions.length),
+        return SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.cardSurface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.05)),
+              ),
+              child: Column(
+                children: [
+                  for (int i = 0; i < recentTransactions.length; i++) ...[
+                    _buildCleanTransactionItem(recentTransactions[i]),
+                    if (i < recentTransactions.length - 1)
+                      Divider(
+                        height: 1,
+                        color: Colors.white.withOpacity(0.05),
+                        indent: 56,
+                        endIndent: 16,
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ),
         );
       },
     );
   }
 
-  // --- NBOX STYLE STREAM ITEM ---
-  Widget _buildTimelineItem(Transaction t, bool isLast) {
+  Widget _buildCleanTransactionItem(Transaction t) {
     final isIncome = t.type == TransactionType.income;
     final isTransfer = t.type == TransactionType.transfer;
 
@@ -630,127 +746,70 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
 
     final sign = isIncome ? "+" : (isTransfer ? "" : "-");
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // A. Timeline Graphic
-          Padding(
-            padding: const EdgeInsets.only(left: 24, right: 16),
-            child: Column(
-              children: [
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: AppColors.backgroundBlack,
-                    border: Border.all(color: color, width: 2),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    color: isLast ? Colors.transparent : AppColors.cardSurface,
-                  ),
-                ),
-              ],
-            ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ModernAddTransactionScreen(transaction: t),
           ),
-
-          // B. Content Bubble
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 24, right: 20),
-              child: SwipeToDelete(
-                itemKey: ValueKey(t.id),
-                itemId: t.id,
-                itemName: "Transaction",
-                onDelete: () =>
-                    context.read<TransactionProvider>().deleteTransaction(t.id),
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            ModernAddTransactionScreen(transaction: t),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardSurface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.05)),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 16),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t.description?.isNotEmpty == true
+                        ? t.description!
+                        : (isTransfer ? "Transfer" : "Transaction"),
+                    style: AppTypography.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              // Glass Icon
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: color.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(icon, color: color, size: 16),
-                              ),
-                              const SizedBox(width: 12),
-                              // Details
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      t.description?.isNotEmpty == true
-                                          ? t.description!
-                                          : (isTransfer
-                                                ? "Transfer"
-                                                : "Transaction"),
-                                      style: AppTypography.bodyLarge.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    // NEW: Pretty Date Format
-                                    Text(
-                                      _formatPrettyDate(t.date),
-                                      style: AppTypography.bodySmall.copyWith(
-                                        color: AppColors.textTertiary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Amount
-                        Text(
-                          "$sign₹${t.amount.toStringAsFixed(0)}",
-                          style: AppTypography.titleMedium.copyWith(
-                            color: color,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatPrettyDate(t.date),
+                    style: TextStyle(
+                      color: AppColors.textTertiary,
+                      fontSize: 11,
                     ),
                   ),
-                ),
+                ],
               ),
             ),
-          ),
-        ],
+            Text(
+              "$sign₹${t.amount.toStringAsFixed(0)}",
+              style: TextStyle(
+                color: color,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  // ──────────────────────────────────────────────
+  // APP BAR
+  // ──────────────────────────────────────────────
 
   Widget _buildModernAppBar(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -762,13 +821,10 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
       backgroundColor: AppColors.backgroundBlack,
       surfaceTintColor: AppColors.backgroundBlack,
       elevation: 0,
-      expandedHeight: 110, // STANDARD HEIGHT
+      expandedHeight: 110,
       flexibleSpace: FlexibleSpaceBar(
         centerTitle: false,
-        titlePadding: const EdgeInsets.only(
-          left: 20,
-          bottom: 24,
-        ), // STANDARD PADDING
+        titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
         title: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -845,7 +901,37 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     );
   }
 
-  // NEW: Smart Date Formatter (4th Dec, 1st Jan)
+  // ──────────────────────────────────────────────
+  // FORMATTERS
+  // ──────────────────────────────────────────────
+
+  String _formatIndianNumber(double amount) {
+    if (amount == 0) return '0.00';
+    final isNegative = amount < 0;
+    final abs = amount.abs();
+
+    String formatted;
+    if (abs >= 10000000) {
+      formatted = '${(abs / 10000000).toStringAsFixed(2)} Cr';
+    } else if (abs >= 100000) {
+      formatted = '${(abs / 100000).toStringAsFixed(2)} L';
+    } else {
+      formatted = NumberFormat('#,##,##0.00', 'en_IN').format(abs);
+    }
+    return isNegative ? '-$formatted' : formatted;
+  }
+
+  String _formatCompactAmount(double amount) {
+    if (amount.abs() >= 10000000) {
+      return '${(amount / 10000000).toStringAsFixed(1)}Cr';
+    } else if (amount.abs() >= 100000) {
+      return '${(amount / 100000).toStringAsFixed(1)}L';
+    } else if (amount.abs() >= 1000) {
+      return '${(amount / 1000).toStringAsFixed(1)}K';
+    }
+    return amount.toStringAsFixed(0);
+  }
+
   String _formatPrettyDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
@@ -859,10 +945,11 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     String suffix = 'th';
     if (date.day % 10 == 1 && date.day != 11) {
       suffix = 'st';
-    } else if (date.day % 10 == 2 && date.day != 12)
+    } else if (date.day % 10 == 2 && date.day != 12) {
       suffix = 'nd';
-    else if (date.day % 10 == 3 && date.day != 13)
+    } else if (date.day % 10 == 3 && date.day != 13) {
       suffix = 'rd';
+    }
 
     return "${date.day}$suffix ${DateFormat('MMM').format(date)}";
   }

@@ -7,10 +7,17 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../models/detected_transaction.dart';
 import '../utils/new_sms_parser.dart';
+import '../services/ai_categorization_service.dart';
+import '../../modules/ai_assistant/providers/ai_assistant_provider.dart';
+import 'category_provider.dart';
 import 'gmail_provider.dart';
 
 class NewNboxProvider extends ChangeNotifier {
   GmailProvider? _gmailProvider;
+
+  // Optional AI dependencies for smart categorization
+  final AIAssistantProvider? _aiAssistantProvider;
+  final CategoryProvider? _categoryProvider;
 
   final Telephony _telephony = Telephony.instance;
 
@@ -29,9 +36,24 @@ class NewNboxProvider extends ChangeNotifier {
       List.unmodifiable(_pendingEmails);
   List<DetectedTransaction> get rejected => List.unmodifiable(_rejected);
 
-  NewNboxProvider({GmailProvider? gmailProvider}) {
+  bool _isInitialized = false;
+
+  NewNboxProvider({
+    GmailProvider? gmailProvider,
+    AIAssistantProvider? aiAssistantProvider,
+    CategoryProvider? categoryProvider,
+  }) : _aiAssistantProvider = aiAssistantProvider,
+       _categoryProvider = categoryProvider {
     update(gmailProvider);
-    _loadProcessedIds();
+    // Initialize asynchronously - don't block constructor
+    initialize();
+  }
+
+  /// Initialize the provider - loads processed IDs and scans for transactions
+  Future<void> initialize() async {
+    if (_isInitialized) return;
+    await _loadProcessedIds();
+    _isInitialized = true;
   }
 
   void update(GmailProvider? gmailProvider) {
@@ -96,6 +118,18 @@ class NewNboxProvider extends ChangeNotifier {
       );
     }
 
+    // Create AI categorization service if dependencies available
+    AICategorizationService? aiService;
+    if (_categoryProvider != null) {
+      aiService = AICategorizationService(
+        aiProvider: _aiAssistantProvider,
+        categoryProvider: _categoryProvider,
+      );
+      if (kDebugMode) {
+        print('[NewNboxProvider] AI categorization enabled for SMS');
+      }
+    }
+
     List<SmsMessage> messages;
     try {
       messages = await _telephony.getInboxSms(
@@ -127,11 +161,12 @@ class NewNboxProvider extends ChangeNotifier {
         isUtc: true,
       ).toLocal();
 
-      final transaction = NewSmsParser.parse(
+      final transaction = await NewSmsParser.parse(
         sms.id.toString(),
         sms.body ?? '',
         sms.address ?? 'Unknown',
         localSmsDate,
+        aiCategorizationService: aiService,
       );
       if (transaction != null) {
         allSmsTransactions.add(transaction);
@@ -178,7 +213,7 @@ class NewNboxProvider extends ChangeNotifier {
     _sortLists();
   }
 
-  void markAsApproved(String id, String source) {
+  Future<void> markAsApproved(String id, String source) async {
     _pendingSms.removeWhere((t) => t.id == id && t.source == source);
     _pendingEmails.removeWhere((t) => t.id == id && t.source == source);
     _rejected.removeWhere((t) => t.id == id && t.source == source);
@@ -188,10 +223,14 @@ class NewNboxProvider extends ChangeNotifier {
     _processedIds.remove('$source:$id:rejected');
 
     notifyListeners();
-    _persistIds();
+    await _persistIds();
   }
 
-  void rejectTransaction(String id, String source, {bool silent = false}) {
+  Future<void> rejectTransaction(
+    String id,
+    String source, {
+    bool silent = false,
+  }) async {
     DetectedTransaction? transactionToMove;
 
     _pendingSms.removeWhere((t) {
@@ -221,11 +260,11 @@ class NewNboxProvider extends ChangeNotifier {
 
       _sortLists();
       notifyListeners();
-      _persistIds();
+      await _persistIds();
     }
   }
 
-  void restoreTransaction(String id, String source) {
+  Future<void> restoreTransaction(String id, String source) async {
     DetectedTransaction? transactionToMove;
     _rejected.removeWhere((t) {
       if (t.id == id && t.source == source) {
@@ -247,7 +286,7 @@ class NewNboxProvider extends ChangeNotifier {
 
       _sortLists();
       notifyListeners();
-      _persistIds();
+      await _persistIds();
     }
   }
 

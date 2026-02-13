@@ -8,6 +8,7 @@ import '../../../core/models/transaction.dart';
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/providers/account_provider.dart';
 import '../../../core/providers/transaction_provider.dart';
+import '../../../core/providers/notification_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -217,6 +218,21 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
 
     try {
       provider.addBikeEntry(entry);
+
+      // Trigger notification if mileage was calculated (full tank)
+      if (entry.isFullTank && entry.mileage != null && entry.mileage! > 0) {
+        final notificationProvider = Provider.of<NotificationProvider>(
+          context,
+          listen: false,
+        );
+
+        notificationProvider.notifyFuelLogged(
+          vehicleName: widget.bike.name,
+          mileage: entry.mileage!,
+          fuelAmount: entry.fuelQuantity,
+          cost: entry.fuelAmount,
+        );
+      }
 
       if (_calculatedOdo > widget.bike.currentOdometer) {
         final updatedBike = widget.bike.copyWith(

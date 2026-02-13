@@ -1,231 +1,507 @@
 # Nexus - Personal Finance Management App
 
-A comprehensive personal finance management application built with Flutter, designed to help users take complete control of their financial life through intelligent tracking, AI-powered insights, and smart budgeting tools.
+A comprehensive Flutter-based personal finance management app with intelligent automation, built with Firebase backend.
 
-## 🎯 Features
+## Overview
 
-### Core Features
-- **Smart Dashboard**: Real-time net worth overview with AI-powered insights
-- **Transaction Management**: Multi-source input with smart categorization
-- **Budget Management**: Dynamic salary-based budget allocation
-- **AI-Powered Insights**: Spending pattern analysis and recommendations
-- **Goal Tracking**: SMART financial goals with progress visualization
-- **Reports & Analytics**: Comprehensive financial reports and charts
-- **Investment Portfolio**: Track stocks, mutual funds, crypto, and more
-- **Vehicle Tracking**: Fuel efficiency and maintenance tracking
-- **Debt Management**: Track loans and payoff strategies
-
-### Technical Features
-- **Dark-First Design**: Beautiful dark theme with light mode support
-- **Real-time Sync**: Firebase Firestore for live data synchronization
-- **Authentication**: Firebase Auth with email/password and Google Sign-in
-- **Responsive UI**: Material Design 3 with custom theming
-- **Cross-platform**: Android and iOS support
-
-## 🏗️ Architecture
-
-### Project Structure
-```
-lib/
-├── core/                          # Core services and utilities
-│   ├── auth/                      # Authentication services
-│   ├── theme/                     # Theme provider and design system
-│   ├── services/                  # Core business services
-│   ├── models/                    # Data models
-│   ├── providers/                 # State management
-│   └── widgets/                   # Reusable core widgets
-├── screens/                       # Main screens
-│   ├── login_screen.dart         # Authentication screen
-│   └── main_screen.dart          # Main navigation controller
-├── modules/                       # Feature modules
-│   ├── dashboard/                 # Dashboard and home screens
-│   ├── insights/                  # AI insights and analytics
-│   ├── finance/                   # Transactions and reports
-│   ├── bike/                      # Vehicle tracking module
-│   ├── investments/               # Investment portfolio
-│   ├── budgets/                   # Budget management
-│   ├── goals/                     # Goal tracking
-│   ├── debts/                     # Debt management
-│   ├── subscriptions/             # Subscription tracking
-│   └── more/                      # Settings and preferences
-└── firebase_options.dart          # Firebase configuration
-```
-
-### Data Models
-- **User**: User profile and authentication data
-- **Account**: Financial accounts (assets/liabilities)
-- **Transaction**: Income and expense transactions
-- **Category**: Transaction categories with icons and colors
-- **Goal**: Financial goals with progress tracking
-- **Subscription**: Recurring bills and subscriptions
-- **Debt**: Loan and debt management
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Flutter SDK (latest stable version)
-- Android Studio / VS Code
-- Firebase project setup
-- Android/iOS development environment
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd nexus
-   ```
-
-2. **Install dependencies**
-   ```bash
-   flutter pub get
-   ```
-
-3. **Firebase Setup**
-   - Create a new Firebase project
-   - Enable Authentication (Email/Password, Google Sign-in)
-   - Enable Firestore Database
-   - Download and add `google-services.json` (Android) and `GoogleService-Info.plist` (iOS)
-
-4. **Run the app**
-   ```bash
-   flutter run
-   ```
-
-## 🎨 Design System
-
-### Color Palette
-- **Primary Background**: `#121212` (Dark) / `#FFFFFF` (Light)
-- **Surface Background**: `#1E1E1E` (Dark) / `#F5F5F5` (Light)
-- **Primary Accent**: `#00A99D` (Teal)
-- **Income Green**: `#4CAF50`
-- **Expense Red**: `#F44336`
-- **Highlight Amber**: `#FFC107`
-
-### Typography
-- **Headers**: Rammetto One (Bold, distinctive)
-- **Body Text**: Inter (Clean, readable)
-- **Numbers**: JetBrains Mono (Clear financial data display)
-
-## 📱 Screenshots
-
-### Dashboard
-- Net worth overview with real-time calculations
-- Smart insights widget with AI recommendations
-- Quick actions for common tasks
-- Recent transactions preview
-- Primary goal progress tracking
-
-### Transactions
-- Comprehensive transaction management
-- Multi-source input (manual, SMS, bank import)
-- Smart categorization with AI
-- Advanced filtering and search
-- Bulk operations support
-
-### Insights
-- AI-powered spending pattern analysis
-- Budget optimization recommendations
-- Savings opportunities identification
-- Predictive analytics and forecasting
-
-### Reports
-- Net worth trend visualization
-- Cash flow analysis
-- Category breakdown charts
-- Monthly comparisons
-- Detailed transaction history
-
-## 🔧 Configuration
-
-### Firebase Configuration
-1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
-2. Enable Authentication with Email/Password and Google Sign-in
-3. Create a Firestore database in test mode
-4. Download configuration files and add them to your project
-
-### Environment Variables
-Create a `.env` file in the project root:
-```env
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_API_KEY=your-api-key
-```
-
-## 🛠️ Development
-
-### State Management
-- **Provider Pattern**: For theme management and global state
-- **Local State**: StatefulWidget for screen-specific state
-- **Firebase Realtime**: For live data synchronization
-
-### Key Dependencies
-```yaml
-dependencies:
-  flutter:
-    sdk: flutter
-  firebase_core: ^3.6.0
-  firebase_auth: ^5.3.3
-  cloud_firestore: ^5.5.0
-  provider: ^6.1.2
-  google_fonts: ^6.2.1
-  fl_chart: ^0.69.0
-  shared_preferences: ^2.3.2
-  flutter_secure_storage: ^9.2.2
-```
-
-## 📊 Data Flow
-
-1. **User Authentication**: Firebase Auth handles user login/signup
-2. **Data Storage**: Firestore stores all financial data
-3. **Real-time Sync**: Changes are synchronized across devices
-4. **AI Analysis**: Backend processes spending patterns
-5. **Insights Generation**: AI provides personalized recommendations
-
-## 🔒 Security
-
-- **Authentication**: Firebase Auth with biometric support
-- **Data Encryption**: Sensitive data encrypted in transit and at rest
-- **Access Control**: User-based data isolation
-- **Secure Storage**: Local sensitive data stored securely
-
-## 🚀 Deployment
-
-### Android
-```bash
-flutter build apk --release
-```
-
-### iOS
-```bash
-flutter build ios --release
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Flutter team for the amazing framework
-- Firebase for backend services
-- Material Design team for design guidelines
-- Open source community for various packages
-
-## 📞 Support
-
-For support and questions:
-- Create an issue in the repository
-- Contact the development team
-- Check the documentation
+Nexus helps you manage your financial life with features ranging from daily transaction tracking to investment management, vehicle maintenance, and family expense sharing. Built with Material Design and a modern dark theme.
 
 ---
 
-**Nexus** - Your Personal Financial Intelligence Platform
+## Core Features
+
+### 💰 Finance Management
+
+**Accounts**
+- Create and manage multiple accounts (Savings, Salary, Investment, Cash, etc.)
+- Real-time balance tracking
+- Support for card details, bank name, and account numbers
+- Color-coded account identification
+- Account activity tracking
+
+**Transactions**
+- Track income, expenses, and account transfers
+- Auto-categorization based on merchant/description
+- Attach receipts and notes
+- Bulk operations (multi-select, batch delete)
+- Transaction history with advanced filtering
+- Smart duplicate detection
+
+**Budgets**
+- Set budgets by category with flexible time periods (weekly, monthly, quarterly, etc.)
+- Real-time spending tracking with progress indicators
+- Alert notifications at 80% threshold
+- Overspend detection and warnings
+- Daily spending recommendations
+- Budget adherence tracking
+
+**Categories**
+- Predefined and custom categories with emoji icons
+- Color-coded organization
+- Category-based reports and filtering
+
+---
+
+### 📊 Investment Tracking
+
+**Supported Investment Types**:
+- Mutual Funds (with SIP tracking)
+- Stocks
+- Cryptocurrencies
+- Gold
+- Real Estate
+- Custom investments
+
+**Features**:
+- Track invested amount vs current value
+- Automatic profit/loss calculation
+- Performance metrics and trends
+- ISIN/folio tracking for mutual funds
+- NAV and unit tracking
+- Investment timeline and history
+
+---
+
+### 💳 Debt & Loan Management
+
+**Loan Types**:
+- Personal, Home, Car, Education, Business loans
+- Gold loans, Two-wheeler loans
+- Credit cards
+- Custom loan types
+
+**Features**:
+- EMI calculation and tracking
+- Payment schedules with reminders
+- Interest vs principal breakdown
+- Remaining months and payoff date
+- Overdue detection and alerts
+- Payment history tracking
+
+**Family Debts (IOUs)**:
+- Track money owed to/by family members
+- Payment record tracking
+- Settlement status and history
+- Net balance calculations
+
+---
+
+### 📅 Subscription Management
+
+**Features**:
+- Track recurring subscriptions with various frequencies (daily to yearly)
+- Automatic due date calculation
+- Overdue detection and warnings
+- Total monthly subscription cost analysis
+- Category-wise subscription breakdown
+- Status tracking (active/inactive)
+
+---
+
+### 🎯 Savings Goals
+
+**Features**:
+- Set financial goals with target amounts and dates
+- Progress tracking with visual indicators
+- Remaining amount and time calculations
+- Goal achievement notifications
+- Milestone celebrations
+- Linked account tracking
+
+---
+
+### 🏍️ Vehicle/Bike Management
+
+**Garage Features**:
+- Manage multiple vehicles
+- Track make, model, year, registration
+- Insurance tracking with expiry alerts
+- RTO details management
+- Dashboard pinning for quick access
+
+**Fuel & Mileage Tracking**:
+- Log fuel entries with odometer readings
+- Automatic mileage calculation (km/L)
+- Fuel efficiency ratings:
+  - Excellent: >25 km/L 🌟
+  - Good: 20-25 km/L ✅
+  - Average: 15-20 km/L ⚠️
+  - Poor: <15 km/L ⛽
+- Cost per km analysis
+- Fuel spending trends
+
+**Document Management**:
+- Upload RC, insurance, PUC certificates
+- Expiry date tracking with alerts
+- Google Drive integration for backups
+- Document categorization
+
+**Challan Tracking**:
+- Log traffic violations and fines
+- Payment tracking with deadlines
+- Receipt storage
+- Violation type categorization
+
+---
+
+### 🤖 Smart Automation
+
+**Email & SMS Transaction Parsing (NBox)**:
+- Auto-detect transactions from bank SMS and emails
+- Extract merchant names, amounts, and dates
+- Confidence scoring (0-100%)
+- Automatic category assignment
+- Batch import with review workflow
+- Duplicate prevention
+- Warning system for ambiguous data
+
+**Gmail Integration**:
+- Direct Gmail connection for transaction detection
+- Privacy-respecting email parsing
+- Auto-sync capabilities
+- Merchant identification from emails
+
+**PDF Bank Statement Import**:
+- Upload and parse PDF bank statements
+- Extract transaction history
+- Bank detection (automatic/manual)
+- Password-protected PDF support
+- Metadata extraction (bank name, account, period, balances)
+- Batch transaction import with preview
+
+**AI-Powered Features**:
+- Intelligent transaction categorization
+- Context-aware financial assistant
+- Spending pattern analysis
+- Budget recommendations
+- Financial health insights
+
+---
+
+### 📈 Analytics & Insights
+
+**Financial Health Score**:
+- Comprehensive score (0-100) based on:
+  - Savings rate (25 points)
+  - Debt-to-income ratio (25 points)
+  - Budget adherence (25 points)
+  - Emergency fund (15 points)
+  - Penalties for debts and overdue payments
+- Letter grades: A+, A, B, C, D, F
+- Personalized improvement tips
+
+**Reports & Analytics**:
+- Spending trends by category
+- Income vs expense comparison
+- Monthly spending patterns
+- Investment performance tracking
+- Goal progress analysis
+- Export reports (PDF, CSV)
+- Custom date range analysis
+
+**Expense Trends**:
+- Category-wise trend analysis
+- Year-over-year comparison
+- Spending forecasts
+- Anomaly detection
+
+---
+
+### 👨‍👩‍👧‍👦 Family & Shared Expenses
+
+**Expense Splitting**:
+- Create shared expenses
+- Multiple participants
+- Flexible split options:
+  - Equal split
+  - Custom amounts
+  - Percentage-based
+- Settlement tracking
+- Who paid tracking
+- Category assignment
+
+**Family Management**:
+- Add and manage family members
+- Track shared obligations
+- Settlement summaries
+- Net balance calculations
+
+---
+
+### ✅ Payday Checklist
+
+**Smart Post-Income Actions**:
+- Auto-generated checklist after income:
+  - Debt EMI payments (with due dates)
+  - Family debt obligations
+  - Subscription payments
+  - Budget allocations
+  - Goal contributions
+  - Savings transfers
+
+**Priority Levels**:
+- Urgent (due within 3 days or overdue)
+- High (due within 7 days)
+- Medium (due within 14 days)
+- Low (suggested/optional)
+
+**Analysis**:
+- Total obligations calculation
+- Income coverage check
+- Suggested savings amount
+- Remaining after obligations
+
+---
+
+### 🔔 Notifications & Alerts
+
+**Smart Notifications**:
+- Budget warnings (80% threshold)
+- Goal progress and achievements
+- Subscription and bill reminders
+- Unusual spending alerts
+- Transaction confirmations
+- Fuel efficiency feedback
+- Insurance expiry warnings
+- Payment due reminders
+
+**Notification Features**:
+- Action buttons for quick response
+- Notification history
+- Deep linking to relevant screens
+- Customizable preferences
+- Category-based filtering
+
+---
+
+### ⚙️ Settings & Security
+
+**Biometric Lock**:
+- Fingerprint authentication
+- Face recognition support
+- Secure app access
+- Card data encryption
+
+**Backup & Restore**:
+- Automatic cloud backup to Firestore
+- Complete data restoration
+- Profile and metadata backup
+- Transaction history preservation
+
+**Theme**:
+- Modern dark theme
+- Custom color schemes
+- Material Design components
+- Frosted glass effects
+
+**Notification Settings**:
+- Granular control by notification type
+- Custom timing preferences
+- Enable/disable specific alerts
+
+**Category Management**:
+- Create custom categories
+- Edit category details (name, emoji, color)
+- Category reordering
+
+---
+
+### 📱 User Interface
+
+**Navigation**:
+Bottom floating navigation bar with 6 tabs:
+1. **Home** - Dashboard with financial overview
+2. **Wallet** - Accounts and transactions
+3. **Wealth** - Investments and analytics
+4. **Garage** - Vehicle management
+5. **Inbox** - NBox (SMS/Email transaction parsing)
+6. **More** - Settings and tools
+
+**Design Features**:
+- Material Design with custom dark theme
+- Frosted glass navigation effects
+- Smooth animations and transitions
+- Swipe-to-delete actions
+- Multi-select operations
+- Search and filtering
+- Progress indicators
+- Color-coded status displays
+
+---
+
+## Technical Stack
+
+**Framework**: Flutter (Dart)
+
+**Backend**:
+- Firebase Cloud Firestore (database)
+- Firebase Authentication
+- Firebase Cloud Storage (documents)
+- Firebase Crashlytics (error reporting)
+
+**Integrations**:
+- Gmail API (transaction parsing)
+- Google Drive (document backup)
+- Google AI (Gemini) for smart features
+
+**Device Features**:
+- Biometric authentication
+- File system access
+- Android Auto support
+
+**Currency**: Indian Rupee (₹)
+
+---
+
+## Data & Privacy
+
+- All data stored securely in Firebase Cloud Firestore
+- User authentication required
+- Sensitive data (CVV) stored locally in encrypted storage, not in cloud
+- Privacy-respecting email parsing with minimal permissions
+- Biometric-protected app access
+
+---
+
+## Key Screens
+
+### Dashboard
+- Total balance across accounts
+- Recent transactions
+- Budget status overview
+- Goals progress
+- Financial health score
+- Quick action buttons
+
+### Finance
+- Account detail views
+- Transaction history with filtering
+- Add/edit transaction screens
+- Budget management
+
+### Investments
+- Portfolio overview
+- Individual investment details
+- Performance charts
+- Add investment screens
+
+### Debts
+- Loan management
+- Payment schedules
+- Family debt tracking
+- EMI calculator
+
+### Garage
+- Vehicle list
+- Fuel entries
+- Mileage statistics
+- Document management
+- Challan tracking
+
+### NBox
+- Detected transactions from SMS/Email
+- Transaction preview and editing
+- Batch import with approval workflow
+- Confidence scoring display
+
+### Insights
+- Financial health dashboard
+- Spending trends
+- Category breakdowns
+- Reports and analytics
+
+### More
+- Analytics and reports
+- Category management
+- Family dashboard
+- Expense splitter
+- Backup settings
+- Notification preferences
+- About and help
+
+---
+
+## Getting Started
+
+### Prerequisites
+- Flutter SDK
+- Firebase project setup
+- Gmail API credentials (for email parsing)
+- Google AI API key (for AI features)
+
+### Installation
+1. Clone the repository
+2. Run `flutter pub get`
+3. Configure Firebase (google-services.json for Android, GoogleService-Info.plist for iOS)
+4. Set up Gmail API credentials
+5. Add Google AI API key
+6. Run `flutter run`
+
+---
+
+## Features by Use Case
+
+### For Daily Expense Tracking
+✅ Quick transaction entry
+✅ Auto-categorization
+✅ SMS/Email auto-detection
+✅ Budget alerts
+
+### For Long-term Financial Planning
+✅ Goal setting and tracking
+✅ Investment portfolio management
+✅ Financial health scoring
+✅ Spending trend analysis
+
+### For Debt Management
+✅ Loan tracking with EMI
+✅ Payment reminders
+✅ Payoff date calculation
+✅ Family debt settlement
+
+### For Vehicle Owners
+✅ Mileage tracking
+✅ Fuel efficiency monitoring
+✅ Document management
+✅ Maintenance logging
+
+### For Families
+✅ Shared expense splitting
+✅ Family member management
+✅ Settlement tracking
+✅ IOU management
+
+---
+
+## Smart Features Highlights
+
+🎯 **Auto-categorization** - Transactions automatically categorized based on merchant name
+🤖 **AI Assistant** - Context-aware financial advice and insights
+📧 **Email/SMS Parsing** - Auto-detect transactions from notifications
+📊 **Financial Health Score** - Comprehensive assessment with personalized tips
+💡 **Smart Notifications** - Contextual alerts for budgets, goals, and payments
+📈 **Trend Analysis** - Spending patterns and forecasts
+🔄 **Batch Import** - Import multiple transactions from PDF statements
+⚡ **Quick Actions** - Payday checklist for post-income tasks
+
+---
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests.
+
+---
+
+## License
+
+[Add your license information here]
+
+---
+
+## Support
+
+For issues, bugs, or feature requests, please open an issue in the repository.
+
+---
+
+**Built with ❤️ using Flutter**

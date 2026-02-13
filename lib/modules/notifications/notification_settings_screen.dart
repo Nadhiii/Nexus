@@ -60,6 +60,20 @@ class NotificationSettingsScreen extends StatelessWidget {
               ]),
 
               const SizedBox(height: 24),
+              _buildSectionHeader('Garage'),
+              _buildCard([
+                _buildSwitch(
+                  'Fuel Log Notifications',
+                  'Alerts when fuel is logged and mileage calculated',
+                  provider.fuelNotificationsEnabled,
+                  (v) => provider.updateNotificationSetting(
+                    'notifications_fuel_logged',
+                    v,
+                  ),
+                ),
+              ]),
+
+              const SizedBox(height: 24),
               OutlinedButton(
                 onPressed: () {
                   provider.sendTestNotification();

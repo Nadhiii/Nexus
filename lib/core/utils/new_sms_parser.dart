@@ -1,12 +1,14 @@
 import '../models/detected_transaction.dart';
+import '../services/ai_categorization_service.dart';
 
 class NewSmsParser {
-  static DetectedTransaction? parse(
+  static Future<DetectedTransaction?> parse(
     String id,
     String body,
     String sender,
-    DateTime date,
-  ) {
+    DateTime date, {
+    AICategorizationService? aiCategorizationService,
+  }) async {
     // 1. CLEAN
     final cleanBody = body.replaceAll(RegExp(r'[\n\r]'), ' ').trim();
     final lower = cleanBody.toLowerCase();
@@ -38,6 +40,25 @@ class NewSmsParser {
     // 5. EXTRACT MERCHANT
     String merchant = _extractMerchant(cleanBody, sender);
 
+    // 6. AI CATEGORIZATION
+    String? detectedCategory;
+    if (aiCategorizationService != null) {
+      try {
+        final categorySuggestion =
+            await aiCategorizationService.suggestCategory(
+          merchantName: merchant,
+          description: null,
+          amount: amount,
+          transactionType: type,
+          fullMessageBody: body,
+        );
+        detectedCategory = categorySuggestion.category;
+      } catch (e) {
+        // Fallback to null if AI fails
+        detectedCategory = null;
+      }
+    }
+
     return DetectedTransaction(
       id: id,
       amount: amount,
@@ -46,6 +67,7 @@ class NewSmsParser {
       type: type,
       source: 'sms',
       body: body,
+      detectedCategory: detectedCategory,
     );
   }
 

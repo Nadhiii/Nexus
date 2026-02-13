@@ -21,16 +21,24 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
   final _claudeController = TextEditingController();
   bool _showGeminiKey = false;
   bool _showClaudeKey = false;
-  bool _keysLoaded = false;
   bool _initializationTimedOut = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialize provider after first frame to avoid calling during build
+    // Initialize provider and load keys after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final provider = context.read<AIAssistantProvider>();
+
+      // Load keys into controllers
+      if (provider.settings.hasGeminiKey) {
+        _geminiController.text = '••••••••••••••••••••';
+      }
+      if (provider.settings.hasClaudeKey) {
+        _claudeController.text = '••••••••••••••••••••';
+      }
+
       if (!provider.isInitialized) {
         // Start initialization with timeout
         provider
@@ -38,15 +46,13 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
             .timeout(
               const Duration(seconds: 5),
               onTimeout: () {
-                // Handle timeout gracefully
                 if (mounted) {
                   setState(() => _initializationTimedOut = true);
                 }
-                return; // Return silently on timeout
+                return;
               },
             )
             .catchError((error) {
-              // Handle any initialization errors gracefully
               debugPrint('Error initializing AI settings: $error');
               if (mounted) {
                 setState(() => _initializationTimedOut = true);
@@ -56,25 +62,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     });
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_keysLoaded) {
-      _keysLoaded = true;
-      _loadExistingKeys();
-    }
-  }
-
-  void _loadExistingKeys() {
-    final provider = context.read<AIAssistantProvider>();
-    if (provider.settings.hasGeminiKey) {
-      _geminiController.text = '••••••••••••••••••••';
-    }
-    if (provider.settings.hasClaudeKey) {
-      _claudeController.text = '••••••••••••••••••••';
-    }
-  }
-
+  // Removed unsafe didChangeDependencies logic
   @override
   void dispose() {
     _geminiController.dispose();
@@ -89,7 +77,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.backgroundBlack,
         title: Text(
-          'AI Assistant Setup',
+          'Nex Settings',
           style: AppTypography.headlineSmall.copyWith(color: Colors.white),
         ),
         leading: IconButton(
@@ -456,12 +444,21 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.blue.shade600, Colors.purple.shade600],
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(Icons.smart_toy, color: Colors.white, size: 28),
+              child: const Center(
+                child: Text(
+                  'N',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -476,7 +473,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                     ),
                   ),
                   Text(
-                    'Your personal finance AI assistant',
+                    'Your all-seeing finance AI',
                     style: AppTypography.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                     ),

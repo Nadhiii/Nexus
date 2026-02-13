@@ -231,17 +231,20 @@ class FinancialHealthScore {
   int get _debtScore {
     if (debtToIncomeRatio <= 20) return 25;
     if (debtToIncomeRatio <= 35) return (25 - (debtToIncomeRatio - 20)).round();
-    if (debtToIncomeRatio <= 50)
+    if (debtToIncomeRatio <= 50) {
       return (10 - (debtToIncomeRatio - 35) * 0.5).round();
+    }
     return 0;
   }
 
   int get _emergencyScore {
     if (emergencyFundMonths >= 6) return 15;
-    if (emergencyFundMonths >= 3)
+    if (emergencyFundMonths >= 3) {
       return (10 + (emergencyFundMonths - 3) * (5 / 3)).round();
-    if (emergencyFundMonths >= 1)
+    }
+    if (emergencyFundMonths >= 1) {
       return (5 + (emergencyFundMonths - 1) * 2.5).round();
+    }
     return (emergencyFundMonths * 5).round();
   }
 }

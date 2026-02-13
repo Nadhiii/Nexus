@@ -14,8 +14,11 @@ import '../core/providers/transaction_provider.dart';
 import '../core/providers/budget_provider.dart';
 import '../core/providers/goal_provider.dart';
 import '../core/providers/bike_provider.dart';
+import '../core/providers/pdf_import_provider.dart';
+import '../core/providers/shared_expense_provider.dart';
+import '../core/providers/category_provider.dart';
 import '../core/theme/app_colors.dart';
-import '../core/theme/app_spacing.dart'; // Using the new Spacing file
+import '../core/theme/app_spacing.dart';
 import '../modules/ai_assistant/providers/ai_assistant_provider.dart';
 
 // Screens
@@ -24,7 +27,7 @@ import '../modules/finance/modern_finance_screen.dart';
 import '../modules/insights/modern_insights_screen.dart';
 import '../modules/more/modern_more_screen.dart';
 import '../modules/bike/ui/modern_bike_screen_ui.dart';
-import '../modules/nbox/new_modern_nbox_screen.dart';
+import '../modules/ai_assistant/screens/ai_chat_screen.dart';
 import '../core/services/intent_navigation_service.dart';
 
 class MainScreen extends StatefulWidget {
@@ -94,6 +97,10 @@ class _MainScreenState extends State<MainScreen>
       budgetProvider: context.read<BudgetProvider>(),
       goalProvider: context.read<GoalProvider>(),
       bikeProvider: context.read<BikeProvider>(),
+      nboxProvider: context.read<NewNboxProvider>(),
+      pdfImportProvider: context.read<PDFImportProvider>(),
+      sharedExpenseProvider: context.read<SharedExpenseProvider>(),
+      categoryProvider: context.read<CategoryProvider>(),
     );
   }
 
@@ -102,17 +109,13 @@ class _MainScreenState extends State<MainScreen>
     // Initialize AI with context providers
     _initializeAI(context);
 
-    // Watch NBox for notifications
-    final nbox = context.watch<NewNboxProvider>();
-    final pendingNbox = nbox.pendingSms.length + nbox.pendingEmails.length;
-
     // Screen List
     final screens = [
       ModernDashboardScreen(onNavigate: _navigateToScreen),
       ModernFinanceScreen(initialTabIndex: _financeScreenInitialTab),
       const ModernInsightsScreen(),
       const ModernBikeScreen(),
-      NewModernNBoxScreen(),
+      const AIChatScreen(),
       const ModernMoreScreen(),
     ];
 
@@ -138,18 +141,14 @@ class _MainScreenState extends State<MainScreen>
             left: 0,
             right: 0,
             bottom: 0,
-            child: _buildFloatingNavBar(context, _currentIndex, pendingNbox),
+            child: _buildFloatingNavBar(context, _currentIndex),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFloatingNavBar(
-    BuildContext context,
-    int currentIndex,
-    int pendingNbox,
-  ) {
+  Widget _buildFloatingNavBar(BuildContext context, int currentIndex) {
     // "Floating Pill" Container
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 30),
@@ -193,7 +192,7 @@ class _MainScreenState extends State<MainScreen>
                   fit: BoxFit.scaleDown,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: _buildNavItems(currentIndex, pendingNbox),
+                    children: _buildNavItems(currentIndex),
                   ),
                 ),
               ),
@@ -204,7 +203,7 @@ class _MainScreenState extends State<MainScreen>
     );
   }
 
-  List<Widget> _buildNavItems(int currentIndex, int pendingNbox) {
+  List<Widget> _buildNavItems(int currentIndex) {
     final items = [
       {
         'icon': Icons.dashboard_outlined,
@@ -231,11 +230,10 @@ class _MainScreenState extends State<MainScreen>
         'index': 3,
       },
       {
-        'icon': Icons.inbox_outlined,
-        'selectedIcon': Icons.inbox_rounded,
-        'label': 'Inbox',
+        'icon': Icons.auto_awesome_outlined,
+        'selectedIcon': Icons.auto_awesome_rounded,
+        'label': 'Nex',
         'index': 4,
-        'badgeCount': pendingNbox,
       },
       {
         'icon': Icons.more_horiz_outlined,

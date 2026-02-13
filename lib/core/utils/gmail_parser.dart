@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import '../models/detected_transaction.dart';
+import '../services/ai_categorization_service.dart';
 
 class BankPattern {
   final String name;
@@ -73,12 +74,13 @@ class GmailParser {
     ),
   ];
 
-  static DetectedTransaction? parse(
+  static Future<DetectedTransaction?> parse(
     String emailId,
     String body,
     String snippet,
-    DateTime emailDate,
-  ) {
+    DateTime emailDate, {
+    AICategorizationService? aiCategorizationService,
+  }) async {
     // 1. CLEANING
     String combined = "$snippet $body";
     String cleanBody = combined
@@ -107,20 +109,28 @@ class GmailParser {
       final regex = RegExp(pattern.regex, caseSensitive: false);
       final match = regex.firstMatch(cleanBody);
       if (match != null) {
-        final transaction = _buildTransaction(
+        final transaction = await _buildTransaction(
           emailId,
           match,
           cleanBody,
           pattern.name,
           emailDate,
           type,
+          aiCategorizationService: aiCategorizationService,
         );
         if (transaction != null) return transaction;
       }
     }
 
     // --- GENERIC FALLBACK (Context Aware) ---
-    return _parseGeneric(emailId, cleanBody, lower, emailDate, type);
+    return await _parseGeneric(
+      emailId,
+      cleanBody,
+      lower,
+      emailDate,
+      type,
+      aiCategorizationService: aiCategorizationService,
+    );
   }
 
   // --- STRICT FILTERING ---
@@ -171,13 +181,14 @@ class GmailParser {
   }
 
   // --- GENERIC PARSER ---
-  static DetectedTransaction? _parseGeneric(
+  static Future<DetectedTransaction?> _parseGeneric(
     String id,
     String text,
     String lower,
     DateTime date,
-    String type,
-  ) {
+    String type, {
+    AICategorizationService? aiCategorizationService,
+  }) async {
     // 1. Find Amount
     final amountPattern = RegExp(
       r'(?:Rs\.?|INR|₹)\s?\.?\s*([0-9,]+(?:\.[0-9]+)?)',
@@ -226,6 +237,27 @@ class GmailParser {
       if (knownBrand != null) merchant = knownBrand;
     }
 
+    // AI categorization or fallback
+    String? detectedCategory;
+    if (aiCategorizationService != null) {
+      try {
+        final categorySuggestion =
+            await aiCategorizationService.suggestCategory(
+          merchantName: merchant,
+          description: null,
+          amount: amount,
+          transactionType: type,
+          fullMessageBody: text.length > 500 ? text.substring(0, 500) : text,
+        );
+        detectedCategory = categorySuggestion.category;
+      } catch (e) {
+        // Fallback to old method if AI fails
+        detectedCategory = _detectCategory(merchant);
+      }
+    } else {
+      detectedCategory = _detectCategory(merchant);
+    }
+
     return DetectedTransaction(
       id: id,
       amount: amount,
@@ -234,6 +266,7 @@ class GmailParser {
       type: type,
       source: 'email',
       body: text,
+      detectedCategory: detectedCategory,
     );
   }
 
@@ -337,14 +370,15 @@ class GmailParser {
     return null;
   }
 
-  static DetectedTransaction? _buildTransaction(
+  static Future<DetectedTransaction?> _buildTransaction(
     String id,
     RegExpMatch match,
     String fullBody,
     String bankName,
     DateTime emailDate,
-    String type,
-  ) {
+    String type, {
+    AICategorizationService? aiCategorizationService,
+  }) async {
     try {
       String amountStr = match.namedGroup('amount')!.replaceAll(',', '');
       double amount = double.parse(amountStr);
@@ -391,8 +425,27 @@ class GmailParser {
         }
       }
 
-      // Auto-detect category
-      final detectedCategory = _detectCategory(merchant);
+      // AI categorization or fallback
+      String? detectedCategory;
+      if (aiCategorizationService != null) {
+        try {
+          final categorySuggestion =
+              await aiCategorizationService.suggestCategory(
+            merchantName: merchant,
+            description: null,
+            amount: amount,
+            transactionType: type,
+            fullMessageBody:
+                fullBody.length > 500 ? fullBody.substring(0, 500) : fullBody,
+          );
+          detectedCategory = categorySuggestion.category;
+        } catch (e) {
+          // Fallback to old method if AI fails
+          detectedCategory = _detectCategory(merchant);
+        }
+      } else {
+        detectedCategory = _detectCategory(merchant);
+      }
 
       return DetectedTransaction(
         id: id,

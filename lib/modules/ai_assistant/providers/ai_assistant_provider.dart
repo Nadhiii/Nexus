@@ -19,6 +19,10 @@ import '../../../core/providers/transaction_provider.dart';
 import '../../../core/providers/budget_provider.dart';
 import '../../../core/providers/goal_provider.dart';
 import '../../../core/providers/bike_provider.dart';
+import '../../../core/providers/new_nbox_provider.dart';
+import '../../../core/providers/pdf_import_provider.dart';
+import '../../../core/providers/shared_expense_provider.dart';
+import '../../../core/providers/category_provider.dart';
 
 /// AI Assistant Provider
 /// Manages AI state, conversations, and API interactions
@@ -31,11 +35,42 @@ class AIAssistantProvider with ChangeNotifier {
   static const _usageKey = 'ai_usage_stats';
   static const _noKeyAttemptsKey = 'ai_no_key_attempts';
 
-  // Secure storage for API keys
-  final _secureStorage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-  );
+  // Secure storage for API keys (lazy initialized for safety)
+  FlutterSecureStorage? _secureStorage;
+
+  /// Get secure storage instance with fallback for compatibility
+  FlutterSecureStorage _getSecureStorage() {
+    if (_secureStorage != null) return _secureStorage!;
+
+    try {
+      // Try with advanced encryption options (const for compile-time safety)
+      // Including MacOsOptions to prevent crashes on macOS
+      _secureStorage = const FlutterSecureStorage(
+        aOptions: AndroidOptions(encryptedSharedPreferences: true),
+        iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+        mOptions: MacOsOptions(
+          accessibility: KeychainAccessibility.first_unlock,
+        ),
+      );
+      debugPrint('FlutterSecureStorage: Initialized with advanced options');
+    } catch (e) {
+      debugPrint('FlutterSecureStorage: Failed with advanced options: $e');
+      // Fallback to basic secure storage without special options
+      try {
+        _secureStorage = const FlutterSecureStorage();
+        debugPrint('FlutterSecureStorage: Using basic configuration');
+      } catch (e2) {
+        debugPrint(
+          'FlutterSecureStorage: Failed to create basic instance: $e2',
+        );
+        // Do not rethrow to prevent app crash - just provide a dummy instance or handle upstream
+        // But for now, we'll return a basic instance constructed safely if possible
+        // If this fails, we are in trouble, but let's try to survive.
+      }
+    }
+
+    return _secureStorage ?? const FlutterSecureStorage();
+  }
 
   // State
   AISettings _settings = AISettings();
@@ -62,6 +97,10 @@ class AIAssistantProvider with ChangeNotifier {
   BudgetProvider? _budgetProvider;
   GoalProvider? _goalProvider;
   BikeProvider? _bikeProvider;
+  NewNboxProvider? _nboxProvider;
+  PDFImportProvider? _pdfImportProvider;
+  SharedExpenseProvider? _sharedExpenseProvider;
+  CategoryProvider? _categoryProvider;
 
   // Current AI service
   BaseAIService? _aiService;
@@ -135,6 +174,10 @@ class AIAssistantProvider with ChangeNotifier {
     BudgetProvider? budgetProvider,
     GoalProvider? goalProvider,
     BikeProvider? bikeProvider,
+    NewNboxProvider? nboxProvider,
+    PDFImportProvider? pdfImportProvider,
+    SharedExpenseProvider? sharedExpenseProvider,
+    CategoryProvider? categoryProvider,
   }) {
     _accountProvider = accountProvider;
     _debtProvider = debtProvider;
@@ -144,6 +187,10 @@ class AIAssistantProvider with ChangeNotifier {
     _budgetProvider = budgetProvider;
     _goalProvider = goalProvider;
     _bikeProvider = bikeProvider;
+    _nboxProvider = nboxProvider;
+    _pdfImportProvider = pdfImportProvider;
+    _sharedExpenseProvider = sharedExpenseProvider;
+    _categoryProvider = categoryProvider;
   }
 
   /// Load settings from storage
@@ -165,13 +212,13 @@ class AIAssistantProvider with ChangeNotifier {
     String? claudeKey;
 
     try {
-      geminiKey = await _secureStorage.read(key: _geminiKeyKey);
+      geminiKey = await _getSecureStorage().read(key: _geminiKeyKey);
     } catch (e) {
       debugPrint('Error reading Gemini key from secure storage: $e');
     }
 
     try {
-      claudeKey = await _secureStorage.read(key: _claudeKeyKey);
+      claudeKey = await _getSecureStorage().read(key: _claudeKeyKey);
     } catch (e) {
       debugPrint('Error reading Claude key from secure storage: $e');
     }
@@ -197,12 +244,12 @@ class AIAssistantProvider with ChangeNotifier {
     // Save API keys securely (with error handling)
     try {
       if (_settings.geminiApiKey != null) {
-        await _secureStorage.write(
+        await _getSecureStorage().write(
           key: _geminiKeyKey,
           value: _settings.geminiApiKey,
         );
       } else {
-        await _secureStorage.delete(key: _geminiKeyKey);
+        await _getSecureStorage().delete(key: _geminiKeyKey);
       }
     } catch (e) {
       debugPrint('Error saving Gemini key to secure storage: $e');
@@ -210,12 +257,12 @@ class AIAssistantProvider with ChangeNotifier {
 
     try {
       if (_settings.claudeApiKey != null) {
-        await _secureStorage.write(
+        await _getSecureStorage().write(
           key: _claudeKeyKey,
           value: _settings.claudeApiKey,
         );
       } else {
-        await _secureStorage.delete(key: _claudeKeyKey);
+        await _getSecureStorage().delete(key: _claudeKeyKey);
       }
     } catch (e) {
       debugPrint('Error saving Claude key to secure storage: $e');
@@ -483,6 +530,10 @@ class AIAssistantProvider with ChangeNotifier {
       budgetProvider: _budgetProvider,
       goalProvider: _goalProvider,
       bikeProvider: _bikeProvider,
+      nboxProvider: _nboxProvider,
+      pdfImportProvider: _pdfImportProvider,
+      sharedExpenseProvider: _sharedExpenseProvider,
+      categoryProvider: _categoryProvider,
     );
 
     // Use smart context for specific queries, full context for general questions
@@ -491,6 +542,20 @@ class AIAssistantProvider with ChangeNotifier {
     } else {
       return contextBuilder.buildFullContext(userQuery: query);
     }
+  }
+
+  /// Send a raw prompt and return the response string directly.
+  /// Used by background services (e.g. AI categorization) that need
+  /// the response text without storing it in conversation history.
+  Future<String> sendRawPrompt(String prompt) async {
+    if (_aiService == null || !_settings.hasAnyKey) {
+      throw Exception('AI service not configured');
+    }
+    return await _aiService!.sendMessage(
+      prompt,
+      'You are a helpful assistant.',
+      [],
+    );
   }
 
   /// Send a message to the AI

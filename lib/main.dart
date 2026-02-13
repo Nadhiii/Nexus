@@ -59,7 +59,6 @@ class NexusApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => InvestmentProvider()),
         ChangeNotifierProvider(create: (_) => BiometricProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
-        ChangeNotifierProvider(create: (_) => GmailProvider()),
         ChangeNotifierProvider(create: (_) => GoalProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
         ChangeNotifierProvider(create: (_) => BikeProvider()),
@@ -68,12 +67,52 @@ class NexusApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SharedExpenseProvider()),
         ChangeNotifierProvider(create: (_) => FinancialHealthProvider()),
         ChangeNotifierProvider(create: (_) => AIAssistantProvider()),
-        ChangeNotifierProxyProvider<GmailProvider, NewNboxProvider>(
-          create: (context) => NewNboxProvider(),
-          update: (context, gmailProvider, nboxProvider) {
-            nboxProvider?.update(gmailProvider);
-            return nboxProvider!;
+        // GmailProvider with AI dependencies
+        ChangeNotifierProxyProvider2<
+          AIAssistantProvider,
+          CategoryProvider,
+          GmailProvider
+        >(
+          create: (context) => GmailProvider(
+            aiAssistantProvider: context.read<AIAssistantProvider>(),
+            categoryProvider: context.read<CategoryProvider>(),
+          ),
+          update: (context, aiProvider, categoryProvider, gmailProvider) {
+            return gmailProvider ??
+                GmailProvider(
+                  aiAssistantProvider: aiProvider,
+                  categoryProvider: categoryProvider,
+                );
           },
+        ),
+        // NewNboxProvider with Gmail and AI dependencies
+        ChangeNotifierProxyProvider3<
+          GmailProvider,
+          AIAssistantProvider,
+          CategoryProvider,
+          NewNboxProvider
+        >(
+          create: (context) => NewNboxProvider(
+            gmailProvider: context.read<GmailProvider>(),
+            aiAssistantProvider: context.read<AIAssistantProvider>(),
+            categoryProvider: context.read<CategoryProvider>(),
+          ),
+          update:
+              (
+                context,
+                gmailProvider,
+                aiProvider,
+                categoryProvider,
+                nboxProvider,
+              ) {
+                nboxProvider?.update(gmailProvider);
+                return nboxProvider ??
+                    NewNboxProvider(
+                      gmailProvider: gmailProvider,
+                      aiAssistantProvider: aiProvider,
+                      categoryProvider: categoryProvider,
+                    );
+              },
         ),
         ChangeNotifierProxyProvider<NotificationProvider, SubscriptionProvider>(
           create: (context) => SubscriptionProvider(),

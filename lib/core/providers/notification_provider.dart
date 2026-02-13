@@ -12,6 +12,7 @@ class NotificationProvider extends ChangeNotifier {
   static const _subscriptionRemindersKey =
       'notifications_subscription_reminders';
   static const _largeTransactionAlertsKey = 'notifications_large_transactions';
+  static const _fuelNotificationsKey = 'notifications_fuel_logged';
 
   List<AppNotification> _notifications = [];
   bool _isLoading = false;
@@ -20,6 +21,7 @@ class NotificationProvider extends ChangeNotifier {
   bool _budgetAlertsEnabled = true;
   bool _subscriptionRemindersEnabled = true;
   bool _largeTransactionAlertsEnabled = true;
+  bool _fuelNotificationsEnabled = true;
 
   // Getters
   List<AppNotification> get notifications => _notifications;
@@ -29,6 +31,7 @@ class NotificationProvider extends ChangeNotifier {
   bool get budgetAlertsEnabled => _budgetAlertsEnabled;
   bool get subscriptionRemindersEnabled => _subscriptionRemindersEnabled;
   bool get largeTransactionAlertsEnabled => _largeTransactionAlertsEnabled;
+  bool get fuelNotificationsEnabled => _fuelNotificationsEnabled;
 
   NotificationProvider() {
     _initialize();
@@ -47,6 +50,7 @@ class NotificationProvider extends ChangeNotifier {
         prefs.getBool(_subscriptionRemindersKey) ?? true;
     _largeTransactionAlertsEnabled =
         prefs.getBool(_largeTransactionAlertsKey) ?? true;
+    _fuelNotificationsEnabled = prefs.getBool(_fuelNotificationsKey) ?? true;
     notifyListeners();
   }
 
@@ -196,6 +200,24 @@ class NotificationProvider extends ChangeNotifier {
           ),
         );
       }
+    }
+  }
+
+  void notifyFuelLogged({
+    required String vehicleName,
+    required double mileage,
+    required double fuelAmount,
+    required double cost,
+  }) {
+    if (_fuelNotificationsEnabled && mileage > 0) {
+      addNotification(
+        AppNotification.fuelLogged(
+          vehicleName: vehicleName,
+          mileage: mileage,
+          fuelAmount: fuelAmount,
+          cost: cost,
+        ),
+      );
     }
   }
 }
