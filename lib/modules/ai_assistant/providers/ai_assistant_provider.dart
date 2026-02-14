@@ -37,39 +37,23 @@ class AIAssistantProvider with ChangeNotifier {
 
   // Secure storage for API keys (lazy initialized for safety)
   FlutterSecureStorage? _secureStorage;
+  bool _secureStorageAvailable = true;
 
   /// Get secure storage instance with fallback for compatibility
-  FlutterSecureStorage _getSecureStorage() {
-    if (_secureStorage != null) return _secureStorage!;
+  FlutterSecureStorage? _getSecureStorage() {
+    if (_secureStorage != null) return _secureStorage;
+    if (!_secureStorageAvailable) return null;
 
     try {
-      // Try with advanced encryption options (const for compile-time safety)
-      // Including MacOsOptions to prevent crashes on macOS
-      _secureStorage = const FlutterSecureStorage(
-        aOptions: AndroidOptions(encryptedSharedPreferences: true),
-        iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-        mOptions: MacOsOptions(
-          accessibility: KeychainAccessibility.first_unlock,
-        ),
-      );
-      debugPrint('FlutterSecureStorage: Initialized with advanced options');
+      // Basic secure storage without platform-specific options to avoid crashes
+      _secureStorage = const FlutterSecureStorage();
+      debugPrint('FlutterSecureStorage: Initialized successfully');
+      return _secureStorage;
     } catch (e) {
-      debugPrint('FlutterSecureStorage: Failed with advanced options: $e');
-      // Fallback to basic secure storage without special options
-      try {
-        _secureStorage = const FlutterSecureStorage();
-        debugPrint('FlutterSecureStorage: Using basic configuration');
-      } catch (e2) {
-        debugPrint(
-          'FlutterSecureStorage: Failed to create basic instance: $e2',
-        );
-        // Do not rethrow to prevent app crash - just provide a dummy instance or handle upstream
-        // But for now, we'll return a basic instance constructed safely if possible
-        // If this fails, we are in trouble, but let's try to survive.
-      }
+      debugPrint('FlutterSecureStorage: Failed to initialize: $e');
+      _secureStorageAvailable = false;
+      return null;
     }
-
-    return _secureStorage ?? const FlutterSecureStorage();
   }
 
   // State
@@ -136,31 +120,38 @@ class AIAssistantProvider with ChangeNotifier {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
+    debugPrint('AIAssistantProvider: Starting initialization...');
+
     try {
       await _loadSettings();
+      debugPrint('AIAssistantProvider: Settings loaded');
     } catch (e) {
-      debugPrint('Error loading AI settings: $e');
+      debugPrint('AIAssistantProvider: Error loading settings: $e');
     }
 
     try {
       await _loadConversations();
+      debugPrint('AIAssistantProvider: Conversations loaded');
     } catch (e) {
-      debugPrint('Error loading AI conversations: $e');
+      debugPrint('AIAssistantProvider: Error loading conversations: $e');
     }
 
     try {
       await _loadUsageStats();
+      debugPrint('AIAssistantProvider: Usage stats loaded');
     } catch (e) {
-      debugPrint('Error loading AI usage stats: $e');
+      debugPrint('AIAssistantProvider: Error loading usage stats: $e');
     }
 
     try {
       _initializeAIService();
+      debugPrint('AIAssistantProvider: AI service initialized');
     } catch (e) {
-      debugPrint('Error initializing AI service: $e');
+      debugPrint('AIAssistantProvider: Error initializing AI service: $e');
     }
 
     _isInitialized = true;
+    debugPrint('AIAssistantProvider: Initialization complete');
     notifyListeners();
   }
 
@@ -179,6 +170,7 @@ class AIAssistantProvider with ChangeNotifier {
     SharedExpenseProvider? sharedExpenseProvider,
     CategoryProvider? categoryProvider,
   }) {
+    debugPrint('AIAssistantProvider: Setting context providers');
     _accountProvider = accountProvider;
     _debtProvider = debtProvider;
     _investmentProvider = investmentProvider;
@@ -191,204 +183,205 @@ class AIAssistantProvider with ChangeNotifier {
     _pdfImportProvider = pdfImportProvider;
     _sharedExpenseProvider = sharedExpenseProvider;
     _categoryProvider = categoryProvider;
+    debugPrint('AIAssistantProvider: Context providers set successfully');
   }
 
   /// Load settings from storage
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    final settingsJson = prefs.getString(_settingsKey);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final settingsJson = prefs.getString(_settingsKey);
 
-    if (settingsJson != null) {
-      try {
-        _settings = AISettings.fromJson(jsonDecode(settingsJson));
-      } catch (e) {
-        debugPrint('Error parsing AI settings: $e');
-        _settings = AISettings();
+      if (settingsJson != null) {
+        try {
+          _settings = AISettings.fromJson(jsonDecode(settingsJson));
+        } catch (e) {
+          debugPrint('Error parsing AI settings: $e');
+          _settings = AISettings();
+        }
       }
-    }
 
-    // Load API keys from secure storage (with error handling)
-    String? geminiKey;
-    String? claudeKey;
+      // Load API keys from secure storage (with error handling)
+      String? geminiKey;
+      String? claudeKey;
 
-    try {
-      geminiKey = await _getSecureStorage().read(key: _geminiKeyKey);
+      final storage = _getSecureStorage();
+      if (storage != null) {
+        try {
+          geminiKey = await storage.read(key: _geminiKeyKey);
+        } catch (e) {
+          debugPrint('Error reading Gemini key from secure storage: $e');
+        }
+
+        try {
+          claudeKey = await storage.read(key: _claudeKeyKey);
+        } catch (e) {
+          debugPrint('Error reading Claude key from secure storage: $e');
+        }
+      } else {
+        debugPrint('Secure storage not available, API keys will not persist');
+      }
+
+      _settings = _settings.copyWith(
+        geminiApiKey: geminiKey,
+        claudeApiKey: claudeKey,
+      );
     } catch (e) {
-      debugPrint('Error reading Gemini key from secure storage: $e');
+      debugPrint('Error in _loadSettings: $e');
+      rethrow;
     }
-
-    try {
-      claudeKey = await _getSecureStorage().read(key: _claudeKeyKey);
-    } catch (e) {
-      debugPrint('Error reading Claude key from secure storage: $e');
-    }
-
-    _settings = _settings.copyWith(
-      geminiApiKey: geminiKey,
-      claudeApiKey: claudeKey,
-    );
   }
 
   /// Save settings to storage
   Future<void> _saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // Save non-sensitive settings
-    final settingsToSave = AISettings(
-      activeModel: _settings.activeModel,
-      enableProactiveInsights: _settings.enableProactiveInsights,
-      assistantName: _settings.assistantName,
-    );
-    await prefs.setString(_settingsKey, jsonEncode(settingsToSave.toJson()));
-
-    // Save API keys securely (with error handling)
     try {
-      if (_settings.geminiApiKey != null) {
-        await _getSecureStorage().write(
-          key: _geminiKeyKey,
-          value: _settings.geminiApiKey,
-        );
-      } else {
-        await _getSecureStorage().delete(key: _geminiKeyKey);
+      final prefs = await SharedPreferences.getInstance();
+
+      // Save non-sensitive settings
+      final settingsToSave = AISettings(
+        activeModel: _settings.activeModel,
+        enableProactiveInsights: _settings.enableProactiveInsights,
+        assistantName: _settings.assistantName,
+      );
+      await prefs.setString(_settingsKey, jsonEncode(settingsToSave.toJson()));
+
+      // Save API keys to secure storage
+      final storage = _getSecureStorage();
+      if (storage != null) {
+        try {
+          if (_settings.geminiApiKey != null) {
+            await storage.write(
+              key: _geminiKeyKey,
+              value: _settings.geminiApiKey,
+            );
+          }
+          if (_settings.claudeApiKey != null) {
+            await storage.write(
+              key: _claudeKeyKey,
+              value: _settings.claudeApiKey,
+            );
+          }
+        } catch (e) {
+          debugPrint('Error writing to secure storage: $e');
+        }
       }
     } catch (e) {
-      debugPrint('Error saving Gemini key to secure storage: $e');
+      debugPrint('Error in _saveSettings: $e');
     }
-
-    try {
-      if (_settings.claudeApiKey != null) {
-        await _getSecureStorage().write(
-          key: _claudeKeyKey,
-          value: _settings.claudeApiKey,
-        );
-      } else {
-        await _getSecureStorage().delete(key: _claudeKeyKey);
-      }
-    } catch (e) {
-      debugPrint('Error saving Claude key to secure storage: $e');
-    }
-  }
-
-  /// Load usage stats from storage
-  Future<void> _loadUsageStats() async {
-    final prefs = await SharedPreferences.getInstance();
-    final usageJson = prefs.getString(_usageKey);
-
-    if (usageJson != null) {
-      final usage = jsonDecode(usageJson) as Map<String, dynamic>;
-      _messagesSentThisMonth = usage['messagesSent'] as int? ?? 0;
-      _estimatedTokensUsed = usage['tokensUsed'] as int? ?? 0;
-      _usageResetDate = usage['resetDate'] != null
-          ? DateTime.parse(usage['resetDate'] as String)
-          : null;
-
-      // Reset if new month
-      _checkAndResetMonthlyUsage();
-    }
-
-    // Load no-key attempts
-    _noKeyAttemptCount = prefs.getInt(_noKeyAttemptsKey) ?? 0;
-  }
-
-  /// Save usage stats to storage
-  Future<void> _saveUsageStats() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _usageKey,
-      jsonEncode({
-        'messagesSent': _messagesSentThisMonth,
-        'tokensUsed': _estimatedTokensUsed,
-        'resetDate': _usageResetDate?.toIso8601String(),
-      }),
-    );
-  }
-
-  /// Check and reset monthly usage if needed
-  void _checkAndResetMonthlyUsage() {
-    final now = DateTime.now();
-    if (_usageResetDate == null ||
-        now.month != _usageResetDate!.month ||
-        now.year != _usageResetDate!.year) {
-      _messagesSentThisMonth = 0;
-      _estimatedTokensUsed = 0;
-      _usageResetDate = DateTime(now.year, now.month, 1);
-    }
-  }
-
-  /// Track message usage
-  void _trackUsage(String userMessage, String aiResponse) {
-    _messagesSentThisMonth++;
-    // Rough token estimation: ~4 chars per token
-    final estimatedTokens = ((userMessage.length + aiResponse.length) / 4)
-        .round();
-    _estimatedTokensUsed += estimatedTokens;
-    _saveUsageStats();
-  }
-
-  /// Reset no-key attempt count (when key is added)
-  Future<void> _resetNoKeyAttempts() async {
-    _noKeyAttemptCount = 0;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_noKeyAttemptsKey, 0);
-  }
-
-  /// Increment no-key attempts
-  Future<void> _incrementNoKeyAttempts() async {
-    _noKeyAttemptCount++;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_noKeyAttemptsKey, _noKeyAttemptCount);
   }
 
   /// Load conversations from storage
   Future<void> _loadConversations() async {
-    final prefs = await SharedPreferences.getInstance();
-    final conversationsJson = prefs.getString(_conversationsKey);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final conversationsJson = prefs.getString(_conversationsKey);
 
-    if (conversationsJson != null) {
-      try {
-        final List<dynamic> decoded = jsonDecode(conversationsJson);
-        _conversations = decoded
-            .map((c) => AIConversation.fromJson(c as Map<String, dynamic>))
+      if (conversationsJson != null) {
+        final List<dynamic> list = jsonDecode(conversationsJson);
+        _conversations = list
+            .map((json) => AIConversation.fromJson(json))
             .toList();
 
-        // Sort by most recent
-        _conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      } catch (e) {
-        debugPrint('Error parsing conversations: $e');
-        _conversations = [];
+        // Set current conversation to most recent
+        if (_conversations.isNotEmpty) {
+          _currentConversation = _conversations.first;
+        }
       }
+    } catch (e) {
+      debugPrint('Error loading conversations: $e');
+      _conversations = [];
     }
   }
 
   /// Save conversations to storage
   Future<void> _saveConversations() async {
-    final prefs = await SharedPreferences.getInstance();
-    final json = jsonEncode(_conversations.map((c) => c.toJson()).toList());
-    await prefs.setString(_conversationsKey, json);
-  }
-
-  /// Initialize the AI service based on current settings
-  void _initializeAIService() {
-    switch (_settings.activeModel) {
-      case AIModel.gemini:
-        if (_settings.hasGeminiKey) {
-          _aiService = GeminiAIService(apiKey: _settings.geminiApiKey!);
-        }
-        break;
-      case AIModel.claude:
-        if (_settings.hasClaudeKey) {
-          _aiService = ClaudeAIService(apiKey: _settings.claudeApiKey!);
-        }
-        break;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final conversationsJson = jsonEncode(
+        _conversations.map((c) => c.toJson()).toList(),
+      );
+      await prefs.setString(_conversationsKey, conversationsJson);
+    } catch (e) {
+      debugPrint('Error saving conversations: $e');
     }
   }
 
-  /// Update settings
-  Future<void> updateSettings(AISettings newSettings) async {
-    _settings = newSettings;
-    await _saveSettings();
-    _initializeAIService();
-    notifyListeners();
+  /// Load usage statistics
+  Future<void> _loadUsageStats() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _messagesSentThisMonth = prefs.getInt('${_usageKey}_messages') ?? 0;
+      _estimatedTokensUsed = prefs.getInt('${_usageKey}_tokens') ?? 0;
+      final resetDateStr = prefs.getString('${_usageKey}_reset');
+      if (resetDateStr != null) {
+        _usageResetDate = DateTime.parse(resetDateStr);
+      }
+
+      // Load no-key attempt count
+      _noKeyAttemptCount = prefs.getInt(_noKeyAttemptsKey) ?? 0;
+
+      // Reset stats if new month
+      final now = DateTime.now();
+      if (_usageResetDate == null ||
+          now.month != _usageResetDate!.month ||
+          now.year != _usageResetDate!.year) {
+        _messagesSentThisMonth = 0;
+        _estimatedTokensUsed = 0;
+        _usageResetDate = now;
+        await _saveUsageStats();
+      }
+    } catch (e) {
+      debugPrint('Error loading usage stats: $e');
+    }
+  }
+
+  /// Save usage statistics
+  Future<void> _saveUsageStats() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('${_usageKey}_messages', _messagesSentThisMonth);
+      await prefs.setInt('${_usageKey}_tokens', _estimatedTokensUsed);
+      if (_usageResetDate != null) {
+        await prefs.setString(
+          '${_usageKey}_reset',
+          _usageResetDate!.toIso8601String(),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error saving usage stats: $e');
+    }
+  }
+
+  /// Increment no-key attempt counter
+  Future<void> _incrementNoKeyAttempts() async {
+    try {
+      _noKeyAttemptCount++;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_noKeyAttemptsKey, _noKeyAttemptCount);
+    } catch (e) {
+      debugPrint('Error incrementing no-key attempts: $e');
+    }
+  }
+
+  /// Track usage for a message exchange
+  void _trackUsage(String userMessage, String aiResponse) {
+    _messagesSentThisMonth++;
+    // Rough estimate: ~500 tokens per exchange
+    final estimatedTokens = (userMessage.length + aiResponse.length) ~/ 2;
+    _estimatedTokensUsed += estimatedTokens;
+    _saveUsageStats();
+  }
+
+  /// Initialize AI service based on settings
+  void _initializeAIService() {
+    if (_settings.activeModel == AIModel.gemini && _settings.hasGeminiKey) {
+      _aiService = GeminiAIService(apiKey: _settings.geminiApiKey!);
+    } else if (_settings.activeModel == AIModel.claude &&
+        _settings.hasClaudeKey) {
+      _aiService = ClaudeAIService(apiKey: _settings.claudeApiKey!);
+    } else {
+      _aiService = null;
+    }
   }
 
   /// Set Gemini API key
@@ -403,19 +396,20 @@ class AIAssistantProvider with ChangeNotifier {
       final isValid = await service.validateApiKey(apiKey);
 
       if (!isValid) {
-        _error = 'Invalid Gemini API key';
-        _isLoading = false;
-        notifyListeners();
-        return false;
+        throw Exception('Invalid API key');
       }
 
+      // Save key
       _settings = _settings.copyWith(geminiApiKey: apiKey);
       await _saveSettings();
+
+      // Switch to Gemini if not configured
+      if (!_settings.canUseActiveModel) {
+        _settings = _settings.copyWith(activeModel: AIModel.gemini);
+        await _saveSettings();
+      }
+
       _initializeAIService();
-
-      // Reset no-key attempts since user added a key
-      await _resetNoKeyAttempts();
-
       _isLoading = false;
       notifyListeners();
       return true;
@@ -439,19 +433,20 @@ class AIAssistantProvider with ChangeNotifier {
       final isValid = await service.validateApiKey(apiKey);
 
       if (!isValid) {
-        _error = 'Invalid Claude API key';
-        _isLoading = false;
-        notifyListeners();
-        return false;
+        throw Exception('Invalid API key');
       }
 
+      // Save key
       _settings = _settings.copyWith(claudeApiKey: apiKey);
       await _saveSettings();
+
+      // Switch to Claude automatically if it's the best available
+      if (_settings.bestAvailableModel == AIModel.claude) {
+        _settings = _settings.copyWith(activeModel: AIModel.claude);
+        await _saveSettings();
+      }
+
       _initializeAIService();
-
-      // Reset no-key attempts since user added a key
-      await _resetNoKeyAttempts();
-
       _isLoading = false;
       notifyListeners();
       return true;
@@ -513,34 +508,41 @@ class AIAssistantProvider with ChangeNotifier {
 
   /// Build financial context
   String _buildContext(String query) {
+    // Check if all required providers are available
     if (_accountProvider == null ||
         _debtProvider == null ||
         _investmentProvider == null ||
         _subscriptionProvider == null ||
         _transactionProvider == null) {
-      return 'Financial data not available.';
+      debugPrint('AIAssistantProvider: Context providers not set, returning basic context');
+      return 'Financial data is still loading. Please try again in a moment.';
     }
 
-    final contextBuilder = ContextBuilderService(
-      accountProvider: _accountProvider!,
-      debtProvider: _debtProvider!,
-      investmentProvider: _investmentProvider!,
-      subscriptionProvider: _subscriptionProvider!,
-      transactionProvider: _transactionProvider!,
-      budgetProvider: _budgetProvider,
-      goalProvider: _goalProvider,
-      bikeProvider: _bikeProvider,
-      nboxProvider: _nboxProvider,
-      pdfImportProvider: _pdfImportProvider,
-      sharedExpenseProvider: _sharedExpenseProvider,
-      categoryProvider: _categoryProvider,
-    );
+    try {
+      final contextBuilder = ContextBuilderService(
+        accountProvider: _accountProvider!,
+        debtProvider: _debtProvider!,
+        investmentProvider: _investmentProvider!,
+        subscriptionProvider: _subscriptionProvider!,
+        transactionProvider: _transactionProvider!,
+        budgetProvider: _budgetProvider,
+        goalProvider: _goalProvider,
+        bikeProvider: _bikeProvider,
+        nboxProvider: _nboxProvider,
+        pdfImportProvider: _pdfImportProvider,
+        sharedExpenseProvider: _sharedExpenseProvider,
+        categoryProvider: _categoryProvider,
+      );
 
-    // Use smart context for specific queries, full context for general questions
-    if (query.length > 50 || _currentConversation!.messages.isEmpty) {
-      return contextBuilder.buildSmartContext(query);
-    } else {
-      return contextBuilder.buildFullContext(userQuery: query);
+      // Use smart context for specific queries, full context for general questions
+      if (query.length > 50 || _currentConversation!.messages.isEmpty) {
+        return contextBuilder.buildSmartContext(query);
+      } else {
+        return contextBuilder.buildFullContext(userQuery: query);
+      }
+    } catch (e) {
+      debugPrint('AIAssistantProvider: Error building context: $e');
+      return 'Error loading financial data. Please try again.';
     }
   }
 

@@ -21,16 +21,23 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
   final _claudeController = TextEditingController();
   bool _showGeminiKey = false;
   bool _showClaudeKey = false;
-  bool _initializationTimedOut = false;
+  bool _hasLoaded = false;
 
   @override
-  void initState() {
-    super.initState();
-    // Initialize provider and load keys after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final provider = context.read<AIAssistantProvider>();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Load keys only once
+    if (!_hasLoaded && mounted) {
+      _hasLoaded = true;
+      _loadKeys();
+    }
+  }
 
+  void _loadKeys() {
+    try {
+      final provider = context.read<AIAssistantProvider>();
+      
       // Load keys into controllers
       if (provider.settings.hasGeminiKey) {
         _geminiController.text = '••••••••••••••••••••';
@@ -38,31 +45,11 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       if (provider.settings.hasClaudeKey) {
         _claudeController.text = '••••••••••••••••••••';
       }
-
-      if (!provider.isInitialized) {
-        // Start initialization with timeout
-        provider
-            .initialize()
-            .timeout(
-              const Duration(seconds: 5),
-              onTimeout: () {
-                if (mounted) {
-                  setState(() => _initializationTimedOut = true);
-                }
-                return;
-              },
-            )
-            .catchError((error) {
-              debugPrint('Error initializing AI settings: $error');
-              if (mounted) {
-                setState(() => _initializationTimedOut = true);
-              }
-            });
-      }
-    });
+    } catch (e) {
+      debugPrint('Error loading keys in settings screen: $e');
+    }
   }
 
-  // Removed unsafe didChangeDependencies logic
   @override
   void dispose() {
     _geminiController.dispose();
@@ -87,10 +74,22 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       ),
       body: Consumer<AIAssistantProvider>(
         builder: (context, provider, _) {
-          // Show loading while provider initializes (with timeout fallback)
-          if (!provider.isInitialized && !_initializationTimedOut) {
-            return const Center(
-              child: CircularProgressIndicator(color: Colors.white),
+          // Show loading while provider initializes
+          if (!provider.isInitialized) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(color: Colors.white),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Loading settings...',
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             );
           }
 
@@ -177,6 +176,59 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     );
   }
 
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Center(
+                child: Text(
+                  'N',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'AI Assistant',
+                    style: AppTypography.headlineMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Configure your AI models',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildComparisonCard() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -233,10 +285,10 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                   title: 'Claude',
                   color: AppColors.premiumAmber,
                   features: [
-                    '• Pay per use',
-                    '• Smarter reasoning',
-                    '• Better analysis',
-                    '• ~₹0.50-2/chat',
+                    '• Paid service',
+                    '• Smarter analysis',
+                    '• Better reasoning',
+                    '• ~₹0.50-2 per chat',
                   ],
                   recommended: false,
                 ),
@@ -259,34 +311,28 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       children: [
         Row(
           children: [
-            Text(
-              title,
-              style: AppTypography.labelMedium.copyWith(
-                color: color,
-                fontWeight: FontWeight.bold,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             if (recommended) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  'START HERE',
-                  style: AppTypography.labelSmall.copyWith(
-                    color: AppColors.success,
-                    fontSize: 8,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              const SizedBox(width: 4),
+              Icon(Icons.star, color: color, size: 14),
             ],
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         ...features.map(
           (f) => Padding(
             padding: const EdgeInsets.only(bottom: 4),
@@ -294,12 +340,132 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               f,
               style: AppTypography.bodySmall.copyWith(
                 color: AppColors.textSecondary,
-                fontSize: 11,
               ),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildModelSelection(AIAssistantProvider provider) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Active Model',
+            style: AppTypography.labelLarge.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildModelButton(
+                  title: 'Gemini',
+                  subtitle: 'Free & Fast',
+                  icon: Icons.auto_awesome,
+                  color: Colors.blue,
+                  isActive: provider.settings.activeModel == AIModel.gemini,
+                  isAvailable: provider.settings.hasGeminiKey,
+                  onTap: () => provider.switchModel(AIModel.gemini),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildModelButton(
+                  title: 'Claude',
+                  subtitle: 'Smart & Paid',
+                  icon: Icons.psychology,
+                  color: AppColors.premiumAmber,
+                  isActive: provider.settings.activeModel == AIModel.claude,
+                  isAvailable: provider.settings.hasClaudeKey,
+                  onTap: () => provider.switchModel(AIModel.claude),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModelButton({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required bool isActive,
+    required bool isAvailable,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: isAvailable ? onTap : null,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isActive
+              ? color.withOpacity(0.2)
+              : AppColors.backgroundBlack,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isActive ? color : Colors.white.withOpacity(0.1),
+            width: isActive ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isAvailable ? color : AppColors.textTertiary,
+              size: 24,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                color: isAvailable ? Colors.white : AppColors.textTertiary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: AppColors.textTertiary,
+                fontSize: 10,
+              ),
+            ),
+            if (!isAvailable) ...[
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.textTertiary.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'No Key',
+                  style: TextStyle(
+                    color: AppColors.textTertiary,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -309,18 +475,13 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.analytics_outlined,
-                color: Colors.white,
-                size: 20,
-              ),
+              Icon(Icons.analytics, color: AppColors.info, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Usage This Month',
@@ -332,254 +493,32 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildUsageStat(
-                  label: 'Messages',
-                  value: provider.messagesSentThisMonth.toString(),
-                  icon: Icons.chat_bubble_outline,
-                ),
-              ),
-              Expanded(
-                child: _buildUsageStat(
-                  label: 'Est. Tokens',
-                  value:
-                      '${(provider.estimatedTokensUsed / 1000).toStringAsFixed(1)}K',
-                  icon: Icons.token_outlined,
-                ),
-              ),
-            ],
+          Text(
+            provider.usageSummary,
+            style: AppTypography.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
           if (provider.settings.activeModel == AIModel.gemini) ...[
             const SizedBox(height: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Free Tier Usage',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    Text(
-                      '${provider.estimatedFreeUsagePercent.toStringAsFixed(1)}%',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: provider.estimatedFreeUsagePercent > 80
-                            ? AppColors.warning
-                            : AppColors.success,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                LinearProgressIndicator(
-                  value: provider.estimatedFreeUsagePercent / 100,
-                  backgroundColor: Colors.white.withOpacity(0.1),
-                  valueColor: AlwaysStoppedAnimation(
-                    provider.estimatedFreeUsagePercent > 80
-                        ? AppColors.warning
-                        : AppColors.success,
-                  ),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Resets on the 1st of each month',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textTertiary,
-                    fontSize: 10,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUsageStat({
-    required String label,
-    required String value,
-    required IconData icon,
-  }) {
-    return Row(
-      children: [
-        Icon(icon, color: AppColors.textSecondary, size: 16),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: AppTypography.labelLarge.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+            LinearProgressIndicator(
+              value: provider.estimatedFreeUsagePercent / 100,
+              backgroundColor: AppColors.backgroundBlack,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                provider.estimatedFreeUsagePercent > 80
+                    ? AppColors.warning
+                    : AppColors.info,
               ),
-            ),
-            Text(
-              label,
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textTertiary,
-                fontSize: 10,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Center(
-                child: Text(
-                  'N',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Meet Nex',
-                    style: AppTypography.headlineMedium.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    'Your all-seeing finance AI',
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Add your API key to enable Nex. Each user uses their own key — your costs, your control.',
-          style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildModelSelection(AIAssistantProvider provider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Active Model',
-          style: AppTypography.labelLarge.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildModelOption(
-                title: 'Gemini',
-                subtitle: 'Free & Fast',
-                isSelected: provider.settings.activeModel == AIModel.gemini,
-                isAvailable: provider.settings.hasGeminiKey,
-                onTap: () => provider.switchModel(AIModel.gemini),
-                color: Colors.blue,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildModelOption(
-                title: 'Claude',
-                subtitle: 'Smart & Nuanced',
-                isSelected: provider.settings.activeModel == AIModel.claude,
-                isAvailable: provider.settings.hasClaudeKey,
-                onTap: () => provider.switchModel(AIModel.claude),
-                color: AppColors.premiumAmber,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildModelOption({
-    required String title,
-    required String subtitle,
-    required bool isSelected,
-    required bool isAvailable,
-    required VoidCallback onTap,
-    required Color color,
-  }) {
-    return GestureDetector(
-      onTap: isAvailable ? onTap : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.2) : AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? color : Colors.white.withOpacity(0.1),
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              isSelected ? Icons.check_circle : Icons.circle_outlined,
-              color: isAvailable
-                  ? (isSelected ? color : AppColors.textSecondary)
-                  : AppColors.textTertiary,
             ),
             const SizedBox(height: 8),
             Text(
-              title,
-              style: AppTypography.labelLarge.copyWith(
-                color: isAvailable ? Colors.white : AppColors.textTertiary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              isAvailable ? subtitle : 'Add API key',
+              '${provider.estimatedFreeUsagePercent.toStringAsFixed(1)}% of free tier used',
               style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textTertiary,
               ),
             ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -595,22 +534,18 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     required VoidCallback onGetKey,
     required Color color,
     required IconData icon,
-    List<String>? steps,
+    required List<String> steps,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isConfigured
-              ? color.withOpacity(0.5)
-              : Colors.white.withOpacity(0.1),
-        ),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Row(
             children: [
               Container(
@@ -635,8 +570,9 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                     ),
                     Text(
                       subtitle,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: 11,
                       ),
                     ),
                   ],
@@ -645,22 +581,28 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               if (isConfigured)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
+                    horizontal: 8,
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.success.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.check, color: AppColors.success, size: 14),
+                      Icon(
+                        Icons.check_circle,
+                        size: 12,
+                        color: AppColors.success,
+                      ),
                       const SizedBox(width: 4),
                       Text(
-                        'Active',
-                        style: AppTypography.labelSmall.copyWith(
+                        'Configured',
+                        style: TextStyle(
                           color: AppColors.success,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
@@ -668,69 +610,66 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                 ),
             ],
           ),
+          const SizedBox(height: 16),
 
-          // Steps to get API key (if not configured)
-          if (steps != null && !isConfigured) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color.withOpacity(0.2)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'How to get your key:',
-                    style: AppTypography.labelSmall.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...steps.asMap().entries.map(
-                    (entry) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 16,
-                            height: 16,
-                            margin: const EdgeInsets.only(right: 8, top: 2),
-                            decoration: BoxDecoration(
-                              color: color.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${entry.key + 1}',
-                                style: TextStyle(
-                                  color: color,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              entry.value,
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          // Setup Steps
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.backgroundBlack,
+              borderRadius: BorderRadius.circular(12),
             ),
-          ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Setup Steps:',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...steps.asMap().entries.map(
+                  (entry) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 18,
+                          height: 18,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${entry.key + 1}',
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            entry.value,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
 
           // API Key Input
@@ -771,7 +710,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                       final data = await Clipboard.getData(
                         Clipboard.kTextPlain,
                       );
-                      if (data?.text != null) {
+                      if (data?.text != null && mounted) {
                         controller.text = data!.text!;
                       }
                     },
@@ -836,7 +775,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.info_outline, color: Colors.blue, size: 20),
+              const Icon(Icons.info_outline, color: Colors.blue, size: 20),
               const SizedBox(width: 8),
               Text(
                 'About API Keys',
@@ -883,7 +822,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close, color: AppColors.error),
+            icon: Icon(Icons.close, color: AppColors.error),
             onPressed: () => context.read<AIAssistantProvider>().clearError(),
           ),
         ],

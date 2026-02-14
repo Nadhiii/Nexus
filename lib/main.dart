@@ -152,8 +152,16 @@ class NexusApp extends StatelessWidget {
               },
         ),
       ],
-      child:
-          Consumer4<
+      child: Consumer<AIAssistantProvider>(
+        builder: (context, aiProvider, _) {
+          // Initialize AI context providers after all providers are ready
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!aiProvider.isInitialized) {
+              _initializeAIProvider(context);
+            }
+          });
+
+          return Consumer4<
             ThemeProvider,
             TransactionProvider,
             AccountProvider,
@@ -188,7 +196,55 @@ class NexusApp extends StatelessWidget {
                     home: const AuthGate(),
                   );
                 },
-          ),
+          );
+        },
+      ),
     );
+  }
+
+  /// Initialize AIAssistantProvider with all context providers
+  void _initializeAIProvider(BuildContext context) {
+    try {
+      final aiProvider = Provider.of<AIAssistantProvider>(
+        context,
+        listen: false,
+      );
+
+      // Set all context providers
+      aiProvider.setContextProviders(
+        accountProvider: Provider.of<AccountProvider>(context, listen: false),
+        debtProvider: Provider.of<DebtProvider>(context, listen: false),
+        investmentProvider: Provider.of<InvestmentProvider>(
+          context,
+          listen: false,
+        ),
+        subscriptionProvider: Provider.of<SubscriptionProvider>(
+          context,
+          listen: false,
+        ),
+        transactionProvider: Provider.of<TransactionProvider>(
+          context,
+          listen: false,
+        ),
+        budgetProvider: Provider.of<BudgetProvider>(context, listen: false),
+        goalProvider: Provider.of<GoalProvider>(context, listen: false),
+        bikeProvider: Provider.of<BikeProvider>(context, listen: false),
+        nboxProvider: Provider.of<NewNboxProvider>(context, listen: false),
+        pdfImportProvider: Provider.of<PDFImportProvider>(
+          context,
+          listen: false,
+        ),
+        sharedExpenseProvider: Provider.of<SharedExpenseProvider>(
+          context,
+          listen: false,
+        ),
+        categoryProvider: Provider.of<CategoryProvider>(context, listen: false),
+      );
+
+      // Initialize after setting providers
+      aiProvider.initialize();
+    } catch (e) {
+      debugPrint('Error initializing AI provider: $e');
+    }
   }
 }

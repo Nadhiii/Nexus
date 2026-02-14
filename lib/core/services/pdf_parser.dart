@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
-import '../models/extracted_transaction.dart';
+import '../models/pdf_statement.dart';
 
 class PDFParser {
   final GenerativeModel _model;

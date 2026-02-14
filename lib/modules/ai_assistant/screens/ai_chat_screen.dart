@@ -19,19 +19,38 @@ class _AIChatScreenState extends State<AIChatScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
+  bool _hasInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.read<AIAssistantProvider>();
-      if (!provider.isInitialized) {
-        provider.initialize();
-      }
-      if (provider.currentConversation == null && provider.isReady) {
-        provider.startNewConversation();
-      }
-    });
+    // Don't initialize here - let main.dart handle it
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Initialize only once and only after providers are ready
+    if (!_hasInitialized && mounted) {
+      _hasInitialized = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        
+        try {
+          final provider = context.read<AIAssistantProvider>();
+          
+          // Only start new conversation if ready and doesn't have one
+          if (provider.isReady && 
+              provider.currentConversation == null && 
+              provider.isInitialized) {
+            provider.startNewConversation();
+          }
+        } catch (e) {
+          debugPrint('Error in AIChatScreen initialization: $e');
+        }
+      });
+    }
   }
 
   @override
@@ -63,6 +82,25 @@ class _AIChatScreenState extends State<AIChatScreen> {
       body: SafeArea(
         child: Consumer<AIAssistantProvider>(
           builder: (context, provider, _) {
+            // Show loading if not initialized
+            if (!provider.isInitialized) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(color: Colors.white),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Loading Nex...',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
             return Column(
               children: [
                 // Header
@@ -249,14 +287,14 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.key_rounded, color: Colors.white, size: 18),
+                    Icon(Icons.settings, color: Colors.white, size: 18),
                     SizedBox(width: 8),
                     Text(
-                      'Set Up API Key',
+                      'Add API Key',
                       style: TextStyle(
                         color: Colors.white,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        fontSize: 14,
                       ),
                     ),
                   ],
@@ -270,97 +308,105 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   // ──────────────────────────────────────────────
-  // WELCOME (Ready, empty chat)
+  // WELCOME SCREEN (Has key, no messages)
   // ──────────────────────────────────────────────
 
   Widget _buildWelcomeScreen(AIAssistantProvider provider) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        children: [
-          const SizedBox(height: 60),
-          Text(
-            'At your service, Sir',
-            style: AppTypography.headlineSmall.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                ),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Center(
+                child: Text(
+                  'N',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 40,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'I have full access to your accounts, transactions, debts, investments, statements, inbox — everything.',
-            textAlign: TextAlign.center,
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textTertiary,
-              height: 1.5,
+            const SizedBox(height: 24),
+            Text(
+              'Ready when you are, Sir.',
+              style: AppTypography.headlineMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 32),
-
-          // Capability chips
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: [
-              _buildCapChip(Icons.account_balance_wallet, 'Accounts'),
-              _buildCapChip(Icons.receipt_long, 'Transactions'),
-              _buildCapChip(Icons.credit_card, 'Debts'),
-              _buildCapChip(Icons.trending_up, 'Investments'),
-              _buildCapChip(Icons.subscriptions, 'Subscriptions'),
-              _buildCapChip(Icons.pie_chart, 'Budgets'),
-              _buildCapChip(Icons.flag, 'Goals'),
-              _buildCapChip(Icons.two_wheeler, 'Garage'),
-              _buildCapChip(Icons.picture_as_pdf, 'PDF Statements'),
-              _buildCapChip(Icons.inbox, 'SMS & Email'),
-              _buildCapChip(Icons.group, 'Shared Expenses'),
-            ],
-          ),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              'I can see all your accounts, transactions, debts, investments, and more. Ask me anything about your finances.',
+              textAlign: TextAlign.center,
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.cardSurface,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.auto_awesome,
+                    size: 14,
+                    color: AppColors.success,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Powered by ${provider.activeModelName}',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildCapChip(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: AppColors.textTertiary),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // ──────────────────────────────────────────────
+  // MESSAGE LIST
+  // ──────────────────────────────────────────────
 
   Widget _buildMessageList(AIAssistantProvider provider) {
-    final messages = provider.currentConversation?.messages ?? [];
-
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.all(16),
-      itemCount: messages.length + (provider.isLoading ? 1 : 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: provider.currentConversation!.messages.length +
+          (provider.isLoading ? 1 : 0),
       itemBuilder: (context, index) {
-        if (index == messages.length && provider.isLoading) {
+        if (index == provider.currentConversation!.messages.length) {
           return _buildTypingIndicator();
         }
-        return _buildMessageBubble(messages[index]);
+
+        final message = provider.currentConversation!.messages[index];
+        return _buildMessageBubble(message);
       },
     );
   }
@@ -371,9 +417,6 @@ class _AIChatScreenState extends State<AIChatScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: isUser
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
@@ -400,64 +443,82 @@ class _AIChatScreenState extends State<AIChatScreen> {
             ),
             const SizedBox(width: 10),
           ],
+          if (isUser) const SizedBox(width: 40),
           Flexible(
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: isUser
-                    ? const Color(0xFF6366F1).withOpacity(0.15)
-                    : message.isError
-                    ? AppColors.error.withOpacity(0.08)
-                    : AppColors.cardSurface,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(18),
-                  topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(isUser ? 18 : 4),
-                  bottomRight: Radius.circular(isUser ? 4 : 18),
+            child: Column(
+              crossAxisAlignment:
+                  isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isUser
+                        ? const Color(0xFF6366F1)
+                        : (message.isError
+                            ? AppColors.error.withOpacity(0.2)
+                            : AppColors.cardSurface),
+                    borderRadius: isUser
+                        ? const BorderRadius.only(
+                            topLeft: Radius.circular(18),
+                            topRight: Radius.circular(18),
+                            bottomLeft: Radius.circular(18),
+                            bottomRight: Radius.circular(4),
+                          )
+                        : const BorderRadius.only(
+                            topLeft: Radius.circular(18),
+                            topRight: Radius.circular(18),
+                            bottomLeft: Radius.circular(4),
+                            bottomRight: Radius.circular(18),
+                          ),
+                    border: message.isError
+                        ? Border.all(color: AppColors.error, width: 1)
+                        : null,
+                  ),
+                  child: isUser
+                      ? Text(
+                          message.content,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                        )
+                      : MarkdownBody(
+                          data: message.content,
+                          styleSheet: MarkdownStyleSheet(
+                            p: TextStyle(
+                              color: message.isError
+                                  ? AppColors.error
+                                  : Colors.white,
+                              fontSize: 14,
+                              height: 1.4,
+                            ),
+                            strong: TextStyle(
+                              color: message.isError
+                                  ? AppColors.error
+                                  : Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            em: TextStyle(
+                              color: message.isError
+                                  ? AppColors.error
+                                  : AppColors.textSecondary,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            code: TextStyle(
+                              backgroundColor: AppColors.backgroundBlack,
+                              color: const Color(0xFF6366F1),
+                              fontFamily: 'monospace',
+                            ),
+                            codeblockDecoration: BoxDecoration(
+                              color: AppColors.backgroundBlack,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          selectable: true,
+                        ),
                 ),
-                border: message.isError
-                    ? Border.all(color: AppColors.error.withOpacity(0.2))
-                    : null,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (isUser)
-                    Text(
-                      message.content,
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: Colors.white,
-                      ),
-                    )
-                  else
-                    MarkdownBody(
-                      data: message.content,
-                      styleSheet: MarkdownStyleSheet(
-                        p: AppTypography.bodyMedium.copyWith(
-                          color: Colors.white,
-                          height: 1.5,
-                        ),
-                        strong: AppTypography.bodyMedium.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        listBullet: AppTypography.bodyMedium.copyWith(
-                          color: Colors.white,
-                        ),
-                        code: TextStyle(
-                          fontFamily: 'monospace',
-                          backgroundColor: AppColors.backgroundBlack,
-                          color: const Color(0xFF6366F1),
-                        ),
-                        codeblockDecoration: BoxDecoration(
-                          color: AppColors.backgroundBlack,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      selectable: true,
-                    ),
-                ],
-              ),
+              ],
             ),
           ),
           if (isUser) const SizedBox(width: 40),
