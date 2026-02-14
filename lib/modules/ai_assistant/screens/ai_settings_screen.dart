@@ -208,7 +208,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'AI Assistant',
+                    'Nex',
                     style: AppTypography.headlineMedium.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

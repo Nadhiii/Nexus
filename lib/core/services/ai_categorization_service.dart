@@ -73,7 +73,11 @@ class AICategorizationService {
         debugPrint('[AICategorizationService] AI categorization failed: $e, falling back to keywords');
       }
     } else {
-      debugPrint('[AICategorizationService] AI not ready, using keyword fallback');
+      if (aiProvider == null) {
+        debugPrint('[AICategorizationService] AI provider not configured');
+      } else {
+        debugPrint('[AICategorizationService] AI not ready (no API key configured), using keyword fallback');
+      }
     }
 
     // Fallback to keyword matching
