@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../core/models/payday_checklist.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_animations.dart';
 
 /// Bottom sheet to display payday checklist
 /// Shows actionable items after receiving income
@@ -394,7 +395,7 @@ class _PaydayChecklistSheetState extends State<PaydayChecklistSheet> {
             GestureDetector(
               onTap: () => _toggleItem(item.id),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: AppAnimations.standard,
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(

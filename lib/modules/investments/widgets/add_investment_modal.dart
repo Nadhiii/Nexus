@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/theme/app_animations.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -46,13 +47,12 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: AppAnimations.slow,
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 0.9,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _scaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: AppAnimations.fadeOutCurve),
+    );
     _controller.forward();
 
     if (widget.investmentToEdit != null) {
@@ -357,7 +357,7 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
     return GestureDetector(
       onTap: () => setState(() => _selectedType = type),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: AppAnimations.standard,
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(

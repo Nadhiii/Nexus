@@ -55,9 +55,9 @@ class AppTypography {
     color: AppColors.textPrimary,
   );
 
-  // --- Currency Styles (Inter Bold for numbers) ---
+  // --- Currency Styles (RammettoOne for numbers) ---
   static const TextStyle currencyLarge = TextStyle(
-    fontFamily: bodyFont,
+    fontFamily: headerFont,
     fontSize: 36,
     fontWeight: FontWeight.w900,
     height: 1.2,
@@ -66,9 +66,9 @@ class AppTypography {
   );
 
   static const TextStyle currencyMedium = TextStyle(
-    fontFamily: bodyFont,
+    fontFamily: headerFont,
     fontSize: 26,
-    fontWeight: FontWeight.w800,
+    fontWeight: FontWeight.w900,
     height: 1.3,
     color: AppColors.textPrimary,
   );

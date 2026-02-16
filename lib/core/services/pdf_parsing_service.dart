@@ -4,15 +4,40 @@ import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../models/pdf_statement.dart';
 import '../models/transaction.dart';
-import 'pdf_password_manager.dart';
-import 'pdf_parser.dart'; // Import the new parser
+import '../models/pdf_parsing_provider.dart';
+import '../config/ai_config.dart';
+import 'pdf_parser.dart';
+import 'claude_pdf_parser.dart';
+import 'local_pdf_parser.dart';
 import 'duplicate_detector.dart';
 
 class PDFParsingService extends ChangeNotifier {
-  // ... (keep existing state variables like _lastParseResult)
+  // API keys (managed by centralized AIConfig - supports Gemini or Claude)
+  String? _geminiApiKey;
+  String? _claudeApiKey;
+  PDFParsingProvider _provider = PDFParsingProvider.gemini;
 
-  // TODO: Securely inject your API Key
-  static const String _geminiApiKey = "YOUR_GEMINI_API_KEY";
+  // Local parser instance
+  final LocalPDFParser _localParser = LocalPDFParser();
+
+  /// Set the Gemini API key for PDF parsing
+  void setGeminiApiKey(String apiKey) {
+    _geminiApiKey = apiKey;
+    if (kDebugMode) print('[PDFParsingService] Gemini API key set');
+  }
+
+  /// Set the Claude API key for PDF parsing
+  void setClaudeApiKey(String apiKey) {
+    _claudeApiKey = apiKey;
+    if (kDebugMode) print('[PDFParsingService] Claude API key set');
+  }
+
+  /// Set which provider to use for PDF parsing
+  void setPDFParsingProvider(PDFParsingProvider provider) {
+    _provider = provider;
+    if (kDebugMode)
+      print('[PDFParsingService] Provider set to: ${provider.name}');
+  }
 
   Future<PDFParseResult> parsePDF(
     String filePath, {
@@ -33,10 +58,9 @@ class PDFParsingService extends ChangeNotifier {
         PdfDocument(inputBytes: fileBytes).dispose();
         tempUnlockedFile = originalFile; // Not password protected
       } catch (e) {
-        // ... (Keep your existing password retry logic here) ...
-        // ... Assuming you find the password and set 'validPassword' ...
+        validPassword = userProvidedPassword;
 
-        if (validPassword == null) {
+        if (validPassword == null || validPassword.isEmpty) {
           return PDFParseResult(
             success: false,
             errors: ['Password required'],
@@ -44,21 +68,73 @@ class PDFParsingService extends ChangeNotifier {
           );
         }
 
-        // Decrypt for Gemini
         tempUnlockedFile = await _createUnlockedTempFile(
           fileBytes,
           validPassword,
         );
       }
 
-      // --- STEP 2: Parse using the new PDFParser ---
-      if (kDebugMode) print('[PDFParsingService] Sending to PDFParser...');
+      // --- STEP 2: Try local parser first ---
+      if (kDebugMode) print('[PDFParsingService] Trying local parser...');
 
-      // Initialize the parser
-      final parser = PDFParser(_geminiApiKey);
+      List<ExtractedTransaction> transactions = [];
+      String? parseError;
 
-      // Execute parse
-      final transactions = await parser.parse(tempUnlockedFile!);
+      try {
+        transactions = await _localParser.parse(tempUnlockedFile);
+        if (kDebugMode)
+          print(
+            '[PDFParsingService] Local parser succeeded with ${transactions.length} transactions',
+          );
+      } catch (e) {
+        parseError = e.toString();
+        if (kDebugMode)
+          print('[PDFParsingService] Local parser failed: $parseError');
+
+        // --- STEP 3: Fall back to AI parser ---
+        if (kDebugMode)
+          print('[PDFParsingService] Using provider: ${_provider.name}');
+
+        if (_provider == PDFParsingProvider.claude) {
+          // Use Claude for PDF parsing
+          if (_claudeApiKey == null || _claudeApiKey!.isEmpty) {
+            _claudeApiKey = await AIConfig.getClaudeApiKey();
+          }
+
+          if (_claudeApiKey == null || _claudeApiKey!.isEmpty) {
+            return PDFParseResult(
+              success: false,
+              errors: [
+                'Claude API key required for PDF parsing. Please add it in Nex settings.',
+              ],
+            );
+          }
+
+          if (kDebugMode)
+            print('[PDFParsingService] Sending to Claude parser...');
+          final parser = ClaudePDFParser(_claudeApiKey!);
+          transactions = await parser.parse(tempUnlockedFile);
+        } else {
+          // Use Gemini for PDF parsing (default)
+          if (_geminiApiKey == null || _geminiApiKey!.isEmpty) {
+            _geminiApiKey = await AIConfig.getGeminiApiKey();
+          }
+
+          if (_geminiApiKey == null || _geminiApiKey!.isEmpty) {
+            return PDFParseResult(
+              success: false,
+              errors: [
+                'Gemini API key required for PDF parsing. Please add it in Nex settings.',
+              ],
+            );
+          }
+
+          if (kDebugMode)
+            print('[PDFParsingService] Sending to Gemini parser...');
+          final parser = PDFParser(_geminiApiKey!);
+          transactions = await parser.parse(tempUnlockedFile);
+        }
+      }
 
       if (transactions.isEmpty) {
         return PDFParseResult(
@@ -93,9 +169,9 @@ class PDFParsingService extends ChangeNotifier {
       return PDFParseResult(success: false, errors: [e.toString()]);
     } finally {
       // Clean up temp file
-      if (tempUnlockedFile != null && tempUnlockedFile!.path != filePath) {
-        if (await tempUnlockedFile!.exists()) {
-          await tempUnlockedFile!.delete();
+      if (tempUnlockedFile != null && tempUnlockedFile.path != filePath) {
+        if (await tempUnlockedFile.exists()) {
+          await tempUnlockedFile.delete();
         }
       }
     }

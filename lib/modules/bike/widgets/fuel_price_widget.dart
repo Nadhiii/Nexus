@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/theme/app_animations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -279,7 +280,7 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
                           _calculateFinalPrice();
                         },
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
+                          duration: AppAnimations.standard,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(

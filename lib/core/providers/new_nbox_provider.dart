@@ -8,7 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../models/detected_transaction.dart';
 import '../utils/new_sms_parser.dart';
 import '../services/ai_categorization_service.dart';
-import '../../modules/ai_assistant/providers/ai_assistant_provider.dart';
+import '../../modules/Nex/providers/Nex_assistant_provider.dart';
 import 'category_provider.dart';
 import 'gmail_provider.dart';
 

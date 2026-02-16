@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/theme/app_animations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:ui';
 import 'package:intl/intl.dart';
@@ -43,13 +44,12 @@ class _AddDebtModalState extends State<AddDebtModal>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: AppAnimations.slow,
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 0.9,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _scaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: AppAnimations.fadeOutCurve),
+    );
     _controller.forward();
 
     if (widget.debtToEdit != null) {
@@ -275,7 +275,7 @@ class _AddDebtModalState extends State<AddDebtModal>
     return GestureDetector(
       onTap: () => setState(() => _selectedType = type),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: AppAnimations.standard,
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(

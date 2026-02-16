@@ -19,7 +19,8 @@ import '../core/providers/shared_expense_provider.dart';
 import '../core/providers/category_provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_spacing.dart';
-import '../modules/ai_assistant/providers/ai_assistant_provider.dart';
+import '../core/theme/app_animations.dart';
+import '../modules/Nex/providers/Nex_assistant_provider.dart';
 
 // Screens
 import '../modules/dashboard/modern_dashboard_screen.dart';
@@ -27,7 +28,6 @@ import '../modules/finance/modern_finance_screen.dart';
 import '../modules/insights/modern_insights_screen.dart';
 import '../modules/more/modern_more_screen.dart';
 import '../modules/bike/ui/modern_bike_screen_ui.dart';
-import '../modules/ai_assistant/screens/ai_chat_screen.dart';
 import '../core/services/intent_navigation_service.dart';
 
 class MainScreen extends StatefulWidget {
@@ -51,18 +51,24 @@ class _MainScreenState extends State<MainScreen>
   void initState() {
     super.initState();
     _navAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: AppAnimations.navDuration,
       vsync: this,
     );
     _navAnimation = CurvedAnimation(
       parent: _navAnimationController!,
-      curve: Curves.easeOutCubic,
+      curve: AppAnimations.standardCurve,
     );
 
     _intentSub = IntentNavigationService.tabStream.listen((tabIndex) {
       if (!mounted) return;
       _navigateToScreen(tabIndex);
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _initializeAI(context);
   }
 
   @override
@@ -102,29 +108,34 @@ class _MainScreenState extends State<MainScreen>
       sharedExpenseProvider: context.read<SharedExpenseProvider>(),
       categoryProvider: context.read<CategoryProvider>(),
     );
+
+    // Share Gemini API key with PDF parser
+    if (aiProvider.settings.hasGeminiKey &&
+        aiProvider.settings.geminiApiKey != null) {
+      context.read<PDFImportProvider>().setGeminiApiKeyForPDF(
+        aiProvider.settings.geminiApiKey!,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Initialize AI with context providers
-    _initializeAI(context);
-
-    // Screen List
+    // Screen List (Nex moved to More screen)
     final screens = [
       ModernDashboardScreen(onNavigate: _navigateToScreen),
       ModernFinanceScreen(initialTabIndex: _financeScreenInitialTab),
       const ModernInsightsScreen(),
       const ModernBikeScreen(),
-      const AIChatScreen(),
       const ModernMoreScreen(),
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundBlack, // Match the global theme
+      backgroundColor: AppColors.backgroundBlack,
       body: Stack(
         children: [
           // 1. Main Content with Fade Transition
           PageTransitionSwitcher(
+            duration: AppAnimations.pageTransitionDuration,
             transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
               return FadeThroughTransition(
                 animation: primaryAnimation,
@@ -135,16 +146,10 @@ class _MainScreenState extends State<MainScreen>
             },
             child: screens[_currentIndex],
           ),
-
-          // 2. Floating Navigation Bar
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildFloatingNavBar(context, _currentIndex),
-          ),
         ],
       ),
+      // 2. Floating Navigation Bar (outside body to prevent keyboard overlap)
+      bottomNavigationBar: _buildFloatingNavBar(context, _currentIndex),
     );
   }
 
@@ -230,16 +235,10 @@ class _MainScreenState extends State<MainScreen>
         'index': 3,
       },
       {
-        'icon': Icons.auto_awesome_outlined,
-        'selectedIcon': Icons.auto_awesome_rounded,
-        'label': 'Nex',
-        'index': 4,
-      },
-      {
         'icon': Icons.more_horiz_outlined,
         'selectedIcon': Icons.more_horiz_rounded,
         'label': 'More',
-        'index': 5,
+        'index': 4,
       },
     ];
 
@@ -341,8 +340,8 @@ class _MainScreenState extends State<MainScreen>
                   // Animated label
                   ClipRect(
                     child: AnimatedAlign(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOutCubic,
+                      duration: AppAnimations.navDuration,
+                      curve: AppAnimations.standardCurve,
                       alignment: Alignment.centerLeft,
                       widthFactor: selectionProgress,
                       child: Padding(

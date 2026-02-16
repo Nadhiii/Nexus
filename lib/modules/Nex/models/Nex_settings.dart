@@ -2,12 +2,18 @@
 /// Stores user's AI preferences and API keys
 library;
 
+import '../../../core/models/pdf_parsing_provider.dart';
+
 enum AIModel { gemini, claude }
+
+enum GeminiMode { auto, fast, thinking, pro }
 
 class AISettings {
   final String? geminiApiKey;
   final String? claudeApiKey;
   final AIModel activeModel;
+  final GeminiMode geminiMode;
+  final PDFParsingProvider pdfParsingProvider;
   final bool enableProactiveInsights;
   final String assistantName;
 
@@ -15,6 +21,8 @@ class AISettings {
     this.geminiApiKey,
     this.claudeApiKey,
     this.activeModel = AIModel.gemini,
+    this.geminiMode = GeminiMode.auto,
+    this.pdfParsingProvider = PDFParsingProvider.gemini,
     this.enableProactiveInsights = true,
     this.assistantName = 'Nex',
   });
@@ -43,6 +51,8 @@ class AISettings {
     String? geminiApiKey,
     String? claudeApiKey,
     AIModel? activeModel,
+    GeminiMode? geminiMode,
+    PDFParsingProvider? pdfParsingProvider,
     bool? enableProactiveInsights,
     String? assistantName,
   }) {
@@ -50,6 +60,8 @@ class AISettings {
       geminiApiKey: geminiApiKey ?? this.geminiApiKey,
       claudeApiKey: claudeApiKey ?? this.claudeApiKey,
       activeModel: activeModel ?? this.activeModel,
+      geminiMode: geminiMode ?? this.geminiMode,
+      pdfParsingProvider: pdfParsingProvider ?? this.pdfParsingProvider,
       enableProactiveInsights:
           enableProactiveInsights ?? this.enableProactiveInsights,
       assistantName: assistantName ?? this.assistantName,
@@ -60,6 +72,8 @@ class AISettings {
     'geminiApiKey': geminiApiKey,
     'claudeApiKey': claudeApiKey,
     'activeModel': activeModel.name,
+    'geminiMode': geminiMode.name,
+    'pdfParsingProvider': pdfParsingProvider.name,
     'enableProactiveInsights': enableProactiveInsights,
     'assistantName': assistantName,
   };
@@ -71,6 +85,14 @@ class AISettings {
       activeModel: AIModel.values.firstWhere(
         (e) => e.name == json['activeModel'],
         orElse: () => AIModel.gemini,
+      ),
+      geminiMode: GeminiMode.values.firstWhere(
+        (e) => e.name == json['geminiMode'],
+        orElse: () => GeminiMode.auto,
+      ),
+      pdfParsingProvider: PDFParsingProvider.values.firstWhere(
+        (e) => e.name == json['pdfParsingProvider'],
+        orElse: () => PDFParsingProvider.gemini,
       ),
       enableProactiveInsights: json['enableProactiveInsights'] as bool? ?? true,
       assistantName: json['assistantName'] as String? ?? 'Nex',

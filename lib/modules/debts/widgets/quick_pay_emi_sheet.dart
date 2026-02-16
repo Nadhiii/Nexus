@@ -6,6 +6,7 @@ import '../../../core/providers/debt_provider.dart';
 import '../../../core/models/debt.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_animations.dart';
 import '../../../core/widgets/top_snackbar.dart';
 
 /// Quick Pay EMI Sheet
@@ -362,7 +363,7 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: AppAnimations.standard,
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: isSelected

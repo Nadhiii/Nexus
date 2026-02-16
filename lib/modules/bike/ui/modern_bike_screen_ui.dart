@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_animations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/models/bike.dart';
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/collapsible_fab.dart';
 
 import '../widgets/bike_stats_widget.dart';
 import '../widgets/add_bike_dialog.dart';
@@ -70,26 +72,12 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
         return Scaffold(
           backgroundColor: AppColors.backgroundBlack,
           floatingActionButton: selectedBike != null
-              ? Padding(
-                  padding: const EdgeInsets.only(bottom: 90.0),
-                  child: FloatingActionButton.extended(
-                    onPressed: () =>
-                        _showAddEntryDialog(context, _currentFuelPrice),
-                    backgroundColor: AppColors.primaryBlue,
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      side: const BorderSide(color: Colors.white10),
-                    ),
-                    icon: const Icon(Icons.add, color: Colors.white),
-                    label: const Text(
-                      "Log Activity",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+              ? CollapsibleFab(
+                  onPressed: () =>
+                      _showAddEntryDialog(context, _currentFuelPrice),
+                  backgroundColor: AppColors.primaryBlue,
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: 'Log Activity',
                 )
               : null,
           floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -240,7 +228,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
               provider.selectBike(bike.id);
             },
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: AppAnimations.standard,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected ? Colors.white : Colors.transparent,

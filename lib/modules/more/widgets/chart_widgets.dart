@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/models/transaction.dart';
+import '../../../core/providers/category_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/transaction_display.dart';
 
 class CategorySpendingChart extends StatelessWidget {
   final List<Transaction> transactions;
@@ -9,6 +12,7 @@ class CategorySpendingChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final categories = context.watch<CategoryProvider>().categories;
     final expenseTransactions = transactions
         .where((tx) => tx.type == TransactionType.expense)
         .toList();
@@ -16,7 +20,11 @@ class CategorySpendingChart extends StatelessWidget {
     double totalSpent = 0;
 
     for (var tx in expenseTransactions) {
-      final category = tx.categoryId ?? 'Uncategorized';
+      final category = resolveTransactionDisplayLabel(
+        tx,
+        categories,
+        emptyLabel: 'Uncategorized',
+      );
       categoryTotals[category] = (categoryTotals[category] ?? 0) + tx.amount;
       totalSpent += tx.amount;
     }

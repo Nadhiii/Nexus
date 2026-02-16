@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/theme/app_animations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 // Note: Do not import platform_tags.dart manually
@@ -11,6 +12,7 @@ import '../../core/providers/account_provider.dart';
 import '../../core/models/account.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/services/secure_card_service.dart';
+import '../../core/utils/logo_utils.dart';
 
 /// Backward compatibility alias
 typedef ModernAddAccountScreen = AddAccountModal;
@@ -29,6 +31,9 @@ class _AddAccountModalState extends State<AddAccountModal>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
+  late AnimationController _logoAnimationController;
+  late Animation<Offset> _logoSlideAnimation;
+  String _previousBankName = '';
 
   final _formKey = GlobalKey<FormState>();
 
@@ -37,6 +42,7 @@ class _AddAccountModalState extends State<AddAccountModal>
   final _balanceController = TextEditingController();
   final _bankNameController = TextEditingController();
   final _accountNumberController = TextEditingController();
+  final _ifscCodeController = TextEditingController();
 
   // Card Controllers & Focus
   final _cardNumberController = TextEditingController();
@@ -82,16 +88,35 @@ class _AddAccountModalState extends State<AddAccountModal>
 
     // Animation setup
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
+      duration: AppAnimations.slowest,
       vsync: this,
     );
     _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: AppAnimations.standardCurve,
+      ),
     );
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: AppAnimations.fadeOutCurve,
+      ),
     );
     _animationController.forward();
+
+    // Logo slide animation setup
+    _logoAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _logoSlideAnimation =
+        Tween<Offset>(begin: const Offset(0.5, 0), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _logoAnimationController,
+            curve: Curves.easeOut,
+          ),
+        );
 
     // Edit mode initialization
     if (widget.accountToEdit != null) {
@@ -100,6 +125,7 @@ class _AddAccountModalState extends State<AddAccountModal>
       _balanceController.text = account.balance.toString();
       _bankNameController.text = account.bankName ?? '';
       _accountNumberController.text = account.accountNumber ?? '';
+      _ifscCodeController.text = account.ifscCode ?? '';
 
       _cardNumberController.text = account.cardNumber ?? '';
       _cardExpiryController.text = account.cardExpiry ?? '';
@@ -120,6 +146,16 @@ class _AddAccountModalState extends State<AddAccountModal>
     _accountNumberController.addListener(() => setState(() {}));
     _cardNumberController.addListener(() => setState(() {}));
     _cardExpiryController.addListener(() => setState(() {}));
+
+    // Bank name listener for logo animation
+    _bankNameController.addListener(() {
+      final currentBank = _bankNameController.text;
+      if (currentBank != _previousBankName) {
+        _previousBankName = currentBank;
+        _logoAnimationController.forward(from: 0.0);
+      }
+      setState(() {});
+    });
   }
 
   Future<void> _loadSecureCvv(String accountId) async {
@@ -138,6 +174,7 @@ class _AddAccountModalState extends State<AddAccountModal>
     _balanceController.dispose();
     _bankNameController.dispose();
     _accountNumberController.dispose();
+    _ifscCodeController.dispose();
     _cardNumberController.dispose();
     _cardExpiryController.dispose();
     _cardCvvController.dispose();
@@ -570,6 +607,12 @@ class _AddAccountModalState extends State<AddAccountModal>
                                   maxLength: 4,
                                   isNumber: true,
                                 ),
+                                const SizedBox(height: 16),
+                                _buildGlassTextField(
+                                  controller: _ifscCodeController,
+                                  hint: "IFSC Code",
+                                  icon: Icons.code,
+                                ),
 
                                 const SizedBox(height: 40),
 
@@ -651,132 +694,174 @@ class _AddAccountModalState extends State<AddAccountModal>
       displayCardNum =
           "**** **** **** ${_accountNumberController.text.padRight(4, '*').substring(0, 4.clamp(0, 4))}";
     }
+    final bankLogo = LogoUtils.bankLogoFor(
+      _bankNameController.text.isEmpty
+          ? _nameController.text
+          : _bankNameController.text,
+    );
+    final logoScale = LogoUtils.bankLogoScale(
+      _bankNameController.text.isEmpty
+          ? _nameController.text
+          : _bankNameController.text,
+    );
+    final hasLogo = bankLogo != null;
 
     return Container(
       height: 180,
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            _selectedColor,
-            _selectedColor.withOpacity(0.6),
+            const Color(0xFF1A1A1A),
+            const Color(0xFF111111),
             Colors.black.withOpacity(0.8),
+            Color(0xFF0A0A0A).withOpacity(0.9),
           ],
+          stops: const [0.0, 0.3, 0.7, 1.0],
         ),
         boxShadow: [
           BoxShadow(
-            color: _selectedColor.withOpacity(0.4),
+            color: _selectedColor.withOpacity(0.2),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: _selectedColor.withOpacity(0.15), width: 1.5),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Stack(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  _bankNameController.text.isEmpty
-                      ? (_nameController.text.isEmpty
-                            ? "New Account"
-                            : _nameController.text)
-                      : _bankNameController.text.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+          if (hasLogo)
+            Positioned.fill(
+              child: ImageFiltered(
+                imageFilter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                child: Opacity(
+                  opacity: 0.2,
+                  child: Center(
+                    child: LogoUtils.buildLogo(bankLogo, size: 200 * logoScale),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Icon(
-                _selectedIcon,
-                color: Colors.white.withOpacity(0.8),
-                size: 24,
-              ),
-            ],
-          ),
-
-          Row(
-            children: [
-              const Icon(Icons.sim_card, color: Colors.amber, size: 28),
-              const SizedBox(width: 8),
-              Icon(Icons.wifi, color: Colors.white.withOpacity(0.5), size: 20),
-            ],
-          ),
-
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                displayCardNum,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontFamily: "Monospace",
-                  fontSize: 16,
-                  letterSpacing: 2,
-                  shadows: [Shadow(blurRadius: 2, color: Colors.black45)],
+            ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _bankNameController.text.isEmpty
+                            ? (_nameController.text.isEmpty
+                                  ? "New Account"
+                                  : _nameController.text)
+                            : _bankNameController.text.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SlideTransition(
+                      position: _logoSlideAnimation,
+                      child: bankLogo != null
+                          ? SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: LogoUtils.buildLogo(bankLogo, size: 24),
+                            )
+                          : Icon(
+                              _selectedIcon,
+                              color: Colors.white.withOpacity(0.8),
+                              size: 24,
+                            ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "BALANCE",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.6),
-                          fontSize: 8,
-                        ),
+                Row(
+                  children: [
+                    const Icon(Icons.sim_card, color: Colors.amber, size: 28),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.wifi,
+                      color: Colors.white.withOpacity(0.5),
+                      size: 20,
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayCardNum,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontFamily: "Monospace",
+                        fontSize: 16,
+                        letterSpacing: 2,
+                        shadows: [Shadow(blurRadius: 2, color: Colors.black45)],
                       ),
-                      Text(
-                        "₹${_balanceController.text.isEmpty ? '0.00' : _balanceController.text}",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "BALANCE",
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 8,
+                              ),
+                            ),
+                            Text(
+                              "₹${_balanceController.text.isEmpty ? '0.00' : _balanceController.text}",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        "EXPIRY",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.6),
-                          fontSize: 8,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              "EXPIRY",
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 8,
+                              ),
+                            ),
+                            Text(
+                              _cardExpiryController.text.isEmpty
+                                  ? "MM/YY"
+                                  : _cardExpiryController.text,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      Text(
-                        _cardExpiryController.text.isEmpty
-                            ? "MM/YY"
-                            : _cardExpiryController.text,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -871,6 +956,9 @@ class _AddAccountModalState extends State<AddAccountModal>
         accountNumber: _accountNumberController.text.trim().isEmpty
             ? null
             : _accountNumberController.text.trim(),
+        ifscCode: _ifscCodeController.text.trim().isEmpty
+            ? null
+            : _ifscCodeController.text.trim(),
 
         cardNumber: _hasCardDetails && _cardNumberController.text.isNotEmpty
             ? _cardNumberController.text.trim()

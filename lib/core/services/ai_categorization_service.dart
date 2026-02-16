@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import '../../modules/ai_assistant/providers/ai_assistant_provider.dart';
+import '../../modules/Nex/providers/Nex_assistant_provider.dart';
 import '../providers/category_provider.dart';
 import 'transaction_categorization_service.dart';
 
@@ -28,10 +28,8 @@ class AICategorizationService {
   // Cache to avoid repeated API calls for same merchant
   final Map<String, CategorySuggestion> _cache = {};
 
-  AICategorizationService({
-    this.aiProvider,
-    required this.categoryProvider,
-  }) : _fallbackService = TransactionCategorizationService();
+  AICategorizationService({this.aiProvider, required this.categoryProvider})
+    : _fallbackService = TransactionCategorizationService();
 
   /// Suggest category for a transaction using AI or fallback to keyword matching
   Future<CategorySuggestion> suggestCategory({
@@ -42,7 +40,8 @@ class AICategorizationService {
     String? fullMessageBody,
   }) async {
     // Check cache first
-    final cacheKey = '$merchantName|$description|$transactionType'.toLowerCase();
+    final cacheKey = '$merchantName|$description|$transactionType'
+        .toLowerCase();
     if (_cache.containsKey(cacheKey)) {
       debugPrint('[AICategorizationService] Cache hit for: $merchantName');
       return _cache[cacheKey]!;
@@ -52,28 +51,35 @@ class AICategorizationService {
     if (aiProvider != null && aiProvider!.isReady) {
       try {
         debugPrint('[AICategorizationService] Using AI for: $merchantName');
-        final aiSuggestion = await _categorizeWithAI(
-          merchantName: merchantName,
-          description: description,
-          amount: amount,
-          transactionType: transactionType,
-          fullMessageBody: fullMessageBody,
-        ).timeout(
-          const Duration(seconds: 5),
-          onTimeout: () {
-            debugPrint('[AICategorizationService] AI timeout, using fallback');
-            throw TimeoutException('AI categorization timed out');
-          },
-        );
+        final aiSuggestion =
+            await _categorizeWithAI(
+              merchantName: merchantName,
+              description: description,
+              amount: amount,
+              transactionType: transactionType,
+              fullMessageBody: fullMessageBody,
+            ).timeout(
+              const Duration(seconds: 5),
+              onTimeout: () {
+                debugPrint(
+                  '[AICategorizationService] AI timeout, using fallback',
+                );
+                throw TimeoutException('AI categorization timed out');
+              },
+            );
 
         // Cache result
         _cache[cacheKey] = aiSuggestion;
         return aiSuggestion;
       } catch (e) {
-        debugPrint('[AICategorizationService] AI categorization failed: $e, falling back to keywords');
+        debugPrint(
+          '[AICategorizationService] AI categorization failed: $e, falling back to keywords',
+        );
       }
     } else {
-      debugPrint('[AICategorizationService] AI not ready, using keyword fallback');
+      debugPrint(
+        '[AICategorizationService] AI not ready, using keyword fallback',
+      );
     }
 
     // Fallback to keyword matching
@@ -111,7 +117,8 @@ class AICategorizationService {
     }
 
     // Build AI prompt
-    final prompt = '''
+    final prompt =
+        '''
 You are a financial transaction categorization expert for an Indian personal finance app.
 
 Categorize this transaction:
@@ -152,7 +159,10 @@ Return this exact JSON format:
   }
 
   /// Parse AI response and validate category
-  Map<String, dynamic> _parseAIResponse(String response, List<String> availableCategories) {
+  Map<String, dynamic> _parseAIResponse(
+    String response,
+    List<String> availableCategories,
+  ) {
     try {
       // Extract JSON from response (AI might include extra text)
       final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(response);
@@ -181,7 +191,9 @@ Return this exact JSON format:
         return parsed;
       }
 
-      debugPrint('[AICategorizationService] Invalid category in AI response: $suggestedCategory');
+      debugPrint(
+        '[AICategorizationService] Invalid category in AI response: $suggestedCategory',
+      );
       return {'category': 'Miscellaneous', 'confidence': 0.5};
     } catch (e) {
       debugPrint('[AICategorizationService] Failed to parse AI response: $e');
@@ -200,7 +212,8 @@ Return this exact JSON format:
     // If AI available, use it for better normalization
     if (aiProvider != null && aiProvider!.isReady) {
       try {
-        final prompt = '''
+        final prompt =
+            '''
 Normalize this merchant name by removing transaction IDs and cleaning format:
 "$rawMerchant"
 
@@ -211,13 +224,15 @@ Examples:
 - "GOOGLE *YouTubePrem" → "YouTube Premium"
 ''';
 
-        final response = await aiProvider!.sendRawPrompt(prompt).timeout(
-          const Duration(seconds: 3),
-        );
+        final response = await aiProvider!
+            .sendRawPrompt(prompt)
+            .timeout(const Duration(seconds: 3));
 
         return response.trim();
       } catch (e) {
-        debugPrint('[AICategorizationService] Merchant normalization failed: $e');
+        debugPrint(
+          '[AICategorizationService] Merchant normalization failed: $e',
+        );
       }
     }
 

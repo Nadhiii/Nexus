@@ -3,7 +3,13 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// Manages secure storage and retrieval of PDF passwords
 class PDFPasswordManager {
   static const String _storageKey = 'pdf_passwords';
-  static const _secureStorage = FlutterSecureStorage();
+  static const _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+      resetOnError: true,
+    ),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
 
   /// Adds a password to saved passwords
   static Future<void> savePassword(String password) async {

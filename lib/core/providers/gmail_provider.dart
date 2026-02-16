@@ -10,7 +10,7 @@ import '../models/detected_transaction.dart';
 import '../models/gmail_sync_settings.dart';
 import '../utils/gmail_parser.dart';
 import '../services/ai_categorization_service.dart';
-import '../../modules/ai_assistant/providers/ai_assistant_provider.dart';
+import '../../modules/Nex/providers/Nex_assistant_provider.dart';
 import 'category_provider.dart';
 
 class GmailProvider extends ChangeNotifier {

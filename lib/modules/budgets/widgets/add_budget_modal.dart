@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/theme/app_animations.dart';
 import 'dart:ui';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -31,14 +32,20 @@ class _AddBudgetModalState extends State<AddBudgetModal>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: AppAnimations.slow,
       vsync: this,
     );
     _scaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: AppAnimations.fadeOutCurve,
+      ),
     );
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: AppAnimations.fadeInCurve,
+      ),
     );
     _animationController.forward();
   }
@@ -302,7 +309,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                             });
                           },
                           child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
+                            duration: AppAnimations.standard,
                             width: 64,
                             margin: const EdgeInsets.only(right: 12),
                             decoration: BoxDecoration(
@@ -502,7 +509,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
     return GestureDetector(
       onTap: () => setState(() => _showCommitments = !_showCommitments),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+        duration: AppAnimations.slow,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: LinearGradient(

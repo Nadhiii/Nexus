@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/collapsible_fab.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -188,26 +189,14 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
           );
         },
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 20.0),
-        child: FloatingActionButton.extended(
-          onPressed: () => showAddBudgetModal(context),
-          backgroundColor: AppColors.cardSurface,
-          elevation: 0,
-          icon: Icon(Icons.add, color: AppColors.accentPurple),
-          label: Text(
-            'New Budget',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppColors.accentPurple,
-            ),
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-            side: BorderSide(color: AppColors.accentPurple.withOpacity(0.3)),
-          ),
-        ),
+      floatingActionButton: CollapsibleFab(
+        backgroundColor: AppColors.cardSurface,
+        foregroundColor: AppColors.accentPurple,
+        icon: Icon(Icons.add, color: AppColors.accentPurple),
+        label: 'New Budget',
+        onPressed: () => showAddBudgetModal(context),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -301,10 +290,8 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
           const SizedBox(height: 12),
           Text(
             '₹${_formatAmount(totalRemaining.abs())}',
-            style: TextStyle(
+            style: AppTypography.currencyLarge.copyWith(
               color: isOver ? AppColors.error : Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.w900,
             ),
           ),
           if (isOver)

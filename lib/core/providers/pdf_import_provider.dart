@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/pdf_statement.dart';
 import '../models/account.dart';
+import '../models/pdf_parsing_provider.dart';
 import '../services/pdf_parsing_service.dart';
 import '../services/pdf_password_manager.dart';
 
@@ -45,6 +46,22 @@ class PDFImportProvider extends ChangeNotifier {
   Future<void> loadSavedPasswordCount() async {
     _savedPasswordCount = await PDFPasswordManager.getPasswordCount();
     notifyListeners();
+  }
+
+  /// Set the Gemini API key for PDF parsing
+  /// Call this after AI assistant provider is initialized with a key
+  void setGeminiApiKeyForPDF(String apiKey) {
+    _parsingService.setGeminiApiKey(apiKey);
+  }
+
+  /// Set the Claude API key for PDF parsing
+  void setClaudeApiKeyForPDF(String apiKey) {
+    _parsingService.setClaudeApiKey(apiKey);
+  }
+
+  /// Set which provider to use for PDF parsing (Gemini or Claude)
+  void setPDFParsingProvider(PDFParsingProvider provider) {
+    _parsingService.setPDFParsingProvider(provider);
   }
 
   Future<void> parsePDF(

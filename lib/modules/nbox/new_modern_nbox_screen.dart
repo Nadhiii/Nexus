@@ -7,6 +7,7 @@ import '../../core/models/detected_transaction.dart';
 import '../transactions/modern_add_transaction_screen.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_animations.dart';
 
 enum NBoxFilter { all, sms, email, trash }
 
@@ -341,7 +342,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                   alignment: Alignment.topCenter,
                   padding: const EdgeInsets.only(top: 18),
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: AppAnimations.standard,
                     width: 22,
                     height: 22,
                     decoration: BoxDecoration(
@@ -378,7 +379,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     onTap: () => _toggleExpand(uniqueId),
                     onLongPress: () => _enterSelectionMode(uniqueId),
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
+                      duration: AppAnimations.standard,
                       decoration: BoxDecoration(
                         gradient: bgGradient,
                         borderRadius: BorderRadius.circular(20),
@@ -493,8 +494,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
                           // --- EXPANDED SECTION (Animated) ---
                           AnimatedSize(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
+                            duration: AppAnimations.slow,
+                            curve: AppAnimations.smoothCurve,
                             alignment: Alignment.topCenter,
                             child: isExpanded && !_isSelectionMode
                                 ? Column(
@@ -887,7 +888,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       child: GestureDetector(
         onTap: () => setState(() => _currentFilter = value),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: AppAnimations.standard,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
             color: isSelected ? const Color(0xFF8B5CF6) : AppColors.cardSurface,

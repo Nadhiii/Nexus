@@ -1,0 +1,194 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../../../core/config/ai_config.dart';
+import '../models/Nex_message.dart';
+
+/// Defines the type of work required.
+/// This determines which Gemini 3 model is used.
+enum AITask {
+  chat, // Fast conversation (Gemini 3.0 Flash)
+  reasoning, // Complex strategy/advice (Gemini 3.0 Thinking)
+  precision, // PDF extraction (Gemini 3.0 Pro)
+}
+
+/// Base AI Service Interface
+abstract class BaseAIService {
+  Future<String> sendMessage(
+    String message,
+    String systemPrompt,
+    List<AIMessage> history, {
+    AITask task = AITask.chat,
+  });
+
+  Future<bool> validateApiKey(String apiKey);
+  String get modelName;
+}
+
+/// Gemini AI Service
+/// Uses centralized AIConfig for model selection and fallback.
+class GeminiAIService implements BaseAIService {
+  final String apiKey;
+  static const String _apiBase =
+      'https://generativelanguage.googleapis.com/v1beta/models';
+
+  GeminiAIService({required this.apiKey});
+
+  @override
+  String get modelName => 'Gemini (Auto-Routing)';
+
+  @override
+  Future<String> sendMessage(
+    String message,
+    String systemPrompt,
+    List<AIMessage> history, {
+    AITask task = AITask.chat,
+  }) async {
+    try {
+      // 1. Pick the model from AIConfig
+      final AITaskType configTask = _mapTaskToConfigType(task);
+      final String model = AIConfig.getPrimaryModelFor(configTask);
+
+      // 2. Build the request
+      final body = _buildRequestBody(
+        message: message,
+        systemPrompt: systemPrompt,
+        history: history,
+        isThinking: task == AITask.reasoning,
+      );
+
+      // 3. Call API
+      final response = await http.post(
+        Uri.parse('$_apiBase/$model:generateContent?key=$apiKey'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        return _extractText(response.body);
+      } else {
+        _handleError(response);
+        throw Exception('API Error'); // Unreachable
+      }
+    } catch (e) {
+      throw Exception('Gemini 3 Error: $e');
+    }
+  }
+
+  @override
+  Future<bool> validateApiKey(String apiKey) async {
+    try {
+      // Validate with fastest model from AIConfig
+      final response = await http.post(
+        Uri.parse(
+          '$_apiBase/${AIConfig.chatModels.first}:generateContent?key=$apiKey',
+        ),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': 'Ping'},
+              ],
+            },
+          ],
+          'generationConfig': {'maxOutputTokens': 5},
+        }),
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // --- INTERNAL HELPERS ---
+
+  /// Maps Nex AITask to AIConfig AITaskType
+  AITaskType _mapTaskToConfigType(AITask task) {
+    switch (task) {
+      case AITask.chat:
+        return AITaskType.chat;
+      case AITask.reasoning:
+        return AITaskType.reasoning;
+      case AITask.precision:
+        return AITaskType.precision;
+    }
+  }
+
+  Map<String, dynamic> _buildRequestBody({
+    required String message,
+    required String systemPrompt,
+    required List<AIMessage> history,
+    bool isThinking = false,
+  }) {
+    final contents = <Map<String, dynamic>>[];
+
+    // Add History
+    for (final msg in history) {
+      if (msg.role == MessageRole.system) continue;
+      contents.add({
+        'role': msg.role == MessageRole.user ? 'user' : 'model',
+        'parts': [
+          {'text': msg.content},
+        ],
+      });
+    }
+
+    // Add User Message
+    contents.add({
+      'role': 'user',
+      'parts': [
+        {'text': message},
+      ],
+    });
+
+    final body = <String, dynamic>{
+      'contents': contents,
+      'generationConfig': {
+        // Lower temp for precision/thinking, higher for chat
+        'temperature': isThinking ? 0.7 : 0.9,
+        'maxOutputTokens': 8192,
+      },
+    };
+
+    // Add System Instruction
+    if (systemPrompt.isNotEmpty) {
+      body['systemInstruction'] = {
+        'parts': [
+          {'text': systemPrompt},
+        ],
+      };
+    }
+
+    return body;
+  }
+
+  String _extractText(String responseBody) {
+    final data = jsonDecode(responseBody);
+    final candidate = data['candidates']?[0];
+
+    // Check for safety blocks
+    if (candidate?['finishReason'] != 'STOP' &&
+        candidate?['finishReason'] != null) {
+      if (candidate['content'] == null) {
+        return "I couldn't answer that because it triggered a safety filter.";
+      }
+    }
+
+    final parts = candidate?['content']?['parts'] as List?;
+    if (parts != null && parts.isNotEmpty) {
+      return parts.map((p) => p['text'] ?? '').join('');
+    }
+
+    throw Exception('No content generated by AI');
+  }
+
+  void _handleError(http.Response response) {
+    try {
+      final error = jsonDecode(response.body);
+      final msg = error['error']?['message'] ?? 'Unknown API Error';
+      throw Exception(msg);
+    } catch (e) {
+      throw Exception('Connection failed: ${response.statusCode}');
+    }
+  }
+}

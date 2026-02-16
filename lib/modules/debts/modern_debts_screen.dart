@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/theme/app_animations.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/debt_provider.dart';
 import '../../core/models/debt.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/collapsible_fab.dart';
 import 'widgets/add_debt_modal.dart';
 import 'widgets/pay_debt_modal.dart';
 import '../../core/widgets/swipe_to_delete.dart';
@@ -106,26 +108,13 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
           );
         },
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 20.0),
-        child: FloatingActionButton.extended(
-          onPressed: () => showAddDebtModal(context),
-          backgroundColor: AppColors.cardSurface,
-          elevation: 0,
-          icon: const Icon(Icons.add, color: AppColors.error),
-          label: const Text(
-            'Add Liability',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppColors.error,
-            ),
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-            side: BorderSide(color: AppColors.error.withOpacity(0.3)),
-          ),
-        ),
+      floatingActionButton: CollapsibleFab(
+        onPressed: () => showAddDebtModal(context),
+        backgroundColor: AppColors.cardSurface,
+        icon: const Icon(Icons.add, color: AppColors.error),
+        label: 'Add Liability',
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -169,7 +158,7 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
     return GestureDetector(
       onTap: () => setState(() => _filter = value),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: AppAnimations.standard,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: color,

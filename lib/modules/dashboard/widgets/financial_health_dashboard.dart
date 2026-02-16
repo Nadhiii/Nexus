@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/theme/app_animations.dart';
 import '../../../core/models/financial_health.dart';
 import '../../../core/providers/financial_health_provider.dart';
 import '../../../core/providers/transaction_provider.dart';
@@ -31,11 +32,14 @@ class _FinancialHealthDashboardState extends State<FinancialHealthDashboard>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: AppAnimations.veryLong,
       vsync: this,
     );
     _scoreAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: AppAnimations.standardCurve,
+      ),
     );
   }
 

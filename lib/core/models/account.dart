@@ -26,6 +26,9 @@ class Account {
   // Note: CVV is stored locally in SecureCardService, NOT in Firestore
   final String? cardHolderName;
 
+  // Account Details for Flip Card
+  final String? ifscCode;
+
   Account({
     required this.id,
     required this.userId,
@@ -45,6 +48,7 @@ class Account {
     this.cardNumber,
     this.cardExpiry,
     this.cardHolderName,
+    this.ifscCode,
   });
 
   // Map known icon code points to constant IconData instances
@@ -102,6 +106,7 @@ class Account {
       cardNumber: data['cardNumber'],
       cardExpiry: data['cardExpiry'],
       cardHolderName: data['cardHolderName'],
+      ifscCode: data['ifscCode'],
     );
   }
 
@@ -132,6 +137,7 @@ class Account {
       cardNumber: data['cardNumber'],
       cardExpiry: data['cardExpiry'],
       cardHolderName: data['cardHolderName'],
+      ifscCode: data['ifscCode'],
     );
   }
 
@@ -154,6 +160,7 @@ class Account {
       'cardNumber': cardNumber,
       'cardExpiry': cardExpiry,
       'cardHolderName': cardHolderName,
+      'ifscCode': ifscCode,
     };
   }
 
@@ -177,6 +184,7 @@ class Account {
       cardNumber: json['cardNumber'],
       cardExpiry: json['cardExpiry'],
       cardHolderName: json['cardHolderName'],
+      ifscCode: json['ifscCode'],
     );
   }
 

@@ -1,5 +1,8 @@
 import '../../core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../core/providers/category_provider.dart';
+import '../../core/utils/transaction_display.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/widgets/translucent_app_bar.dart';
@@ -13,6 +16,7 @@ class TransactionDetailScreen extends StatefulWidget {
   final bool isExpense;
   final IconData icon;
   final Color color;
+  final Map<String, dynamic>? metadata;
 
   const TransactionDetailScreen({
     super.key,
@@ -24,6 +28,7 @@ class TransactionDetailScreen extends StatefulWidget {
     required this.isExpense,
     required this.icon,
     required this.color,
+    this.metadata,
   });
 
   @override
@@ -89,6 +94,21 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final categories = context.watch<CategoryProvider>().categories;
+    final categoryLabel = resolveCategoryLabel(
+      widget.category,
+      categories,
+      fallback: widget.category.isNotEmpty ? widget.category : 'General',
+    );
+    final sourceLabel =
+        resolveSourceLabelFromMetadata(widget.metadata) ?? 'Manual';
+    final headerMetaParts = [
+      sourceLabel,
+      categoryLabel,
+      widget.date,
+    ].where((part) => part.trim().isNotEmpty).toList();
+    final headerMeta = headerMetaParts.join(' • ');
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: TranslucentAppBar(
@@ -154,11 +174,22 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${widget.category} • ${widget.date}',
+                        headerMeta,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(
                             context,
                           ).colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Source: $sourceLabel',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.5),
+                          fontWeight: FontWeight.w500,
                         ),
                         textAlign: TextAlign.center,
                       ),

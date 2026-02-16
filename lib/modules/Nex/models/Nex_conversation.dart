@@ -1,4 +1,4 @@
-import 'ai_message.dart';
+import 'Nex_message.dart';
 
 /// AI Conversation Model
 /// Represents a full conversation thread with history

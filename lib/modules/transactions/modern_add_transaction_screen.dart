@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_animations.dart';
 import '../../core/models/transaction.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../../core/providers/account_provider.dart';
@@ -13,6 +14,7 @@ import '../../core/models/detected_transaction.dart';
 import '../../core/providers/new_nbox_provider.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/services/transaction_categorization_service.dart';
+import '../../core/utils/logo_utils.dart';
 import '../payday/payday_checklist_helper.dart';
 
 class ModernAddTransactionScreen extends StatefulWidget {
@@ -232,6 +234,9 @@ class _ModernAddTransactionScreenState
                                   ),
                                 ),
                                 items: provider.accounts.map((account) {
+                                  final bankLogo = LogoUtils.bankLogoFor(
+                                    account.bankName ?? account.name,
+                                  );
                                   return DropdownMenuItem<String>(
                                     value: account.id,
                                     child: Row(
@@ -248,11 +253,16 @@ class _ModernAddTransactionScreenState
                                               AppSpacing.radiusSm,
                                             ),
                                           ),
-                                          child: Icon(
-                                            account.icon,
-                                            color: account.color,
-                                            size: 16,
-                                          ),
+                                          child: bankLogo != null
+                                              ? LogoUtils.buildLogo(
+                                                  bankLogo,
+                                                  size: 16,
+                                                )
+                                              : Icon(
+                                                  account.icon,
+                                                  color: account.color,
+                                                  size: 16,
+                                                ),
                                         ),
                                         const SizedBox(width: AppSpacing.sm),
                                         Text(account.name),
@@ -318,6 +328,9 @@ class _ModernAddTransactionScreenState
                                   items: provider.accounts
                                       .where((a) => a.id != _selectedAccountId)
                                       .map((account) {
+                                        final bankLogo = LogoUtils.bankLogoFor(
+                                          account.bankName ?? account.name,
+                                        );
                                         return DropdownMenuItem<String>(
                                           value: account.id,
                                           child: Row(
@@ -334,11 +347,16 @@ class _ModernAddTransactionScreenState
                                                         AppSpacing.radiusSm,
                                                       ),
                                                 ),
-                                                child: Icon(
-                                                  account.icon,
-                                                  color: account.color,
-                                                  size: 16,
-                                                ),
+                                                child: bankLogo != null
+                                                    ? LogoUtils.buildLogo(
+                                                        bankLogo,
+                                                        size: 16,
+                                                      )
+                                                    : Icon(
+                                                        account.icon,
+                                                        color: account.color,
+                                                        size: 16,
+                                                      ),
                                               ),
                                               const SizedBox(
                                                 width: AppSpacing.sm,
@@ -419,16 +437,16 @@ class _ModernAddTransactionScreenState
                               )
                               .color;
                           return AnimatedScale(
-                            duration: const Duration(milliseconds: 150),
-                            curve: Curves.easeOut,
+                            duration: AppAnimations.fast,
+                            curve: AppAnimations.fadeOutCurve,
                             scale: _categoryHasFocus ? 1.02 : 1.0,
                             child: AnimatedOpacity(
-                              duration: const Duration(milliseconds: 150),
-                              curve: Curves.easeOut,
+                              duration: AppAnimations.fast,
+                              curve: AppAnimations.fadeOutCurve,
                               opacity: _categoryHasFocus ? 1.0 : 0.95,
                               child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                curve: Curves.easeOut,
+                                duration: AppAnimations.standard,
+                                curve: AppAnimations.fadeOutCurve,
                                 decoration: BoxDecoration(
                                   color: AppColors.cardDarkElevated,
                                   borderRadius: BorderRadius.circular(
@@ -521,16 +539,13 @@ class _ModernAddTransactionScreenState
                                       _categoryHasFocus = true;
                                     });
                                     // Briefly animate selection feedback
-                                    Future.delayed(
-                                      const Duration(milliseconds: 180),
-                                      () {
-                                        if (mounted) {
-                                          setState(() {
-                                            _categoryHasFocus = false;
-                                          });
-                                        }
-                                      },
-                                    );
+                                    Future.delayed(AppAnimations.fast, () {
+                                      if (mounted) {
+                                        setState(() {
+                                          _categoryHasFocus = false;
+                                        });
+                                      }
+                                    });
                                   },
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {

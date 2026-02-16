@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/collapsible_fab.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/investment_provider.dart';
 import '../../core/models/investment.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_animations.dart';
 import 'widgets/add_investment_modal.dart';
 
 class ModernInvestmentScreen extends StatefulWidget {
@@ -107,22 +109,14 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
           );
         },
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 20.0),
-        child: FloatingActionButton.extended(
-          onPressed: () => showAddInvestmentModal(context),
-          backgroundColor: AppColors.investmentIndigo,
-          elevation: 4,
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text(
-            'Add Asset',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-        ),
+      floatingActionButton: CollapsibleFab(
+        onPressed: () => showAddInvestmentModal(context),
+        backgroundColor: AppColors.investmentIndigo,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: 'Add Asset',
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -197,11 +191,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
           const SizedBox(height: 8),
           Text(
             '₹${NumberFormat('#,##,###').format(currentVal)}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.w900,
-            ),
+            style: AppTypography.currencyLarge,
           ),
           const SizedBox(height: 20),
 
@@ -251,7 +241,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
       child: GestureDetector(
         onTap: () => setState(() => _filterType = type),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: AppAnimations.standard,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected

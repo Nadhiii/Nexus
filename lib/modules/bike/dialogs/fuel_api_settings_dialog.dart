@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/theme/app_animations.dart';
 import '../../../core/providers/fuel_price_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -58,7 +59,7 @@ class _FuelAPISettingsDialogState extends State<FuelAPISettingsDialog> {
         });
 
         // Close dialog after 1.5 seconds
-        await Future.delayed(const Duration(milliseconds: 1500));
+        await Future.delayed(AppAnimations.veryLong);
         if (mounted && Navigator.canPop(context)) {
           Navigator.of(context).pop(true);
         }

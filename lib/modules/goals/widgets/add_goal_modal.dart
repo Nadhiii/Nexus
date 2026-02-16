@@ -6,6 +6,7 @@ import '../../../core/models/goal.dart';
 import '../../../core/widgets/top_snackbar.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_animations.dart';
 
 class AddGoalModal extends StatefulWidget {
   final Function(Goal) onGoalAdded;
@@ -70,16 +71,19 @@ class _AddGoalModalState extends State<AddGoalModal>
     }
 
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
+      duration: AppAnimations.slowest,
       vsync: this,
     );
     _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: AppAnimations.standardCurve,
+      ),
     );
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
+        curve: AppAnimations.staggeredCurve,
       ),
     );
 
@@ -606,7 +610,7 @@ class _AddGoalModalState extends State<AddGoalModal>
           updatedAt: DateTime.now(),
         );
 
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(AppAnimations.verySlow);
         widget.onGoalAdded(goal);
         if (mounted) Navigator.pop(context);
       } catch (e) {

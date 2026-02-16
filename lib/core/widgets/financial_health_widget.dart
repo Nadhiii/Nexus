@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'dart:math' as math;
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import '../theme/app_animations.dart';
 import '../services/financial_health_service.dart';
 import '../providers/budget_provider.dart';
 import '../providers/debt_provider.dart';
@@ -33,11 +34,14 @@ class _FinancialHealthWidgetState extends State<FinancialHealthWidget>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: AppAnimations.veryLong,
       vsync: this,
     );
     _scoreAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: AppAnimations.standardCurve,
+      ),
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -118,8 +122,8 @@ class _FinancialHealthWidgetState extends State<FinancialHealthWidget>
         setState(() => _isExpanded = !_isExpanded);
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        duration: AppAnimations.slow,
+        curve: AppAnimations.smoothCurve,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(

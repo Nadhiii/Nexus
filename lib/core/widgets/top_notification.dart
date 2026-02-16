@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../theme/app_animations.dart';
 
 void showTopNotification(
   BuildContext context,
@@ -62,12 +63,18 @@ class _TopNotificationWidgetState extends State<_TopNotificationWidget>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: AppAnimations.slow,
     );
-    _offsetAnimation = Tween<Offset>(
-      begin: const Offset(0, -2.0),
-      end: const Offset(0, 1.0),
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _offsetAnimation =
+        Tween<Offset>(
+          begin: const Offset(0, -2.0),
+          end: const Offset(0, 1.0),
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: AppAnimations.fadeOutCurve,
+          ),
+        );
     _controller.forward();
 
     Timer(const Duration(seconds: 3), () {

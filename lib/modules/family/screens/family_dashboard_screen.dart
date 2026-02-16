@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/providers/shared_expense_provider.dart';
 import '../../../core/models/shared_expense.dart';
+import '../../../core/widgets/collapsible_fab.dart';
 import '../widgets/add_family_member_dialog.dart';
 import '../widgets/add_shared_expense_dialog.dart';
 
@@ -59,11 +60,13 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: CollapsibleFab(
         onPressed: () => _showAddExpenseDialog(),
         backgroundColor: AppColors.primaryBlue,
-        child: const Icon(Icons.add, color: Colors.white),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: 'Add Expense',
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

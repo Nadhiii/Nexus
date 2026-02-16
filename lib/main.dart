@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
+import 'core/config/ai_config.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/account_provider.dart';
 import 'core/providers/transaction_provider.dart';
@@ -23,7 +24,7 @@ import 'core/providers/fuel_price_provider.dart';
 import 'core/providers/pdf_import_provider.dart';
 import 'core/providers/shared_expense_provider.dart';
 import 'core/providers/financial_health_provider.dart';
-import 'modules/ai_assistant/providers/ai_assistant_provider.dart';
+import 'modules/Nex/providers/Nex_assistant_provider.dart';
 import 'core/auth/auth_gate.dart';
 import 'core/services/crash_reporting_service.dart';
 import 'core/services/widget_sync_service.dart';
@@ -34,6 +35,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize AI Config early to ensure API keys are ready
+  await AIConfig.init();
 
   // Initialize Crashlytics for error reporting
   await CrashReportingService().initialize();
@@ -152,57 +156,76 @@ class NexusApp extends StatelessWidget {
               },
         ),
       ],
-      child: Consumer<AIAssistantProvider>(
-        builder: (context, aiProvider, _) {
-          // Initialize AI context providers after all providers are ready
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!aiProvider.isInitialized) {
-              _initializeAIProvider(context);
-            }
-          });
-
-          return Consumer4<
-            ThemeProvider,
-            TransactionProvider,
-            AccountProvider,
-            SubscriptionProvider
-          >(
-            builder:
-                (
-                  context,
-                  themeProvider,
-                  transactionProvider,
-                  accountProvider,
-                  subscriptionProvider,
-                  child,
-                ) {
-                  // Initialize WidgetSyncService with providers
-                  final debtProvider = Provider.of<DebtProvider>(
+      child: _AIInitializer(
+        child:
+            Consumer4<
+              ThemeProvider,
+              TransactionProvider,
+              AccountProvider,
+              SubscriptionProvider
+            >(
+              builder:
+                  (
                     context,
-                    listen: false,
-                  );
-                  WidgetSyncService.instance.initialize(
-                    transactionProvider: transactionProvider,
-                    accountProvider: accountProvider,
-                    subscriptionProvider: subscriptionProvider,
-                    debtProvider: debtProvider,
-                  );
+                    themeProvider,
+                    transactionProvider,
+                    accountProvider,
+                    subscriptionProvider,
+                    child,
+                  ) {
+                    // Initialize WidgetSyncService with providers
+                    final debtProvider = Provider.of<DebtProvider>(
+                      context,
+                      listen: false,
+                    );
+                    WidgetSyncService.instance.initialize(
+                      transactionProvider: transactionProvider,
+                      accountProvider: accountProvider,
+                      subscriptionProvider: subscriptionProvider,
+                      debtProvider: debtProvider,
+                    );
 
-                  return MaterialApp(
-                    title: 'Nexus',
-                    debugShowCheckedModeBanner: false,
-                    theme: AppTheme.darkTheme,
-                    themeMode: ThemeMode.dark,
-                    home: const AuthGate(),
-                  );
-                },
-          );
-        },
+                    return MaterialApp(
+                      title: 'Nexus',
+                      debugShowCheckedModeBanner: false,
+                      theme: AppTheme.darkTheme,
+                      themeMode: ThemeMode.dark,
+                      home: const AuthGate(),
+                    );
+                  },
+            ),
       ),
     );
   }
+}
 
-  /// Initialize AIAssistantProvider with all context providers
+/// Stateful widget that initializes the AI provider once, without wrapping
+/// MaterialApp in a Consumer (which would rebuild the entire app on every
+/// AI provider notification).
+class _AIInitializer extends StatefulWidget {
+  final Widget child;
+  const _AIInitializer({required this.child});
+
+  @override
+  State<_AIInitializer> createState() => _AIInitializerState();
+}
+
+class _AIInitializerState extends State<_AIInitializer> {
+  bool _initialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _initialized = true;
+      // Schedule after first frame so all providers are available
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _initializeAIProvider(context);
+      });
+    }
+  }
+
   void _initializeAIProvider(BuildContext context) {
     try {
       final aiProvider = Provider.of<AIAssistantProvider>(
@@ -241,10 +264,13 @@ class NexusApp extends StatelessWidget {
         categoryProvider: Provider.of<CategoryProvider>(context, listen: false),
       );
 
-      // Initialize after setting providers
+      // Initialize (safe to call multiple times — uses internal lock)
       aiProvider.initialize();
     } catch (e) {
       debugPrint('Error initializing AI provider: $e');
     }
   }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

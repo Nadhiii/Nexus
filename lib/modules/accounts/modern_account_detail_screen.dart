@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart'; // For clipboard
+import 'dart:ui';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/swipe_to_delete.dart';
-import '../../core/widgets/top_snackbar.dart';
 import '../../core/models/account.dart';
 import '../../core/models/transaction.dart';
 import '../../core/providers/transaction_provider.dart';
-import '../../core/services/secure_card_service.dart';
+import '../../core/utils/logo_utils.dart';
 import '../transactions/modern_add_transaction_screen.dart';
 import 'modern_add_account_screen.dart';
 
@@ -23,22 +23,31 @@ class ModernAccountDetailScreen extends StatefulWidget {
       _ModernAccountDetailScreenState();
 }
 
-class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
-  bool _showFullCardDetails = false;
-  String? _secureCvv;
-  final SecureCardService _secureCardService = SecureCardService();
+class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
+    with SingleTickerProviderStateMixin {
+  bool _isFlipped = false;
+  late AnimationController _flipAnimationController;
+  late Animation<double> _flipAnimation;
 
   @override
   void initState() {
     super.initState();
-    _loadSecureCvv();
+    _flipAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _flipAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _flipAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
   }
 
-  Future<void> _loadSecureCvv() async {
-    final cvv = await _secureCardService.getCvv(widget.account.id);
-    if (mounted) {
-      setState(() => _secureCvv = cvv);
-    }
+  @override
+  void dispose() {
+    _flipAnimationController.dispose();
+    super.dispose();
   }
 
   @override
@@ -74,34 +83,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Column(
-                children: [
-                  _buildHeroCard(),
-                  if (widget.account.cardNumber != null) ...[
-                    const SizedBox(height: 12),
-                    TextButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _showFullCardDetails = !_showFullCardDetails;
-                        });
-                      },
-                      icon: Icon(
-                        _showFullCardDetails
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                        color: AppColors.primaryBlue,
-                        size: 16,
-                      ),
-                      label: Text(
-                        _showFullCardDetails
-                            ? "Hide Details"
-                            : "Show Card Details",
-                        style: TextStyle(color: AppColors.primaryBlue),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+              child: _buildHeroCard(),
             ),
           ),
 
@@ -203,239 +185,373 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen> {
   // --- WIDGETS ---
 
   Widget _buildHeroCard() {
-    // If user toggles "Show Card Details", we switch the content
-    if (_showFullCardDetails && widget.account.cardNumber != null) {
-      return _buildFullCardView();
-    }
+    // Show flip card: balance on front, card details on back
+    return _buildFlipCard();
+  }
 
-    // Default View (Balance)
-    final displayNum = (widget.account.accountNumber ?? '0000')
-        .padRight(4, '*')
-        .substring(0, 4);
+  Widget _buildFlipCard() {
+    final bankLogo = LogoUtils.bankLogoFor(
+      widget.account.bankName ?? widget.account.name,
+    );
+    final logoScale = LogoUtils.bankLogoScale(
+      widget.account.bankName ?? widget.account.name,
+    );
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _isFlipped = !_isFlipped;
+          if (_isFlipped) {
+            _flipAnimationController.forward();
+          } else {
+            _flipAnimationController.reverse();
+          }
+        });
+      },
+      child: AnimatedBuilder(
+        animation: _flipAnimation,
+        builder: (context, child) {
+          final angle = _flipAnimation.value * 3.14159265359;
+          final isBack = angle > 1.57079632679;
+          final transform = Matrix4.identity()
+            ..setEntry(3, 2, 0.001)
+            ..rotateY(angle);
+
+          return Transform(
+            alignment: Alignment.center,
+            transform: transform,
+            child: isBack
+                ? Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity()..rotateY(3.14159265359),
+                    child: _buildCardDetailsBack(bankLogo, logoScale),
+                  )
+                : _buildBalanceCard(bankLogo, logoScale),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildBalanceCard(String? bankLogo, double logoScale) {
+    final hasLogo = bankLogo != null;
 
     return Container(
       height: 200,
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            widget.account.color,
-            widget.account.color.withOpacity(0.6),
+            hasLogo ? const Color(0xFF1A1A1A) : widget.account.color,
+            hasLogo
+                ? const Color(0xFF111111)
+                : widget.account.color.withOpacity(0.6),
             Colors.black.withOpacity(0.8),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: widget.account.color.withOpacity(0.3),
+            color: hasLogo
+                ? Colors.black.withOpacity(0.5)
+                : widget.account.color.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
         border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Stack(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                widget.account.bankName ?? widget.account.name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+          if (hasLogo)
+            Positioned.fill(
+              child: ImageFiltered(
+                imageFilter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                child: Opacity(
+                  opacity: 0.2,
+                  child: Center(
+                    child: LogoUtils.buildLogo(bankLogo, size: 240 * logoScale),
+                  ),
                 ),
               ),
-              Icon(
-                widget.account.icon,
-                color: Colors.white.withOpacity(0.8),
-                size: 28,
-              ),
-            ],
+            ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      widget.account.bankName ?? widget.account.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    bankLogo != null
+                        ? SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: LogoUtils.buildLogo(bankLogo, size: 28),
+                          )
+                        : Icon(
+                            widget.account.icon,
+                            color: Colors.white.withOpacity(0.8),
+                            size: 28,
+                          ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "BALANCE",
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.6),
+                        fontSize: 10,
+                      ),
+                    ),
+                    Text(
+                      "₹${widget.account.balance.toStringAsFixed(2)}",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "ACCOUNT #",
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 9,
+                            ),
+                          ),
+                          Text(
+                            widget.account.accountNumber ?? "—",
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontFamily: "Monospace",
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            "IFSC",
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 9,
+                            ),
+                          ),
+                          Text(
+                            widget.account.ifscCode ?? "—",
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "BALANCE",
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
-                  fontSize: 10,
-                ),
+          Positioned(
+            bottom: 12,
+            right: 12,
+            child: Tooltip(
+              message: "Tap to flip",
+              child: Icon(
+                Icons.flip,
+                color: Colors.white.withOpacity(0.4),
+                size: 16,
               ),
-              Text(
-                "₹${widget.account.balance.toStringAsFixed(2)}",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "**** $displayNum",
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
-                  fontFamily: "Monospace",
-                  fontSize: 16,
-                ),
-              ),
-              Text(
-                widget.account.typeDisplayName.toUpperCase(),
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFullCardView() {
-    return GestureDetector(
-      onLongPress: () {
-        if (widget.account.cardNumber != null) {
-          Clipboard.setData(ClipboardData(text: widget.account.cardNumber!));
-          showTopSnackBar(context, "Card Number Copied");
-        }
-      },
-      child: Container(
-        height: 200,
-        width: double.infinity,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [const Color(0xFF1A1A1A), const Color(0xFF0D0D0D)],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
+  Widget _buildCardDetailsBack(String? bankLogo, double logoScale) {
+    return Container(
+      height: 200,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF1A1A1A),
+            const Color(0xFF111111),
+            Colors.black.withOpacity(0.8),
           ],
-          border: Border.all(color: widget.account.color.withOpacity(0.5)),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Icon(Icons.nfc, color: Colors.white54, size: 32),
-                Icon(Icons.credit_card, color: widget.account.color, size: 28),
-              ],
-            ),
-
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.account.cardNumber ?? "---- ---- ---- ----",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontFamily: "Monospace",
-                    fontSize: 22,
-                    letterSpacing: 2.0,
-                    fontWeight: FontWeight.bold,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Stack(
+        children: [
+          // Logo background watermark
+          if (bankLogo != null)
+            Positioned.fill(
+              child: ImageFiltered(
+                imageFilter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                child: Opacity(
+                  opacity: 0.15,
+                  child: Center(
+                    child: LogoUtils.buildLogo(bankLogo, size: 240 * logoScale),
                   ),
                 ),
-              ],
+              ),
             ),
-
-            Row(
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                if (widget.account.cardNumber != null) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "CARD",
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Icon(
+                        Icons.credit_card,
+                        color: Colors.white.withOpacity(0.6),
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "CARD NUMBER",
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 9,
+                        ),
+                      ),
+                      Text(
+                        widget.account.cardNumber ?? "—",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontFamily: "Monospace",
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      "CARD HOLDER",
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.4),
-                        fontSize: 8,
+                    if (widget.account.cardHolderName != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "HOLDER",
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 9,
+                            ),
+                          ),
+                          Text(
+                            widget.account.cardHolderName!.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    Text(
-                      (widget.account.cardHolderName ?? "YOUR NAME")
-                          .toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                    if (widget.account.cardExpiry != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            "EXPIRY",
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 9,
+                            ),
+                          ),
+                          Text(
+                            widget.account.cardExpiry!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
                   ],
                 ),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "EXPIRES",
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.4),
-                            fontSize: 8,
-                          ),
-                        ),
-                        Text(
-                          widget.account.cardExpiry ?? "MM/YY",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      "FLIP TO VIEW ACCOUNT",
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.5),
+                        fontSize: 9,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
-                    const SizedBox(width: 20),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "CVV",
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.4),
-                            fontSize: 8,
-                          ),
-                        ),
-                        Text(
-                          _secureCvv ?? "***",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    Icon(
+                      Icons.flip,
+                      color: Colors.white.withOpacity(0.4),
+                      size: 16,
                     ),
                   ],
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

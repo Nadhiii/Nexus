@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../theme/app_animations.dart';
 import 'package:flutter/foundation.dart';
 import '../models/transaction.dart';
 import '../providers/transaction_provider.dart';
@@ -79,7 +80,7 @@ class WidgetSyncService {
   void _debouncedSync(VoidCallback callback) {
     _debounceTimer?.cancel();
     debugPrint('⏱️  Widget sync debounced (500ms)');
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+    _debounceTimer = Timer(AppAnimations.verySlow, () {
       debugPrint('🚀 Executing debounced widget sync');
       callback();
     });

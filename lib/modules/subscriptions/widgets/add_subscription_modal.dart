@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/theme/app_animations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:ui';
 import 'package:intl/intl.dart';
@@ -8,6 +9,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/providers/subscription_provider.dart';
 import '../../../core/models/subscription.dart';
 import '../../../core/widgets/top_snackbar.dart';
+import '../../../core/utils/logo_utils.dart';
 
 class AddSubscriptionModal extends StatefulWidget {
   final Subscription? subscriptionToEdit;
@@ -48,14 +50,20 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal>
     super.initState();
     // Animation
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
+      duration: AppAnimations.slowest,
       vsync: this,
     );
     _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: AppAnimations.standardCurve,
+      ),
     );
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: AppAnimations.fadeOutCurve,
+      ),
     );
     _animationController.forward();
 
@@ -162,6 +170,10 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal>
                                           const SizedBox(width: 12),
                                       itemBuilder: (context, index) {
                                         final s = _popularServices[index];
+                                        final logoPath =
+                                            LogoUtils.subscriptionLogoFor(
+                                              s['name'] as String,
+                                            );
                                         return GestureDetector(
                                           onTap: () => _onQuickAdd(s),
                                           child: Container(
@@ -177,13 +189,19 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal>
                                               ),
                                             ),
                                             child: Center(
-                                              child: Text(
-                                                s['icon'],
-                                                style: TextStyle(
-                                                  color: s['color'],
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
+                                              child: logoPath != null
+                                                  ? LogoUtils.buildLogo(
+                                                      logoPath,
+                                                      size: 22,
+                                                    )
+                                                  : Text(
+                                                      s['icon'],
+                                                      style: TextStyle(
+                                                        color: s['color'],
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
                                             ),
                                           ),
                                         );
@@ -369,6 +387,7 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal>
         ? "Service Name"
         : _nameController.text;
     final amount = double.tryParse(_amountController.text) ?? 0.0;
+    final logoPath = LogoUtils.subscriptionLogoFor(name);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -394,14 +413,16 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal>
               borderRadius: BorderRadius.circular(16),
             ),
             child: Center(
-              child: Text(
-                name.isNotEmpty ? name[0].toUpperCase() : 'S',
-                style: TextStyle(
-                  color: _brandColor,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
+              child: logoPath != null
+                  ? LogoUtils.buildLogo(logoPath, size: 26)
+                  : Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : 'S',
+                      style: TextStyle(
+                        color: _brandColor,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: 16),

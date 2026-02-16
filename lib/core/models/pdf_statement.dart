@@ -8,6 +8,7 @@ class ExtractedTransaction {
   final double? balance; // Account balance after transaction
   final String type; // 'debit', 'credit', 'expense', 'income'
   final int lineNumber; // Position in PDF for reference
+  final String? merchantName; // Extracted merchant name (optional)
 
   /// Unique signature for duplicate detection
   String get signature {
@@ -20,7 +21,8 @@ class ExtractedTransaction {
     required this.amount,
     this.balance,
     required this.type,
-    required this.lineNumber,
+    this.lineNumber = 0,
+    this.merchantName,
   });
 
   factory ExtractedTransaction.fromMap(Map<String, dynamic> data) {
@@ -31,6 +33,7 @@ class ExtractedTransaction {
       balance: data['balance']?.toDouble(),
       type: data['type'] ?? 'debit',
       lineNumber: data['lineNumber'] ?? 0,
+      merchantName: data['merchantName'],
     );
   }
 
@@ -42,6 +45,7 @@ class ExtractedTransaction {
       'balance': balance,
       'type': type,
       'lineNumber': lineNumber,
+      'merchantName': merchantName,
     };
   }
 }
@@ -116,20 +120,18 @@ class PDFStatement {
   int get transactionCount => transactions.length;
 
   /// Count of income and expense transactions
-  int get incomeCount => transactions
-    .where((t) => _isIncomeType(t.type))
-    .length;
-  int get expenseCount => transactions
-    .where((t) => _isExpenseType(t.type))
-    .length;
+  int get incomeCount =>
+      transactions.where((t) => _isIncomeType(t.type)).length;
+  int get expenseCount =>
+      transactions.where((t) => _isExpenseType(t.type)).length;
 
   /// Totals for income and expense amounts
   double get incomeTotal => transactions
-    .where((t) => _isIncomeType(t.type))
-    .fold(0.0, (sum, t) => sum + (t.amount.abs()));
+      .where((t) => _isIncomeType(t.type))
+      .fold(0.0, (sum, t) => sum + (t.amount.abs()));
   double get expenseTotal => transactions
-    .where((t) => _isExpenseType(t.type))
-    .fold(0.0, (sum, t) => sum + (t.amount.abs()));
+      .where((t) => _isExpenseType(t.type))
+      .fold(0.0, (sum, t) => sum + (t.amount.abs()));
 
   /// Date range covered
   String get dateRange {

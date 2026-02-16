@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/collapsible_fab.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_animations.dart';
 import '../../core/widgets/swipe_to_delete.dart';
 import '../../core/models/transaction.dart';
 import '../../core/providers/account_provider.dart';
+import '../../core/providers/category_provider.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../accounts/modern_add_account_screen.dart';
 import '../accounts/modern_account_detail_screen.dart';
 import '../transactions/modern_add_transaction_screen.dart';
-import '../pdf_import/pdf_import_screen.dart';
+import '../../core/utils/transaction_display.dart';
+import '../../core/utils/logo_utils.dart';
 
 enum WalletView { accounts, history }
 
@@ -168,6 +172,14 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
             0.0,
             (sum, a) => sum + a.balance,
           );
+          final now = DateTime.now();
+          final monthStart = DateTime(now.year, now.month, 1);
+          final monthTxns = txnProvider.transactions
+              .where((t) => t.date.isAfter(monthStart))
+              .toList();
+          final monthExpense = monthTxns
+              .where((t) => t.type == TransactionType.expense)
+              .fold(0.0, (sum, t) => sum + t.amount);
 
           return CustomScrollView(
             slivers: [
@@ -241,6 +253,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                   child: _buildTotalCashCard(
                     totalCash,
                     accountProvider.accounts.length,
+                    monthExpense,
                   ),
                 ),
               ),
@@ -265,43 +278,34 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
           );
         },
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 90.0),
-        child: FloatingActionButton.extended(
-          backgroundColor: AppColors.primaryBlue,
-          foregroundColor: Colors.white,
-          elevation: 8,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => _currentView == WalletView.accounts
-                    ? const ModernAddAccountScreen()
-                    : const ModernAddTransactionScreen(),
-              ),
-            );
-          },
-          icon: Icon(
-            _currentView == WalletView.accounts
-                ? Icons.account_balance_wallet
-                : Icons.receipt_long,
-          ),
-          label: Text(
-            _currentView == WalletView.accounts
-                ? 'Add Account'
-                : 'Log Transaction',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+      floatingActionButton: CollapsibleFab(
+        backgroundColor: AppColors.primaryBlue,
+        foregroundColor: Colors.white,
+        icon: Icon(
+          _currentView == WalletView.accounts
+              ? Icons.account_balance_wallet
+              : Icons.receipt_long,
         ),
+        label: _currentView == WalletView.accounts
+            ? 'Add Account'
+            : 'Log Transaction',
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => _currentView == WalletView.accounts
+                  ? const ModernAddAccountScreen()
+                  : const ModernAddTransactionScreen(),
+            ),
+          );
+        },
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
-  Widget _buildTotalCashCard(double total, int count) {
-    final isPositive = total > 0; // Only positive if actually has money
-    final isEmpty = total == 0;
+  Widget _buildTotalCashCard(double total, int count, double monthExpense) {
+    final status = _resolveBalanceStatus(total, monthExpense);
+    final formattedTotal = _formatSignedCurrency(total);
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -352,14 +356,10 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: Colors.white70,
-                      size: 12,
-                    ),
+                    Icon(status.icon, color: status.color, size: 12),
                     const SizedBox(width: 4),
                     Text(
-                      '$count Accounts',
+                      status.label,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
@@ -373,36 +373,34 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            '₹${NumberFormat('#,##,###').format(total)}',
-            style: const TextStyle(
+            formattedTotal,
+            style: AppTypography.displaySmall.copyWith(
               color: Colors.white,
               fontSize: 36,
-              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            status.message,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(
-                isEmpty
-                    ? Icons.remove
-                    : (isPositive ? Icons.trending_up : Icons.trending_down),
-                color: isEmpty
-                    ? Colors.white54
-                    : (isPositive ? AppColors.success : AppColors.error),
-                size: 16,
+              const Icon(
+                Icons.account_balance_wallet_outlined,
+                color: Colors.white70,
+                size: 14,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 6),
               Text(
-                isEmpty
-                    ? 'Empty Accounts'
-                    : (isPositive ? 'Healthy Balance' : 'Low Balance'),
+                '$count Accounts',
                 style: TextStyle(
-                  color: isEmpty
-                      ? Colors.white54
-                      : (isPositive
-                            ? AppColors.success.withOpacity(0.8)
-                            : AppColors.error.withOpacity(0.8)),
+                  color: Colors.white.withOpacity(0.7),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -429,7 +427,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
     return GestureDetector(
       onTap: () => setState(() => _currentView = view),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: AppAnimations.standard,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primaryBlue : AppColors.cardSurface,
@@ -450,6 +448,93 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
         ),
       ),
     );
+  }
+
+  _BalanceStatus _resolveBalanceStatus(double balance, double monthlyExpense) {
+    if (balance < 0) {
+      return _BalanceStatus(
+        label: 'Overdrawn',
+        color: AppColors.error,
+        icon: Icons.trending_down,
+        message: 'In the red right now',
+      );
+    }
+
+    if (balance < 5000) {
+      return _BalanceStatus(
+        label: 'Low',
+        color: AppColors.warning,
+        icon: Icons.warning_amber,
+        message: _buildRunwayMessage(balance, monthlyExpense),
+      );
+    }
+
+    if (monthlyExpense > 0) {
+      final runway = balance / monthlyExpense;
+      if (runway >= 2) {
+        return _BalanceStatus(
+          label: 'Good',
+          color: AppColors.success,
+          icon: Icons.verified,
+          message: _buildRunwayMessage(balance, monthlyExpense),
+        );
+      }
+
+      if (runway >= 1) {
+        return _BalanceStatus(
+          label: 'Moderate',
+          color: AppColors.info,
+          icon: Icons.trending_flat,
+          message: _buildRunwayMessage(balance, monthlyExpense),
+        );
+      }
+
+      return _BalanceStatus(
+        label: 'Low',
+        color: AppColors.warning,
+        icon: Icons.warning_amber,
+        message: _buildRunwayMessage(balance, monthlyExpense),
+      );
+    }
+
+    final label = balance >= 20000 ? 'Good' : 'Moderate';
+    final color = balance >= 20000 ? AppColors.success : AppColors.info;
+    final icon = balance >= 20000 ? Icons.verified : Icons.trending_flat;
+
+    return _BalanceStatus(
+      label: label,
+      color: color,
+      icon: icon,
+      message: 'No spend data yet',
+    );
+  }
+
+  String _buildRunwayMessage(double balance, double monthlyExpense) {
+    if (monthlyExpense <= 0) {
+      return 'No spend data yet';
+    }
+    final runway = balance / monthlyExpense;
+    if (runway <= 0) {
+      return 'In the red right now';
+    }
+    if (runway < 0.5) {
+      return 'Watch your wallet';
+    } else if (runway < 1) {
+      return 'Chill till next paycheck';
+    } else if (runway < 2) {
+      return 'You\'re good for a month';
+    } else if (runway < 3) {
+      return 'Chill for ~${runway.toStringAsFixed(1)} months';
+    } else if (runway < 6) {
+      return 'You\'re golden for a few months';
+    } else {
+      return 'You\'re set for life (almost)';
+    }
+  }
+
+  String _formatSignedCurrency(double amount) {
+    final absFormatted = NumberFormat('#,##,###').format(amount.abs());
+    return amount < 0 ? '-₹$absFormatted' : '₹$absFormatted';
   }
 
   Widget _buildAccountsList(BuildContext context, AccountProvider provider) {
@@ -475,9 +560,11 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
               itemKey: ValueKey(account.id),
               itemId: account.id,
               itemName: account.name,
+              showConfirmation: true,
               confirmTitle: 'Delete Account?',
               confirmMessage: 'This will delete all linked transactions.',
               onDelete: () => provider.deleteAccount(account.id),
+              onUndoDelete: () => provider.restoreDeletedAccount(),
               child: _buildAccountCard(context, account),
             ),
           );
@@ -499,30 +586,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
       return SliverFillRemaining(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildEmptyState("No Recent Activity", Icons.receipt),
-            const SizedBox(height: 32),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const PDFImportScreen(),
-                  ),
-                ),
-                icon: const Icon(Icons.picture_as_pdf),
-                label: const Text('Import from PDF'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryBlue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 14,
-                  ),
-                ),
-              ),
-            ),
-          ],
+          children: [_buildEmptyState("No Recent Activity", Icons.receipt)],
         ),
       );
     }
@@ -534,45 +598,9 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
       padding: const EdgeInsets.fromLTRB(0, 10, 0, 200),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
-          // Add PDF import button at the top
-          if (index == 0) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  child: ElevatedButton.icon(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const PDFImportScreen(),
-                      ),
-                    ),
-                    icon: const Icon(Icons.picture_as_pdf),
-                    label: const Text('Import from PDF'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryBlue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
-            );
-          }
-
-          // Adjust index for transactions list
-          final txnIndex = index - 1;
-          final t = transactions[txnIndex];
+          final t = transactions[index];
           final showHeader =
-              txnIndex == 0 ||
-              !_isSameDay(t.date, transactions[txnIndex - 1].date);
+              index == 0 || !_isSameDay(t.date, transactions[index - 1].date);
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -581,12 +609,14 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
               _buildTransactionTile(context, t, provider),
             ],
           );
-        }, childCount: transactions.length + 1), // +1 for the PDF button
+        }, childCount: transactions.length),
       ),
     );
   }
 
   Widget _buildAccountCard(BuildContext context, dynamic account) {
+    final bankLogo = LogoUtils.bankLogoFor(account.bankName ?? account.name);
+    final logoScale = LogoUtils.bankLogoScale(account.bankName ?? account.name);
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
@@ -613,19 +643,14 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    account.color.withOpacity(0.3),
-                    account.color.withOpacity(0.15),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: account.color.withOpacity(0.3)),
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: Center(
+                child: bankLogo != null
+                    ? LogoUtils.buildLogo(bankLogo, size: 28 * logoScale)
+                    : Icon(account.icon, color: account.color, size: 24),
               ),
-              child: Icon(account.icon, color: account.color, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -708,6 +733,15 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
     Transaction t,
     TransactionProvider provider,
   ) {
+    final categoryProvider = Provider.of<CategoryProvider>(
+      context,
+      listen: false,
+    );
+    final categoryLabel = resolveTransactionDisplayLabel(
+      t,
+      categoryProvider.categories,
+      emptyLabel: 'General',
+    );
     final isIncome = t.type == TransactionType.income;
     final isTransfer = t.type == TransactionType.transfer;
     final isSelected = _selectedTransactionIds.contains(t.id);
@@ -727,25 +761,25 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
         gradient: _isSelectionMode && isSelected
             ? LinearGradient(
                 colors: [
-                  AppColors.primaryBlue.withOpacity(0.2),
-                  AppColors.primaryBlue.withOpacity(0.1),
+                  AppColors.primaryBlue.withOpacity(0.12),
+                  AppColors.primaryBlue.withOpacity(0.06),
                 ],
               )
             : LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [color.withOpacity(0.08), AppColors.cardSurface],
+                colors: [color.withOpacity(0.05), AppColors.cardSurface],
               ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: _isSelectionMode && isSelected
               ? AppColors.primaryBlue
-              : color.withOpacity(0.15),
+              : color.withOpacity(0.08),
           width: _isSelectionMode && isSelected ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.05),
+            color: color.withOpacity(0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -773,10 +807,10 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [color.withOpacity(0.2), color.withOpacity(0.1)],
+                colors: [color.withOpacity(0.12), color.withOpacity(0.06)],
               ),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: color.withOpacity(0.2)),
+              border: Border.all(color: color.withOpacity(0.12)),
             ),
             child: Icon(icon, color: color, size: 18),
           ),
@@ -805,7 +839,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    t.categoryId ?? "General",
+                    categoryLabel,
                     style: TextStyle(
                       color: color,
                       fontSize: 10,
@@ -901,4 +935,18 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
 
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+class _BalanceStatus {
+  final String label;
+  final Color color;
+  final IconData icon;
+  final String message;
+
+  const _BalanceStatus({
+    required this.label,
+    required this.color,
+    required this.icon,
+    required this.message,
+  });
 }

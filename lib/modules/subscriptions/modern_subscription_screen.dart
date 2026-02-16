@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/subscription_provider.dart';
@@ -6,7 +7,10 @@ import '../../core/models/subscription.dart';
 import '../../core/models/transaction.dart' as txn;
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_animations.dart';
 import '../../core/widgets/swipe_to_delete.dart';
+import '../../core/widgets/collapsible_fab.dart';
+import '../../core/utils/logo_utils.dart';
 import 'widgets/add_subscription_modal.dart';
 
 enum SubscriptionFilter { active, history }
@@ -173,16 +177,13 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: CollapsibleFab(
         onPressed: () => showAddSubscriptionModal(context),
         backgroundColor: AppColors.primaryBlue,
-        elevation: 4,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(
-          'New Sub',
-          style: AppTypography.labelLarge.copyWith(color: Colors.white),
-        ),
+        label: 'New Sub',
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -388,6 +389,8 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
       return const SizedBox.shrink();
     }
 
+    final logoPath = LogoUtils.subscriptionLogoFor(sub.name);
+
     Color brandColor = AppColors.pastelOrange;
     try {
       if (sub.color.startsWith('#')) {
@@ -399,304 +402,279 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
         ? (sub.amount / totalMonthly * 100).toStringAsFixed(0)
         : '0';
 
+    final bgLogoSize = isLarge ? 140.0 : (isCompact ? 70.0 : 100.0);
+
     // Due status for badge
     final dueStatus = _getDueStatus(sub);
     final isZombie = _zombieSubIds.contains(sub.id);
 
     return GestureDetector(
       onTap: () => showAddSubscriptionModal(context, subscriptionToEdit: sub),
-      child: Stack(
-        children: [
-          Container(
-            height: isLarge
-                ? 180
-                : (isWide ? null : null), // Let Expanded handle compact height
-            constraints: isCompact ? const BoxConstraints(minHeight: 70) : null,
-            padding: EdgeInsets.all(isCompact ? 10 : 16),
-            decoration: BoxDecoration(
-              color: AppColors.cardSurface,
-              borderRadius: BorderRadius.circular(isCompact ? 20 : 32),
-              border: Border.all(
-                color: dueStatus?.urgent == true
-                    ? dueStatus!.color.withOpacity(0.5)
-                    : isZombie
-                    ? Colors.grey.withOpacity(0.3)
-                    : Colors.white.withOpacity(0.05),
-                width: dueStatus?.urgent == true ? 2 : 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: dueStatus?.urgent == true
-                      ? dueStatus!.color.withOpacity(0.15)
-                      : brandColor.withOpacity(0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+      child: Container(
+        height: isLarge
+            ? 180
+            : (isWide ? null : null), // Let Expanded handle compact height
+        constraints: isCompact ? const BoxConstraints(minHeight: 70) : null,
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(isCompact ? 20 : 32),
+          border: Border.all(
+            color: dueStatus?.urgent == true
+                ? dueStatus!.color.withOpacity(0.5)
+                : isZombie
+                ? Colors.grey.withOpacity(0.3)
+                : Colors.white.withOpacity(0.05),
+            width: dueStatus?.urgent == true ? 2 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: dueStatus?.urgent == true
+                  ? dueStatus!.color.withOpacity(0.15)
+                  : brandColor.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: isCompact
-                  ? MainAxisAlignment.center
-                  : (isLarge
-                        ? MainAxisAlignment.spaceBetween
-                        : MainAxisAlignment.start),
-              mainAxisSize: (isWide || isCompact)
-                  ? MainAxisSize.min
-                  : MainAxisSize.max,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Icon with zombie indicator
-                    Stack(
-                      children: [
-                        Container(
-                          width: isCompact ? 28 : 44,
-                          height: isCompact ? 28 : 44,
-                          decoration: BoxDecoration(
-                            color: isZombie
-                                ? Colors.grey.withOpacity(0.2)
-                                : brandColor.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(
-                              isCompact ? 8 : 12,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              sub.name.isNotEmpty
-                                  ? sub.name[0].toUpperCase()
-                                  : 'S',
-                              style: AppTypography.headlineSmall.copyWith(
-                                color: isZombie ? Colors.grey : brandColor,
-                                fontSize: isCompact ? 14 : 22,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Zombie skull badge
-                        if (isZombie && !isCompact)
-                          Positioned(
-                            right: -4,
-                            top: -4,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: AppColors.backgroundBlack,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.grey.withOpacity(0.3),
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.warning_amber_rounded,
-                                size: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ),
-                      ],
+          ],
+        ),
+        clipBehavior: Clip.hardEdge,
+        child: Stack(
+          children: [
+            // Blurred logo background (inside Container so it renders on top of cardSurface)
+            if (logoPath != null)
+              Positioned.fill(
+                child: ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                  child: Opacity(
+                    opacity: 0.25,
+                    child: Center(
+                      child: LogoUtils.buildLogo(logoPath, size: bgLogoSize),
                     ),
-                    // Right side: percentage or due badge
-                    if (!isCompact)
-                      Flexible(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Due Soon Badge
-                            if (dueStatus != null) ...[
-                              Flexible(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: dueStatus.color.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: dueStatus.color.withOpacity(0.5),
+                  ),
+                ),
+              ),
+            Padding(
+              padding: EdgeInsets.all(isCompact ? 10 : 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: isCompact
+                    ? MainAxisAlignment.center
+                    : (isLarge
+                          ? MainAxisAlignment.spaceBetween
+                          : MainAxisAlignment.start),
+                mainAxisSize: (isWide || isCompact)
+                    ? MainAxisSize.min
+                    : MainAxisSize.max,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (isZombie && !isCompact)
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: AppColors.backgroundBlack,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.grey.withOpacity(0.3),
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.warning_amber_rounded,
+                            size: 12,
+                            color: Colors.grey,
+                          ),
+                        )
+                      else
+                        const SizedBox.shrink(),
+                      // Right side: percentage or due badge
+                      if (!isCompact)
+                        Flexible(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Due Soon Badge
+                              if (dueStatus != null) ...[
+                                Tooltip(
+                                  message: dueStatus.text,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: dueStatus.color.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: dueStatus.color.withOpacity(0.5),
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      dueStatus.urgent
+                                          ? Icons.notifications_active
+                                          : Icons.schedule,
+                                      size: 12,
+                                      color: dueStatus.color,
                                     ),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        dueStatus.urgent
-                                            ? Icons.notifications_active
-                                            : Icons.schedule,
-                                        size: 12,
-                                        color: dueStatus.color,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Flexible(
-                                        child: Text(
-                                          dueStatus.text,
-                                          style: AppTypography.labelSmall
-                                              .copyWith(
-                                                color: dueStatus.color,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              // Percentage badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.backgroundBlack,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  "$percentage%",
+                                  style: AppTypography.labelSmall.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
                             ],
-                            // Percentage badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.backgroundBlack,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                "$percentage%",
-                                style: AppTypography.labelSmall.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                          ),
+                        )
+                      else if (dueStatus != null)
+                        // Compact due badge
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
                             ),
-                          ],
-                        ),
-                      )
-                    else if (dueStatus != null)
-                      // Compact due badge
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: dueStatus.color.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            dueStatus.text,
-                            style: AppTypography.labelSmall.copyWith(
-                              color: dueStatus.color,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
+                            decoration: BoxDecoration(
+                              color: dueStatus.color.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-
-                if (isLarge) const Spacer(),
-                if (!isLarge && !isCompact) const SizedBox(height: 6),
-                if (isWide) const SizedBox(height: 4),
-
-                Flexible(
-                  fit: FlexFit.loose,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (!isCompact) ...[
-                        Text(
-                          sub.name,
-                          style: AppTypography.titleMedium.copyWith(
-                            color: AppColors.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                      ],
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            "₹${sub.amount.toStringAsFixed(0)}",
-                            style: isCompact
-                                ? AppTypography.titleMedium.copyWith(
-                                    color: AppColors.textPrimary,
-                                  )
-                                : AppTypography.headlineMedium.copyWith(
-                                    color: AppColors.textPrimary,
-                                  ),
-                          ),
-                          if (!isCompact)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 4),
-                              child: Text(
-                                "/${sub.frequency == 'monthly' ? 'mo' : 'yr'}",
-                                style: AppTypography.bodySmall,
+                            child: Text(
+                              dueStatus.text,
+                              style: AppTypography.labelSmall.copyWith(
+                                color: dueStatus.color,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                        ],
-                      ),
-                      if (isLarge)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            "~₹${(sub.amount * (sub.frequency == 'monthly' ? 12 : 1)).toStringAsFixed(0)}/yr",
-                            style: AppTypography.bodySmall,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      // Zombie warning text for large tiles
-                      if (isZombie && isLarge)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            "⚠️ No matching payments in 60 days",
-                            style: AppTypography.labelSmall.copyWith(
-                              color: Colors.grey,
-                              fontSize: 10,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                     ],
                   ),
-                ),
-              ],
-            ),
-          ),
-          // Pulsing indicator for urgent due
-          if (dueStatus?.urgent == true)
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: dueStatus!.color,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: dueStatus.color.withOpacity(0.5),
-                      blurRadius: 8,
-                      spreadRadius: 2,
+
+                  if (isLarge) const Spacer(),
+                  if (!isLarge && !isCompact) const SizedBox(height: 6),
+                  if (isWide) const SizedBox(height: 4),
+
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: SingleChildScrollView(
+                      physics: const NeverScrollableScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!isCompact) ...[
+                            Text(
+                              sub.name,
+                              style: AppTypography.titleMedium.copyWith(
+                                color: AppColors.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                          ],
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  "₹${sub.amount.toStringAsFixed(0)}",
+                                  style: isCompact
+                                      ? AppTypography.titleMedium.copyWith(
+                                          color: AppColors.textPrimary,
+                                        )
+                                      : AppTypography.headlineMedium.copyWith(
+                                          color: AppColors.textPrimary,
+                                        ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (!isCompact)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 4),
+                                  child: Text(
+                                    "/${sub.frequency == 'monthly' ? 'mo' : 'yr'}",
+                                    style: AppTypography.bodySmall,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          if (isLarge)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                "~₹${(sub.amount * (sub.frequency == 'monthly' ? 12 : 1)).toStringAsFixed(0)}/yr",
+                                style: AppTypography.bodySmall,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          // Zombie warning text for large tiles
+                          if (isZombie && isLarge)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                "⚠️ No matching payments in 60 days",
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: Colors.grey,
+                                  fontSize: 10,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-        ],
+            // Pulsing indicator for urgent due
+            if (dueStatus?.urgent == true)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: dueStatus!.color,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: dueStatus.color.withOpacity(0.5),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildHistoryCard(BuildContext context, Subscription sub) {
+    final logoPath = LogoUtils.subscriptionLogoFor(sub.name);
     return Opacity(
       opacity: 0.6,
       child: Container(
@@ -715,7 +693,11 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                 color: Colors.grey.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.history, color: Colors.grey),
+              child: Center(
+                child: logoPath != null
+                    ? LogoUtils.buildLogo(logoPath, size: 22)
+                    : const Icon(Icons.history, color: Colors.grey),
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -920,7 +902,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
               const SizedBox(height: 8),
               Text(
                 "₹${monthly.toStringAsFixed(0)}",
-                style: AppTypography.displaySmall.copyWith(
+                style: AppTypography.currencyLarge.copyWith(
                   color: AppColors.textPrimary, // White text
                 ),
               ),
@@ -992,7 +974,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
     return GestureDetector(
       onTap: () => setState(() => _filter = value),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: AppAnimations.standard,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: color,

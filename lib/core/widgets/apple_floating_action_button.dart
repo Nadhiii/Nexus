@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_animations.dart';
 
 class AppleFloatingActionButton extends StatefulWidget {
   final VoidCallback onPressed;
@@ -11,7 +12,8 @@ class AppleFloatingActionButton extends StatefulWidget {
   });
 
   @override
-  State<AppleFloatingActionButton> createState() => _AppleFloatingActionButtonState();
+  State<AppleFloatingActionButton> createState() =>
+      _AppleFloatingActionButtonState();
 }
 
 class _AppleFloatingActionButtonState extends State<AppleFloatingActionButton>
@@ -24,16 +26,15 @@ class _AppleFloatingActionButtonState extends State<AppleFloatingActionButton>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 150),
+      duration: AppAnimations.fast,
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: AppAnimations.smoothCurve,
+      ),
+    );
   }
 
   @override
@@ -88,10 +89,7 @@ class _AppleFloatingActionButtonState extends State<AppleFloatingActionButton>
                 backgroundColor: colorScheme.primary,
                 foregroundColor: colorScheme.onPrimary,
                 elevation: _isPressed ? 4 : 8,
-                child: const Icon(
-                  Icons.add,
-                  size: 24,
-                ),
+                child: const Icon(Icons.add, size: 24),
               ),
             ),
           );

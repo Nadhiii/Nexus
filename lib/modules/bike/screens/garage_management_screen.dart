@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:ui';
 import '../../../core/models/bike.dart';
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/bike_image_utils.dart';
 
 class GarageManagementScreen extends StatefulWidget {
   const GarageManagementScreen({super.key});
@@ -78,11 +80,17 @@ class _GarageManagementScreenState extends State<GarageManagementScreen> {
   }
 
   Widget _buildListTile(Bike bike, int index) {
+    final imagePath = BikeImageUtils.getBikeImagePath(
+      bike.image,
+      bike.name,
+      bike.model,
+    );
+    final hasImage = imagePath != null;
+
     return Container(
       key: ValueKey(bike.id), // Key is crucial for reordering
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: bike.isDashboardBike
@@ -90,35 +98,80 @@ class _GarageManagementScreenState extends State<GarageManagementScreen> {
               : Colors.white.withOpacity(0.05),
         ),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: bike.isDashboardBike
-                ? Colors.amber.withOpacity(0.1)
-                : AppColors.backgroundBlack,
-            shape: BoxShape.circle,
+      child: Stack(
+        children: [
+          // Blurred background image
+          if (hasImage)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.cardSurface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                  child: Opacity(
+                    opacity: 0.15,
+                    child: Image.asset(
+                      imagePath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(color: AppColors.cardSurface);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.cardSurface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          // Content
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: bike.isDashboardBike
+                    ? Colors.amber.withOpacity(0.1)
+                    : AppColors.backgroundBlack,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                bike.isDashboardBike ? Icons.star : Icons.directions_bike,
+                color: bike.isDashboardBike
+                    ? Colors.amber
+                    : AppColors.textTertiary,
+                size: 20,
+              ),
+            ),
+            title: Text(
+              bike.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            subtitle: Text(
+              '${bike.make} ${bike.model}',
+              style: TextStyle(color: AppColors.textTertiary),
+            ),
+            // Use a drag handle to make it obvious
+            trailing: const Icon(
+              Icons.drag_handle,
+              color: AppColors.textTertiary,
+            ),
           ),
-          child: Icon(
-            bike.isDashboardBike ? Icons.star : Icons.directions_bike,
-            color: bike.isDashboardBike ? Colors.amber : AppColors.textTertiary,
-            size: 20,
-          ),
-        ),
-        title: Text(
-          bike.name,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Text(
-          '${bike.make} ${bike.model}',
-          style: TextStyle(color: AppColors.textTertiary),
-        ),
-        // Use a drag handle to make it obvious
-        trailing: const Icon(Icons.drag_handle, color: AppColors.textTertiary),
+        ],
       ),
     );
   }

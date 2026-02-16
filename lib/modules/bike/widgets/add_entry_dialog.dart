@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/theme/app_animations.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/models/bike.dart';
@@ -11,6 +12,7 @@ import '../../../core/providers/transaction_provider.dart';
 import '../../../core/providers/notification_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/logo_utils.dart';
 
 class AddEntryDialog extends StatefulWidget {
   final Bike bike;
@@ -581,7 +583,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
     return GestureDetector(
       onTap: () => setState(() => _isFuelMode = isFuel),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: AppAnimations.standard,
         width: 44,
         height: 44,
         decoration: BoxDecoration(
@@ -751,6 +753,9 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                     color: AppColors.textTertiary,
                   ),
                   items: accounts.map((account) {
+                    final bankLogo = LogoUtils.bankLogoFor(
+                      account.bankName ?? account.name,
+                    );
                     return DropdownMenuItem<Account>(
                       value: account,
                       child: Row(
@@ -762,10 +767,14 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                               color: AppColors.primaryBlue.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(
-                              Icons.account_balance_wallet,
-                              size: 16,
-                              color: AppColors.primaryBlue,
+                            child: Center(
+                              child: bankLogo != null
+                                  ? LogoUtils.buildLogo(bankLogo, size: 16)
+                                  : const Icon(
+                                      Icons.account_balance_wallet,
+                                      size: 16,
+                                      color: AppColors.primaryBlue,
+                                    ),
                             ),
                           ),
                           const SizedBox(width: 12),

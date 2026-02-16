@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../theme/app_spacing.dart';
+import '../theme/app_animations.dart';
 import 'top_snackbar.dart';
 
 // Global set to track recently restored item IDs for animation
@@ -84,19 +85,22 @@ class _SwipeToDeleteState<T> extends State<SwipeToDelete<T>>
     super.initState();
 
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 350),
+      duration: AppAnimations.slower,
       vsync: this,
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: AppAnimations.fadeOutCurve,
+      ),
     );
 
     _slideAnimation =
         Tween<Offset>(begin: const Offset(-0.3, 0.0), end: Offset.zero).animate(
           CurvedAnimation(
             parent: _animationController,
-            curve: Curves.easeOutCubic,
+            curve: AppAnimations.standardCurve,
           ),
         );
 

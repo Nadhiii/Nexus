@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/providers/biometric_provider.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -10,7 +12,8 @@ import '../notifications/notification_settings_screen.dart';
 import '../gmail/gmail_settings_screen.dart';
 import '../family/screens/family_dashboard_screen.dart';
 import '../family/screens/expense_splitter_screen.dart';
-import '../ai_assistant/screens/ai_settings_screen.dart';
+import 'package:nexus/modules/Nex/screens/Nex_settings_screen.dart';
+import 'package:nexus/modules/Nex/screens/Nex_chat_screen.dart';
 import 'about_screen.dart';
 import 'reports_and_analytics_screen.dart';
 import 'manage_categories_screen.dart';
@@ -36,20 +39,16 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundBlack,
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
-          // 1. Profile Header
           SliverAppBar(
             pinned: true,
-            expandedHeight: 110, // Standard
+            expandedHeight: 120,
             backgroundColor: AppColors.backgroundBlack,
             surfaceTintColor: AppColors.backgroundBlack,
-            elevation: 0,
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: false,
-              titlePadding: const EdgeInsets.only(
-                left: 20,
-                bottom: 24,
-              ), // Standard
+              titlePadding: const EdgeInsets.only(left: 20, bottom: 20),
               title: Text(
                 'More',
                 style: AppTypography.headlineMedium.copyWith(
@@ -59,32 +58,41 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
               ),
             ),
           ),
-
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
 
-                // 2. Tools Grid (New Layout)
-                Text("TOOLS", style: _headerStyle()),
+                // 1. STABLE FINANCIAL TOOLS
+                _buildSectionHeader("FINANCIAL TOOLS"),
                 const SizedBox(height: 12),
                 _buildToolsGrid(),
+
                 const SizedBox(height: 32),
 
-                // 3. Settings List
-                Text("PREFERENCES", style: _headerStyle()),
+                // 2. PREFERENCES (FIXED BIOMETRIC TOGGLE)
+                _buildSectionHeader("PREFERENCES"),
                 const SizedBox(height: 12),
                 _buildSettingsSection(),
 
                 const SizedBox(height: 32),
-                Text("SUPPORT", style: _headerStyle()),
+
+                // 3. LABS (WIP SECTION)
+                _buildSectionHeader("LABS"),
+                const SizedBox(height: 12),
+                _buildLabsSection(),
+
+                const SizedBox(height: 32),
+
+                // 4. SUPPORT
+                _buildSectionHeader("SUPPORT"),
                 const SizedBox(height: 12),
                 _buildSupportSection(),
 
                 const SizedBox(height: 40),
                 _buildSignOutButton(),
-                const SizedBox(height: 120), // Bottom padding
+                const SizedBox(height: 120),
               ]),
             ),
           ),
@@ -93,11 +101,14 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
     );
   }
 
-  TextStyle _headerStyle() {
-    return AppTypography.labelSmall.copyWith(
-      color: AppColors.textTertiary,
-      fontWeight: FontWeight.w800,
-      letterSpacing: 1.2,
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: AppTypography.labelSmall.copyWith(
+        color: AppColors.textTertiary,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 1.5,
+      ),
     );
   }
 
@@ -106,85 +117,81 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
       children: [
         Row(
           children: [
-            Expanded(
-              child: _ToolCard(
-                icon: Icons.pie_chart_rounded,
-                color: AppColors.primaryBlue,
-                label: "Analytics",
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ReportsAndAnalyticsScreen(),
-                  ),
-                ),
-              ),
+            _expandedTool(
+              Icons.pie_chart_rounded,
+              AppColors.pastelPurple,
+              "Analytics",
+              () => _navigate(const ReportsAndAnalyticsScreen()),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: _ToolCard(
-                icon: Icons.category_rounded,
-                color: AppColors.pastelOrange,
-                label: "Categories",
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ManageCategoriesScreen(),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _ToolCard(
-                icon: Icons.cloud_upload_rounded,
-                color: AppColors.accentTeal,
-                label: "Backup",
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const BackupSettingsScreen(),
-                  ),
-                ),
-              ),
+            _expandedTool(
+              Icons.category_rounded,
+              AppColors.pastelOrange,
+              "Categories",
+              () => _navigate(const ManageCategoriesScreen()),
             ),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(
-              child: _ToolCard(
-                icon: Icons.family_restroom_rounded,
-                color: AppColors.accentPink,
-                label: "Family",
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const FamilyDashboardScreen(),
-                  ),
-                ),
-              ),
+            _expandedTool(
+              Icons.family_restroom_rounded,
+              AppColors.accentPink,
+              "Family",
+              () => _navigate(const FamilyDashboardScreen()),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: _ToolCard(
-                icon: Icons.call_split_rounded,
-                color: AppColors.success,
-                label: "Split Bill",
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ExpenseSplitterScreen(),
-                  ),
-                ),
-              ),
+            _expandedTool(
+              Icons.call_split_rounded,
+              AppColors.success,
+              "Split Bill",
+              () => _navigate(const ExpenseSplitterScreen()),
             ),
-            const SizedBox(width: 12),
-            // Empty spacer to maintain grid alignment
-            Expanded(child: SizedBox()),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _expandedTool(
+    IconData icon,
+    Color color,
+    String label,
+    VoidCallback onTap,
+  ) {
+    return Expanded(
+      child: _ToolCard(icon: icon, color: color, label: label, onTap: onTap),
+    );
+  }
+
+  Widget _buildLabsSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Column(
+        children: [
+          _buildTile(
+            icon: Icons.auto_awesome_rounded,
+            color: AppColors.primaryBlue,
+            title: "Nex AI Chat",
+            subtitle: "Intelligent financial assistant",
+            onTap: () => _navigate(const AIChatScreen()),
+          ),
+          _divider(),
+          _buildTile(
+            icon: Icons.file_present_rounded,
+            color: AppColors.accentTeal,
+            title: "PDF Import",
+            subtitle: "Extract data from bank statements",
+            onTap: () =>
+                showTopSnackBar(context, "PDF extraction is in development"),
+          ),
+        ],
+      ),
     );
   }
 
@@ -192,11 +199,12 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         children: [
+          // BIOMETRIC TOGGLE: Fixed to show even when disabled
           Consumer<BiometricProvider>(
             builder: (context, bio, _) => _buildTile(
               icon: Icons.fingerprint_rounded,
@@ -204,45 +212,41 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
               title: "Biometric Lock",
               trailing: Switch(
                 value: bio.isBiometricEnabled,
+                // If it's available on device, allow toggling regardless of current state
                 onChanged: bio.isBiometricAvailable
                     ? (v) => bio.setAllBiometricFeatures(v)
                     : null,
-                activeThumbColor: AppColors.primaryBlue,
-                activeTrackColor: AppColors.primaryBlue.withOpacity(0.4),
+                activeColor: AppColors.primaryBlue,
               ),
             ),
+          ),
+          _divider(),
+          _buildTile(
+            icon: Icons.cloud_upload_rounded,
+            color: AppColors.accentTeal,
+            title: "Cloud Backup",
+            onTap: () => _navigate(const BackupSettingsScreen()),
           ),
           _divider(),
           _buildTile(
             icon: Icons.notifications_rounded,
             color: AppColors.accentOrange,
             title: "Notifications",
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const NotificationSettingsScreen(),
-              ),
-            ),
+            onTap: () => _navigate(const NotificationSettingsScreen()),
           ),
           _divider(),
           _buildTile(
             icon: Icons.mark_email_unread_rounded,
             color: AppColors.error,
             title: "Gmail Sync",
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const GmailSettingsScreen()),
-            ),
+            onTap: () => _navigate(const GmailSettingsScreen()),
           ),
           _divider(),
           _buildTile(
-            icon: Icons.auto_awesome,
+            icon: Icons.settings_suggest_rounded,
             color: const Color(0xFF6366F1),
             title: "Nex Settings",
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AISettingsScreen()),
-            ),
+            onTap: () => _navigate(const NexSettingsScreen()),
           ),
         ],
       ),
@@ -253,26 +257,23 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         children: [
           _buildTile(
             icon: Icons.help_outline_rounded,
-            color: AppColors.textSecondary,
+            color: Colors.blueGrey,
             title: "Help & Support",
-            onTap: () => showTopSnackBar(context, "Coming Soon!"),
+            onTap: () => _launchEmail(),
           ),
           _divider(),
           _buildTile(
             icon: Icons.info_outline_rounded,
-            color: AppColors.textSecondary,
+            color: Colors.blueGrey,
             title: "About Nexus",
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AboutScreen()),
-            ),
+            onTap: () => _navigate(const AboutScreen()),
           ),
         ],
       ),
@@ -283,29 +284,42 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
     required IconData icon,
     required Color color,
     required String title,
+    String? subtitle,
     Widget? trailing,
     VoidCallback? onTap,
   }) {
     return ListTile(
       onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(icon, color: color, size: 20),
+        child: Icon(icon, color: color, size: 22),
       ),
       title: Text(
         title,
-        style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+        style: AppTypography.bodyLarge.copyWith(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w500,
+        ),
       ),
+      subtitle: subtitle != null
+          ? Text(
+              subtitle,
+              style: AppTypography.labelSmall.copyWith(
+                color: AppColors.textTertiary,
+              ),
+            )
+          : null,
       trailing:
           trailing ??
           Icon(
             Icons.chevron_right_rounded,
             color: AppColors.textTertiary,
-            size: 20,
+            size: 22,
           ),
     );
   }
@@ -313,28 +327,48 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
   Widget _divider() => Divider(
     height: 1,
     color: Colors.white.withOpacity(0.05),
-    indent: 56,
-    endIndent: 16,
+    indent: 70,
+    endIndent: 20,
   );
 
+  void _navigate(Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  }
+
+  Future<void> _launchEmail() async {
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: 'mahanadhip@gmail.com',
+      query: 'subject=Nexus Support',
+    );
+    if (await canLaunchUrl(emailUri)) {
+      await launchUrl(emailUri);
+    } else {
+      if (mounted) {
+        Clipboard.setData(const ClipboardData(text: 'mahanadhip@gmail.com'));
+        showTopSnackBar(context, "Email copied to clipboard");
+      }
+    }
+  }
+
   Widget _buildSignOutButton() {
-    return SizedBox(
+    return Container(
       width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.error.withOpacity(0.2)),
+      ),
       child: TextButton(
-        onPressed: () async {
-          final auth = AuthService();
-          await auth.signOut();
-        },
+        onPressed: () => AuthService().signOut(),
         style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          backgroundColor: AppColors.error.withOpacity(0.1),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 18),
         ),
         child: Text(
           "Sign Out",
-          style: AppTypography.labelLarge.copyWith(color: AppColors.error),
+          style: AppTypography.labelLarge.copyWith(
+            color: AppColors.error,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
@@ -359,21 +393,21 @@ class _ToolCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 24),
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
+            Icon(icon, color: color, size: 32),
+            const SizedBox(height: 10),
             Text(
               label,
               style: AppTypography.labelSmall.copyWith(
                 color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],

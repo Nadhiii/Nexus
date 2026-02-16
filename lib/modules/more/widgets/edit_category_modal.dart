@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/theme/app_animations.dart';
 import 'dart:ui';
 import '../../../../core/providers/category_provider.dart';
 import '../../../../core/models/category.dart';
@@ -43,14 +44,20 @@ class _EditCategoryModalState extends State<EditCategoryModal>
     super.initState();
     // Animation
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
+      duration: AppAnimations.slowest,
       vsync: this,
     );
     _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: AppAnimations.standardCurve,
+      ),
     );
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: AppAnimations.fadeOutCurve,
+      ),
     );
     _animationController.forward();
 
@@ -218,7 +225,7 @@ class _EditCategoryModalState extends State<EditCategoryModal>
                                   onTap: () =>
                                       setState(() => _selectedColor = color),
                                   child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
+                                    duration: AppAnimations.standard,
                                     width: 36,
                                     height: 36,
                                     decoration: BoxDecoration(

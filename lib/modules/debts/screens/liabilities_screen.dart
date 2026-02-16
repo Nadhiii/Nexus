@@ -6,7 +6,9 @@ import '../../../core/providers/debt_provider.dart';
 import '../../../core/models/debt.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_animations.dart';
 import '../../../core/widgets/swipe_to_delete.dart';
+import '../../../core/widgets/collapsible_fab.dart';
 import '../widgets/add_loan_sheet.dart';
 import '../widgets/add_credit_card_sheet.dart';
 import '../widgets/quick_pay_emi_sheet.dart';
@@ -168,7 +170,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
         },
       ),
       floatingActionButton: _buildFAB(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -194,7 +196,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
         setState(() => _filter = value);
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: AppAnimations.standard,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: color,
@@ -535,11 +537,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                           const SizedBox(height: 4),
                           Text(
                             '₹${_formatAmount(totalDebt)}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: AppTypography.currencyMedium,
                           ),
                           const SizedBox(height: 6),
                           Row(
@@ -1223,60 +1221,35 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
   }
 
   Widget _buildFAB() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Add Loan
-          FloatingActionButton.extended(
-            heroTag: 'add_loan',
-            onPressed: () => _showAddLoanSheet(context),
-            backgroundColor: AppColors.cardSurface,
-            elevation: 0,
-            icon: const Icon(
-              Icons.account_balance,
-              color: AppColors.info,
-              size: 20,
-            ),
-            label: const Text(
-              'Loan',
-              style: TextStyle(
-                color: AppColors.info,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: AppColors.info.withOpacity(0.3)),
-            ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Add Loan
+        CollapsibleFab(
+          heroTag: 'add_loan',
+          onPressed: () => _showAddLoanSheet(context),
+          backgroundColor: AppColors.cardSurface,
+          icon: const Icon(
+            Icons.account_balance,
+            color: AppColors.info,
+            size: 20,
           ),
-          const SizedBox(width: 12),
-          // Add Credit Card
-          FloatingActionButton.extended(
-            heroTag: 'add_card',
-            onPressed: () => _showAddCreditCardSheet(context),
-            backgroundColor: AppColors.cardSurface,
-            elevation: 0,
-            icon: const Icon(
-              Icons.credit_card,
-              color: AppColors.warning,
-              size: 20,
-            ),
-            label: const Text(
-              'Card',
-              style: TextStyle(
-                color: AppColors.warning,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: AppColors.warning.withOpacity(0.3)),
-            ),
+          label: 'Loan',
+        ),
+        const SizedBox(width: 12),
+        // Add Credit Card
+        CollapsibleFab(
+          heroTag: 'add_card',
+          onPressed: () => _showAddCreditCardSheet(context),
+          backgroundColor: AppColors.cardSurface,
+          icon: const Icon(
+            Icons.credit_card,
+            color: AppColors.warning,
+            size: 20,
           ),
-        ],
-      ),
+          label: 'Card',
+        ),
+      ],
     );
   }
 

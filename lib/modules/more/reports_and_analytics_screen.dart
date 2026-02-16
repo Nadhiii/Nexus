@@ -4,6 +4,7 @@ import '../../core/models/transaction.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_animations.dart';
 import 'widgets/chart_widgets.dart';
 import 'widgets/report_widgets.dart';
 
@@ -119,7 +120,7 @@ class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
             child: GestureDetector(
               onTap: () => setState(() => _selectedFilter = filter),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: AppAnimations.standard,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 10,

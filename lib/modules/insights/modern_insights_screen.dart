@@ -191,11 +191,7 @@ class ModernInsightsScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '₹${NumberFormat('#,##,###').format(netWorth)}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.w900,
-            ),
+            style: AppTypography.currencyLarge,
           ),
           const SizedBox(height: 24),
 

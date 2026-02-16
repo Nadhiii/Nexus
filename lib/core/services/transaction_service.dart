@@ -59,6 +59,28 @@ class TransactionService {
     await batch.commit();
   }
 
+  /// Get all transactions for a specific account (as both source and destination)
+  Future<List<Transaction>> getTransactionsByAccountId(
+    String userId,
+    String accountId,
+  ) async {
+    final snapshot = await _getTransactionsCollection(
+      userId,
+    ).where('accountId', isEqualTo: accountId).get();
+    final snapshot2 = await _getTransactionsCollection(
+      userId,
+    ).where('toAccountId', isEqualTo: accountId).get();
+
+    final transactions = <Transaction>[];
+    for (final doc in snapshot.docs) {
+      transactions.add(Transaction.fromFirestore(doc));
+    }
+    for (final doc in snapshot2.docs) {
+      transactions.add(Transaction.fromFirestore(doc));
+    }
+    return transactions;
+  }
+
   /// Delete all transactions linked to a specific account
   Future<int> deleteTransactionsByAccountId(
     String userId,

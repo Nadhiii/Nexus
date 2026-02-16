@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/account.dart';
+import '../models/transaction.dart';
 import '../services/account_service.dart';
 import '../services/transaction_service.dart';
 
 class AccountProvider with ChangeNotifier {
   final AccountService _accountService = AccountService();
+  final TransactionService _transactionService = TransactionService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   List<Account> _accounts = [];
   bool _isLoading = false;
   String? _error;
   bool _isInitialized = false;
+
+  // Undo support
+  Account? _lastDeletedAccount;
+  List<Transaction> _lastDeletedTransactions = [];
 
   List<Account> get accounts => _accounts;
   bool get isLoading => _isLoading;
@@ -109,8 +115,25 @@ class AccountProvider with ChangeNotifier {
 
     _setLoading(true);
     try {
-      // First, delete all transactions linked to this account
-      final TransactionService transactionService = TransactionService();
+      // Get the account and its transactions before deletion for undo support
+      final accountToDelete = _accounts.firstWhere(
+        (acc) => acc.id == accountId,
+        orElse: () => throw Exception('Account not found'),
+      );
+
+      // Get all transactions for this account
+      final allTransactions = await _transactionService
+          .getTransactionsByAccountId(user.uid, accountId);
+
+      // Store deleted data for undo
+      _lastDeletedAccount = accountToDelete;
+      _lastDeletedTransactions = allTransactions;
+      print(
+        '💾 Stored deleted account "${accountToDelete.name}" and ${allTransactions.length} transactions for undo',
+      );
+
+      // Delete all transactions linked to this account
+      final transactionService = TransactionService();
       final deletedCount = await transactionService
           .deleteTransactionsByAccountId(user.uid, accountId);
       print('🗑️ Deleted $deletedCount transaction(s) for account $accountId');
@@ -119,6 +142,45 @@ class AccountProvider with ChangeNotifier {
       await _accountService.deleteAccount(user.uid, accountId);
     } catch (e) {
       _setError(e.toString());
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Restore the last deleted account and its transactions
+  Future<void> restoreDeletedAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    if (_lastDeletedAccount == null) {
+      _setError('No deleted account to restore');
+      return;
+    }
+
+    _setLoading(true);
+    try {
+      final accountToRestore = _lastDeletedAccount!;
+      final transactionsToRestore = _lastDeletedTransactions;
+
+      // Restore the account
+      await _accountService.addAccount(user.uid, accountToRestore);
+      print('✅ Restored account: ${accountToRestore.name}');
+
+      // Restore its transactions
+      if (transactionsToRestore.isNotEmpty) {
+        await _transactionService.restoreTransactions(
+          user.uid,
+          transactionsToRestore,
+        );
+        print('✅ Restored ${transactionsToRestore.length} transactions');
+      }
+
+      // Clear the stored deleted data
+      _lastDeletedAccount = null;
+      _lastDeletedTransactions = [];
+    } catch (e) {
+      _setError('Failed to restore account: $e');
+      print('❌ Error restoring account: $e');
     } finally {
       _setLoading(false);
     }

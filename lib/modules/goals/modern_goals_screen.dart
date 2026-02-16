@@ -6,6 +6,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/models/goal.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/top_snackbar.dart';
+import '../../core/widgets/collapsible_fab.dart';
 import 'widgets/add_goal_modal.dart';
 
 class ModernGoalsScreen extends StatefulWidget {
@@ -175,26 +176,13 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
           );
         },
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 20.0),
-        child: FloatingActionButton.extended(
-          onPressed: () => showAddGoalModal(context, _addGoal),
-          backgroundColor: AppColors.cardSurface,
-          icon: Icon(Icons.add, color: AppColors.accentPurple),
-          label: Text(
-            'New Goal',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppColors.accentPurple,
-            ),
-          ),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-            side: BorderSide(color: AppColors.accentPurple.withOpacity(0.3)),
-          ),
-        ),
+      floatingActionButton: CollapsibleFab(
+        onPressed: () => showAddGoalModal(context, _addGoal),
+        backgroundColor: AppColors.cardSurface,
+        icon: const Icon(Icons.add, color: AppColors.accentPurple),
+        label: 'New Goal',
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -289,11 +277,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
             children: [
               Text(
                 '₹${_formatAmount(totalSaved)}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 36,
-                  fontWeight: FontWeight.w900,
-                ),
+                style: AppTypography.currencyLarge,
               ),
               const SizedBox(width: 8),
               Padding(

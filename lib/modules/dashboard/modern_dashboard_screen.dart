@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import '../../core/theme/app_animations.dart';
 
 // Providers
 import '../../core/providers/notification_provider.dart';
@@ -47,7 +49,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
 
   void _scheduleRecalc() {
     _recalcDebounce?.cancel();
-    _recalcDebounce = Timer(const Duration(milliseconds: 500), () {
+    _recalcDebounce = Timer(AppAnimations.verySlow, () {
       if (mounted) _recalculateAllBalances();
     });
   }
@@ -208,7 +210,6 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
 
   Widget _buildCompactBalanceCard(double balance) {
     final isPositive = balance > 0;
-    final isEmpty = balance == 0;
 
     // Monthly cash flow
     final txProvider = context.watch<TransactionProvider>();
@@ -223,6 +224,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     final monthExpense = monthTxns
         .where((t) => t.type == TransactionType.expense)
         .fold(0.0, (sum, t) => sum + t.amount);
+    final status = _resolveBalanceStatus(balance, monthExpense);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -269,26 +271,12 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      isEmpty
-                          ? Icons.remove
-                          : (isPositive
-                                ? Icons.trending_up
-                                : Icons.trending_down),
-                      color: isEmpty
-                          ? Colors.white54
-                          : (isPositive ? AppColors.success : AppColors.error),
-                      size: 11,
-                    ),
+                    Icon(status.icon, color: status.color, size: 11),
                     const SizedBox(width: 3),
                     Text(
-                      isEmpty ? 'Empty' : (isPositive ? 'Healthy' : 'Low'),
+                      status.label,
                       style: TextStyle(
-                        color: isEmpty
-                            ? Colors.white54
-                            : (isPositive
-                                  ? AppColors.success
-                                  : AppColors.error),
+                        color: status.color,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -303,13 +291,18 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
           // Balance amount
           Text(
             '₹${_formatIndianNumber(balance)}',
-            style: AppTypography.displaySmall.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w900,
-              fontSize: 32,
-            ),
+            style: AppTypography.currencyLarge,
           ),
           const SizedBox(height: 12),
+
+          Text(
+            status.message,
+            style: AppTypography.bodySmall.copyWith(
+              color: Colors.white.withOpacity(0.7),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
 
           // Cash flow row
           Container(
@@ -905,6 +898,88 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
   // FORMATTERS
   // ──────────────────────────────────────────────
 
+  _BalanceStatus _resolveBalanceStatus(double balance, double monthlyExpense) {
+    if (balance < 0) {
+      return _BalanceStatus(
+        label: 'Overdrawn',
+        color: AppColors.error,
+        icon: Icons.trending_down,
+        message: 'In the red right now',
+      );
+    }
+
+    if (balance < 5000) {
+      return _BalanceStatus(
+        label: 'Low',
+        color: AppColors.warning,
+        icon: Icons.warning_amber,
+        message: _buildRunwayMessage(balance, monthlyExpense),
+      );
+    }
+
+    if (monthlyExpense > 0) {
+      final runway = balance / monthlyExpense;
+      if (runway >= 2) {
+        return _BalanceStatus(
+          label: 'Good',
+          color: AppColors.success,
+          icon: Icons.verified,
+          message: _buildRunwayMessage(balance, monthlyExpense),
+        );
+      }
+
+      if (runway >= 1) {
+        return _BalanceStatus(
+          label: 'Moderate',
+          color: AppColors.info,
+          icon: Icons.trending_flat,
+          message: _buildRunwayMessage(balance, monthlyExpense),
+        );
+      }
+
+      return _BalanceStatus(
+        label: 'Low',
+        color: AppColors.warning,
+        icon: Icons.warning_amber,
+        message: _buildRunwayMessage(balance, monthlyExpense),
+      );
+    }
+
+    final label = balance >= 20000 ? 'Good' : 'Moderate';
+    final color = balance >= 20000 ? AppColors.success : AppColors.info;
+    final icon = balance >= 20000 ? Icons.verified : Icons.trending_flat;
+
+    return _BalanceStatus(
+      label: label,
+      color: color,
+      icon: icon,
+      message: 'No spend data yet',
+    );
+  }
+
+  String _buildRunwayMessage(double balance, double monthlyExpense) {
+    if (monthlyExpense <= 0) {
+      return 'No spend data yet';
+    }
+    final runway = balance / monthlyExpense;
+    if (runway <= 0) {
+      return 'In the red right now';
+    }
+    if (runway < 0.5) {
+      return 'Watch your wallet';
+    } else if (runway < 1) {
+      return 'Chill till next paycheck';
+    } else if (runway < 2) {
+      return 'You\'re good for a month';
+    } else if (runway < 3) {
+      return 'Chill for ~${runway.toStringAsFixed(1)} months';
+    } else if (runway < 6) {
+      return 'You\'re golden for a few months';
+    } else {
+      return 'You\'re set for life (almost)';
+    }
+  }
+
   String _formatIndianNumber(double amount) {
     if (amount == 0) return '0.00';
     final isNegative = amount < 0;
@@ -953,4 +1028,18 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
 
     return "${date.day}$suffix ${DateFormat('MMM').format(date)}";
   }
+}
+
+class _BalanceStatus {
+  final String label;
+  final Color color;
+  final IconData icon;
+  final String message;
+
+  const _BalanceStatus({
+    required this.label,
+    required this.color,
+    required this.icon,
+    required this.message,
+  });
 }

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_animations.dart';
 import '../../../core/providers/shared_expense_provider.dart';
 import '../../../core/models/shared_expense.dart';
 
@@ -327,7 +328,7 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                 return GestureDetector(
                   onTap: () => setState(() => _selectedPayer = member.id),
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: AppAnimations.standard,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 10,
@@ -442,7 +443,7 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                     });
                   },
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: AppAnimations.standard,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 10,

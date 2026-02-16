@@ -10,6 +10,8 @@ import '../../core/providers/transaction_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_animations.dart';
+import '../../core/utils/logo_utils.dart';
 import 'pdf_password_manager_screen.dart';
 
 class PDFImportScreen extends StatefulWidget {
@@ -731,6 +733,9 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: existingAccounts.map((account) {
+                      final bankLogo = LogoUtils.bankLogoFor(
+                        account.bankName ?? account.name,
+                      );
                       final isMatched = account.id == matchedAccount?.id;
                       return Container(
                         margin: const EdgeInsets.only(bottom: 8),
@@ -749,6 +754,19 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
+                          leading: bankLogo != null
+                              ? SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: LogoUtils.buildLogo(
+                                    bankLogo,
+                                    size: 32,
+                                  ),
+                                )
+                              : Icon(
+                                  account.icon,
+                                  color: AppColors.textSecondary,
+                                ),
                           title: Text(
                             account.name,
                             style: const TextStyle(color: Colors.white),
@@ -1027,7 +1045,7 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
                           () => selectedBank = isSelected ? null : bank,
                         ),
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
+                          duration: AppAnimations.standard,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/theme/app_animations.dart';
 import 'dart:ui';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -12,6 +13,7 @@ import '../../../core/providers/transaction_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/top_snackbar.dart';
+import '../../../core/utils/logo_utils.dart';
 
 class PayDebtModal extends StatefulWidget {
   final Debt debt;
@@ -38,13 +40,12 @@ class _PayDebtModalState extends State<PayDebtModal>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: AppAnimations.slow,
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 0.9,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _scaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: AppAnimations.fadeOutCurve),
+    );
     _controller.forward();
 
     // Default amount to EMI if available, else current balance
@@ -219,18 +220,23 @@ class _PayDebtModalState extends State<PayDebtModal>
                   ),
                   style: const TextStyle(color: Colors.white),
                   items: provider.accounts.map((account) {
+                    final bankLogo = LogoUtils.bankLogoFor(
+                      account.bankName ?? account.name,
+                    );
                     return DropdownMenuItem(
                       value: account,
                       child: Row(
                         children: [
-                          Icon(
-                            IconData(
-                              account.iconCodePoint,
-                              fontFamily: account.iconFontFamily,
-                            ),
-                            color: account.color,
-                            size: 18,
-                          ),
+                          bankLogo != null
+                              ? LogoUtils.buildLogo(bankLogo, size: 18)
+                              : Icon(
+                                  IconData(
+                                    account.iconCodePoint,
+                                    fontFamily: account.iconFontFamily,
+                                  ),
+                                  color: account.color,
+                                  size: 18,
+                                ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(

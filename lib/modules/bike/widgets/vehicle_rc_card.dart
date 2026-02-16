@@ -1,7 +1,10 @@
-import 'package:flutter/material.dart';
 import 'dart:math';
+import 'dart:ui';
+import 'package:flutter/material.dart';
 import '../../../core/models/bike.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_animations.dart';
+import '../../../core/utils/bike_image_utils.dart';
 import 'add_bike_dialog.dart';
 
 class VehicleRCWidget extends StatefulWidget {
@@ -24,10 +27,10 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: AppAnimations.ultra,
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOutBack),
+      CurvedAnimation(parent: _controller, curve: AppAnimations.backdropCurve),
     );
   }
 
@@ -76,18 +79,28 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
 
   // --- FRONT SIDE (Clean & Official) ---
   Widget _buildCardBase({required Widget child}) {
+    final imagePath = BikeImageUtils.getBikeImagePath(
+      widget.bike.image,
+      widget.bike.name,
+      widget.bike.model,
+    );
+    final hasImage = imagePath != null;
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 0),
       height: 200, // Fixed height for consistency during flip
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF2C3E50), // Slate Blue
-            const Color(0xFF000000), // Black
-          ],
-        ),
+        color: hasImage ? Colors.transparent : null,
+        gradient: hasImage
+            ? null
+            : const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF1E2D3D), // Muted Slate
+                  Color(0xFF0A0A0A), // Near-Black
+                ],
+              ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withOpacity(0.1)),
         boxShadow: [
@@ -98,8 +111,38 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
           ),
         ],
       ),
+      clipBehavior: Clip.hardEdge,
       child: Stack(
         children: [
+          if (hasImage)
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.9,
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    debugPrint('❌ RC Card image load failed: $error');
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
+            ),
+          if (hasImage)
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.black.withOpacity(0.35),
+                      Colors.black.withOpacity(0.75),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           // Watermark Icon
           Positioned(
             right: -20,

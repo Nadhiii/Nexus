@@ -8,6 +8,7 @@ import '../../core/providers/subscription_provider.dart';
 import '../../core/providers/goal_provider.dart';
 import '../../core/providers/budget_provider.dart';
 import '../../core/providers/family_debt_provider.dart';
+import '../../core/theme/app_animations.dart';
 import 'payday_checklist_sheet.dart';
 
 /// Helper to trigger payday checklist when income is added
@@ -72,7 +73,7 @@ class PaydayChecklistHelper {
     if (checklist.items.isEmpty) return;
 
     // Small delay to let the transaction screen close
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(AppAnimations.slow);
 
     if (context.mounted) {
       await PaydayChecklistSheet.show(

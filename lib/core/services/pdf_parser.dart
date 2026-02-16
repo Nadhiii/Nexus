@@ -3,19 +3,16 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../models/pdf_statement.dart';
+import '../config/ai_config.dart';
 
 class PDFParser {
-  final GenerativeModel _model;
+  final String _apiKey;
+  final List<String> _modelCandidates;
 
-  PDFParser(String apiKey)
-    : _model = GenerativeModel(
-        model: 'gemini-1.5-flash',
-        apiKey: apiKey,
-        generationConfig: GenerationConfig(
-          responseMimeType: 'application/json',
-          temperature: 0.1, // Keep it factual
-        ),
-      );
+  PDFParser(String apiKey, {List<String>? modelCandidates})
+    : _apiKey = apiKey,
+      // Use centralized AI config for model selection
+      _modelCandidates = modelCandidates ?? AIConfig.precisionModels;
 
   /// Analyzes the PDF and extracts transactions using Gemini
   Future<List<ExtractedTransaction>> parse(File pdfFile) async {
@@ -59,33 +56,62 @@ class PDFParser {
       DataPart('application/pdf', await pdfFile.readAsBytes()),
     ]);
 
-    try {
-      final response = await _model.generateContent([prompt]);
+    String? lastError;
 
-      if (response.text == null) throw Exception("Empty response from AI");
+    for (final modelName in _modelCandidates) {
+      try {
+        if (kDebugMode) print('Attempting PDF parse with model: $modelName');
 
-      // Clean Markdown if present (e.g. ```json ... ```)
-      String cleanJson = response.text!
-          .replaceAll(RegExp(r'^```json\s*', multiLine: true), '')
-          .replaceAll(RegExp(r'\s*```$', multiLine: true), '')
-          .trim();
-
-      final List<dynamic> rawList = jsonDecode(cleanJson);
-
-      return rawList.map((item) {
-        return ExtractedTransaction(
-          date: item['date'] ?? '',
-          description: item['merchant_name'] ?? item['description'],
-          amount: (item['amount'] is int)
-              ? (item['amount'] as int).toDouble()
-              : (item['amount'] as double),
-          type: item['type'] ?? 'expense',
-          lineNumber: 0,
+        final model = GenerativeModel(
+          model: modelName,
+          apiKey: _apiKey,
+          generationConfig: GenerationConfig(
+            temperature: 0.1, // Keep it factual
+            responseMimeType: 'application/json', // Force JSON output
+          ),
         );
-      }).toList();
-    } catch (e) {
-      if (kDebugMode) print('PDFParser Error: $e');
-      rethrow;
+
+        final response = await model.generateContent([prompt]);
+
+        if (response.text == null) {
+          throw Exception('Empty response from AI');
+        }
+
+        // Clean Markdown if present (e.g. ```json ... ```)
+        String cleanJson = response.text!
+            .replaceAll(RegExp(r'^```json\s*', multiLine: true), '')
+            .replaceAll(RegExp(r'\s*```$', multiLine: true), '')
+            .trim();
+
+        final List<dynamic> rawList = jsonDecode(cleanJson);
+
+        if (kDebugMode)
+          print(
+            'Success! Extracted ${rawList.length} transactions using $modelName.',
+          );
+
+        return rawList.map((item) {
+          return ExtractedTransaction(
+            date: item['date'] ?? '',
+            description:
+                item['merchant_name'] ?? item['description'] ?? 'Unknown',
+            amount: (item['amount'] is int)
+                ? (item['amount'] as int).toDouble()
+                : (item['amount'] as double),
+            type: item['type'] ?? 'expense',
+            lineNumber: 0,
+          );
+        }).toList();
+      } catch (e) {
+        lastError = e.toString();
+        // Log the error but continue to the next model
+        if (kDebugMode) print('Model $modelName failed: $e');
+
+        // Quota errors (429) or Not Found (404) should trigger fallback
+        continue;
+      }
     }
+
+    throw Exception('All models failed. Last error: $lastError');
   }
 }

@@ -24,6 +24,7 @@ class Bike {
   // Dashboard and display properties
   final bool isDashboardBike;
   final int displayOrder;
+  final String? image;
 
   Bike({
     required this.id,
@@ -45,6 +46,7 @@ class Bike {
     this.policyExpiry,
     this.isDashboardBike = false,
     this.displayOrder = 0,
+    this.image,
   });
 
   Bike copyWith({
@@ -67,6 +69,7 @@ class Bike {
     DateTime? policyExpiry,
     bool? isDashboardBike,
     int? displayOrder,
+    String? image,
   }) {
     return Bike(
       id: id ?? this.id,
@@ -88,6 +91,7 @@ class Bike {
       policyExpiry: policyExpiry ?? this.policyExpiry,
       isDashboardBike: isDashboardBike ?? this.isDashboardBike,
       displayOrder: displayOrder ?? this.displayOrder,
+      image: image ?? this.image,
     );
   }
 
@@ -114,6 +118,7 @@ class Bike {
           : null,
       'isDashboardBike': isDashboardBike,
       'displayOrder': displayOrder,
+      'image': image,
     };
   }
 
@@ -168,6 +173,7 @@ class Bike {
       policyExpiry: policyExpiryValue,
       isDashboardBike: map['isDashboardBike'] ?? false,
       displayOrder: map['displayOrder'] ?? 0,
+      image: map['image'],
     );
   }
 }

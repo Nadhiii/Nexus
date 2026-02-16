@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../models/ai_message.dart';
-import '../providers/ai_assistant_provider.dart';
-import 'ai_settings_screen.dart';
+import '../../../core/theme/app_animations.dart';
+import '../models/Nex_message.dart';
+import '../providers/Nex_assistant_provider.dart';
+import 'Nex_settings_screen.dart';
 
 /// Nex Chat Screen — embedded as a bottom navigation tab
 class AIChatScreen extends StatefulWidget {
@@ -22,32 +23,16 @@ class _AIChatScreenState extends State<AIChatScreen> {
   bool _hasInitialized = false;
 
   @override
-  void initState() {
-    super.initState();
-    // Don't initialize here - let main.dart handle it
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
-    // Initialize only once and only after providers are ready
-    if (!_hasInitialized && mounted) {
+
+    // Critical Fix: Force initialization when screen loads
+    // This prevents the "stuck on loading" bug
+    if (!_hasInitialized) {
       _hasInitialized = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        
-        try {
-          final provider = context.read<AIAssistantProvider>();
-          
-          // Only start new conversation if ready and doesn't have one
-          if (provider.isReady && 
-              provider.currentConversation == null && 
-              provider.isInitialized) {
-            provider.startNewConversation();
-          }
-        } catch (e) {
-          debugPrint('Error in AIChatScreen initialization: $e');
+        if (mounted) {
+          context.read<AIAssistantProvider>().initialize();
         }
       });
     }
@@ -63,12 +48,12 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 100), () {
+      Future.delayed(AppAnimations.extraFast, () {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
             _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
+            duration: AppAnimations.slow,
+            curve: AppAnimations.fadeOutCurve,
           );
         }
       });
@@ -82,7 +67,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       body: SafeArea(
         child: Consumer<AIAssistantProvider>(
           builder: (context, provider, _) {
-            // Show loading if not initialized
+            // 1. Show loading if not initialized
             if (!provider.isInitialized) {
               return Center(
                 child: Column(
@@ -91,7 +76,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     const CircularProgressIndicator(color: Colors.white),
                     const SizedBox(height: 16),
                     Text(
-                      'Loading Nex...',
+                      'Starting Nex...',
                       style: AppTypography.bodyMedium.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -115,12 +100,12 @@ class _AIChatScreenState extends State<AIChatScreen> {
                       : _buildMessageList(provider),
                 ),
 
-                // Quick Prompts
+                // Quick Prompts (Only show if empty conversation & ready)
                 if (provider.isReady &&
                     (provider.currentConversation?.messages.isEmpty ?? true))
                   _buildQuickPrompts(provider),
 
-                // Input
+                // Input Area
                 _buildInputArea(provider),
               ],
             );
@@ -139,7 +124,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
       child: Row(
         children: [
-          // Nex avatar
+          // Nex Avatar
           Container(
             width: 40,
             height: 40,
@@ -175,18 +160,31 @@ class _AIChatScreenState extends State<AIChatScreen> {
                   ),
                 ),
                 if (provider.isReady)
-                  Text(
-                    provider.activeModelName,
-                    style: TextStyle(
-                      color: AppColors.textTertiary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: AppColors.success,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Gemini 3.0 Active', // Static label as we auto-route now
+                        style: TextStyle(
+                          color: AppColors.textTertiary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
               ],
             ),
           ),
-          // New chat
+          // New Chat
           if (provider.isReady)
             IconButton(
               icon: Icon(
@@ -205,12 +203,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
               size: 20,
             ),
             tooltip: 'Settings',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AISettingsScreen()),
-              );
-            },
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NexSettingsScreen()),
+            ),
           ),
         ],
       ),
@@ -258,7 +254,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'I\'m Nex — I see everything in your app. Transactions, debts, investments, bank statements, all of it.\n\nJust need an API key to get started. Gemini is free!',
+              'I\'m Nex — I see everything in your app. Transactions, debts, investments, all of it.\n\nJust need a Gemini API key to get started. It\'s free!',
               textAlign: TextAlign.center,
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
@@ -267,12 +263,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
             ),
             const SizedBox(height: 32),
             GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AISettingsScreen()),
-                );
-              },
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NexSettingsScreen()),
+              ),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,
@@ -340,7 +334,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Ready when you are, Sir.',
+              'Ready when you are.',
               style: AppTypography.headlineMedium.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -348,38 +342,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'I can see all your accounts, transactions, debts, investments, and more. Ask me anything about your finances.',
+              'I can see all your accounts, transactions, debts, and investments. Ask me anything.',
               textAlign: TextAlign.center,
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
                 height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.cardSurface,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.auto_awesome,
-                    size: 14,
-                    color: AppColors.success,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Powered by ${provider.activeModelName}',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
               ),
             ),
           ],
@@ -398,7 +365,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: provider.currentConversation!.messages.length +
+      itemCount:
+          provider.currentConversation!.messages.length +
           (provider.isLoading ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == provider.currentConversation!.messages.length) {
@@ -446,8 +414,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
           if (isUser) const SizedBox(width: 40),
           Flexible(
             child: Column(
-              crossAxisAlignment:
-                  isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isUser
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 Container(
                   padding: const EdgeInsets.all(14),
@@ -455,8 +424,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     color: isUser
                         ? const Color(0xFF6366F1)
                         : (message.isError
-                            ? AppColors.error.withOpacity(0.2)
-                            : AppColors.cardSurface),
+                              ? AppColors.error.withOpacity(0.2)
+                              : AppColors.cardSurface),
                     borderRadius: isUser
                         ? const BorderRadius.only(
                             topLeft: Radius.circular(18),
@@ -609,32 +578,34 @@ class _AIChatScreenState extends State<AIChatScreen> {
             _buildPromptChip(
               'Monthly Summary',
               Icons.summarize,
-              () => provider.sendQuickPrompt('summary'),
+              () => _sendMessage(
+                'Give me a quick summary of my finances this month. How am I doing?',
+                provider,
+              ),
             ),
             _buildPromptChip(
               'Roast My Spending',
               Icons.local_fire_department,
-              () => provider.sendQuickPrompt('roast'),
-            ),
-            _buildPromptChip(
-              'Where Can I Save?',
-              Icons.savings,
-              () => provider.sendQuickPrompt('save'),
-            ),
-            _buildPromptChip(
-              'Upcoming Bills',
-              Icons.calendar_today,
-              () => provider.sendQuickPrompt('upcoming'),
+              () => _sendMessage(
+                'Roast my spending habits. Be brutally honest but funny.',
+                provider,
+              ),
             ),
             _buildPromptChip(
               'Debt Strategy',
               Icons.trending_down,
-              () => provider.sendQuickPrompt('debt_strategy'),
+              () => _sendMessage(
+                'What\'s the smartest way to tackle my debts? Give me a plan.',
+                provider,
+              ),
             ),
             _buildPromptChip(
-              'Health Check',
-              Icons.health_and_safety,
-              () => provider.sendQuickPrompt('health_check'),
+              'Upcoming Bills',
+              Icons.calendar_today,
+              () => _sendMessage(
+                'What bills and payments do I have coming up in the next 2 weeks?',
+                provider,
+              ),
             ),
           ],
         ),
@@ -680,7 +651,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
         16,
         8,
         16,
-        MediaQuery.of(context).padding.bottom + 80,
+        MediaQuery.of(context).padding.bottom + 80, // Adjust for bottom nav bar
       ),
       decoration: BoxDecoration(
         color: AppColors.backgroundBlack,
@@ -713,13 +684,16 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     vertical: 12,
                   ),
                 ),
-                onSubmitted: (_) => _sendMessage(provider),
+                onSubmitted: (_) =>
+                    _sendMessage(_messageController.text, provider),
               ),
             ),
           ),
           const SizedBox(width: 8),
           GestureDetector(
-            onTap: provider.isLoading ? null : () => _sendMessage(provider),
+            onTap: provider.isLoading
+                ? null
+                : () => _sendMessage(_messageController.text, provider),
             child: Container(
               width: 44,
               height: 44,
@@ -752,11 +726,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
     );
   }
 
-  void _sendMessage(AIAssistantProvider provider) {
-    final message = _messageController.text.trim();
-    if (message.isEmpty) return;
+  void _sendMessage(String message, AIAssistantProvider provider) {
+    final trimmedMessage = message.trim();
+    if (trimmedMessage.isEmpty) return;
 
     _messageController.clear();
-    provider.sendMessage(message);
+    provider.sendMessage(trimmedMessage);
   }
 }

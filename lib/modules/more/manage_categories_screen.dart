@@ -5,6 +5,7 @@ import '../../core/models/category.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/swipe_to_delete.dart';
+import '../../core/widgets/collapsible_fab.dart';
 import 'widgets/edit_category_modal.dart';
 
 class ManageCategoriesScreen extends StatelessWidget {
@@ -113,22 +114,13 @@ class ManageCategoriesScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 20.0),
-        child: FloatingActionButton.extended(
-          onPressed: () => showEditCategoryModal(context),
-          backgroundColor: AppColors.primaryBlue,
-          elevation: 8,
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text(
-            'Mint Category',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-        ),
+      floatingActionButton: CollapsibleFab(
+        onPressed: () => showEditCategoryModal(context),
+        backgroundColor: AppColors.primaryBlue,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: 'Mint Category',
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

@@ -8,6 +8,7 @@ import '../../../core/providers/debt_provider.dart';
 import '../../../core/models/debt.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_animations.dart';
 import '../../../core/widgets/top_snackbar.dart';
 
 /// Floating Modal for Add/Edit Credit Card - Following Subscription Design Pattern
@@ -57,14 +58,20 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
 
     // Animation
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
+      duration: AppAnimations.slowest,
       vsync: this,
     );
     _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: AppAnimations.standardCurve,
+      ),
     );
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: AppAnimations.fadeOutCurve,
+      ),
     );
     _animationController.forward();
 
