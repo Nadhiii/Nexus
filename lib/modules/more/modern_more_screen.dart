@@ -9,7 +9,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../backup/backup_settings_screen.dart';
 import '../notifications/notification_settings_screen.dart';
-import '../gmail/gmail_settings_screen.dart';
+import '../gmail/gmail_settings_enhanced_screen.dart';
 import '../family/screens/family_dashboard_screen.dart';
 import '../family/screens/expense_splitter_screen.dart';
 import 'package:nexus/modules/Nex/screens/Nex_settings_screen.dart';
@@ -216,7 +216,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                 onChanged: bio.isBiometricAvailable
                     ? (v) => bio.setAllBiometricFeatures(v)
                     : null,
-                activeColor: AppColors.primaryBlue,
+                activeThumbColor: AppColors.primaryBlue,
               ),
             ),
           ),
@@ -238,8 +238,8 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
           _buildTile(
             icon: Icons.mark_email_unread_rounded,
             color: AppColors.error,
-            title: "Gmail Sync",
-            onTap: () => _navigate(const GmailSettingsScreen()),
+            title: "NBox Sync",
+            onTap: () => _navigate(const GmailSettingsEnhancedScreen()),
           ),
           _divider(),
           _buildTile(

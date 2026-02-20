@@ -56,8 +56,9 @@ Extract every financial transaction into a strict JSON array.
 
     for (final modelName in _modelCandidates) {
       try {
-        if (kDebugMode)
+        if (kDebugMode) {
           print('Attempting PDF parse with Claude model: $modelName');
+        }
 
         final service = ClaudeAIService(apiKey: _apiKey);
 
@@ -93,10 +94,11 @@ Extract every financial transaction into a strict JSON array.
 
         final List<dynamic> rawList = jsonDecode(cleanJson);
 
-        if (kDebugMode)
+        if (kDebugMode) {
           print(
             'Success! Extracted ${rawList.length} transactions using Claude ($modelName).',
           );
+        }
 
         return rawList.map((item) {
           return ExtractedTransaction(

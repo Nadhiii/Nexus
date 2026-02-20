@@ -35,8 +35,9 @@ class PDFParsingService extends ChangeNotifier {
   /// Set which provider to use for PDF parsing
   void setPDFParsingProvider(PDFParsingProvider provider) {
     _provider = provider;
-    if (kDebugMode)
+    if (kDebugMode) {
       print('[PDFParsingService] Provider set to: ${provider.name}');
+    }
   }
 
   Future<PDFParseResult> parsePDF(
@@ -82,18 +83,21 @@ class PDFParsingService extends ChangeNotifier {
 
       try {
         transactions = await _localParser.parse(tempUnlockedFile);
-        if (kDebugMode)
+        if (kDebugMode) {
           print(
             '[PDFParsingService] Local parser succeeded with ${transactions.length} transactions',
           );
+        }
       } catch (e) {
         parseError = e.toString();
-        if (kDebugMode)
+        if (kDebugMode) {
           print('[PDFParsingService] Local parser failed: $parseError');
+        }
 
         // --- STEP 3: Fall back to AI parser ---
-        if (kDebugMode)
+        if (kDebugMode) {
           print('[PDFParsingService] Using provider: ${_provider.name}');
+        }
 
         if (_provider == PDFParsingProvider.claude) {
           // Use Claude for PDF parsing
@@ -110,8 +114,9 @@ class PDFParsingService extends ChangeNotifier {
             );
           }
 
-          if (kDebugMode)
+          if (kDebugMode) {
             print('[PDFParsingService] Sending to Claude parser...');
+          }
           final parser = ClaudePDFParser(_claudeApiKey!);
           transactions = await parser.parse(tempUnlockedFile);
         } else {
@@ -129,8 +134,9 @@ class PDFParsingService extends ChangeNotifier {
             );
           }
 
-          if (kDebugMode)
+          if (kDebugMode) {
             print('[PDFParsingService] Sending to Gemini parser...');
+          }
           final parser = PDFParser(_geminiApiKey!);
           transactions = await parser.parse(tempUnlockedFile);
         }

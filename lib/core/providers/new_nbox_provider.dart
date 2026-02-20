@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import 'package:another_telephony/telephony.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -11,9 +12,12 @@ import '../services/ai_categorization_service.dart';
 import '../../modules/Nex/providers/Nex_assistant_provider.dart';
 import 'category_provider.dart';
 import 'gmail_provider.dart';
+import '../models/nbox_settings.dart';
 
 class NewNboxProvider extends ChangeNotifier {
   GmailProvider? _gmailProvider;
+  NboxSettings _settings = const NboxSettings();
+  NboxSettings get settings => _settings;
 
   // Optional AI dependencies for smart categorization
   final AIAssistantProvider? _aiAssistantProvider;
@@ -30,6 +34,7 @@ class NewNboxProvider extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
   bool get isGmailLinked => _gmailProvider?.isLinked ?? false;
+  bool get smsReadingEnabled => _settings.smsReadingEnabled;
 
   List<DetectedTransaction> get pendingSms => List.unmodifiable(_pendingSms);
   List<DetectedTransaction> get pendingEmails =>
@@ -52,8 +57,30 @@ class NewNboxProvider extends ChangeNotifier {
   /// Initialize the provider - loads processed IDs and scans for transactions
   Future<void> initialize() async {
     if (_isInitialized) return;
+    await _loadSettings();
     await _loadProcessedIds();
     _isInitialized = true;
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final json = prefs.getString('nbox_settings');
+    if (json != null) {
+      _settings = NboxSettings.fromJson(
+        Map<String, dynamic>.from(await compute(_decodeJson, json)),
+      );
+      notifyListeners();
+    }
+  }
+
+  static Map<String, dynamic> _decodeJson(String json) =>
+      Map<String, dynamic>.from(jsonDecode(json));
+
+  Future<void> updateSettings(NboxSettings newSettings) async {
+    _settings = newSettings;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('nbox_settings', jsonEncode(_settings.toJson()));
+    notifyListeners();
   }
 
   void update(GmailProvider? gmailProvider) {
@@ -95,6 +122,10 @@ class NewNboxProvider extends ChangeNotifier {
 
   // --- FIXED SCAN FUNCTION ---
   Future<void> scanSmsInbox() async {
+    if (!smsReadingEnabled) {
+      if (kDebugMode) print('[NewNboxProvider] SMS reading disabled by user.');
+      return;
+    }
     if (kDebugMode) print('[NewNboxProvider] Starting SMS scan...');
     _setLoading(true);
 

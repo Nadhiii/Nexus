@@ -28,6 +28,7 @@ import '../modules/finance/modern_finance_screen.dart';
 import '../modules/insights/modern_insights_screen.dart';
 import '../modules/more/modern_more_screen.dart';
 import '../modules/bike/ui/modern_bike_screen_ui.dart';
+import '../modules/nbox/new_modern_nbox_screen.dart';
 import '../core/services/intent_navigation_service.dart';
 
 class MainScreen extends StatefulWidget {
@@ -126,6 +127,7 @@ class _MainScreenState extends State<MainScreen>
       ModernFinanceScreen(initialTabIndex: _financeScreenInitialTab),
       const ModernInsightsScreen(),
       const ModernBikeScreen(),
+      const NewModernNBoxScreen(),
       const ModernMoreScreen(),
     ];
 
@@ -235,10 +237,16 @@ class _MainScreenState extends State<MainScreen>
         'index': 3,
       },
       {
+        'icon': Icons.inbox_outlined,
+        'selectedIcon': Icons.inbox_rounded,
+        'label': 'NBox',
+        'index': 4,
+      },
+      {
         'icon': Icons.more_horiz_outlined,
         'selectedIcon': Icons.more_horiz_rounded,
         'label': 'More',
-        'index': 4,
+        'index': 5,
       },
     ];
 

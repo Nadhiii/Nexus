@@ -85,10 +85,11 @@ class PDFParser {
 
         final List<dynamic> rawList = jsonDecode(cleanJson);
 
-        if (kDebugMode)
+        if (kDebugMode) {
           print(
             'Success! Extracted ${rawList.length} transactions using $modelName.',
           );
+        }
 
         return rawList.map((item) {
           return ExtractedTransaction(

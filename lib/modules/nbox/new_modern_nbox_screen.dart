@@ -23,6 +23,32 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   final Set<String> _expandedIds = {};
   final Set<String> _selectedIds = {};
   bool _isSelectionMode = false;
+  bool _isSmsLoading = false;
+  bool _isGmailLoading = false;
+
+  Future<void> _refreshSms() async {
+    setState(() {
+      _isSmsLoading = true;
+    });
+    final nbox = context.read<NewNboxProvider>();
+    await nbox.scanSmsInbox();
+    setState(() {
+      _isSmsLoading = false;
+    });
+  }
+
+  Future<void> _refreshGmail() async {
+    setState(() {
+      _isGmailLoading = true;
+    });
+    final nbox = context.read<NewNboxProvider>();
+    if (nbox.isGmailLinked) {
+      await nbox.scanEmails();
+    }
+    setState(() {
+      _isGmailLoading = false;
+    });
+  }
 
   @override
   void initState() {
@@ -31,9 +57,21 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   }
 
   Future<void> _refreshData() async {
+    setState(() {
+      _isSmsLoading = true;
+      _isGmailLoading = true;
+    });
     final nbox = context.read<NewNboxProvider>();
     await nbox.scanSmsInbox();
-    if (nbox.isGmailLinked) await nbox.scanEmails();
+    setState(() {
+      _isSmsLoading = false;
+    });
+    if (nbox.isGmailLinked) {
+      await nbox.scanEmails();
+    }
+    setState(() {
+      _isGmailLoading = false;
+    });
   }
 
   // --- SELECTION LOGIC ---
@@ -212,7 +250,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         centerTitle: false,
         titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
         title: Text(
-          'Inbox',
+          'NBox',
           style: AppTypography.headlineMedium.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w800,
@@ -220,22 +258,66 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         ),
       ),
       actions: [
-        IconButton(
-          onPressed: _refreshData,
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.cardSurface,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white10),
-            ),
-            child: const Icon(
-              Icons.sync,
-              color: AppColors.primaryBlue,
-              size: 20,
-            ),
-          ),
-        ),
+        // SMS Refresh Button
+        _isSmsLoading
+            ? Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    color: AppColors.primaryBlue,
+                    strokeWidth: 2.5,
+                  ),
+                ),
+              )
+            : IconButton(
+                tooltip: 'Refresh SMS',
+                onPressed: _refreshSms,
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardSurface,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: const Icon(
+                    Icons.sms,
+                    color: AppColors.primaryBlue,
+                    size: 20,
+                  ),
+                ),
+              ),
+        // Gmail Refresh Button
+        _isGmailLoading
+            ? Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    color: AppColors.primaryBlue,
+                    strokeWidth: 2.5,
+                  ),
+                ),
+              )
+            : IconButton(
+                tooltip: 'Refresh Gmail',
+                onPressed: _refreshGmail,
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardSurface,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: const Icon(
+                    Icons.email,
+                    color: AppColors.primaryBlue,
+                    size: 20,
+                  ),
+                ),
+              ),
         const SizedBox(width: 16),
       ],
     );
@@ -827,7 +909,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     Icon(Icons.inbox_rounded, color: Colors.white70, size: 12),
                     const SizedBox(width: 4),
                     Text(
-                      '$count Items',
+                      '$count NBox Items',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
@@ -854,7 +936,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
               Icon(Icons.auto_awesome, color: Colors.purple.shade200, size: 14),
               const SizedBox(width: 6),
               Text(
-                'Detected from messages',
+                'Detected from SMS and Email',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.5),
                   fontSize: 12,

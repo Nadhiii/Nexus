@@ -191,24 +191,48 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                 surfaceTintColor: AppColors.backgroundBlack,
                 elevation: 0,
                 automaticallyImplyLeading: false,
-                flexibleSpace: FlexibleSpaceBar(
-                  centerTitle: false,
-                  titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
-                  title: _isSelectionMode
-                      ? Text(
-                          '${_selectedTransactionIds.length} selected',
-                          style: AppTypography.headlineMedium.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        )
-                      : Text(
-                          'Wallet',
-                          style: AppTypography.headlineMedium.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
+                flexibleSpace: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final percent =
+                        ((constraints.maxHeight - kToolbarHeight) /
+                                (110 - kToolbarHeight))
+                            .clamp(0.0, 1.0);
+                    return FlexibleSpaceBar(
+                      centerTitle: false,
+                      titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
+                      title: _isSelectionMode
+                          ? AnimatedOpacity(
+                              opacity: percent,
+                              duration: const Duration(milliseconds: 200),
+                              child: AnimatedScale(
+                                scale: 0.9 + 0.1 * percent,
+                                duration: const Duration(milliseconds: 200),
+                                child: Text(
+                                  '${_selectedTransactionIds.length} selected',
+                                  style: AppTypography.headlineMedium.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : AnimatedOpacity(
+                              opacity: percent,
+                              duration: const Duration(milliseconds: 200),
+                              child: AnimatedScale(
+                                scale: 0.9 + 0.1 * percent,
+                                duration: const Duration(milliseconds: 200),
+                                child: Text(
+                                  'Wallet',
+                                  style: AppTypography.headlineMedium.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                    );
+                  },
                 ),
                 actions: _currentView == WalletView.history
                     ? [

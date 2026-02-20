@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/top_snackbar.dart';
+import '../../core/providers/new_nbox_provider.dart';
 
 class GmailSettingsEnhancedScreen extends StatefulWidget {
   const GmailSettingsEnhancedScreen({super.key});
@@ -34,73 +35,164 @@ class _GmailSettingsEnhancedScreenState
     final provider = context.watch<GmailProvider>();
     final isLinked = provider.isLinked;
 
+    final nboxProvider = context.watch<NewNboxProvider>();
+    final smsEnabled = nboxProvider.smsReadingEnabled;
+    final gmailEnabled = provider.isLinked;
+
     return Scaffold(
       backgroundColor: AppColors.backgroundBlack,
-      appBar: AppBar(
-        title: const Text('Gmail Sync Settings'),
-        backgroundColor: AppColors.backgroundBlack,
-        elevation: 0,
-      ),
-      body: isLinked
-          ? SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Status
-                  _buildStatusCard(provider),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // Auto Sync
-                  _buildAutoSyncSection(),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // Scan Settings
-                  _buildScanSettingsSection(),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // Auto Approval
-                  _buildAutoApprovalSection(),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // Excluded Senders
-                  _buildExcludedSendersSection(),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // Save Button
-                  _buildSaveButton(),
-                  const SizedBox(height: AppSpacing.xl),
-                ],
-              ),
-            )
-          : Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.link_off_rounded,
-                      size: 64,
-                      color: AppColors.textTertiary,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      'Gmail Not Connected',
-                      style: AppTypography.headlineSmall,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      'Connect your Gmail account to enable advanced sync options',
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            floating: false,
+            expandedHeight: 110,
+            backgroundColor: AppColors.backgroundBlack,
+            surfaceTintColor: AppColors.backgroundBlack,
+            elevation: 0,
+            flexibleSpace: LayoutBuilder(
+              builder: (context, constraints) {
+                final percent =
+                    ((constraints.maxHeight - kToolbarHeight) /
+                            (110 - kToolbarHeight))
+                        .clamp(0.0, 1.0);
+                return FlexibleSpaceBar(
+                  centerTitle: false,
+                  titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
+                  title: AnimatedOpacity(
+                    opacity: percent,
+                    duration: const Duration(milliseconds: 200),
+                    child: AnimatedScale(
+                      scale: 0.9 + 0.1 * percent,
+                      duration: const Duration(milliseconds: 200),
+                      child: Text(
+                        'NBox Sync',
+                        style: AppTypography.headlineMedium.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.cardSurface,
+                  borderRadius: AppSpacing.borderRadiusMd,
+                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SwitchListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                      ),
+                      value: smsEnabled,
+                      onChanged: (val) {
+                        nboxProvider.updateSettings(
+                          nboxProvider.settings.copyWith(
+                            smsReadingEnabled: val,
+                          ),
+                        );
+                      },
+                      title: const Text('Enable SMS Reading'),
+                      subtitle: const Text(
+                        'Detect transactions from your SMS inbox. Only transactional messages are read; no personal content is accessed.',
+                      ),
+                      activeColor: AppColors.primaryBlue,
+                    ),
+                    Divider(color: Colors.white.withOpacity(0.05)),
+                    SwitchListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                      ),
+                      value: gmailEnabled,
+                      onChanged: gmailEnabled
+                          ? (val) {
+                              if (!val) provider.unlinkAccount();
+                            }
+                          : null,
+                      title: const Text('Enable Gmail Reading'),
+                      subtitle: const Text(
+                        'Detect transactions from your Gmail account. Only transactional emails are read; no personal content is accessed.',
+                      ),
+                      activeColor: AppColors.primaryBlue,
                     ),
                   ],
                 ),
               ),
             ),
+          ),
+          if (isLinked)
+            SliverPadding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildStatusCard(provider),
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildAutoSyncSection(),
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildScanSettingsSection(),
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildAutoApprovalSection(),
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildExcludedSendersSection(),
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildSaveButton(),
+                  const SizedBox(height: AppSpacing.xl),
+                ]),
+              ),
+            )
+          else
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.link_off_rounded,
+                        size: 64,
+                        color: AppColors.textTertiary,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        'Gmail Not Connected',
+                        style: AppTypography.headlineSmall,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Connect your Gmail account to enable advanced sync options',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -470,7 +562,7 @@ class _GmailSettingsEnhancedScreenState
               ElevatedButton.icon(
                 onPressed: _showAddSenderDialog,
                 icon: const Icon(Icons.add),
-                label: const Text('Add Sender'),
+                label: const Text('Add Email'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryBlue,
                 ),
@@ -516,7 +608,7 @@ class _GmailSettingsEnhancedScreenState
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Exclude Sender',
+                    'Add Email',
                     style: AppTypography.headlineSmall.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -533,7 +625,7 @@ class _GmailSettingsEnhancedScreenState
               ),
               const SizedBox(height: 8),
               Text(
-                'Emails from this sender will be ignored',
+                'Transactions and notifications from this email address will be excluded from NBox parsing and insights. Use this for newsletters, promos, or any sender you want to ignore.',
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),

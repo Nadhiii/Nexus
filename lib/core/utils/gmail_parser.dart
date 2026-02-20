@@ -98,7 +98,8 @@ class GmailParser {
     }
 
     String type = 'expense';
-    if (lower.contains('refund') ||
+    // FIX: Ignore "refund policy" which appears in Google Play receipts
+    if ((lower.contains('refund') && !lower.contains('refund policy')) ||
         lower.contains('received from') ||
         lower.contains('credited')) {
       type = 'income';
@@ -190,11 +191,20 @@ class GmailParser {
     AICategorizationService? aiCategorizationService,
   }) async {
     // 1. Find Amount
-    final amountPattern = RegExp(
-      r'(?:Rs\.?|INR|₹)\s?\.?\s*([0-9,]+(?:\.[0-9]+)?)',
+    // FIX: Look for a "Total:" amount first to handle multiple items in one email
+    final totalPattern = RegExp(
+      r'Total\s*[:\-]?\s*(?:Rs\.?|INR|₹)\s?\.?\s*([0-9,]+(?:\.[0-9]+)?)',
       caseSensitive: false,
     );
-    final amountMatch = amountPattern.firstMatch(text);
+
+    // FIX: Support "Refund Amount" without a currency symbol
+    final amountPattern = RegExp(
+      r'(?:(?:Rs\.?|INR|₹)\s?\.?\s*|refund\s+amount\s+)([0-9,]+(?:\.[0-9]+)?)',
+      caseSensitive: false,
+    );
+
+    final totalMatch = totalPattern.firstMatch(text);
+    final amountMatch = totalMatch ?? amountPattern.firstMatch(text);
 
     if (amountMatch == null) return null;
 
@@ -216,9 +226,15 @@ class GmailParser {
       caseSensitive: false,
     ).firstMatch(text);
 
-    // Strategy C: Standard "Paid to/at"
+    // Strategy C: Standard "Paid to/at" or "Payment to" (FIX: added "payment" for Razorpay)
     final atMatch = RegExp(
-      r'(?:paid|spent|purchase).*?(?:at|to)\s+([A-Za-z0-9\s]+?)(?:\s+on|\.|$)',
+      r'(?:paid|spent|purchase|payment).*?(?:at|to)\s+([A-Za-z0-9\s]+?)(?:\s+on|\.|$)',
+      caseSensitive: false,
+    ).firstMatch(text);
+
+    // Strategy E: Refunds (FIX: extract merchant from refund emails)
+    final refundMatch = RegExp(
+      r'refund.*?(?:from|by)\s+([A-Za-z0-9\s]+?)(?:\s+for|\.|$)',
       caseSensitive: false,
     ).firstMatch(text);
 
@@ -228,6 +244,8 @@ class GmailParser {
       merchant = forMatch.group(1)!.trim();
     } else if (atMatch != null) {
       merchant = atMatch.group(1)!.trim();
+    } else if (refundMatch != null) {
+      merchant = refundMatch.group(1)!.trim();
     }
 
     // Strategy D: Keyword Scanner (The Safety Net)
@@ -241,14 +259,16 @@ class GmailParser {
     String? detectedCategory;
     if (aiCategorizationService != null) {
       try {
-        final categorySuggestion =
-            await aiCategorizationService.suggestCategory(
-          merchantName: merchant,
-          description: null,
-          amount: amount,
-          transactionType: type,
-          fullMessageBody: text.length > 500 ? text.substring(0, 500) : text,
-        );
+        final categorySuggestion = await aiCategorizationService
+            .suggestCategory(
+              merchantName: merchant,
+              description: null,
+              amount: amount,
+              transactionType: type,
+              fullMessageBody: text.length > 500
+                  ? text.substring(0, 500)
+                  : text,
+            );
         detectedCategory = categorySuggestion.category;
       } catch (e) {
         // Fallback to old method if AI fails
@@ -280,6 +300,7 @@ class GmailParser {
       'vi ': 'Vodafone',
       'act fibernet': 'ACT Fibernet',
       'bescom': 'BESCOM',
+      'flipkart pay later': 'Flipkart Pay Later', // Added
       'flipkart': 'Flipkart',
       'amazon': 'Amazon',
       'swiggy': 'Swiggy',
@@ -292,6 +313,8 @@ class GmailParser {
       'google ireland': 'Google',
       'surfshark': 'Surfshark',
       'apple': 'Apple',
+      'digit insurance': 'Digit Insurance', // Added
+      'razorpay': 'Razorpay', // Added
       'gym': 'Gym Membership',
       'hospital': 'Hospital',
       'pharmacy': 'Pharmacy',
@@ -429,15 +452,16 @@ class GmailParser {
       String? detectedCategory;
       if (aiCategorizationService != null) {
         try {
-          final categorySuggestion =
-              await aiCategorizationService.suggestCategory(
-            merchantName: merchant,
-            description: null,
-            amount: amount,
-            transactionType: type,
-            fullMessageBody:
-                fullBody.length > 500 ? fullBody.substring(0, 500) : fullBody,
-          );
+          final categorySuggestion = await aiCategorizationService
+              .suggestCategory(
+                merchantName: merchant,
+                description: null,
+                amount: amount,
+                transactionType: type,
+                fullMessageBody: fullBody.length > 500
+                    ? fullBody.substring(0, 500)
+                    : fullBody,
+              );
           detectedCategory = categorySuggestion.category;
         } catch (e) {
           // Fallback to old method if AI fails

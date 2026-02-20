@@ -416,8 +416,9 @@ class AIAssistantProvider with ChangeNotifier {
     if (jsonStr != null) {
       final List list = jsonDecode(jsonStr);
       _conversations = list.map((e) => AIConversation.fromJson(e)).toList();
-      if (_conversations.isNotEmpty)
+      if (_conversations.isNotEmpty) {
         _currentConversation = _conversations.first;
+      }
     }
   }
 

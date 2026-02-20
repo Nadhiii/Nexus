@@ -15,6 +15,8 @@ import '../../core/providers/new_nbox_provider.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/services/transaction_categorization_service.dart';
 import '../../core/utils/logo_utils.dart';
+import '../../core/providers/subscription_provider.dart';
+import '../../core/services/transaction_match_service.dart';
 import '../payday/payday_checklist_helper.dart';
 
 class ModernAddTransactionScreen extends StatefulWidget {
@@ -89,9 +91,10 @@ class _ModernAddTransactionScreenState
         _selectedType = detected.type.toLowerCase() == 'income'
             ? TransactionType.income
             : TransactionType.expense;
-        _selectedCategory = _categorizationService.suggestCategory(
-          detected.merchant,
-        );
+        // Prefer detectedCategory if present, else fallback to merchant-based suggestion
+        _selectedCategory =
+            detected.detectedCategory ??
+            _categorizationService.suggestCategory(detected.merchant);
       }
     }
   }
@@ -913,7 +916,77 @@ class _ModernAddTransactionScreenState
           ? await provider.updateTransaction(transaction, widget.transaction!)
           : await provider.addTransaction(transaction);
 
+      // --- SUBSCRIPTION MATCHING AND PAYMENT ---
       if (success && mounted) {
+        // If this is a subscription expense, try to match and mark as paid
+        final categoryLower = _selectedCategory?.toLowerCase();
+        // --- SUBSCRIPTION ---
+        if (categoryLower == 'subscriptions' ||
+            _selectedCategory == 'subscriptions') {
+          final subscriptionProvider = context.read<SubscriptionProvider>();
+          final matchResult = TransactionMatchService.analyzeTransaction(
+            transaction: transaction,
+            subscriptions: subscriptionProvider.subscriptions,
+            debts: [],
+          );
+          final matches = matchResult.matches.where(
+            (m) => m.type.toString().contains('subscription'),
+          );
+          if (matches.isNotEmpty) {
+            final match = matches.first;
+            final subs = subscriptionProvider.subscriptions.where(
+              (s) => s.id == match.id,
+            );
+            if (subs.isNotEmpty) {
+              final sub = subs.first;
+              await subscriptionProvider.markSubscriptionPaid(sub);
+            }
+          }
+        }
+
+        // --- INVESTMENT ---
+        if (categoryLower == 'investment' ||
+            _selectedCategory == 'investment') {
+          // TODO: Implement InvestmentProvider logic
+          // Example:
+          // final investmentProvider = context.read<InvestmentProvider>();
+          // final matchResult = TransactionMatchService.analyzeTransaction(
+          //   transaction: transaction,
+          //   investments: investmentProvider.investments,
+          //   debts: [],
+          // );
+          // final matches = matchResult.matches.where((m) => m.type.toString().contains('investment'));
+          // if (matches.isNotEmpty) {
+          //   final match = matches.first;
+          //   final invs = investmentProvider.investments.where((i) => i.id == match.id);
+          //   if (invs.isNotEmpty) {
+          //     final inv = invs.first;
+          //     await investmentProvider.markInvestmentPaid(inv);
+          //   }
+          // }
+        }
+
+        // --- DEBTS ---
+        if (categoryLower == 'debts' || _selectedCategory == 'debts') {
+          // TODO: Implement DebtProvider logic
+          // Example:
+          // final debtProvider = context.read<DebtProvider>();
+          // final matchResult = TransactionMatchService.analyzeTransaction(
+          //   transaction: transaction,
+          //   subscriptions: [],
+          //   debts: debtProvider.debts,
+          // );
+          // final matches = matchResult.matches.where((m) => m.type.toString().contains('emi'));
+          // if (matches.isNotEmpty) {
+          //   final match = matches.first;
+          //   final debts = debtProvider.debts.where((d) => d.id == match.id);
+          //   if (debts.isNotEmpty) {
+          //     final debt = debts.first;
+          //     await debtProvider.markDebtPaid(debt);
+          //   }
+          // }
+        }
+
         if (widget.detectedTransaction != null && mounted) {
           context.read<NewNboxProvider>().markAsApproved(
             widget.detectedTransaction!.id,
