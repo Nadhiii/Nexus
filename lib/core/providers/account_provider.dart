@@ -4,10 +4,12 @@ import '../models/account.dart';
 import '../models/transaction.dart';
 import '../services/account_service.dart';
 import '../services/transaction_service.dart';
+import '../services/cascade_service.dart';
 
 class AccountProvider with ChangeNotifier {
   final AccountService _accountService = AccountService();
   final TransactionService _transactionService = TransactionService();
+  final CascadeService _cascadeService = CascadeService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   List<Account> _accounts = [];
@@ -115,31 +117,12 @@ class AccountProvider with ChangeNotifier {
 
     _setLoading(true);
     try {
-      // Get the account and its transactions before deletion for undo support
-      final accountToDelete = _accounts.firstWhere(
-        (acc) => acc.id == accountId,
-        orElse: () => throw Exception('Account not found'),
+      // Cascade delete account and transactions atomically
+      await _cascadeService.deleteAccountAndTransactions(
+        userId: user.uid,
+        accountId: accountId,
       );
-
-      // Get all transactions for this account
-      final allTransactions = await _transactionService
-          .getTransactionsByAccountId(user.uid, accountId);
-
-      // Store deleted data for undo
-      _lastDeletedAccount = accountToDelete;
-      _lastDeletedTransactions = allTransactions;
-      print(
-        '💾 Stored deleted account "${accountToDelete.name}" and ${allTransactions.length} transactions for undo',
-      );
-
-      // Delete all transactions linked to this account
-      final transactionService = TransactionService();
-      final deletedCount = await transactionService
-          .deleteTransactionsByAccountId(user.uid, accountId);
-      print('🗑️ Deleted $deletedCount transaction(s) for account $accountId');
-
-      // Then delete the account
-      await _accountService.deleteAccount(user.uid, accountId);
+      print('🗑️ Cascade deleted account and all related transactions for account $accountId');
     } catch (e) {
       _setError(e.toString());
     } finally {

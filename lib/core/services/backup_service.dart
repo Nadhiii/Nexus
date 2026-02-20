@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:convert';
 
 class BackupSummary {
   final String id;
@@ -80,6 +82,7 @@ class BackupService {
   Future<BackupSummary> createBackup({bool isAutoBackup = false}) async {
     if (_uid == null) throw Exception('Not authenticated');
 
+    // Expanded backup scope: add all relevant collections
     final collections = <String>[
       'accounts',
       'transactions',
@@ -88,6 +91,9 @@ class BackupService {
       'debts',
       'subscriptions',
       'investments',
+      'shared_expenses',
+      'family_debts',
+      'payday_checklists',
     ];
 
     final payload = <String, List<Map<String, dynamic>>>{};
@@ -117,11 +123,19 @@ class BackupService {
         .doc();
     final createdAt = DateTime.now();
 
+    // Serialize payload to JSON
+    final jsonString = jsonEncode(payload);
+    final storage = FirebaseStorage.instance;
+    final storagePath = 'backups/${_uid}/${docRef.id}.json';
+    final storageRef = storage.ref().child(storagePath);
+    await storageRef.putString(jsonString, format: PutStringFormat.raw);
+    final storageUrl = await storageRef.getDownloadURL();
+
     await docRef.set({
       'createdAt': Timestamp.fromDate(createdAt),
       'counts': counts,
-      'payload': payload,
-      'schemaVersion': 1,
+      'storageUrl': storageUrl,
+      'schemaVersion': 2,
       'isAutoBackup': isAutoBackup,
     });
 
@@ -261,13 +275,32 @@ class BackupService {
 
     final doc = await _backupDoc(backupId).get();
     if (!doc.exists) throw Exception('Backup not found');
-
     final data = doc.data()!;
-    final payload = Map<String, dynamic>.from(data['payload'] ?? {});
+
+    // Download and parse JSON from Cloud Storage
+    final storageUrl = data['storageUrl'] as String?;
+    if (storageUrl == null) throw Exception('Backup file missing storageUrl');
+
+    // Download JSON file
+    final storage = FirebaseStorage.instance;
+    final ref = storage.refFromURL(storageUrl);
+    final jsonString = await ref.getData(10 * 1024 * 1024) // 10 MiB max
+        .then((bytes) => bytes != null ? String.fromCharCodes(bytes) : null);
+    if (jsonString == null) throw Exception('Failed to download backup file');
+
+    // Parse JSON
+    Map<String, dynamic> payload;
+    try {
+      payload = jsonDecode(jsonString) as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception('Backup file is corrupted or invalid JSON: $e');
+    }
+
     final collections = payload.keys.where(
       (key) => key != 'bikes' && key != 'bike_entries' && key != 'bike_trips',
     );
 
+    // Only delete data after successful download/parse
     if (replace) {
       for (final col in collections) {
         await _deleteCollection(col);

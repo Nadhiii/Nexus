@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/transaction.dart';
 import '../services/transaction_service.dart';
+import '../services/ledger_service.dart';
 import 'notification_provider.dart';
 import 'budget_provider.dart';
 import 'account_provider.dart';
 
 class TransactionProvider with ChangeNotifier {
   final TransactionService _transactionService = TransactionService();
+  final LedgerService _ledgerService = LedgerService();
 
   NotificationProvider? _notificationProvider;
   BudgetProvider? _budgetProvider;
@@ -104,47 +106,40 @@ class TransactionProvider with ChangeNotifier {
       print(
         '➕ Adding transaction: ${transaction.description}, amount: ${transaction.amount}, userId: ${transaction.userId}',
       );
-      await _transactionService.addTransaction(transaction);
-      print('✅ Transaction added to Firestore');
-
-      // Handle transfers between accounts
-      print(
-        '🔍 Checking transfer: type=${transaction.type}, toAccountId=${transaction.toAccountId}',
-      );
-
-      if (transaction.type == TransactionType.transfer &&
-          transaction.toAccountId != null) {
+      // Atomic transaction + account update
+      if (transaction.type == TransactionType.transfer && transaction.toAccountId != null) {
         print('💸 Processing TRANSFER');
-
-        // Deduct from source account
-        print('📤 Deducting from source: ${transaction.accountId}');
-        await _updateAccountBalance(
-          transaction.accountId,
-          transaction.amount,
-          TransactionType.expense,
-          isReversal: false,
+        final sourceAccount = _accountProvider!.getAccountById(transaction.accountId);
+        final destAccount = _accountProvider!.getAccountById(transaction.toAccountId!);
+        if (sourceAccount == null || destAccount == null) {
+          _setError('Source or destination account not found');
+          _setLoading(false);
+          return false;
+        }
+        final sourceNewBalance = sourceAccount.balance - transaction.amount;
+        final destNewBalance = destAccount.balance + transaction.amount;
+        await _ledgerService.addTransferAndUpdateBalances(
+          transaction: transaction,
+          sourceNewBalance: sourceNewBalance,
+          destNewBalance: destNewBalance,
         );
-
-        // Add to destination account
-        print('📥 Adding to destination: ${transaction.toAccountId}');
-        await _updateAccountBalance(
-          transaction.toAccountId!,
-          transaction.amount,
-          TransactionType.income,
-          isReversal: false,
-        );
-        print(
-          '✅ Transfer completed: ${transaction.accountId} -> ${transaction.toAccountId}',
-        );
+        print('✅ Transfer and balances committed atomically');
       } else {
         print('💰 Processing regular ${transaction.type}');
-        await _updateAccountBalance(
-          transaction.accountId,
-          transaction.amount,
-          transaction.type,
-          isReversal: false,
+        final account = _accountProvider!.getAccountById(transaction.accountId);
+        if (account == null) {
+          _setError('Account not found');
+          _setLoading(false);
+          return false;
+        }
+        final newBalance = transaction.type == TransactionType.income
+            ? account.balance + transaction.amount
+            : account.balance - transaction.amount;
+        await _ledgerService.addTransactionAndUpdateBalance(
+          transaction: transaction,
+          newBalance: newBalance,
         );
-        print('✅ Account balance updated');
+        print('✅ Transaction and balance committed atomically');
       }
 
       _notificationProvider?.notifyTransaction(

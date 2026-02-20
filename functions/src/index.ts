@@ -645,4 +645,68 @@ export const onDebtUpdated = onDocumentUpdated(
   }
 );
 
+/**
+ * Scheduled function: Auto-log subscription payments due today
+ * Runs daily at 00:05 AM IST
+ */
+export const autoLogSubscriptionPayments = onSchedule(
+  {
+    schedule: "5 0 * * *", // 00:05 AM daily
+    timeZone: "Asia/Kolkata",
+  },
+  async () => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const usersSnapshot = await db.collection("users").get();
+    for (const userDoc of usersSnapshot.docs) {
+      const subscriptionsSnapshot = await db
+        .collection("users")
+        .doc(userDoc.id)
+        .collection("subscriptions")
+        .where("nextBillingDate", "<=", today)
+        .where("isActive", "==", true)
+        .get();
+
+      for (const subDoc of subscriptionsSnapshot.docs) {
+        const sub = subDoc.data();
+        // Create transaction
+        const txnRef = db
+          .collection("users")
+          .doc(userDoc.id)
+          .collection("transactions")
+          .doc();
+        await txnRef.set({
+          userId: userDoc.id,
+          accountId: sub.accountId || null,
+          type: "expense",
+          amount: sub.amount,
+          description: `Subscription: ${sub.name}`,
+          categoryId: sub.categoryId || "subscriptions",
+          date: admin.firestore.Timestamp.fromDate(today),
+          metadata: {
+            source: "subscription",
+            subscriptionId: subDoc.id,
+            subscriptionName: sub.name,
+          },
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // Update nextDueDate (monthly)
+        const nextDueDate = new Date(today);
+        nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+        await subDoc.ref.update({
+          nextBillingDate: admin.firestore.Timestamp.fromDate(nextDueDate),
+        });
+
+        logger.info(
+          `Auto-logged subscription payment for ${sub.name} (user ${userDoc.id}) and updated nextDueDate.`
+        );
+      }
+    }
+    logger.info("Auto-log subscription payments completed");
+  }
+);
+
 logger.info("Nexus Cloud Functions initialized");
