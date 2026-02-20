@@ -28,15 +28,9 @@ class AIConfig {
 
   // ==================== TASK ROUTING (GEMINI) ====================
 
-  static const List<String> _geminiChat = [
-    gemini15Flash,
-  ];
-  static const List<String> _geminiReasoning = [
-    gemini15Pro,
-  ];
-  static const List<String> _geminiPrecision = [
-    gemini15Pro,
-  ];
+  static const List<String> _geminiChat = [gemini15Flash];
+  static const List<String> _geminiReasoning = [gemini15Pro];
+  static const List<String> _geminiPrecision = [gemini15Pro];
 
   // Public accessors for backward compatibility
   static List<String> get chatModels => _geminiChat;
@@ -58,7 +52,8 @@ class AIConfig {
 
   // ==================== API KEY MANAGEMENT ====================
 
-  static final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  static final FlutterSecureStorage _secureStorage =
+      const FlutterSecureStorage();
 
   static Future<String?> getGeminiApiKey() async {
     return await _secureStorage.read(key: _geminiApiKeyPrimary) ??

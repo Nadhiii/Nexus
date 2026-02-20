@@ -14,18 +14,21 @@ class LedgerService {
   }) async {
     final userId = transaction.userId;
     final transactionRef = _firestore
-      .collection('users')
-      .doc(userId)
-      .collection('transactions')
-      .doc();
+        .collection('users')
+        .doc(userId)
+        .collection('transactions')
+        .doc();
     final accountRef = _firestore
-      .collection('users')
-      .doc(userId)
-      .collection('accounts')
-      .doc(transaction.accountId);
+        .collection('users')
+        .doc(userId)
+        .collection('accounts')
+        .doc(transaction.accountId);
 
     final batch = _firestore.batch();
-    batch.set(transactionRef, transaction.copyWith(id: transactionRef.id).toMap());
+    batch.set(
+      transactionRef,
+      transaction.copyWith(id: transactionRef.id).toMap(),
+    );
     batch.update(accountRef, {'balance': newBalance});
     await batch.commit();
   }
@@ -38,23 +41,26 @@ class LedgerService {
   }) async {
     final userId = transaction.userId;
     final transactionRef = _firestore
-      .collection('users')
-      .doc(userId)
-      .collection('transactions')
-      .doc();
+        .collection('users')
+        .doc(userId)
+        .collection('transactions')
+        .doc();
     final sourceAccountRef = _firestore
-      .collection('users')
-      .doc(userId)
-      .collection('accounts')
-      .doc(transaction.accountId);
+        .collection('users')
+        .doc(userId)
+        .collection('accounts')
+        .doc(transaction.accountId);
     final destAccountRef = _firestore
-      .collection('users')
-      .doc(userId)
-      .collection('accounts')
-      .doc(transaction.toAccountId);
+        .collection('users')
+        .doc(userId)
+        .collection('accounts')
+        .doc(transaction.toAccountId);
 
     final batch = _firestore.batch();
-    batch.set(transactionRef, transaction.copyWith(id: transactionRef.id).toMap());
+    batch.set(
+      transactionRef,
+      transaction.copyWith(id: transactionRef.id).toMap(),
+    );
     batch.update(sourceAccountRef, {'balance': sourceNewBalance});
     batch.update(destAccountRef, {'balance': destNewBalance});
     await batch.commit();

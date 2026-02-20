@@ -172,10 +172,22 @@ class BackupService {
     return list.first;
   }
 
-  /// Delete a specific backup.
+  /// Delete a specific backup (Firestore doc + Storage file).
   Future<void> deleteBackup(String id) async {
     if (_uid == null) throw Exception('Not authenticated');
-    await _backupDoc(id).delete();
+    final docRef = _backupDoc(id);
+    final docSnap = await docRef.get();
+    if (docSnap.exists) {
+      final storageUrl = docSnap.data()?['storageUrl'] as String?;
+      if (storageUrl != null) {
+        try {
+          await FirebaseStorage.instance.refFromURL(storageUrl).delete();
+        } catch (e) {
+          print('Warning: Failed to delete storage file for backup $id: $e');
+        }
+      }
+      await docRef.delete();
+    }
   }
 
   /// Delete all previous auto-backups (keeps only manual backups)
@@ -189,13 +201,19 @@ class BackupService {
         .where('isAutoBackup', isEqualTo: true)
         .get();
 
-    final batch = _firestore.batch();
     for (final doc in snap.docs) {
-      batch.delete(doc.reference);
+      final storageUrl = doc.data()['storageUrl'] as String?;
+      if (storageUrl != null) {
+        try {
+          await FirebaseStorage.instance.refFromURL(storageUrl).delete();
+        } catch (e) {
+          print('Warning: Failed to delete old auto-backup file: $e');
+        }
+      }
+      await doc.reference.delete();
     }
 
     if (snap.docs.isNotEmpty) {
-      await batch.commit();
       print('Deleted ${snap.docs.length} old auto-backup(s)');
     }
   }
@@ -284,7 +302,8 @@ class BackupService {
     // Download JSON file
     final storage = FirebaseStorage.instance;
     final ref = storage.refFromURL(storageUrl);
-    final jsonString = await ref.getData(10 * 1024 * 1024) // 10 MiB max
+    final jsonString = await ref
+        .getData(10 * 1024 * 1024) // 10 MiB max
         .then((bytes) => bytes != null ? String.fromCharCodes(bytes) : null);
     if (jsonString == null) throw Exception('Failed to download backup file');
 

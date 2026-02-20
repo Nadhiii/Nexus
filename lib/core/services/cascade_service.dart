@@ -10,19 +10,19 @@ class CascadeService {
     required String accountId,
   }) async {
     final accountRef = _firestore
-      .collection('users')
-      .doc(userId)
-      .collection('accounts')
-      .doc(accountId);
+        .collection('users')
+        .doc(userId)
+        .collection('accounts')
+        .doc(accountId);
     final transactionsRef = _firestore
-      .collection('users')
-      .doc(userId)
-      .collection('transactions');
+        .collection('users')
+        .doc(userId)
+        .collection('transactions');
 
     // Query all transactions for this account
     final txnSnapshot = await transactionsRef
-      .where('accountId', isEqualTo: accountId)
-      .get();
+        .where('accountId', isEqualTo: accountId)
+        .get();
 
     final batch = _firestore.batch();
     // Delete all transactions

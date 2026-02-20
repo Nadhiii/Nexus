@@ -107,10 +107,15 @@ class TransactionProvider with ChangeNotifier {
         '➕ Adding transaction: ${transaction.description}, amount: ${transaction.amount}, userId: ${transaction.userId}',
       );
       // Atomic transaction + account update
-      if (transaction.type == TransactionType.transfer && transaction.toAccountId != null) {
+      if (transaction.type == TransactionType.transfer &&
+          transaction.toAccountId != null) {
         print('💸 Processing TRANSFER');
-        final sourceAccount = _accountProvider!.getAccountById(transaction.accountId);
-        final destAccount = _accountProvider!.getAccountById(transaction.toAccountId!);
+        final sourceAccount = _accountProvider!.getAccountById(
+          transaction.accountId,
+        );
+        final destAccount = _accountProvider!.getAccountById(
+          transaction.toAccountId!,
+        );
         if (sourceAccount == null || destAccount == null) {
           _setError('Source or destination account not found');
           _setLoading(false);

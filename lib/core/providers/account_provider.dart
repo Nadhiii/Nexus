@@ -122,7 +122,9 @@ class AccountProvider with ChangeNotifier {
         userId: user.uid,
         accountId: accountId,
       );
-      print('🗑️ Cascade deleted account and all related transactions for account $accountId');
+      print(
+        '🗑️ Cascade deleted account and all related transactions for account $accountId',
+      );
     } catch (e) {
       _setError(e.toString());
     } finally {
