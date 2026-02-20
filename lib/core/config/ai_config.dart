@@ -1,4 +1,4 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Centralized AI Configuration
 /// Single source of truth for API keys, model names, and fallback chains.
@@ -11,12 +11,8 @@ class AIConfig {
 
   // ==================== GEMINI MODEL IDS ====================
   //
-  static const String gemini3FlashPreview = 'gemini-3-flash-preview';
-  static const String gemini3ProPreview = 'gemini-3-pro-preview';
-  static const String gemini2Flash = 'gemini-2.0-flash-exp';
-  static const String gemini2Thinking = 'gemini-2.0-flash-thinking-exp';
-  static const String gemini15Pro = 'gemini-1.5-pro-latest';
-  static const String gemini15Flash = 'gemini-1.5-flash-latest';
+  static const String gemini15Pro = 'gemini-1.5-pro';
+  static const String gemini15Flash = 'gemini-1.5-flash';
 
   // ==================== CLAUDE MODEL IDS ====================
   //
@@ -33,19 +29,13 @@ class AIConfig {
   // ==================== TASK ROUTING (GEMINI) ====================
 
   static const List<String> _geminiChat = [
-    gemini2Flash,
-    gemini3FlashPreview,
     gemini15Flash,
   ];
   static const List<String> _geminiReasoning = [
-    gemini2Thinking,
-    gemini3ProPreview,
     gemini15Pro,
   ];
   static const List<String> _geminiPrecision = [
     gemini15Pro,
-    gemini2Flash,
-    gemini3ProPreview,
   ];
 
   // Public accessors for backward compatibility
@@ -68,44 +58,34 @@ class AIConfig {
 
   // ==================== API KEY MANAGEMENT ====================
 
-  static SharedPreferences? _prefs;
-
-  static Future<void> init() async {
-    _prefs ??= await SharedPreferences.getInstance();
-  }
+  static final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   static Future<String?> getGeminiApiKey() async {
-    await init();
-    return _prefs?.getString(_geminiApiKeyPrimary) ??
-        _prefs?.getString(_geminiApiKeyFallback);
+    return await _secureStorage.read(key: _geminiApiKeyPrimary) ??
+        await _secureStorage.read(key: _geminiApiKeyFallback);
   }
 
   static Future<void> setGeminiApiKey(String key) async {
-    await init();
-    await _prefs?.setString(_geminiApiKeyPrimary, key);
+    await _secureStorage.write(key: _geminiApiKeyPrimary, value: key);
   }
 
   static Future<String?> getClaudeApiKey() async {
-    await init();
-    return _prefs?.getString(_claudeApiKeyKey);
+    return await _secureStorage.read(key: _claudeApiKeyKey);
   }
 
   static Future<void> setClaudeApiKey(String key) async {
-    await init();
-    await _prefs?.setString(_claudeApiKeyKey, key);
+    await _secureStorage.write(key: _claudeApiKeyKey, value: key);
   }
 
   /// Get the user's preferred AI provider (default: Gemini)
   static Future<AIProvider> getProvider() async {
-    await init();
-    final saved = _prefs?.getString(_activeProviderKey);
+    final saved = await _secureStorage.read(key: _activeProviderKey);
     return saved == 'claude' ? AIProvider.claude : AIProvider.gemini;
   }
 
   /// Set the preferred AI provider
   static Future<void> setProvider(AIProvider provider) async {
-    await init();
-    await _prefs?.setString(_activeProviderKey, provider.name);
+    await _secureStorage.write(key: _activeProviderKey, value: provider.name);
   }
 
   // ==================== MODEL SELECTION ====================
