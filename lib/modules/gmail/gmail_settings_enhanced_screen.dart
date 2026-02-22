@@ -114,7 +114,7 @@ class _GmailSettingsEnhancedScreenState
                       subtitle: const Text(
                         'Detect transactions from your SMS inbox. Only transactional messages are read; no personal content is accessed.',
                       ),
-                      activeColor: AppColors.primaryBlue,
+                      activeThumbColor: AppColors.primaryBlue,
                     ),
                     Divider(color: Colors.white.withOpacity(0.05)),
                     SwitchListTile(
@@ -131,7 +131,7 @@ class _GmailSettingsEnhancedScreenState
                       subtitle: const Text(
                         'Detect transactions from your Gmail account. Only transactional emails are read; no personal content is accessed.',
                       ),
-                      activeColor: AppColors.primaryBlue,
+                      activeThumbColor: AppColors.primaryBlue,
                     ),
                   ],
                 ),

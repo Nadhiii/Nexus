@@ -13,6 +13,7 @@ import '../../core/providers/bike_provider.dart';
 
 // Theme & Widgets
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/animated_number_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/models/account.dart';
@@ -288,8 +289,10 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
           const SizedBox(height: 8),
 
           // Balance amount
-          Text(
-            '₹${_formatIndianNumber(balance)}',
+          AnimatedNumberText(
+            number: balance,
+            decimalPlaces: 2,
+            prefix: '₹',
             style: AppTypography.currencyLarge,
           ),
           const SizedBox(height: 12),

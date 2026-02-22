@@ -126,7 +126,7 @@ class BackupService {
     // Serialize payload to JSON
     final jsonString = jsonEncode(payload);
     final storage = FirebaseStorage.instance;
-    final storagePath = 'backups/${_uid}/${docRef.id}.json';
+    final storagePath = 'backups/$_uid/${docRef.id}.json';
     final storageRef = storage.ref().child(storagePath);
     await storageRef.putString(jsonString, format: PutStringFormat.raw);
     final storageUrl = await storageRef.getDownloadURL();

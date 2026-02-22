@@ -475,86 +475,169 @@ class _ModernAddTransactionScreenState
                                 padding: const EdgeInsets.symmetric(
                                   vertical: AppSpacing.xs,
                                 ),
-                                child: DropdownButtonFormField<String>(
-                                  focusNode: _categoryFocus,
-                                  initialValue: resolvedCategoryId,
-                                  dropdownColor: AppColors.cardDarkElevated,
-                                  style: AppTypography.bodyLarge.copyWith(
-                                    color: AppColors.textPrimary,
-                                  ),
-                                  decoration: InputDecoration(
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(
-                                        AppSpacing.radiusLg,
-                                      ),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.lg,
-                                      vertical: AppSpacing.md,
-                                    ),
-                                  ),
-                                  hint: Text(
-                                    'Select category',
-                                    style: AppTypography.bodyLarge.copyWith(
-                                      color: AppColors.textTertiary,
-                                    ),
-                                  ),
-                                  items: categories.map((c) {
-                                    return DropdownMenuItem<String>(
-                                      value: c.id,
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: AppSpacing.sm,
-                                              vertical: AppSpacing.xs,
+                                child: Builder(
+                                  builder: (context) {
+                                    // Build a custom dropdown with overlay for full control
+                                    final selectedCat = (categories.isNotEmpty)
+                                        ? categories.firstWhere(
+                                            (c) => c.id == _selectedCategory,
+                                            orElse: () => categories.first,
+                                          )
+                                        : null;
+                                    return GestureDetector(
+                                      onTap: () async {
+                                        final RenderBox box =
+                                            context.findRenderObject()
+                                                as RenderBox;
+                                        final Offset position = box
+                                            .localToGlobal(Offset.zero);
+                                        final selected = await showMenu<String>(
+                                          context: context,
+                                          position: RelativeRect.fromLTRB(
+                                            position.dx,
+                                            position.dy + box.size.height,
+                                            position.dx + box.size.width,
+                                            position.dy,
+                                          ),
+                                          color: AppColors.cardDarkElevated,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              AppSpacing.radiusLg,
                                             ),
-                                            decoration: BoxDecoration(
-                                              color: c.color.withOpacity(0.2),
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                    AppSpacing.radiusSm,
+                                          ),
+                                          items: categories.map((c) {
+                                            return PopupMenuItem<String>(
+                                              value: c.id,
+                                              child: Row(
+                                                children: [
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal:
+                                                              AppSpacing.sm,
+                                                          vertical:
+                                                              AppSpacing.xs,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: c.color
+                                                          .withOpacity(0.2),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            AppSpacing.radiusSm,
+                                                          ),
+                                                    ),
+                                                    child: Text(
+                                                      c.emoji,
+                                                      style: const TextStyle(
+                                                        fontSize: 16,
+                                                      ),
+                                                    ),
                                                   ),
-                                            ),
-                                            child: Text(
-                                              c.emoji,
-                                              style: const TextStyle(
-                                                fontSize: 16,
+                                                  const SizedBox(
+                                                    width: AppSpacing.sm,
+                                                  ),
+                                                  Text(
+                                                    c.name,
+                                                    style: AppTypography
+                                                        .bodyLarge
+                                                        .copyWith(
+                                                          color: AppColors
+                                                              .textPrimary,
+                                                        ),
+                                                  ),
+                                                ],
                                               ),
+                                            );
+                                          }).toList(),
+                                        );
+                                        if (selected != null) {
+                                          setState(() {
+                                            _selectedCategory = selected;
+                                          });
+                                        }
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: AppSpacing.lg,
+                                          vertical: AppSpacing.md,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.cardDarkElevated,
+                                          borderRadius: BorderRadius.circular(
+                                            AppSpacing.radiusLg,
+                                          ),
+                                          border: Border.all(
+                                            color: _selectedCategory == null
+                                                ? AppColors.textTertiary
+                                                      .withOpacity(0.2)
+                                                : AppColors.primaryBlue
+                                                      .withOpacity(0.4),
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.08,
+                                              ),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 4),
                                             ),
-                                          ),
-                                          const SizedBox(width: AppSpacing.sm),
-                                          Text(
-                                            c.name,
-                                            style: AppTypography.bodyLarge
-                                                .copyWith(
-                                                  color: AppColors.textPrimary,
+                                          ],
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            if (selectedCat != null &&
+                                                _selectedCategory != null) ...[
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: AppSpacing.sm,
+                                                      vertical: AppSpacing.xs,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: selectedCat.color
+                                                      .withOpacity(0.2),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        AppSpacing.radiusSm,
+                                                      ),
                                                 ),
-                                          ),
-                                        ],
+                                                child: Text(
+                                                  selectedCat.emoji,
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(
+                                                width: AppSpacing.sm,
+                                              ),
+                                              Text(
+                                                selectedCat.name,
+                                                style: AppTypography.bodyLarge
+                                                    .copyWith(
+                                                      color:
+                                                          AppColors.textPrimary,
+                                                    ),
+                                              ),
+                                            ] else ...[
+                                              Text(
+                                                'Select category',
+                                                style: AppTypography.bodyLarge
+                                                    .copyWith(
+                                                      color: AppColors
+                                                          .textTertiary,
+                                                    ),
+                                              ),
+                                            ],
+                                            const Spacer(),
+                                            Icon(
+                                              Icons.keyboard_arrow_down,
+                                              color: AppColors.textTertiary,
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     );
-                                  }).toList(),
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _selectedCategory = value;
-                                      _categoryHasFocus = true;
-                                    });
-                                    // Briefly animate selection feedback
-                                    Future.delayed(AppAnimations.fast, () {
-                                      if (mounted) {
-                                        setState(() {
-                                          _categoryHasFocus = false;
-                                        });
-                                      }
-                                    });
-                                  },
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please select a category';
-                                    }
-                                    return null;
                                   },
                                 ),
                               ),

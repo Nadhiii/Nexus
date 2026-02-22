@@ -88,6 +88,7 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 0),
       height: 200, // Fixed height for consistency during flip
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: hasImage ? Colors.transparent : null,
         gradient: hasImage
@@ -100,12 +101,12 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
                   Color(0xFF0A0A0A), // Near-Black
                 ],
               ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 12,
+            color: Colors.black.withOpacity(0.13),
+            blurRadius: 18,
             offset: const Offset(0, 6),
           ),
         ],
@@ -152,7 +153,7 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
               color: Colors.white.withOpacity(0.03),
             ),
           ),
-          Padding(padding: const EdgeInsets.all(20), child: child),
+          child,
         ],
       ),
     );

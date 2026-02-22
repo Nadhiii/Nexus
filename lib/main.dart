@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
-import 'core/config/ai_config.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/account_provider.dart';
 import 'core/providers/transaction_provider.dart';
@@ -35,9 +34,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  // Initialize AI Config early to ensure API keys are ready
-  await AIConfig.init();
 
   // Initialize Crashlytics for error reporting
   await CrashReportingService().initialize();

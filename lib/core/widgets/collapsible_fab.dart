@@ -52,32 +52,37 @@ class _CollapsibleFabState extends State<CollapsibleFab> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedCrossFade(
-      duration: AppAnimations.fabCrossFadeDuration,
-      crossFadeState: _expanded
-          ? CrossFadeState.showSecond
-          : CrossFadeState.showFirst,
-      firstChild: FloatingActionButton(
-        heroTag: widget.heroTag,
-        onPressed: _handlePressed,
-        backgroundColor: widget.backgroundColor,
-        foregroundColor: widget.foregroundColor,
-        child: widget.icon,
-      ),
-      secondChild: FloatingActionButton.extended(
-        heroTag: widget.heroTag,
-        onPressed: _handlePressed,
-        backgroundColor: widget.backgroundColor,
-        foregroundColor: widget.foregroundColor,
-        icon: widget.icon,
-        label: Text(
-          widget.label,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+    // Add margin to lift the FAB above the floating NavBar
+    // 70 (NavBar height) + 32 (NavBar bottom margin) + 16 (extra spacing) = ~118
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 90),
+      child: AnimatedCrossFade(
+        duration: AppAnimations.fabCrossFadeDuration,
+        crossFadeState: _expanded
+            ? CrossFadeState.showSecond
+            : CrossFadeState.showFirst,
+        firstChild: FloatingActionButton(
+          heroTag: widget.heroTag,
+          onPressed: _handlePressed,
+          backgroundColor: widget.backgroundColor,
+          foregroundColor: widget.foregroundColor,
+          child: widget.icon,
         ),
+        secondChild: FloatingActionButton.extended(
+          heroTag: widget.heroTag,
+          onPressed: _handlePressed,
+          backgroundColor: widget.backgroundColor,
+          foregroundColor: widget.foregroundColor,
+          icon: widget.icon,
+          label: Text(
+            widget.label,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        firstCurve: AppAnimations.fadeOutCurve,
+        secondCurve: AppAnimations.fadeInCurve,
+        sizeCurve: AppAnimations.sizeCurve,
       ),
-      firstCurve: AppAnimations.fadeOutCurve,
-      secondCurve: AppAnimations.fadeInCurve,
-      sizeCurve: AppAnimations.sizeCurve,
     );
   }
 }

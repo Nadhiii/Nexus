@@ -27,17 +27,20 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   bool _isGmailLoading = false;
 
   Future<void> _refreshSms() async {
+    if (!mounted) return;
     setState(() {
       _isSmsLoading = true;
     });
     final nbox = context.read<NewNboxProvider>();
     await nbox.scanSmsInbox();
+    if (!mounted) return;
     setState(() {
       _isSmsLoading = false;
     });
   }
 
   Future<void> _refreshGmail() async {
+    if (!mounted) return;
     setState(() {
       _isGmailLoading = true;
     });
@@ -45,6 +48,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     if (nbox.isGmailLinked) {
       await nbox.scanEmails();
     }
+    if (!mounted) return;
     setState(() {
       _isGmailLoading = false;
     });
@@ -57,18 +61,21 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   }
 
   Future<void> _refreshData() async {
+    if (!mounted) return;
     setState(() {
       _isSmsLoading = true;
       _isGmailLoading = true;
     });
     final nbox = context.read<NewNboxProvider>();
     await nbox.scanSmsInbox();
+    if (!mounted) return;
     setState(() {
       _isSmsLoading = false;
     });
     if (nbox.isGmailLinked) {
       await nbox.scanEmails();
     }
+    if (!mounted) return;
     setState(() {
       _isGmailLoading = false;
     });

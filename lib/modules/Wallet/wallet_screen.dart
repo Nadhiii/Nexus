@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/widgets/collapsible_fab.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../core/widgets/animated_number_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_animations.dart';
@@ -19,7 +20,7 @@ import '../../core/utils/logo_utils.dart';
 enum WalletView { accounts, history }
 
 class ModernFinanceScreen extends StatefulWidget {
-  final int initialTabIndex; // Kept for backward compatibility if needed
+  final int initialTabIndex;
   const ModernFinanceScreen({super.key, this.initialTabIndex = 0});
 
   @override
@@ -183,7 +184,6 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
 
           return CustomScrollView(
             slivers: [
-              // 1. HEADER
               SliverAppBar(
                 pinned: true,
                 expandedHeight: 110,
@@ -267,22 +267,25 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                     : null,
               ),
 
-              // 2. TOTAL CASH HERO (Only show on Accounts view, or always? Let's show always for context)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 10,
                   ),
-                  child: _buildTotalCashCard(
-                    totalCash,
-                    accountProvider.accounts.length,
-                    monthExpense,
+                  child: AnimatedSize(
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.easeInOutCubic,
+                    alignment: Alignment.topCenter,
+                    child: _buildTotalCashCard(
+                      totalCash,
+                      accountProvider.accounts.length,
+                      monthExpense,
+                    ),
                   ),
                 ),
               ),
 
-              // 3. GLASS TOGGLE
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -293,7 +296,6 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                 ),
               ),
 
-              // 4. CONTENT LIST
               if (_currentView == WalletView.accounts)
                 _buildAccountsList(context, accountProvider)
               else
@@ -328,109 +330,56 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
   }
 
   Widget _buildTotalCashCard(double total, int count, double monthExpense) {
-    final status = _resolveBalanceStatus(total, monthExpense);
-    final formattedTotal = _formatSignedCurrency(total);
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.blue.shade900.withOpacity(0.9),
-            const Color(0xFF1E3A8A),
-            AppColors.cardSurface,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.blue.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.2),
-            blurRadius: 30,
-            offset: const Offset(0, 10),
+    return _WalletFlipCard(
+      total: total,
+      count: count,
+      monthExpense: monthExpense,
+      resolveStatus: _resolveBalanceStatus,
+      formatCurrency: _formatSignedCurrency,
+    );
+  }
+
+  Widget _buildEmptyStateWithAction(
+    BuildContext context,
+    String text,
+    IconData icon,
+    String actionLabel,
+    VoidCallback onPressed,
+  ) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 64, color: AppColors.textTertiary.withOpacity(0.3)),
+          const SizedBox(height: 16),
+          Text(text, style: TextStyle(color: AppColors.textTertiary)),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            icon: Icon(icon, size: 20),
+            label: Text(actionLabel),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
+            onPressed: onPressed,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEmptyState(String text, IconData icon) {
+    return Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'LIQUID ASSETS',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(status.icon, color: status.color, size: 12),
-                    const SizedBox(width: 4),
-                    Text(
-                      status.label,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            formattedTotal,
-            style: AppTypography.displaySmall.copyWith(
-              color: Colors.white,
-              fontSize: 36,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            status.message,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(
-                Icons.account_balance_wallet_outlined,
-                color: Colors.white70,
-                size: 14,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '$count Accounts',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+          Icon(icon, size: 64, color: AppColors.textTertiary.withOpacity(0.3)),
+          const SizedBox(height: 16),
+          Text(text, style: TextStyle(color: AppColors.textTertiary)),
         ],
       ),
     );
@@ -569,7 +518,17 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
     }
     if (provider.accounts.isEmpty) {
       return SliverFillRemaining(
-        child: _buildEmptyState("No Accounts Linked", Icons.account_balance),
+        child: _buildEmptyStateWithAction(
+          context,
+          "No Accounts Linked",
+          Icons.account_balance,
+          "Add Account",
+          () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const ModernAddAccountScreen(),
+            ),
+          ),
+        ),
       );
     }
 
@@ -608,9 +567,16 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
     }
     if (provider.transactions.isEmpty) {
       return SliverFillRemaining(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [_buildEmptyState("No Recent Activity", Icons.receipt)],
+        child: _buildEmptyStateWithAction(
+          context,
+          "No Recent Activity",
+          Icons.receipt,
+          "Log Transaction",
+          () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const ModernAddTransactionScreen(),
+            ),
+          ),
         ),
       );
     }
@@ -927,8 +893,9 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
     String label = DateFormat('MMM dd').format(date);
     if (_isSameDay(date, now)) {
       label = "Today";
-    } else if (_isSameDay(date, now.subtract(const Duration(days: 1))))
+    } else if (_isSameDay(date, now.subtract(const Duration(days: 1)))) {
       label = "Yesterday";
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
@@ -944,21 +911,291 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
     );
   }
 
-  Widget _buildEmptyState(String text, IconData icon) {
-    return Center(
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+class _WalletFlipCard extends StatefulWidget {
+  final double total;
+  final int count;
+  final double monthExpense;
+  final _BalanceStatus Function(double, double) resolveStatus;
+  final String Function(double) formatCurrency;
+
+  const _WalletFlipCard({
+    required this.total,
+    required this.count,
+    required this.monthExpense,
+    required this.resolveStatus,
+    required this.formatCurrency,
+  });
+
+  @override
+  State<_WalletFlipCard> createState() => _WalletFlipCardState();
+}
+
+class _WalletFlipCardState extends State<_WalletFlipCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  bool _isFront = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: AppAnimations.ultra,
+    );
+    _animation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: AppAnimations.backdropCurve),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _flipCard() {
+    if (_isFront) {
+      _controller.forward();
+    } else {
+      _controller.reverse();
+    }
+    setState(() => _isFront = !_isFront);
+  }
+
+  String _getExplanation(String message) {
+    switch (message) {
+      case 'In the red right now':
+        return 'Your balance is negative or zero compared to your monthly expenses. Consider reducing expenses or transferring funds.';
+      case 'Watch your wallet':
+        return 'Your balance covers less than half a month of expenses. Be cautious with spending.';
+      case 'Chill till next paycheck':
+        return 'Your balance will last until your next paycheck, but keep an eye on your spending.';
+      case 'You\'re good for a month':
+        return 'You have enough to cover a full month of expenses. Nice work!';
+      case 'You\'re golden for a few months':
+        return 'You have a healthy buffer for several months. Keep it up!';
+      case 'You\'re set for life (almost)':
+        return 'You have a very strong financial cushion. Enjoy the peace of mind!';
+      case 'No spend data yet':
+        return 'We don\'t have enough data on your monthly expenses to calculate your runway.';
+      default:
+        if (message.startsWith('Chill for ~')) {
+          return 'You have enough to cover about ${message.replaceAll(RegExp(r'[^0-9\.]'), '')} months of expenses.';
+        }
+        return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final status = widget.resolveStatus(widget.total, widget.monthExpense);
+    final formattedTotal = widget.formatCurrency(widget.total);
+    return GestureDetector(
+      onTap: _flipCard,
+      child: AnimatedBuilder(
+        animation: _animation,
+        builder: (context, child) {
+          final angle = _animation.value * 3.1416;
+          final isBack = _animation.value >= 0.5;
+          return Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.001)
+              ..rotateY(angle),
+            child: isBack
+                ? Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity()..rotateY(3.1416),
+                    child: _buildBack(context, status),
+                  )
+                : _buildFront(context, formattedTotal, status, widget.count),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFront(
+    BuildContext context,
+    String formattedTotal,
+    _BalanceStatus status,
+    int count,
+  ) {
+    final isNegative = widget.total < 0;
+    final gradientColors = isNegative
+        ? AppColors.netWorthNegativeGradient
+        : AppColors.netWorthPositiveGradient;
+    final borderColor = Colors.white.withOpacity(0.1);
+    final boxShadowColor = Colors.black.withOpacity(0.4);
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: gradientColors,
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: boxShadowColor,
+            blurRadius: 30,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 64, color: AppColors.textTertiary.withOpacity(0.3)),
-          const SizedBox(height: 16),
-          Text(text, style: TextStyle(color: AppColors.textTertiary)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'LIQUID ASSETS',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(status.icon, color: status.color, size: 11),
+                    const SizedBox(width: 3),
+                    Text(
+                      status.label,
+                      style: TextStyle(
+                        color: status.color,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          AnimatedNumberText(
+            number: widget.total,
+            prefix: '₹',
+            style: AppTypography.displaySmall.copyWith(
+              color: Colors.white,
+              fontSize: 36,
+            ),
+            decimalPlaces: 2,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            status.message,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(
+                Icons.account_balance_wallet_outlined,
+                color: Colors.white70,
+                size: 14,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${widget.count} Accounts',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Align(
+            alignment: Alignment.centerRight,
+            child: Icon(Icons.flip, color: Colors.white38, size: 18),
+          ),
         ],
       ),
     );
   }
 
-  bool _isSameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
+  Widget _buildBack(BuildContext context, _BalanceStatus status) {
+    final message = status.message;
+    final explanation = _getExplanation(message);
+    final isNegative = widget.total < 0;
+    final gradientColors = isNegative
+        ? AppColors.netWorthNegativeGradient
+        : AppColors.netWorthPositiveGradient;
+    final borderColor = Colors.white.withOpacity(0.1);
+    final boxShadowColor = Colors.black.withOpacity(0.4);
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: gradientColors,
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: boxShadowColor,
+            blurRadius: 30,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(status.icon, color: status.color, size: 36),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (explanation.isNotEmpty)
+            Text(
+              explanation,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.85),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          const SizedBox(height: 28),
+        ],
+      ),
+    );
+  }
 }
 
 class _BalanceStatus {

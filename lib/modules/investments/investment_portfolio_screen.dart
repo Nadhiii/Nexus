@@ -6,6 +6,7 @@ import '../../core/providers/investment_provider.dart';
 import '../../core/models/investment.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/animated_number_text.dart';
 import '../../core/theme/app_animations.dart';
 import 'widgets/add_investment_modal.dart';
 
@@ -189,8 +190,10 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            '₹${NumberFormat('#,##,###').format(currentVal)}',
+          AnimatedNumberText(
+            number: currentVal,
+            decimalPlaces: 2,
+            prefix: '₹',
             style: AppTypography.currencyLarge,
           ),
           const SizedBox(height: 20),
@@ -205,7 +208,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                '${isProfitable ? '+' : ''}₹${NumberFormat.compact().format(profit)} (${percent.toStringAsFixed(2)}%)',
+                '${isProfitable ? '+' : ''}₹${profit.toStringAsFixed(2)} (${percent.toStringAsFixed(2)}%)',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,

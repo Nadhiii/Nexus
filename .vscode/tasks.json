@@ -6,6 +6,12 @@
 			"type": "shell",
 			"command": "flutter run",
 			"group": "build"
+		},
+		{
+			"label": "Flutter build release",
+			"type": "shell",
+			"command": "flutter build apk --release",
+			"group": "build"
 		}
 	]
 }

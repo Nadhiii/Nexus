@@ -8,7 +8,7 @@ class AppColors {
 
   // --- Pastel Accents ---
   static const Color pastelTeal = Color(0xFF2DD4BF); // Soft Mint
-  static const Color pastelPurple = Color(0xFFA78BFA); // Soft Lavender
+  static const Color pastelPurple = Color(0xFFA78BFA); // Soft LavenderS
   static const Color pastelPink = Color(0xFFF472B6); // Soft Rose
   static const Color pastelOrange = Color(0xFFFB923C); // Soft Apricot
   static const Color pastelGreen = Color(0xFF34D399); // Soft Emerald
@@ -24,7 +24,12 @@ class AppColors {
   static const Color lossRoseDark = Color(0xFF881337);
 
   // --- Backgrounds (Dark Grey/Blue) ---
-  static const Color backgroundBlack = Color(0xFF0F172A); // Main Background
+  static const Color backgroundBlack = Color.fromARGB(
+    255,
+    19,
+    20,
+    39,
+  ); // Main Background (Pitch Black)
   static const Color cardSurface = Color(0xFF1E293B); // Card Background
   static const Color cardElevated = Color(
     0xFF334155,

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Added for Haptics
 import 'dart:async';
 import 'package:provider/provider.dart';
-import 'dart:ui'; // Required for ImageFilter
-import 'package:animations/animations.dart'; // Required for PageTransitionSwitcher
+import 'dart:ui';
+import 'package:animations/animations.dart';
 
 import '../core/providers/is_popup_active_provider.dart';
 import '../core/providers/new_nbox_provider.dart';
@@ -18,13 +19,12 @@ import '../core/providers/pdf_import_provider.dart';
 import '../core/providers/shared_expense_provider.dart';
 import '../core/providers/category_provider.dart';
 import '../core/theme/app_colors.dart';
-import '../core/theme/app_spacing.dart';
 import '../core/theme/app_animations.dart';
 import '../modules/Nex/providers/Nex_assistant_provider.dart';
 
 // Screens
 import '../modules/dashboard/modern_dashboard_screen.dart';
-import '../modules/finance/modern_finance_screen.dart';
+import '../modules/Wallet/wallet_screen.dart';
 import '../modules/insights/modern_insights_screen.dart';
 import '../modules/more/modern_more_screen.dart';
 import '../modules/bike/ui/modern_bike_screen_ui.dart';
@@ -81,6 +81,10 @@ class _MainScreenState extends State<MainScreen>
 
   void _navigateToScreen(int index, {int? financeTab}) {
     if (index == _currentIndex) return;
+
+    // Light haptic feedback for a tactile feel
+    HapticFeedback.selectionClick();
+
     setState(() {
       _previousIndex = _currentIndex;
       _financeScreenInitialTab = financeTab ?? 0;
@@ -110,7 +114,6 @@ class _MainScreenState extends State<MainScreen>
       categoryProvider: context.read<CategoryProvider>(),
     );
 
-    // Share Gemini API key with PDF parser
     if (aiProvider.settings.hasGeminiKey &&
         aiProvider.settings.geminiApiKey != null) {
       context.read<PDFImportProvider>().setGeminiApiKeyForPDF(
@@ -121,7 +124,6 @@ class _MainScreenState extends State<MainScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Screen List (Nex moved to More screen)
     final screens = [
       ModernDashboardScreen(onNavigate: _navigateToScreen),
       ModernFinanceScreen(initialTabIndex: _financeScreenInitialTab),
@@ -133,74 +135,61 @@ class _MainScreenState extends State<MainScreen>
 
     return Scaffold(
       backgroundColor: AppColors.backgroundBlack,
-      body: Stack(
-        children: [
-          // 1. Main Content with Fade Transition
-          PageTransitionSwitcher(
-            duration: AppAnimations.pageTransitionDuration,
-            transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
-              return FadeThroughTransition(
-                animation: primaryAnimation,
-                secondaryAnimation: secondaryAnimation,
-                fillColor: AppColors.backgroundBlack,
-                child: child,
-              );
-            },
-            child: screens[_currentIndex],
-          ),
-        ],
+      // Extends body under the floating nav bar for true translucency
+      extendBody: true,
+      body: PageTransitionSwitcher(
+        duration: AppAnimations.pageTransitionDuration,
+        transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
+          return FadeThroughTransition(
+            animation: primaryAnimation,
+            secondaryAnimation: secondaryAnimation,
+            fillColor: AppColors.backgroundBlack,
+            child: child,
+          );
+        },
+        child: screens[_currentIndex],
       ),
-      // 2. Floating Navigation Bar (outside body to prevent keyboard overlap)
       bottomNavigationBar: _buildFloatingNavBar(context, _currentIndex),
     );
   }
 
   Widget _buildFloatingNavBar(BuildContext context, int currentIndex) {
-    // "Floating Pill" Container
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 30),
-      height: 72, // Slightly taller for better touch targets
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      height: 70,
       decoration: BoxDecoration(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+        borderRadius: BorderRadius.circular(35),
         boxShadow: [
-          // Deep soft shadow for "Floating" effect
           BoxShadow(
             color: Colors.black.withOpacity(0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            blurRadius: 25,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+        borderRadius: BorderRadius.circular(35),
         child: ValueListenableBuilder<bool>(
           valueListenable: isPopupActiveNotifier,
           builder: (context, isPopupActive, child) {
             return BackdropFilter(
               filter: isPopupActive
-                  ? ImageFilter.blur(
-                      sigmaX: 0,
-                      sigmaY: 0,
-                    ) // No Blur if popup (optimization)
-                  : ImageFilter.blur(sigmaX: 15, sigmaY: 15), // Frosted Glass
+                  ? ImageFilter.blur(sigmaX: 0, sigmaY: 0)
+                  : ImageFilter.blur(sigmaX: 20, sigmaY: 20), // Stronger blur
               child: Container(
                 decoration: BoxDecoration(
-                  // Dark Slate with Opacity
-                  color: AppColors.cardSurface.withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  color: Colors.white.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(35),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.1), // Subtle white border
-                    width: 1,
+                    color: Colors.white.withOpacity(0.12),
+                    width: 0.5,
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: _buildNavItems(currentIndex),
-                  ),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: _buildNavItems(currentIndex),
                 ),
               ),
             );
@@ -254,7 +243,6 @@ class _MainScreenState extends State<MainScreen>
       final index = item['index'] as int;
       final isSelected = currentIndex == index;
       final wasSelected = _previousIndex == index;
-      final badgeCount = item['badgeCount'] as int? ?? 0;
       final label = item['label'] as String;
 
       return GestureDetector(
@@ -263,89 +251,39 @@ class _MainScreenState extends State<MainScreen>
         child: AnimatedBuilder(
           animation: _navAnimation ?? const AlwaysStoppedAnimation(1.0),
           builder: (context, child) {
-            // Calculate interpolated selection state
-            double selectionProgress;
-            final animValue = _navAnimation?.value ?? 1.0;
-            final isAnimating = _navAnimationController?.isAnimating ?? false;
+            double selectionProgress = isSelected
+                ? (_navAnimation?.value ?? 1.0)
+                : (wasSelected ? 1.0 - (_navAnimation?.value ?? 0.0) : 0.0);
 
-            if (isSelected) {
-              selectionProgress = animValue;
-            } else if (wasSelected) {
-              selectionProgress = 1.0 - animValue;
-            } else {
-              selectionProgress = 0.0;
-            }
-
-            // If animation is complete, use final state
-            if (!isAnimating) {
+            if (!(_navAnimationController?.isAnimating ?? false)) {
               selectionProgress = isSelected ? 1.0 : 0.0;
             }
 
             return Container(
               padding: EdgeInsets.symmetric(
                 horizontal: 12 + (4 * selectionProgress),
-                vertical: 12,
+                vertical: 10,
               ),
               decoration: BoxDecoration(
                 color: AppColors.primaryBlue.withOpacity(
                   0.15 * selectionProgress,
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(25),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Icon with badge
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(
-                        selectionProgress > 0.5
-                            ? item['selectedIcon'] as IconData
-                            : item['icon'] as IconData,
-                        color: Color.lerp(
-                          AppColors.textTertiary,
-                          AppColors.primaryBlue,
-                          selectionProgress,
-                        ),
-                        size: 22 + (2 * selectionProgress),
-                      ),
-                      // Badge
-                      if (badgeCount > 0)
-                        Positioned(
-                          right: -6,
-                          top: -4,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.error,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: AppColors.cardSurface,
-                                width: 1.5,
-                              ),
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 14,
-                              minHeight: 14,
-                            ),
-                            child: Text(
-                              '$badgeCount',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 8,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
+                  Icon(
+                    selectionProgress > 0.5
+                        ? item['selectedIcon'] as IconData
+                        : item['icon'] as IconData,
+                    color: Color.lerp(
+                      AppColors.textTertiary,
+                      AppColors.primaryBlue,
+                      selectionProgress,
+                    ),
+                    size: 22,
                   ),
-                  // Animated label
                   ClipRect(
                     child: AnimatedAlign(
                       duration: AppAnimations.navDuration,
@@ -360,7 +298,7 @@ class _MainScreenState extends State<MainScreen>
                             label,
                             style: TextStyle(
                               color: AppColors.primaryBlue,
-                              fontSize: 13,
+                              fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
                           ),

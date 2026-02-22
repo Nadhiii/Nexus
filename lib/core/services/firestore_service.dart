@@ -85,4 +85,19 @@ class FirestoreService {
     if (ref == null) throw Exception('User not logged in');
     await ref.doc(debtId).delete();
   }
+  // ===========================================================================
+  // USERS (NEW)
+  // ===========================================================================
+
+  static Stream<List<Map<String, dynamic>>> getRegisteredUsersStream() {
+    final currentUid = currentUserId;
+    if (currentUid == null) return Stream.value([]);
+
+    return _firestore.collection('users').snapshots().map((snapshot) {
+      return snapshot.docs
+          .where((doc) => doc.id != currentUid) // Exclude yourself
+          .map((doc) => {'uid': doc.id, ...doc.data()})
+          .toList();
+    });
+  }
 }
