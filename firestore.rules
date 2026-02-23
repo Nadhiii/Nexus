@@ -1,117 +1,24 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // User-scoped collections (accounts, transactions within user documents)
+    
+    // User-scoped data
     match /users/{userId} {
-      // Allow authenticated users to read user profiles (needed for family member selection)
+      // 1. Global User Profiles: Required for family/sharing features
       allow read: if request.auth != null;
       
-      // Allow users to access their own subcollections
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // 2. User can update their OWN profile document
+      allow write: if request.auth != null && request.auth.uid == userId;
 
-      // Accounts subcollection (if needed)
-      match /accounts/{accountId} {
-        allow create: if request.auth != null && request.auth.uid == userId;
-        allow read, delete: if request.auth != null && request.auth.uid == userId;
-        allow update: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // Transactions subcollection
-      match /transactions/{transactionId} {
-        allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.userId == userId;
-        allow read, delete: if request.auth != null && request.auth.uid == userId;
-        allow update: if request.auth != null && request.auth.uid == userId && request.resource.data.userId == userId;
-      }
-
-      // Goals subcollection
-      match /goals/{goalId} {
-        allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.userId == userId;
-        allow read, delete: if request.auth != null && request.auth.uid == userId;
-        allow update: if request.auth != null && request.auth.uid == userId && request.resource.data.userId == userId;
-      }
-
-      // Debts subcollection
-      match /debts/{debtId} {
-        allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.userId == userId;
-        allow read, delete: if request.auth != null && request.auth.uid == userId;
-        allow update: if request.auth != null && request.auth.uid == userId && request.resource.data.userId == userId;
-      }
-
-      // Subscriptions subcollection - users can only access their own subscriptions
-      match /subscriptions/{subscriptionId} {
+      // 3. Applies to ALL current and future subcollections (bikes, debts, transactions, backups, etc.)
+      match /{allPaths=**} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // Budgets subcollection - users can only access their own budgets
-      match /budgets/{budgetId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // Investments subcollection (Mutual Funds) - users can only access their own investments
-      match /investments/{investmentId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // Shared expenses subcollection
-      match /shared_expenses/{expenseId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // Family debts subcollection
-      match /family_debts/{familyDebtId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // Payday checklists subcollection
-      match /payday_checklists/{checklistId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // Bikes subcollection with nested documents and subcollections
-      match /bikes/{bikeId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-        
-        // Bike entries subcollection
-        match /entries/{entryId} {
-          allow read, write: if request.auth != null && request.auth.uid == userId;
-        }
-        
-        // Bike trips subcollection
-        match /trips/{tripId} {
-          allow read, write: if request.auth != null && request.auth.uid == userId;
-        }
-      }
-
-      // Backups subcollection - users can only access their own backups
-      match /backups/{backupId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-        // Allow access to backup versions subcollection
-        match /versions/{versionId} {
-          allow read, write: if request.auth != null && request.auth.uid == userId;
-        }
       }
     }
 
-
-    // Root-level collections for any global/shared data (if needed)
-    // Most data should be user-scoped above, but these are kept for backward compatibility
-    
-    // Subscriptions at root - deprecated, use user-scoped instead
-    match /subscriptions/{subscriptionId} {
-      allow read: if request.auth != null;
-      allow write: if false; // Deprecated - use user-scoped version
-    }
-
-    // Investments at root - deprecated, use user-scoped instead  
-    match /investments/{investmentId} {
-      allow read: if request.auth != null;
-      allow write: if false; // Deprecated - use user-scoped version
-    }
-
-    // Cryptos at root - deprecated, use user-scoped instead
-    match /cryptos/{cryptoId} {
-      allow read: if request.auth != null;
-      allow write: if false; // Deprecated - use user-scoped version
-    }
+    // Legacy/Root-level collections
+    match /subscriptions/{id} { allow read: if request.auth != null; allow write: if false; }
+    match /investments/{id} { allow read: if request.auth != null; allow write: if false; }
+    match /cryptos/{id} { allow read: if request.auth != null; allow write: if false; }
   }
 }

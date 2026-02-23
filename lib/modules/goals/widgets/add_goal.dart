@@ -157,10 +157,12 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
                         decimal: true,
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty)
+                        if (value == null || value.trim().isEmpty) {
                           return 'Amount is required';
-                        if (double.tryParse(value.trim()) == null)
+                        }
+                        if (double.tryParse(value.trim()) == null) {
                           return 'Please enter a valid number';
+                        }
                         return null;
                       },
                     ),
@@ -215,7 +217,7 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
                         ),
                       ),
                       child: DropdownButtonFormField<String>(
-                        value: _selectedCategory,
+                        initialValue: _selectedCategory,
                         dropdownColor: AppColors.cardDarkElevated,
                         style: AppTypography.bodyLarge.copyWith(
                           color: AppColors.textPrimary,

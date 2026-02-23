@@ -143,10 +143,12 @@ class _ModernAddSubscriptionScreenState
                         decimal: true,
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty)
+                        if (value == null || value.trim().isEmpty) {
                           return 'Amount is required';
-                        if (double.tryParse(value.trim()) == null)
+                        }
+                        if (double.tryParse(value.trim()) == null) {
                           return 'Enter a valid number';
+                        }
                         return null;
                       },
                     ),
@@ -251,7 +253,7 @@ class _ModernAddSubscriptionScreenState
                         ),
                       ),
                       child: DropdownButtonFormField<String>(
-                        value: _selectedFrequency,
+                        initialValue: _selectedFrequency,
                         dropdownColor: AppColors.cardDarkElevated,
                         style: AppTypography.bodyLarge.copyWith(
                           color: AppColors.textPrimary,

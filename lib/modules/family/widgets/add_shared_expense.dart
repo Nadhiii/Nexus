@@ -482,8 +482,9 @@ class _ModernAddSharedExpenseScreenState
                         _selectedParticipants.clear();
                       } else {
                         _selectedParticipants.clear();
-                        for (var m in provider.familyMembers)
+                        for (var m in provider.familyMembers) {
                           _selectedParticipants.add(m.id);
+                        }
                       }
                       _updateSplits();
                     });

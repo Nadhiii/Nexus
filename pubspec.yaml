@@ -1,7 +1,7 @@
 name: nexus
-description: "Nexus - Personal Finance Management App"
+description: "Nexus"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+3
 
 environment:
   sdk: ^3.8.1
@@ -87,6 +87,13 @@ dependencies:
   syncfusion_flutter_pdf: ^26.2.14
   flutter_gemma: ^0.11.16
   ota_update: ^7.1.0
+
+  # App Info
+  package_info_plus: ^9.0.0
+
+  # Dio
+  dio: ^5.4.0
+  open_file: ^3.3.2
 
   # Android Auto - Package not available on pub.dev
   # car_app: ^0.6.0 # Commented out - not available

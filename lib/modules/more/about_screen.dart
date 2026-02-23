@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/top_snackbar.dart';
-import '../../core/services/ota_update_service.dart';
+// import '../../core/services/ota_update_service.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -14,28 +14,7 @@ class AboutScreen extends StatefulWidget {
 }
 
 class _AboutScreenState extends State<AboutScreen> {
-  final OTAUpdateService _otaService = OTAUpdateService();
-  String? _updateStatus;
-
-  @override
-  void initState() {
-    super.initState();
-    _otaService.initNotifications();
-  }
-
-  Future<void> _checkForUpdates() async {
-    setState(() => _updateStatus = 'Checking for updates...');
-    // TODO: Replace with your app version
-    const currentVersion = '1.0.0';
-    final update = await _otaService.checkForUpdate(currentVersion);
-    if (update != null) {
-      setState(() => _updateStatus = 'Update available! Downloading...');
-      await _otaService.startOTAUpdate(context, update['apk_url']);
-      setState(() => _updateStatus = 'Downloading update...');
-    } else {
-      setState(() => _updateStatus = 'App is up to date.');
-    }
-  }
+  // Removed OTA update logic and button; now in More screen.
 
   @override
   Widget build(BuildContext context) {
@@ -127,25 +106,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryBlue,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                    icon: const Icon(Icons.system_update_alt),
-                    label: const Text('Check for Updates'),
-                    onPressed: _checkForUpdates,
-                  ),
-                  if (_updateStatus != null) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      _updateStatus!,
-                      style: TextStyle(color: Colors.white70, fontSize: 13),
-                    ),
-                  ],
+                  // Update button moved to More screen
                 ],
               ),
             ),

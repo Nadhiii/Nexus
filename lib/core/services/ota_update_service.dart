@@ -1,14 +1,42 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:ota_update/ota_update.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class OTAUpdateService {
-  static const String updateUrl =
-      'https://mahanadhi.space/update.json'; // TODO: Replace with endpoint
+  static const String updateUrl = 'https://mahanadhi.space/update.json';
   final FlutterLocalNotificationsPlugin notificationsPlugin =
       FlutterLocalNotificationsPlugin();
+
+  final StreamController<int> _progressController =
+      StreamController<int>.broadcast();
+  Stream<int> get progressStream => _progressController.stream;
+
+  bool _showingNotification = false;
+
+  // Dio instances for managing the download
+  final Dio _dio = Dio();
+  CancelToken? _cancelToken;
+
+  Future<int?> fetchApkFileSize(String apkUrl) async {
+    try {
+      final response = await http.head(Uri.parse(apkUrl));
+      if (response.statusCode == 200 || response.statusCode == 206) {
+        final contentLength = response.headers['content-length'];
+        if (contentLength != null) {
+          return int.tryParse(contentLength);
+        }
+      }
+    } catch (e) {
+      debugPrint('OTA: Failed to fetch APK file size: $e');
+    }
+    return null;
+  }
 
   Future<void> initNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -22,41 +50,108 @@ class OTAUpdateService {
   }
 
   Future<Map<String, dynamic>?> checkForUpdate(String currentVersion) async {
-    final response = await http.get(Uri.parse(updateUrl));
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['latest_version'] != currentVersion) {
-        return data;
+    try {
+      final response = await http.get(Uri.parse(updateUrl));
+
+      if (response.statusCode == 200) {
+        debugPrint('OTA: Raw Server Response: ${response.body}');
+        final data = json.decode(response.body);
+
+        final String latestVersion =
+            (data['version'] ?? data['latest_version'] ?? '').toString().trim();
+        final String apkUrl = (data['url'] ?? data['apk_url'] ?? '')
+            .toString()
+            .trim();
+
+        debugPrint(
+          'OTA: Parsed Server Version: "$latestVersion" | Local Version: "$currentVersion"',
+        );
+
+        if (latestVersion.isNotEmpty && latestVersion != currentVersion) {
+          return {'latest_version': latestVersion, 'apk_url': apkUrl};
+        }
+      } else {
+        debugPrint('OTA: Server Error ${response.statusCode}');
       }
+    } catch (e) {
+      debugPrint('OTA Check Error: $e');
+      rethrow;
     }
     return null;
   }
 
-  Future<void> startOTAUpdate(BuildContext context, String apkUrl) async {
+  Future<void> startOTAUpdate(
+    BuildContext context,
+    String apkUrl, {
+    bool showNotification = false,
+  }) async {
     try {
-      OtaUpdate().execute(apkUrl, destinationFilename: 'app-latest.apk').listen(
-        (event) {
-          if (event.status == OtaStatus.DOWNLOADING) {
-            _showProgressNotification(event.value ?? '0');
-          } else if (event.status == OtaStatus.INSTALLING) {
-            showSimpleNotification(
-              'Update ready',
-              'Tap to install the update.',
-            );
-          } else if (event.status == OtaStatus.PERMISSION_NOT_GRANTED_ERROR) {
-            showSimpleNotification(
-              'Permission denied',
-              'Storage permission required for update.',
-            );
+      _showingNotification = showNotification;
+      _cancelToken = CancelToken();
+
+      // 1. Get a safe place to store the APK temporarily
+      final dir = await getTemporaryDirectory();
+      final savePath = '${dir.path}/Nexus_Update.apk';
+
+      // 2. Clean up any old partial downloads
+      final file = File(savePath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+
+      // 3. Start the download manually with Dio
+      await _dio.download(
+        apkUrl,
+        savePath,
+        cancelToken: _cancelToken,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            final progress = ((received / total) * 100).toInt();
+            _progressController.add(progress);
+
+            if (_showingNotification) {
+              _showProgressNotification(progress);
+            }
+            debugPrint('OTA: Downloading... $progress%');
           }
         },
       );
+
+      // 4. Download finished successfully
+      debugPrint('OTA: Download complete. Triggering install...');
+      _progressController.add(100);
+      showSimpleNotification(
+        'Update ready',
+        'Tap to install the Nexus update.',
+      );
+
+      // 5. Open the APK to trigger Android's package installer
+      final result = await OpenFile.open(savePath);
+      debugPrint('OTA Install Result: ${result.message}');
     } catch (e) {
-      showSimpleNotification('Update failed', 'Could not download update.');
+      // THE FIX: Check if 'e' is a DioException before passing it
+      if (e is DioException && CancelToken.isCancel(e)) {
+        debugPrint('OTA: Download securely destroyed by user.');
+      } else {
+        debugPrint('OTA Start Error: $e');
+        _progressController.add(-1);
+        showSimpleNotification('Update failed', 'Could not download update.');
+      }
     }
   }
 
-  Future<void> _showProgressNotification(String progress) async {
+  void cancelOTA() {
+    // This physically severs the download connection
+    _cancelToken?.cancel('Cancelled by user');
+    _progressController.add(-1);
+    debugPrint('OTA: Cancellation signal sent');
+  }
+
+  void setShowNotification(bool value) {
+    _showingNotification = value;
+  }
+
+  Future<void> _showProgressNotification(int progress) async {
     final android = AndroidNotificationDetails(
       'update_channel',
       'App Updates',
@@ -65,8 +160,9 @@ class OTAUpdateService {
       priority: Priority.high,
       showProgress: true,
       maxProgress: 100,
-      progress: int.tryParse(progress) ?? 0,
+      progress: progress,
       onlyAlertOnce: true,
+      ongoing: true,
     );
     final notification = NotificationDetails(android: android);
     await notificationsPlugin.show(
@@ -92,5 +188,10 @@ class OTAUpdateService {
       body: body,
       notificationDetails: notification,
     );
+  }
+
+  void dispose() {
+    _cancelToken?.cancel();
+    _progressController.close();
   }
 }

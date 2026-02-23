@@ -3,14 +3,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 class LogoUtils {
   static final Map<String, String> _bankLogoMap = {
-    'hdfc': 'assets/images/banks/hdfc-bank.svg',
-    'hdfcbank': 'assets/images/banks/hdfc-bank.svg',
-    'axis': 'assets/images/banks/axis-bank.svg',
-    'axisbank': 'assets/images/banks/axis-bank.svg',
-    'sbi': 'assets/images/banks/SBI-bank.svg',
-    'statebankofindia': 'assets/images/banks/SBI-bank.svg',
-    'unionbankofindia': 'assets/images/banks/UBI-bank.svg',
-    'ubi': 'assets/images/banks/UBI-bank.svg',
+    'hdfc': 'assets/images/banks/hdfc-bank.png',
+    'hdfcbank': 'assets/images/banks/hdfc-bank.png',
+    'axis': 'assets/images/banks/axis-bank.png',
+    'axisbank': 'assets/images/banks/axis-bank.png',
+    'sbi': 'assets/images/banks/SBI-bank.png',
+    'statebankofindia': 'assets/images/banks/SBI-bank.png',
+    'unionbankofindia': 'assets/images/banks/UBI-bank.png',
+    'ubi': 'assets/images/banks/UBI-bank.png',
     'federal': 'assets/images/banks/federal-bank.jpeg',
     'federalbank': 'assets/images/banks/federal-bank.jpeg',
     'fi': 'assets/images/banks/fi-bank.svg',
@@ -25,6 +25,10 @@ class LogoUtils {
     'bob': 'assets/images/banks/bob-bank.png',
     'bobbank': 'assets/images/banks/bob-bank.png',
     'bankofbaroda': 'assets/images/banks/bob-bank.png',
+    'jiofinance': 'assets/images/banks/Jio-Finance.png',
+    'jio-finance': 'assets/images/banks/Jio-Finance.png',
+    'jiofinancebank': 'assets/images/banks/Jio-Finance.png',
+    'jio': 'assets/images/banks/Jio-Finance.png',
   };
 
   static final Map<String, String> _subscriptionLogoMap = {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/providers/biometric_provider.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -14,6 +15,7 @@ import '../family/screens/family_dashboard_screen.dart';
 import '../family/screens/expense_splitter_screen.dart';
 import 'package:nexus/modules/Nex/screens/Nex_chat_screen.dart';
 import 'about_screen.dart';
+import '../../core/services/ota_update_service.dart';
 import 'reports_and_analytics_screen.dart';
 import 'manage_categories_screen.dart';
 
@@ -25,11 +27,76 @@ class ModernMoreScreen extends StatefulWidget {
 }
 
 class _ModernMoreScreenState extends State<ModernMoreScreen> {
+  final OTAUpdateService _otaService = OTAUpdateService();
+  String? _updateStatus;
+  double _downloadProgress = 0;
+  bool _isDownloading = false;
+  bool _isCancelled = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<BiometricProvider>(context, listen: false).refresh();
+    });
+    _otaService.initNotifications();
+  }
+
+  Future<void> _checkForUpdates() async {
+    setState(() {
+      _updateStatus = 'Checking for updates...';
+      _isDownloading = false;
+      _downloadProgress = 0;
+    });
+
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
+      debugPrint("DEBUG: Local App Version is: '$currentVersion'");
+
+      final update = await _otaService.checkForUpdate(currentVersion);
+
+      if (update != null) {
+        setState(() {
+          _updateStatus = 'Update available! Starting download...';
+          _isDownloading = true;
+        });
+
+        _otaService.progressStream.listen((progress) {
+          if (mounted && !_isCancelled) {
+            // <-- Add the !_isCancelled check here
+            setState(() {
+              if (progress < 0) {
+                _isDownloading = false;
+                _updateStatus = 'Update failed';
+              } else if (progress >= 100) {
+                _downloadProgress = 1.0;
+                _isDownloading = false;
+                _updateStatus = 'Install prompt opened';
+              } else {
+                _downloadProgress = progress / 100;
+                _updateStatus = 'Downloading: $progress%';
+              }
+            });
+          }
+        });
+
+        await _otaService.startOTAUpdate(context, update['apk_url']);
+      } else {
+        setState(() => _updateStatus = 'Nexus is up to date ($currentVersion)');
+      }
+    } catch (e) {
+      setState(() => _updateStatus = 'Update check failed');
+    }
+  }
+
+  void _cancelUpdate() {
+    _isCancelled = true;
+    _otaService.cancelOTA();
+    setState(() {
+      _isDownloading = false;
+      _downloadProgress = 0;
+      _updateStatus = 'Download cancelled';
     });
   }
 
@@ -63,40 +130,140 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
               delegate: SliverChildListDelegate([
                 const SizedBox(height: 10),
 
-                // 1. STABLE FINANCIAL TOOLS
                 _buildSectionHeader("FINANCIAL TOOLS"),
                 const SizedBox(height: 12),
                 _buildToolsGrid(),
 
                 const SizedBox(height: 32),
 
-                // 2. PREFERENCES (FIXED BIOMETRIC TOGGLE)
                 _buildSectionHeader("PREFERENCES"),
                 const SizedBox(height: 12),
                 _buildSettingsSection(),
 
                 const SizedBox(height: 32),
 
-                // 3. LABS (WIP SECTION)
                 _buildSectionHeader("LABS"),
                 const SizedBox(height: 12),
                 _buildLabsSection(),
 
                 const SizedBox(height: 32),
 
-                // 4. SUPPORT
                 _buildSectionHeader("SUPPORT"),
                 const SizedBox(height: 12),
                 _buildSupportSection(),
 
                 const SizedBox(height: 40),
-                _buildSignOutButton(),
+
+                _buildExpressiveDownloadButton(),
+
+                if (!_isDownloading && _updateStatus != null) ...[
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Text(
+                      _updateStatus!,
+                      style: TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 12),
+
+                _buildBottomActionButton(
+                  label: "Sign Out",
+                  onPressed: () => AuthService().signOut(),
+                  isError: true,
+                ),
+
                 const SizedBox(height: 120),
               ]),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildExpressiveDownloadButton() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return GestureDetector(
+          onTap: _isDownloading ? null : _checkForUpdates,
+          child: Container(
+            height: 56,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.transparent,
+              border: Border.all(color: Colors.white.withOpacity(0.1)),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              children: [
+                if (_isDownloading)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutCubic,
+                    width: constraints.maxWidth * _downloadProgress,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryBlue.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            _isDownloading
+                                ? "Downloading... ${(_downloadProgress * 100).toInt()}%"
+                                : "Check for Updates",
+                            style: AppTypography.labelLarge.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      if (_isDownloading)
+                        AnimatedScale(
+                          scale: (1.0 - _downloadProgress).clamp(0.0, 1.0),
+                          duration: const Duration(milliseconds: 300),
+                          child: AnimatedOpacity(
+                            opacity: (1.0 - _downloadProgress).clamp(0.0, 1.0),
+                            duration: const Duration(milliseconds: 300),
+                            child: GestureDetector(
+                              onTap: _cancelUpdate,
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.error.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.close_rounded,
+                                  color: AppColors.error,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -107,6 +274,39 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
         color: AppColors.textTertiary,
         fontWeight: FontWeight.w800,
         letterSpacing: 1.5,
+      ),
+    );
+  }
+
+  Widget _buildBottomActionButton({
+    required String label,
+    required VoidCallback? onPressed,
+    bool isError = false,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isError
+              ? AppColors.error.withOpacity(0.2)
+              : Colors.white.withOpacity(0.1),
+        ),
+      ),
+      child: TextButton(
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 18),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: AppTypography.labelLarge.copyWith(
+              color: isError ? AppColors.error : AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -203,7 +403,6 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
       ),
       child: Column(
         children: [
-          // BIOMETRIC TOGGLE: Fixed to show even when disabled
           Consumer<BiometricProvider>(
             builder: (context, bio, _) => _buildTile(
               icon: Icons.fingerprint_rounded,
@@ -211,7 +410,6 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
               title: "Biometric Lock",
               trailing: Switch(
                 value: bio.isBiometricEnabled,
-                // If it's available on device, allow toggling regardless of current state
                 onChanged: bio.isBiometricAvailable
                     ? (v) => bio.setAllBiometricFeatures(v)
                     : null,
@@ -341,47 +539,6 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
         showTopSnackBar(context, "Email copied to clipboard");
       }
     }
-  }
-
-  Widget _buildSignOutButton() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.error.withOpacity(0.2)),
-      ),
-      child: TextButton(
-        onPressed: () async {
-          // Clear any active providers that might try to read Firestore after sign out
-          try {
-            // Import and read these at the top of your file if not already there
-            // import '../../core/providers/bike_provider.dart';
-            // import '../../core/providers/debt_provider.dart';
-            // import '../../core/providers/investment_provider.dart';
-            // import '../../core/providers/subscription_provider.dart';
-
-            // Depending on how you structured your other providers, call their clear/reset methods if they exist
-            // For example:
-            // context.read<BikeProvider>().clear();
-          } catch (e) {
-            debugPrint("Error clearing providers before signout: $e");
-          }
-
-          // Sign out
-          await AuthService().signOut();
-        },
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 18),
-        ),
-        child: Text(
-          "Sign Out",
-          style: AppTypography.labelLarge.copyWith(
-            color: AppColors.error,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
   }
 }
 

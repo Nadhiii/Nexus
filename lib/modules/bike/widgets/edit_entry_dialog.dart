@@ -278,7 +278,7 @@ class _EditEntryDialogState extends State<EditEntryDialog> {
                         ),
                         Switch(
                           value: _isFullTank,
-                          activeColor: themeColor,
+                          activeThumbColor: themeColor,
                           onChanged: (val) => setState(() => _isFullTank = val),
                         ),
                       ],

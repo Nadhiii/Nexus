@@ -271,8 +271,9 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
         );
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         showTopSnackBar(context, "Error adding entry: $e", isError: true);
+      }
     }
   }
 
@@ -413,7 +414,7 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
                             ),
                             Switch(
                               value: _isFullTank,
-                              activeColor: activeColor,
+                              activeThumbColor: activeColor,
                               onChanged: (val) =>
                                   setState(() => _isFullTank = val),
                             ),
@@ -674,7 +675,7 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
               ),
               Switch(
                 value: _linkToExpense,
-                activeColor: AppColors.success,
+                activeThumbColor: AppColors.success,
                 onChanged: (val) => setState(() {
                   _linkToExpense = val;
                   if (!val) _selectedAccount = null;

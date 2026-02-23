@@ -133,10 +133,12 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
                         decimal: true,
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty)
+                        if (value == null || value.trim().isEmpty) {
                           return 'Balance is required';
-                        if (double.tryParse(value.trim()) == null)
+                        }
+                        if (double.tryParse(value.trim()) == null) {
                           return 'Please enter a valid number';
+                        }
                         return null;
                       },
                     ),

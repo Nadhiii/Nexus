@@ -29,7 +29,15 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
   late Animation<Offset> _logoSlideAnimation;
   String _previousBankName = '';
 
-  final _formKey = GlobalKey<FormState>();
+  // Stepper Controllers
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  final int _totalPages = 3;
+
+  // Form Keys for each step
+  final _step1Key = GlobalKey<FormState>();
+  final _step2Key = GlobalKey<FormState>();
+  final _step3Key = GlobalKey<FormState>();
 
   // Basic Account Controllers
   final _nameController = TextEditingController();
@@ -134,6 +142,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
 
   @override
   void dispose() {
+    _pageController.dispose();
     _logoAnimationController.dispose();
     _nameController.dispose();
     _balanceController.dispose();
@@ -146,6 +155,34 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
     _cardHolderController.dispose();
     _cardNumberFocus.dispose();
     super.dispose();
+  }
+
+  void _nextPage() {
+    if (_currentPage == 0 && !_step1Key.currentState!.validate()) return;
+    if (_currentPage == 1 && !_step2Key.currentState!.validate()) return;
+
+    if (_currentPage < _totalPages - 1) {
+      // Unfocus keyboard before sliding to next page to keep layout smooth
+      FocusScope.of(context).unfocus();
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      _saveAccount();
+    }
+  }
+
+  void _previousPage() {
+    FocusScope.of(context).unfocus();
+    if (_currentPage > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      Navigator.pop(context);
+    }
   }
 
   Future<void> _startNfcScan() async {
@@ -222,7 +259,6 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
               _hasCardDetails = true;
             });
           }
-
           if (mounted) {
             Navigator.pop(context);
             showTopSnackBar(
@@ -277,346 +313,527 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
     final title = widget.accountToEdit != null ? 'Edit Account' : 'New Account';
 
     return Scaffold(
-      backgroundColor: AppColors.darkGradient.first,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 120.0,
-            backgroundColor: AppColors.darkGradient.first,
-            foregroundColor: AppColors.white,
-            flexibleSpace: FlexibleSpaceBar(
-              centerTitle: true,
-              title: Text(title, style: AppTypography.headlineMedium),
-            ),
-            leading: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
+      backgroundColor: AppColors.backgroundBlack,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          title,
+          style: AppTypography.headlineMedium.copyWith(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLiveCard(),
-                    const SizedBox(height: AppSpacing.xl2),
+        ),
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
+          onPressed: _previousPage,
+        ),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Always show the Live Card. The SingleChildScrollView handles the keyboard now.
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xl,
+                vertical: AppSpacing.sm,
+              ),
+              child: _buildLiveCard(),
+            ),
 
-                    Text(
-                      'Current Balance',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  _totalPages,
+                  (index) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    height: 8,
+                    width: _currentPage == index ? 24 : 8,
+                    decoration: BoxDecoration(
+                      color: _currentPage == index
+                          ? _selectedColor
+                          : Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    TextFormField(
-                      controller: _balanceController,
-                      autofocus: widget.accountToEdit == null,
-                      style: AppTypography.displayMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: '0.00',
-                        prefixText: '₹ ',
-                        prefixStyle: AppTypography.displayMedium.copyWith(
-                          color: _selectedColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        hintStyle: TextStyle(color: AppColors.textTertiary),
-                        filled: true,
-                        fillColor: AppColors.cardDarkElevated,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppSpacing.radiusLg,
-                          ),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty)
-                          return 'Balance is required';
-                        if (double.tryParse(value.trim()) == null)
-                          return 'Please enter a valid number';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.xl2),
-
-                    Text(
-                      'Account Details',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _buildStandardTextField(
-                      controller: _nameController,
-                      hint: "Account Name (e.g. HDFC Salary)",
-                      icon: Icons.label_outline,
-                      validator: (val) =>
-                          val == null || val.isEmpty ? "Required" : null,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _buildStandardTextField(
-                      controller: _bankNameController,
-                      hint: "Bank Name",
-                      icon: Icons.account_balance,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildStandardTextField(
-                            controller: _accountNumberController,
-                            hint: "A/C Last 4",
-                            icon: Icons.numbers,
-                            isNumber: true,
-                            maxLength: 4,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: _buildStandardTextField(
-                            controller: _ifscCodeController,
-                            hint: "IFSC Code",
-                            icon: Icons.code,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.xl2),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Card Details (Optional)',
-                          style: AppTypography.titleSmall.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Switch(
-                          value: _hasCardDetails,
-                          activeColor: _selectedColor,
-                          onChanged: (val) =>
-                              setState(() => _hasCardDetails = val),
-                        ),
-                      ],
-                    ),
-                    if (_hasCardDetails) ...[
-                      const SizedBox(height: AppSpacing.md),
-                      if (Platform.isAndroid) ...[
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: _startNfcScan,
-                            icon: const Icon(Icons.nfc),
-                            label: const Text("Scan Card (Experimental)"),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: BorderSide(
-                                color: Colors.white.withOpacity(0.3),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: AppSpacing.md,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppSpacing.radiusMd,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                      ],
-                      _buildStandardTextField(
-                        controller: _cardNumberController,
-                        focusNode: _cardNumberFocus,
-                        hint: "Card Number",
-                        icon: Icons.credit_card,
-                        maxLength: 19,
-                        isNumber: true,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildStandardTextField(
-                              controller: _cardExpiryController,
-                              hint: "Expiry (MM/YY)",
-                              icon: Icons.calendar_today,
-                              maxLength: 5,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: _buildStandardTextField(
-                              controller: _cardCvvController,
-                              hint: "CVV",
-                              icon: Icons.lock_outline,
-                              maxLength: 4,
-                              isNumber: true,
-                              obscureText: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      _buildStandardTextField(
-                        controller: _cardHolderController,
-                        hint: "Card Holder Name",
-                        icon: Icons.person_outline,
-                      ),
-                    ],
-                    const SizedBox(height: AppSpacing.xl2),
-
-                    Text(
-                      'Appearance',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    SizedBox(
-                      height: 50,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _colorPalette.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(width: AppSpacing.md),
-                        itemBuilder: (context, index) {
-                          final color = _colorPalette[index];
-                          final isSelected = _selectedColor == color;
-                          return GestureDetector(
-                            onTap: () => setState(() => _selectedColor = color),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : Colors.transparent,
-                                  width: 3,
-                                ),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: color.withOpacity(0.6),
-                                          blurRadius: 12,
-                                        ),
-                                      ]
-                                    : [],
-                              ),
-                              child: isSelected
-                                  ? const Icon(Icons.check, color: Colors.white)
-                                  : null,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    SizedBox(
-                      height: 50,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _iconPalette.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(width: AppSpacing.md),
-                        itemBuilder: (context, index) {
-                          final icon = _iconPalette[index];
-                          final isSelected = _selectedIcon == icon;
-                          return GestureDetector(
-                            onTap: () => setState(() => _selectedIcon = icon),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? _selectedColor
-                                    : AppColors.cardDarkElevated,
-                                borderRadius: BorderRadius.circular(
-                                  AppSpacing.radiusMd,
-                                ),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? Colors.white.withOpacity(0.5)
-                                      : Colors.transparent,
-                                ),
-                              ),
-                              child: Icon(
-                                icon,
-                                color: isSelected
-                                    ? Colors.white
-                                    : AppColors.textSecondary,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl2),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _saveAccount,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _selectedColor,
-                          foregroundColor: AppColors.white,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.lg,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.radiusMd,
-                            ),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.white,
-                                ),
-                              )
-                            : Text(
-                                widget.accountToEdit != null
-                                    ? 'Save Changes'
-                                    : 'Save Account',
-                                style: AppTypography.titleSmall.copyWith(
-                                  color: AppColors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 100),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (int page) =>
+                    setState(() => _currentPage = page),
+                children: [
+                  _buildStep1CoreInfo(),
+                  _buildStep2BankDetails(),
+                  _buildStep3Appearance(),
+                ],
+              ),
+            ),
+
+            _buildBottomBar(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStep1CoreInfo() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Form(
+        key: _step1Key,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Step 1: Core Info',
+              style: AppTypography.titleLarge.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            Text(
+              'Current Balance',
+              style: AppTypography.titleSmall.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            TextFormField(
+              controller: _balanceController,
+              // REMOVED autofocus completely to prevent immediate keyboard launch/crash
+              style: AppTypography.displayMedium.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+              decoration: InputDecoration(
+                hintText: '0.00',
+                prefixText: '₹ ',
+                prefixStyle: AppTypography.displayMedium.copyWith(
+                  color: _selectedColor,
+                  fontWeight: FontWeight.bold,
+                ),
+                hintStyle: TextStyle(color: AppColors.textTertiary),
+                filled: true,
+                fillColor: AppColors.cardDarkElevated,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty)
+                  return 'Balance is required';
+                if (double.tryParse(value.trim()) == null)
+                  return 'Please enter a valid number';
+                return null;
+              },
+            ),
+            const SizedBox(height: AppSpacing.xl2),
+
+            Text(
+              'Account Details',
+              style: AppTypography.titleSmall.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+
+            SizedBox(
+              height: 40,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: AccountType.values.map((type) {
+                  final isSelected = _selectedType == type;
+                  final typeString = type.toString().split('.').last;
+                  final typeName = typeString.isNotEmpty
+                      ? '${typeString[0].toUpperCase()}${typeString.substring(1)}'
+                      : '';
+
+                  return Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.sm),
+                    child: ChoiceChip(
+                      label: Text(typeName),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) setState(() => _selectedType = type);
+                      },
+                      selectedColor: _selectedColor.withOpacity(0.2),
+                      backgroundColor: AppColors.cardDarkElevated,
+                      labelStyle: TextStyle(
+                        color: isSelected
+                            ? _selectedColor
+                            : AppColors.textSecondary,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                      side: BorderSide(
+                        color: isSelected ? _selectedColor : Colors.transparent,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusMd,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            _buildStandardTextField(
+              controller: _nameController,
+              hint: "Account Name (e.g. Personal Savings)",
+              icon: Icons.label_outline,
+              validator: (val) =>
+                  val == null || val.isEmpty ? "Required" : null,
+            ),
+            // Bottom padding to ensure scrollable area clears the keyboard comfortably
+            const SizedBox(height: 100),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStep2BankDetails() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Form(
+        key: _step2Key,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Step 2: Bank Details',
+              style: AppTypography.titleLarge.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            _buildStandardTextField(
+              controller: _bankNameController,
+              hint: "Bank Name",
+              icon: Icons.account_balance,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStandardTextField(
+                    controller: _accountNumberController,
+                    hint: "A/C Last 4",
+                    icon: Icons.numbers,
+                    isNumber: true,
+                    maxLength: 4,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: _buildStandardTextField(
+                    controller: _ifscCodeController,
+                    hint: "IFSC Code",
+                    icon: Icons.code,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 100),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStep3Appearance() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Form(
+        key: _step3Key,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Step 3: Card & Look',
+              style: AppTypography.titleLarge.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Link Physical/Virtual Card?',
+                  style: AppTypography.titleSmall.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Switch(
+                  value: _hasCardDetails,
+                  activeColor: _selectedColor,
+                  onChanged: (val) => setState(() => _hasCardDetails = val),
+                ),
+              ],
+            ),
+            if (_hasCardDetails) ...[
+              const SizedBox(height: AppSpacing.md),
+              if (Platform.isAndroid) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _startNfcScan,
+                    icon: const Icon(Icons.nfc),
+                    label: const Text("Scan Card via NFC"),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.md,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusMd,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+              _buildStandardTextField(
+                controller: _cardNumberController,
+                focusNode: _cardNumberFocus,
+                hint: "Card Number",
+                icon: Icons.credit_card,
+                maxLength: 19,
+                isNumber: true,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStandardTextField(
+                      controller: _cardExpiryController,
+                      hint: "Expiry (MM/YY)",
+                      icon: Icons.calendar_today,
+                      maxLength: 5,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: _buildStandardTextField(
+                      controller: _cardCvvController,
+                      hint: "CVV",
+                      icon: Icons.lock_outline,
+                      maxLength: 4,
+                      isNumber: true,
+                      obscureText: true,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildStandardTextField(
+                controller: _cardHolderController,
+                hint: "Card Holder Name",
+                icon: Icons.person_outline,
+              ),
+            ],
+            const SizedBox(height: AppSpacing.xl2),
+
+            Text(
+              'Color Theme',
+              style: AppTypography.titleSmall.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              height: 50,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _colorPalette.length,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(width: AppSpacing.md),
+                itemBuilder: (context, index) {
+                  final color = _colorPalette[index];
+                  final isSelected = _selectedColor == color;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedColor = color),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected ? Colors.white : Colors.transparent,
+                          width: 3,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: color.withOpacity(0.6),
+                                  blurRadius: 12,
+                                ),
+                              ]
+                            : [],
+                      ),
+                      child: isSelected
+                          ? const Icon(Icons.check, color: Colors.white)
+                          : null,
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            Text(
+              'Account Icon',
+              style: AppTypography.titleSmall.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              height: 50,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _iconPalette.length,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(width: AppSpacing.md),
+                itemBuilder: (context, index) {
+                  final icon = _iconPalette[index];
+                  final isSelected = _selectedIcon == icon;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedIcon = icon),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? _selectedColor
+                            : AppColors.cardDarkElevated,
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusMd,
+                        ),
+                        border: Border.all(
+                          color: isSelected
+                              ? Colors.white.withOpacity(0.5)
+                              : Colors.transparent,
+                        ),
+                      ),
+                      child: Icon(
+                        icon,
+                        color: isSelected
+                            ? Colors.white
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 100),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomBar() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundBlack,
+        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
+      ),
+      child: SafeArea(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            TextButton(
+              onPressed: _previousPage,
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.textSecondary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
+                ),
+              ),
+              child: Text(
+                _currentPage == 0 ? "Cancel" : "Back",
+                style: AppTypography.titleSmall,
+              ),
+            ),
+
+            ElevatedButton(
+              onPressed: _isLoading ? null : _nextPage,
+              style: ElevatedButton.styleFrom(
+                // THE FIX: Overriding the global double.infinity width from AppTheme
+                minimumSize: const Size(140, AppSpacing.buttonHeightMd),
+                backgroundColor: _selectedColor,
+                foregroundColor: AppColors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl2,
+                  vertical: AppSpacing.md,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                ),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.white,
+                      ),
+                    )
+                  : Text(
+                      _currentPage == _totalPages - 1
+                          ? (widget.accountToEdit != null ? 'Save' : 'Create')
+                          : 'Next',
+                      style: AppTypography.titleSmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -669,16 +886,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
       displayCardNum =
           "**** **** **** ${_accountNumberController.text.padRight(4, '*').substring(0, 4.clamp(0, 4))}";
     }
-    final bankLogo = LogoUtils.bankLogoFor(
-      _bankNameController.text.isEmpty
-          ? _nameController.text
-          : _bankNameController.text,
-    );
-    final logoScale = LogoUtils.bankLogoScale(
-      _bankNameController.text.isEmpty
-          ? _nameController.text
-          : _bankNameController.text,
-    );
+
+    final bankLogo = LogoUtils.bankLogoFor(_bankNameController.text);
+    final logoScale = LogoUtils.bankLogoScale(_bankNameController.text);
 
     return Container(
       height: 180,
@@ -729,11 +939,11 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                   children: [
                     Expanded(
                       child: Text(
-                        _bankNameController.text.isEmpty
-                            ? (_nameController.text.isEmpty
-                                  ? "New Account"
-                                  : _nameController.text)
-                            : _bankNameController.text.toUpperCase(),
+                        _nameController.text.isNotEmpty
+                            ? _nameController.text.toUpperCase()
+                            : (_bankNameController.text.isNotEmpty
+                                  ? _bankNameController.text.toUpperCase()
+                                  : "NEW ACCOUNT"),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -842,7 +1052,8 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
   }
 
   void _saveAccount() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_step3Key.currentState!.validate()) return;
+
     setState(() => _isLoading = true);
 
     try {

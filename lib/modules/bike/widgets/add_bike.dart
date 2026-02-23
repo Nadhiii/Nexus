@@ -134,40 +134,45 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
           _fetchedEngine = details.engineNumber;
           _fetchedExpiry = _parseDate(details.policyExpiry);
 
-          if (_modelController.text.isEmpty)
+          if (_modelController.text.isEmpty) {
             _modelController.text = details.model;
-          if (_yearController.text.isEmpty)
+          }
+          if (_yearController.text.isEmpty) {
             _yearController.text = details.modelYear;
+          }
 
           _fetchSuccess = true;
           _isFetching = false;
         });
         _logoAnimationController.forward(from: 0.0);
-        if (mounted)
+        if (mounted) {
           showTopSnackBar(context, 'Vehicle details fetched successfully');
+        }
       } else {
         setState(() {
           _isFetching = false;
           _fetchSuccess = false;
         });
-        if (mounted)
+        if (mounted) {
           showTopSnackBar(
             context,
             'Vehicle not found. Please check number.',
             isError: true,
           );
+        }
       }
     } catch (e) {
       setState(() {
         _isFetching = false;
         _fetchSuccess = false;
       });
-      if (mounted)
+      if (mounted) {
         showTopSnackBar(
           context,
           'Network error. Try again later.',
           isError: true,
         );
+      }
     }
   }
 

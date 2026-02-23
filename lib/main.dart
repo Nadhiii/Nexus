@@ -241,18 +241,10 @@ class _AIInitializerState extends State<_AIInitializer> {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
         _initializeAIProvider(context);
-        // --- OTA Update check on app open ---
+        // ONLY initialize notifications here, do NOT check for update yet
         await _otaService.initNotifications();
-        // TODO: Replace with your app version
-        const currentVersion = '1.0.0';
-        final update = await _otaService.checkForUpdate(currentVersion);
-        if (update != null) {
-          // Show notification if update available
-          await _otaService.showSimpleNotification(
-            'Update available',
-            'A new version is ready to download! Tap in About > Check for Updates.',
-          );
-        }
+        // We moved the version check to the More Screen to avoid the
+        // "Reply already submitted" crash during login/SMS scan.
       });
     }
   }

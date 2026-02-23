@@ -274,10 +274,11 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
         );
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text("Error adding entry: $e")));
+      }
     }
   }
 
@@ -406,7 +407,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                         ),
                         Switch(
                           value: _isFullTank,
-                          activeColor: AppColors.primaryBlue,
+                          activeThumbColor: AppColors.primaryBlue,
                           onChanged: (val) => setState(() => _isFullTank = val),
                         ),
                       ],
@@ -886,7 +887,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
               ),
               Switch(
                 value: _linkToExpense,
-                activeColor: AppColors.success,
+                activeThumbColor: AppColors.success,
                 onChanged: (val) => setState(() {
                   _linkToExpense = val;
                   if (!val) _selectedAccount = null;
