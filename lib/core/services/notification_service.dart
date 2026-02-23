@@ -77,7 +77,10 @@ class NotificationService {
         iOS: iosSettings,
       );
 
-      await _localNotifications.initialize(initSettings);
+      await _localNotifications.initialize(
+        settings: initSettings,
+        onDidReceiveNotificationResponse: (details) {},
+      );
 
       await _localNotifications
           .resolvePlatformSpecificImplementation<
@@ -127,10 +130,10 @@ class NotificationService {
     );
 
     await _localNotifications.show(
-      notification.hashCode,
-      notification.title,
-      notification.message,
-      details,
+      id: notification.hashCode,
+      title: notification.title,
+      body: notification.message,
+      notificationDetails: details,
       payload: notification.actionRoute,
     );
   }

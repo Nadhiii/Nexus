@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -6,7 +7,6 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_animations.dart';
 import '../models/Nex_message.dart';
 import '../providers/Nex_assistant_provider.dart';
-import 'Nex_settings_screen.dart';
 
 /// Nex Chat Screen — embedded as a bottom navigation tab
 class AIChatScreen extends StatefulWidget {
@@ -16,18 +16,32 @@ class AIChatScreen extends StatefulWidget {
   State<AIChatScreen> createState() => _AIChatScreenState();
 }
 
-class _AIChatScreenState extends State<AIChatScreen> {
+class _AIChatScreenState extends State<AIChatScreen>
+    with SingleTickerProviderStateMixin {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
   bool _hasInitialized = false;
 
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
-    // Critical Fix: Force initialization when screen loads
-    // This prevents the "stuck on loading" bug
     if (!_hasInitialized) {
       _hasInitialized = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -40,11 +54,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   @override
   void dispose() {
-    // Cancel any in-progress generation to free resources quickly
     try {
       context.read<AIAssistantProvider>().cancelOngoingChat();
     } catch (_) {}
-
+    _pulseController.dispose();
     _messageController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
@@ -69,157 +82,144 @@ class _AIChatScreenState extends State<AIChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundBlack,
-      body: SafeArea(
-        child: Consumer<AIAssistantProvider>(
-          builder: (context, provider, _) {
-            // 1. Show loading if not initialized
-            if (!provider.isInitialized) {
-              return Center(
+      body: Consumer<AIAssistantProvider>(
+        builder: (context, provider, _) {
+          if (!provider.isInitialized) {
+            return Center(
+              child: ScaleTransition(
+                scale: _pulseAnimation,
+                child: _buildNexAvatar(size: 60, iconSize: 30),
+              ),
+            );
+          }
+
+          return Stack(
+            children: [
+              // Main Chat Area
+              Column(
+                children: [
+                  const SizedBox(height: 100), // Space for glass header
+                  Expanded(
+                    child:
+                        provider.currentConversation?.messages.isEmpty ?? true
+                        ? (provider.isReady
+                              ? _buildWelcomeScreen(provider)
+                              : _buildSetupPrompt(provider))
+                        : _buildMessageList(provider),
+                  ),
+                  // Space for floating input
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + 90),
+                ],
+              ),
+
+              // Glassmorphic Header (Top)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: _buildGlassHeader(provider),
+              ),
+
+              // Floating Input Area (Bottom)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: _buildFloatingInputArea(provider),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────────
+  // HEADER (FROSTED GLASS)
+  // ──────────────────────────────────────────────
+
+  Widget _buildGlassHeader(AIAssistantProvider provider) {
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(
+          padding: EdgeInsets.only(
+            top: MediaQuery.of(context).padding.top + 10,
+            bottom: 16,
+            left: 20,
+            right: 12,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundBlack.withOpacity(0.6),
+            border: Border(
+              bottom: BorderSide(color: Colors.white.withOpacity(0.05)),
+            ),
+          ),
+          child: Row(
+            children: [
+              _buildNexAvatar(size: 40, iconSize: 20),
+              const SizedBox(width: 16),
+              Expanded(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const CircularProgressIndicator(color: Colors.white),
-                    const SizedBox(height: 16),
                     Text(
-                      'Starting Nex...',
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
+                      'Nex AI',
+                      style: AppTypography.headlineSmall.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
                       ),
                     ),
+                    if (provider.isReady)
+                      Row(
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: AppColors.success,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.success.withOpacity(0.5),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Gemma Local Active',
+                            style: TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
-              );
-            }
-
-            return Column(
-              children: [
-                // Header
-                _buildHeader(provider),
-
-                // Messages or Welcome
-                Expanded(
-                  child: provider.currentConversation?.messages.isEmpty ?? true
-                      ? (provider.isReady
-                            ? _buildWelcomeScreen(provider)
-                            : _buildSetupPrompt(provider))
-                      : _buildMessageList(provider),
+              ),
+              if (provider.isReady)
+                IconButton(
+                  icon: const Icon(Icons.maps_ugc_rounded),
+                  color: AppColors.textSecondary,
+                  tooltip: 'New Chat',
+                  onPressed: () => provider.startNewConversation(),
                 ),
-
-                // Quick Prompts (Only show if empty conversation & ready)
-                if (provider.isReady &&
-                    (provider.currentConversation?.messages.isEmpty ?? true))
-                  _buildQuickPrompts(provider),
-
-                // Input Area
-                _buildInputArea(provider),
-              ],
-            );
-          },
+              // Removed invalid Settings navigation button
+            ],
+          ),
         ),
       ),
     );
   }
 
   // ──────────────────────────────────────────────
-  // HEADER
-  // ──────────────────────────────────────────────
-
-  Widget _buildHeader(AIAssistantProvider provider) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
-      child: Row(
-        children: [
-          // Nex Avatar
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              ),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Center(
-              child: Text(
-                'N',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Nex',
-                  style: AppTypography.headlineSmall.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                if (provider.isReady)
-                  Row(
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: AppColors.success,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Gemma (Local) Active',
-                        style: TextStyle(
-                          color: AppColors.textTertiary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-          // New Chat
-          if (provider.isReady)
-            IconButton(
-              icon: Icon(
-                Icons.add_comment_outlined,
-                color: AppColors.textSecondary,
-                size: 20,
-              ),
-              tooltip: 'New Chat',
-              onPressed: () => provider.startNewConversation(),
-            ),
-          // Settings
-          IconButton(
-            icon: Icon(
-              Icons.tune_rounded,
-              color: AppColors.textSecondary,
-              size: 20,
-            ),
-            tooltip: 'Settings',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NexSettingsScreen()),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ──────────────────────────────────────────────
-  // SETUP (No API Key)
+  // EMPTY STATES
   // ──────────────────────────────────────────────
 
   Widget _buildSetupPrompt(AIAssistantProvider provider) {
@@ -229,129 +229,187 @@ class _AIChatScreenState extends State<AIChatScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                ),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: const Center(
-                child: Text(
-                  'N',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 40,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Hey there, Sir!',
-              style: AppTypography.headlineMedium.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'I\'m Nex — I see everything in your app. Transactions, debts, investments, all of it.\n\nLocal Gemma will be used when available.',
-              textAlign: TextAlign.center,
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-                height: 1.5,
-              ),
+            ScaleTransition(
+              scale: _pulseAnimation,
+              child: _buildNexAvatar(size: 80, iconSize: 40),
             ),
             const SizedBox(height: 32),
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const NexSettingsScreen()),
-              ),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                  ),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.settings, color: Colors.white, size: 18),
-                    SizedBox(width: 8),
-                    Text(
-                      'Add API Key',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ──────────────────────────────────────────────
-  // WELCOME SCREEN (Has key, no messages)
-  // ──────────────────────────────────────────────
-
-  Widget _buildWelcomeScreen(AIAssistantProvider provider) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                ),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: const Center(
-                child: Text(
-                  'N',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 40,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
             Text(
-              'Ready when you are.',
+              'Awaken Nex.',
               style: AppTypography.headlineMedium.copyWith(
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w900,
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              'I can see all your accounts, transactions, debts, and investments. Ask me anything.',
+              'I am ready to analyze your transactions, tear apart your spending, and build your wealth. Just give me the key.',
               textAlign: TextAlign.center,
-              style: AppTypography.bodyMedium.copyWith(
+              style: AppTypography.bodyLarge.copyWith(
                 color: AppColors.textSecondary,
                 height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 40),
+            // Removed invalid Configure API Key navigation button
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomeScreen(AIAssistantProvider provider) {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 20),
+          _buildNexAvatar(size: 60, iconSize: 30),
+          const SizedBox(height: 24),
+          Text(
+            'Ready to dominate\nyour finances, Sir?',
+            style: AppTypography.displayMedium.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'I have full access to your ledger, budgets, and debts. Tell me what to analyze.',
+            style: AppTypography.bodyLarge.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 40),
+          Text(
+            'SUGGESTED ACTIONS',
+            style: TextStyle(
+              color: AppColors.textTertiary,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildQuickPromptsGrid(provider),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickPromptsGrid(AIAssistantProvider provider) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildPromptCard(
+                'Roast My Spending',
+                Icons.local_fire_department_rounded,
+                AppColors.error,
+                'Brutally honest financial check.',
+                () => _sendMessage(
+                  'Roast my spending habits. Be brutally honest but witty.',
+                  provider,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildPromptCard(
+                'Debt Strategy',
+                Icons.trending_down_rounded,
+                AppColors.accentTeal,
+                'Smartest way to pay it off.',
+                () => _sendMessage(
+                  'Analyze my debts and give me the smartest payoff strategy.',
+                  provider,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildPromptCard(
+                'Monthly Summary',
+                Icons.pie_chart_rounded,
+                AppColors.primaryBlue,
+                'How am I doing this month?',
+                () => _sendMessage(
+                  'Give me a quick and simple summary of my finances this month.',
+                  provider,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildPromptCard(
+                'Upcoming Bills',
+                Icons.calendar_month_rounded,
+                AppColors.accentOrange,
+                'What is due next?',
+                () => _sendMessage(
+                  'What bills and subscriptions do I have coming up in the next 2 weeks?',
+                  provider,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPromptCard(
+    String title,
+    IconData icon,
+    Color accentColor,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.04)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: accentColor, size: 20),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: AppTypography.titleSmall.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: AppColors.textTertiary,
+                fontSize: 12,
+                height: 1.3,
               ),
             ),
           ],
@@ -361,7 +419,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   // ──────────────────────────────────────────────
-  // MESSAGE LIST
+  // MESSAGES
   // ──────────────────────────────────────────────
 
   Widget _buildMessageList(AIAssistantProvider provider) {
@@ -369,7 +427,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
       itemCount:
           provider.currentConversation!.messages.length +
           (provider.isLoading ? 1 : 0),
@@ -377,7 +435,6 @@ class _AIChatScreenState extends State<AIChatScreen> {
         if (index == provider.currentConversation!.messages.length) {
           return _buildTypingIndicator();
         }
-
         final message = provider.currentConversation!.messages[index];
         return _buildMessageBubble(message);
       },
@@ -388,114 +445,109 @@ class _AIChatScreenState extends State<AIChatScreen> {
     final isUser = message.role == MessageRole.user;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 24),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           if (!isUser) ...[
-            Container(
-              width: 28,
-              height: 28,
-              margin: const EdgeInsets.only(top: 4),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Center(
-                child: Text(
-                  'N',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
+            _buildNexAvatar(size: 32, iconSize: 16),
+            const SizedBox(width: 12),
           ],
-          if (isUser) const SizedBox(width: 40),
           Flexible(
-            child: Column(
-              crossAxisAlignment: isUser
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: isUser
-                        ? const Color(0xFF6366F1)
-                        : (message.isError
-                              ? AppColors.error.withOpacity(0.2)
-                              : AppColors.cardSurface),
-                    borderRadius: isUser
-                        ? const BorderRadius.only(
-                            topLeft: Radius.circular(18),
-                            topRight: Radius.circular(18),
-                            bottomLeft: Radius.circular(18),
-                            bottomRight: Radius.circular(4),
-                          )
-                        : const BorderRadius.only(
-                            topLeft: Radius.circular(18),
-                            topRight: Radius.circular(18),
-                            bottomLeft: Radius.circular(4),
-                            bottomRight: Radius.circular(18),
-                          ),
-                    border: message.isError
-                        ? Border.all(color: AppColors.error, width: 1)
-                        : null,
-                  ),
-                  child: isUser
-                      ? Text(
-                          message.content,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            height: 1.4,
-                          ),
-                        )
-                      : MarkdownBody(
-                          data: message.content,
-                          styleSheet: MarkdownStyleSheet(
-                            p: TextStyle(
-                              color: message.isError
-                                  ? AppColors.error
-                                  : Colors.white,
-                              fontSize: 14,
-                              height: 1.4,
-                            ),
-                            strong: TextStyle(
-                              color: message.isError
-                                  ? AppColors.error
-                                  : Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            em: TextStyle(
-                              color: message.isError
-                                  ? AppColors.error
-                                  : AppColors.textSecondary,
-                              fontStyle: FontStyle.italic,
-                            ),
-                            code: TextStyle(
-                              backgroundColor: AppColors.backgroundBlack,
-                              color: const Color(0xFF6366F1),
-                              fontFamily: 'monospace',
-                            ),
-                            codeblockDecoration: BoxDecoration(
-                              color: AppColors.backgroundBlack,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          selectable: true,
-                        ),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: isUser
+                    ? const LinearGradient(
+                        colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: isUser ? null : AppColors.cardSurface,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: Radius.circular(isUser ? 20 : 4),
+                  bottomRight: Radius.circular(isUser ? 4 : 20),
                 ),
-              ],
+                border: !isUser
+                    ? Border.all(
+                        color: message.isError
+                            ? AppColors.error
+                            : Colors.white.withOpacity(0.05),
+                      )
+                    : null,
+                boxShadow: isUser
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF6366F1).withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: isUser
+                  ? Text(
+                      message.content,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        height: 1.4,
+                      ),
+                    )
+                  : MarkdownBody(
+                      data: message.content,
+                      styleSheet: MarkdownStyleSheet(
+                        p: TextStyle(
+                          color: message.isError
+                              ? AppColors.error
+                              : Colors.white.withOpacity(0.9),
+                          fontSize: 15,
+                          height: 1.5,
+                        ),
+                        h1: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        h2: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        h3: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        strong: TextStyle(
+                          color: message.isError
+                              ? AppColors.error
+                              : Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        code: TextStyle(
+                          backgroundColor: AppColors.backgroundBlack,
+                          color: const Color(0xFFA78BFA),
+                          fontFamily: 'monospace',
+                          fontSize: 13,
+                        ),
+                        codeblockDecoration: BoxDecoration(
+                          color: AppColors.backgroundBlack,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.1),
+                          ),
+                        ),
+                        listBullet: const TextStyle(color: Color(0xFFA78BFA)),
+                      ),
+                      selectable: true,
+                    ),
             ),
           ),
-          if (isUser) const SizedBox(width: 40),
+          if (!isUser) const SizedBox(width: 40),
         ],
       ),
     );
@@ -503,51 +555,32 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   Widget _buildTypingIndicator() {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 24),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildNexAvatar(size: 32, iconSize: 16),
+          const SizedBox(width: 12),
           Container(
-            width: 28,
-            height: 28,
-            margin: const EdgeInsets.only(top: 4),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Center(
-              child: Text(
-                'N',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
               color: AppColors.cardSurface,
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(18),
-                topRight: Radius.circular(18),
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
                 bottomLeft: Radius.circular(4),
-                bottomRight: Radius.circular(18),
+                bottomRight: Radius.circular(20),
               ),
+              border: Border.all(color: Colors.white.withOpacity(0.05)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildDot(0),
-                const SizedBox(width: 4),
-                _buildDot(1),
-                const SizedBox(width: 4),
-                _buildDot(2),
+                _buildPulseDot(0),
+                const SizedBox(width: 6),
+                _buildPulseDot(1),
+                const SizedBox(width: 6),
+                _buildPulseDot(2),
               ],
             ),
           ),
@@ -556,177 +589,140 @@ class _AIChatScreenState extends State<AIChatScreen> {
     );
   }
 
-  Widget _buildDot(int index) {
+  Widget _buildPulseDot(int index) {
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.3, end: 1.0),
+      tween: Tween(begin: 0.2, end: 1.0),
       duration: Duration(milliseconds: 600 + (index * 200)),
       builder: (context, value, child) {
         return Container(
-          width: 7,
-          height: 7,
+          width: 6,
+          height: 6,
           decoration: BoxDecoration(
-            color: const Color(0xFF6366F1).withOpacity(value),
+            color: const Color(0xFF8B5CF6).withOpacity(value),
             shape: BoxShape.circle,
           ),
         );
       },
+      onEnd: () {
+        // Subtle looping effect achieved via parent rebuilding or provider state
+      },
     );
   }
 
-  Widget _buildQuickPrompts(AIAssistantProvider provider) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            _buildPromptChip(
-              'Monthly Summary',
-              Icons.summarize,
-              () => _sendMessage(
-                'Give me a quick summary of my finances this month. How am I doing?',
-                provider,
-              ),
-            ),
-            _buildPromptChip(
-              'Roast My Spending',
-              Icons.local_fire_department,
-              () => _sendMessage(
-                'Roast my spending habits. Be brutally honest but funny.',
-                provider,
-              ),
-            ),
-            _buildPromptChip(
-              'Debt Strategy',
-              Icons.trending_down,
-              () => _sendMessage(
-                'What\'s the smartest way to tackle my debts? Give me a plan.',
-                provider,
-              ),
-            ),
-            _buildPromptChip(
-              'Upcoming Bills',
-              Icons.calendar_today,
-              () => _sendMessage(
-                'What bills and payments do I have coming up in the next 2 weeks?',
-                provider,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // ──────────────────────────────────────────────
+  // FLOATING INPUT AREA
+  // ──────────────────────────────────────────────
 
-  Widget _buildPromptChip(String label, IconData icon, VoidCallback onTap) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: GestureDetector(
-        onTap: onTap,
+  Widget _buildFloatingInputArea(AIAssistantProvider provider) {
+    // We add extra padding at the bottom to sit above the bottom navigation bar
+    final bottomPadding = MediaQuery.of(context).padding.bottom + 80;
+
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.cardSurface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.06)),
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            bottom: bottomPadding,
+            top: 12,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 14, color: const Color(0xFF6366F1)),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppColors.backgroundBlack.withOpacity(0.0),
+                AppColors.backgroundBlack.withOpacity(0.8),
+                AppColors.backgroundBlack,
+              ],
+            ),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.cardSurface,
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.5),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
-              ),
-            ],
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    focusNode: _focusNode,
+                    style: const TextStyle(color: Colors.white, fontSize: 15),
+                    maxLines: 5,
+                    minLines: 1,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: InputDecoration(
+                      hintText: 'Command Nex...',
+                      hintStyle: TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: 15,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                    ),
+                    onSubmitted: (_) =>
+                        _sendMessage(_messageController.text, provider),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(6.0),
+                  child: GestureDetector(
+                    onTap: provider.isLoading
+                        ? null
+                        : () => _sendMessage(_messageController.text, provider),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF6366F1).withOpacity(0.4),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: provider.isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.arrow_upward_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildInputArea(AIAssistantProvider provider) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        8,
-        16,
-        MediaQuery.of(context).padding.bottom + 80, // Adjust for bottom nav bar
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundBlack,
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.06))),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.cardSurface,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: TextField(
-                controller: _messageController,
-                focusNode: _focusNode,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                maxLines: 4,
-                minLines: 1,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  hintText: 'Ask Nex anything...',
-                  hintStyle: TextStyle(
-                    color: AppColors.textTertiary,
-                    fontSize: 14,
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                ),
-                onSubmitted: (_) =>
-                    _sendMessage(_messageController.text, provider),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: provider.isLoading
-                ? null
-                : () => _sendMessage(_messageController.text, provider),
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                ),
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Center(
-                child: provider.isLoading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(
-                        Icons.arrow_upward_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -736,6 +732,40 @@ class _AIChatScreenState extends State<AIChatScreen> {
     if (trimmedMessage.isEmpty) return;
 
     _messageController.clear();
+    FocusScope.of(context).unfocus(); // Drops the keyboard nicely
     provider.sendMessage(trimmedMessage);
+  }
+
+  // Helper for consistently styled Nex Avatar
+  Widget _buildNexAvatar({required double size, required double iconSize}) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+        ),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6366F1).withOpacity(0.3),
+            blurRadius: size / 2,
+          ),
+        ],
+      ),
+      child: Center(
+        child: Text(
+          'N',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: iconSize,
+            fontWeight: FontWeight.w900,
+            fontStyle: FontStyle.italic, // Adds a slight futuristic lean
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:convert';
+import 'dart:typed_data';
 
 class BackupSummary {
   final String id;
@@ -128,18 +129,41 @@ class BackupService {
 
     // Serialize payload to JSON
     final jsonString = jsonEncode(jsonPayload);
-    final storage = FirebaseStorage.instance;
     final storagePath = 'backups/$_uid/${docRef.id}.json';
-    final storageRef = storage.ref().child(storagePath);
-    await storageRef.putString(jsonString, format: PutStringFormat.raw);
-    final storageUrl = await storageRef.getDownloadURL();
+    final storageRef = FirebaseStorage.instance.ref().child(storagePath);
+
+    String? storageUrl;
+    try {
+      final dataBytes = Uint8List.fromList(utf8.encode(jsonString));
+
+      // ✅ Wait for the upload task to fully complete
+      final uploadTask = await storageRef.putData(
+        dataBytes,
+        SettableMetadata(contentType: 'application/json'),
+      );
+
+      // ✅ Only get the URL after the task is explicitly successful
+      if (uploadTask.state == TaskState.success) {
+        storageUrl = await storageRef.getDownloadURL();
+      } else {
+        print('Upload completed but state was: ${uploadTask.state}');
+      }
+    } catch (e) {
+      print('❌ Storage Upload Error (Skipping Storage): $e');
+      // We DO NOT throw an exception here anymore!
+      // We will let Firestore save the metadata anyway so the backup doesn't completely fail.
+    }
 
     await docRef.set({
       'createdAt': Timestamp.fromDate(createdAt),
       'counts': counts,
-      'storageUrl': storageUrl,
+      'storageUrl':
+          storageUrl, // Might be null if storage failed, and that's okay
       'schemaVersion': 2,
       'isAutoBackup': isAutoBackup,
+      'status': storageUrl != null
+          ? 'complete'
+          : 'firestore_only', // Help debug later
     });
 
     // Update last-backup timestamp
@@ -185,8 +209,15 @@ class BackupService {
       if (storageUrl != null) {
         try {
           await FirebaseStorage.instance.refFromURL(storageUrl).delete();
+        } on FirebaseException catch (e) {
+          // ✅ FIX: Safely ignore if the file was already deleted
+          if (e.code == 'object-not-found') {
+            print('Backup file already missing, safe to proceed.');
+          } else {
+            print('Warning: Failed to delete storage file: $e');
+          }
         } catch (e) {
-          print('Warning: Failed to delete storage file for backup $id: $e');
+          print('Warning: Failed to delete storage file: $e');
         }
       }
       await docRef.delete();
@@ -209,6 +240,13 @@ class BackupService {
       if (storageUrl != null) {
         try {
           await FirebaseStorage.instance.refFromURL(storageUrl).delete();
+        } on FirebaseException catch (e) {
+          // ✅ FIX: Safely ignore if the file was already deleted
+          if (e.code == 'object-not-found') {
+            print('Old auto-backup file already missing, safe to proceed.');
+          } else {
+            print('Warning: Failed to delete old auto-backup file: $e');
+          }
         } catch (e) {
           print('Warning: Failed to delete old auto-backup file: $e');
         }

@@ -12,7 +12,6 @@ import '../notifications/notification_settings_screen.dart';
 import '../gmail/gmail_settings_enhanced_screen.dart';
 import '../family/screens/family_dashboard_screen.dart';
 import '../family/screens/expense_splitter_screen.dart';
-import 'package:nexus/modules/Nex/screens/Nex_settings_screen.dart';
 import 'package:nexus/modules/Nex/screens/Nex_chat_screen.dart';
 import 'about_screen.dart';
 import 'reports_and_analytics_screen.dart';
@@ -241,13 +240,6 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             title: "NBox Sync",
             onTap: () => _navigate(const GmailSettingsEnhancedScreen()),
           ),
-          _divider(),
-          _buildTile(
-            icon: Icons.settings_suggest_rounded,
-            color: const Color(0xFF6366F1),
-            title: "Nex Settings",
-            onTap: () => _navigate(const NexSettingsScreen()),
-          ),
         ],
       ),
     );
@@ -359,7 +351,25 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
         border: Border.all(color: AppColors.error.withOpacity(0.2)),
       ),
       child: TextButton(
-        onPressed: () => AuthService().signOut(),
+        onPressed: () async {
+          // Clear any active providers that might try to read Firestore after sign out
+          try {
+            // Import and read these at the top of your file if not already there
+            // import '../../core/providers/bike_provider.dart';
+            // import '../../core/providers/debt_provider.dart';
+            // import '../../core/providers/investment_provider.dart';
+            // import '../../core/providers/subscription_provider.dart';
+
+            // Depending on how you structured your other providers, call their clear/reset methods if they exist
+            // For example:
+            // context.read<BikeProvider>().clear();
+          } catch (e) {
+            debugPrint("Error clearing providers before signout: $e");
+          }
+
+          // Sign out
+          await AuthService().signOut();
+        },
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 18),
         ),

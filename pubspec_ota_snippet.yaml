@@ -1,0 +1,4 @@
+dependencies:
+  ota_update: ^4.0.1
+  flutter_local_notifications: ^16.3.2
+  http: ^1.2.1

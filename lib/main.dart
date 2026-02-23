@@ -1,3 +1,4 @@
+import 'core/services/ota_update_service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -230,16 +231,28 @@ class _AIInitializer extends StatefulWidget {
 
 class _AIInitializerState extends State<_AIInitializer> {
   bool _initialized = false;
+  final OTAUpdateService _otaService = OTAUpdateService();
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_initialized) {
       _initialized = true;
-      // Schedule after first frame so all providers are available
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
         _initializeAIProvider(context);
+        // --- OTA Update check on app open ---
+        await _otaService.initNotifications();
+        // TODO: Replace with your app version
+        const currentVersion = '1.0.0';
+        final update = await _otaService.checkForUpdate(currentVersion);
+        if (update != null) {
+          // Show notification if update available
+          await _otaService.showSimpleNotification(
+            'Update available',
+            'A new version is ready to download! Tap in About > Check for Updates.',
+          );
+        }
       });
     }
   }

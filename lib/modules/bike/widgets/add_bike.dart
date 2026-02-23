@@ -184,30 +184,55 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
     int year = DateTime.now().year;
     if (yearStr.isNotEmpty) year = int.tryParse(yearStr) ?? year;
     double odometer = double.tryParse(odoStr) ?? 0.0;
+
+    // Use newly fetched make, OR existing make, OR guess from the model
     final make =
         (_fetchedMake ??
+                widget.bikeToEdit?.make ??
                 (model.isNotEmpty ? model.split(' ').first : 'Unknown'))
             .trim();
 
-    final bike = Bike(
-      id: widget.bikeToEdit?.id ?? '',
-      userId: widget.bikeToEdit?.userId ?? '',
-      name: name.isEmpty ? 'My Vehicle' : name,
-      model: model,
-      year: year,
-      currentOdometer: odometer,
-      createdAt: widget.bikeToEdit?.createdAt ?? DateTime.now(),
-      isActive: widget.bikeToEdit?.isActive ?? true,
-      registrationNumber: reg.toUpperCase(),
-      make: make,
-      ownerName: _fetchedOwner,
-      fuelType: _fetchedFuelType,
-      rtoLocation: _fetchedRtoLocation,
-      insurer: _fetchedInsurer,
-      policyExpiry: _fetchedExpiry,
-      chassisNumber: _fetchedChassis,
-      engineNumber: _fetchedEngine,
-    );
+    Bike bike;
+
+    if (widget.bikeToEdit != null) {
+      // ✅ EDIT MODE: Keep existing data (image, displayOrder, etc.) and only update changed fields
+      bike = widget.bikeToEdit!.copyWith(
+        name: name.isEmpty ? 'My Vehicle' : name,
+        model: model,
+        year: year,
+        currentOdometer: odometer,
+        registrationNumber: reg.toUpperCase(),
+        make: make,
+        ownerName: _fetchedOwner ?? widget.bikeToEdit!.ownerName,
+        fuelType: _fetchedFuelType ?? widget.bikeToEdit!.fuelType,
+        rtoLocation: _fetchedRtoLocation ?? widget.bikeToEdit!.rtoLocation,
+        insurer: _fetchedInsurer ?? widget.bikeToEdit!.insurer,
+        policyExpiry: _fetchedExpiry ?? widget.bikeToEdit!.policyExpiry,
+        chassisNumber: _fetchedChassis ?? widget.bikeToEdit!.chassisNumber,
+        engineNumber: _fetchedEngine ?? widget.bikeToEdit!.engineNumber,
+      );
+    } else {
+      // ✅ ADD MODE: Create a brand new bike
+      bike = Bike(
+        id: '',
+        userId: '',
+        name: name.isEmpty ? 'My Vehicle' : name,
+        model: model,
+        year: year,
+        currentOdometer: odometer,
+        createdAt: DateTime.now(),
+        isActive: true,
+        registrationNumber: reg.toUpperCase(),
+        make: make,
+        ownerName: _fetchedOwner,
+        fuelType: _fetchedFuelType,
+        rtoLocation: _fetchedRtoLocation,
+        insurer: _fetchedInsurer,
+        policyExpiry: _fetchedExpiry,
+        chassisNumber: _fetchedChassis,
+        engineNumber: _fetchedEngine,
+      );
+    }
 
     if (widget.bikeToEdit == null) {
       provider
