@@ -601,49 +601,50 @@ export const checkDebtReminders = onSchedule(
 /**
  * Trigger: When a debt is updated
  * Action: Check if debt is fully paid and store in-app notification only
- * Note: Push notifications reserved for family/split debts - personal debts show local snackbar
+ * Note: Push notifications reserved for personal debts - no push for personal
  */
-export const onDebtUpdated = onDocumentUpdated(
-  "users/{userId}/debts/{debtId}",
-  async (event) => {
-    const before = event.data?.before.data();
-    const after = event.data?.after.data();
-    if (!before || !after) return;
+export const onDebtUpdated =
+  onDocumentUpdated(
+    "users/{userId}/debts/{debtId}",
+    async (event) => {
+      const before = event.data?.before.data();
+      const after = event.data?.after.data();
+      if (!before || !after) return;
 
-    const userId = event.params.userId;
+      const userId = event.params.userId;
 
-    // Check if debt was just paid off
-    const wasPaidOff =
+      // Check if debt was just paid off
+      const wasPaidOff =
       (before.currentBalance > 0 && after.currentBalance <= 0) ||
       (before.isActive === true &&
         after.isActive === false &&
         after.currentBalance <= 0);
 
-    if (wasPaidOff) {
-      const title = "🎉 Congratulations!";
-      const totalPaid = after.totalAmount?.toFixed(0) || "N/A";
-      const body =
-        `You've paid off "${after.name}"! Total: ₹${totalPaid}`;
+      if (wasPaidOff) {
+        const title = "🎉 Congratulations!";
+        const totalPaid = after.totalAmount?.toFixed(0) || "N/A";
+        const body =
+          `Paid off "${after.name}"! Rs ${totalPaid}`;
 
-      // Only store in-app notification - no push notification for personal debts
-      // Push notifications are reserved for family/split debt activities
-      await storeInAppNotification(
-        userId,
-        "debtPayoff",
-        title,
-        body,
-        {
-          debtId: event.params.debtId,
-          name: after.name,
-          totalPaid: after.totalAmount,
-          paidOffDate: new Date().toISOString(),
-        }
-      );
+        // Only store in-app notification - no push notification for personal debts
+        // Push notifications are reserved for family/split debt activities
+        await storeInAppNotification(
+          userId,
+          "debtPayoff",
+          title,
+          body,
+          {
+            debtId: event.params.debtId,
+            name: after.name,
+            totalPaid: after.totalAmount,
+            paidOffDate: new Date().toISOString(),
+          }
+        );
 
-      logger.info(`Debt ${after.name} paid off by user ${userId}!`);
+        logger.info(`Debt ${after.name} paid off by user ${userId}!`);
+      }
     }
-  }
-);
+  );
 
 /**
  * Scheduled function: Auto-log subscription payments due today
@@ -700,9 +701,11 @@ export const autoLogSubscriptionPayments = onSchedule(
           nextBillingDate: admin.firestore.Timestamp.fromDate(nextDueDate),
         });
 
-        logger.info(
-          `Auto-logged subscription payment for ${sub.name} (user ${userDoc.id}) and updated nextDueDate.`
-        );
+        const subName = sub.name;
+        const msg =
+          `Auto-logged subscription payment for ${subName} ` +
+          `(user ${userDoc.id}) updated nextDueDate.`;
+        logger.info(msg);
       }
     }
     logger.info("Auto-log subscription payments completed");

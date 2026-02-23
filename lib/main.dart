@@ -19,6 +19,7 @@ import 'core/providers/gmail_provider.dart';
 import 'core/providers/goal_provider.dart';
 import 'core/providers/category_provider.dart';
 import 'core/providers/bike_provider.dart';
+import 'core/providers/vehicle_management_provider.dart';
 import 'core/providers/fuel_price_provider.dart';
 import 'core/providers/pdf_import_provider.dart';
 import 'core/providers/shared_expense_provider.dart';
@@ -29,6 +30,7 @@ import 'core/services/crash_reporting_service.dart';
 import 'core/services/widget_sync_service.dart';
 import 'core/services/intent_navigation_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_gemma/flutter_gemma.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +43,25 @@ void main() async {
   await dotenv.load(fileName: ".env");
 
   IntentNavigationService.initialize();
+
+  // --- LOCAL GEMMA INITIALIZATION (local-only AI) ---
+  try {
+    await FlutterGemma.initialize();
+
+    // Try to install model from device path if present. If not present, initialization still succeeds.
+    try {
+      await FlutterGemma.installModel(
+        modelType: ModelType.gemmaIt,
+        fileType: ModelFileType.binary,
+      ).fromFile('/data/local/tmp/gemma.bin').install();
+      debugPrint('Local Gemma Model loaded successfully!');
+    } catch (e) {
+      debugPrint('No local Gemma model installed or failed to install: $e');
+    }
+  } catch (e) {
+    debugPrint('Error initializing FlutterGemma plugin: $e');
+  }
+  // ------------------------------------
 
   runApp(const NexusApp());
 }
@@ -62,6 +83,7 @@ class NexusApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => GoalProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
         ChangeNotifierProvider(create: (_) => BikeProvider()),
+        ChangeNotifierProvider(create: (_) => VehicleManagementProvider()),
         ChangeNotifierProvider(create: (_) => FuelPriceProvider()),
         ChangeNotifierProvider(create: (_) => PDFImportProvider()),
         ChangeNotifierProvider(create: (_) => SharedExpenseProvider()),

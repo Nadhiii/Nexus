@@ -72,6 +72,8 @@ class DebtService {
         return 'Business Loan';
       case DebtType.goldLoan:
         return 'Gold Loan';
+      case DebtType.twoWheelerLoan:
+        return 'Two Wheeler Loan';
       case DebtType.other:
         return 'Other';
       case DebtType.owedByMe:
@@ -99,6 +101,8 @@ class DebtService {
         return Icons.business;
       case DebtType.goldLoan:
         return Icons.attach_money;
+      case DebtType.twoWheelerLoan:
+        return Icons.two_wheeler;
       case DebtType.other:
         return Icons.money_off;
       case DebtType.owedByMe:
@@ -126,6 +130,8 @@ class DebtService {
         return Colors.teal;
       case DebtType.goldLoan:
         return Colors.yellow;
+      case DebtType.twoWheelerLoan:
+        return Colors.cyan;
       case DebtType.other:
         return Colors.grey;
       case DebtType.owedByMe:

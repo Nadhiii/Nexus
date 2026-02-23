@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../core/config/ai_config.dart';
+// AIConfig and cloud providers removed — using local Gemma only
 import '../../../core/models/pdf_parsing_provider.dart';
 import '../models/Nex_message.dart';
 import '../models/Nex_conversation.dart';
@@ -62,7 +62,9 @@ class AIAssistantProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isInitialized => _isInitialized;
   String? get error => _error;
-  bool get isReady => _settings.hasAnyKey;
+
+  // Ready if local AI service is initialized
+  bool get isReady => _aiService != null;
 
   // --- INITIALIZATION ---
 
@@ -70,51 +72,25 @@ class AIAssistantProvider with ChangeNotifier {
     if (_isInitialized) return;
     await _loadSettings();
     await _loadConversations();
-    _initService();
+    await _initService();
 
-    // Auto-propagate saved API keys to PDF parsing service
+    // Propagate PDF parsing provider setting
     if (_pdfImportProvider != null) {
-      if (_settings.hasGeminiKey) {
-        _pdfImportProvider!.setGeminiApiKeyForPDF(_settings.geminiApiKey!);
-        if (kDebugMode) {
-          print('[AIAssistantProvider] Auto-loaded Gemini key for PDF parsing');
-        }
-      }
-
-      if (_settings.hasClaudeKey) {
-        _pdfImportProvider!.setClaudeApiKeyForPDF(_settings.claudeApiKey!);
-        if (kDebugMode) {
-          print('[AIAssistantProvider] Auto-loaded Claude key for PDF parsing');
-        }
-      }
-
-      // Set the preferred PDF parsing provider
       _pdfImportProvider!.setPDFParsingProvider(_settings.pdfParsingProvider);
-      if (kDebugMode) {
-        print(
-          '[AIAssistantProvider] PDF parsing provider set to: ${_settings.pdfParsingProvider.name}',
-        );
-      }
     }
 
     _isInitialized = true;
     notifyListeners();
   }
 
-  void _initService() {
-    // Initialize service based on active model
-    if (_settings.activeModel == AIModel.gemini && _settings.hasGeminiKey) {
-      _aiService = GeminiAIService(apiKey: _settings.geminiApiKey!);
-    } else if (_settings.activeModel == AIModel.claude &&
-        _settings.hasClaudeKey) {
-      // Claude service initialization would go here when implemented
-      // For now, fallback to Gemini if available
-      if (_settings.hasGeminiKey) {
-        _aiService = GeminiAIService(apiKey: _settings.geminiApiKey!);
-      }
-    } else if (_settings.hasGeminiKey) {
-      // Fallback: Use Gemini if active model's key is not available
-      _aiService = GeminiAIService(apiKey: _settings.geminiApiKey!);
+  Future<void> _initService() async {
+    // Always initialize the local Gemma AI service.
+    try {
+      _aiService = GemmaLocalAIService();
+      debugPrint('[AIAssistantProvider] Using local Gemma service');
+    } catch (e) {
+      _aiService = null;
+      debugPrint('[AIAssistantProvider] Failed to initialize local Gemma: $e');
     }
   }
 
@@ -128,11 +104,9 @@ class AIAssistantProvider with ChangeNotifier {
     _settings = _settings.copyWith(pdfParsingProvider: provider);
     await _saveSettings();
 
-    // Update the PDF parsing service
     if (_pdfImportProvider != null) {
       _pdfImportProvider!.setPDFParsingProvider(provider);
     }
-
     notifyListeners();
   }
 
@@ -166,30 +140,22 @@ class AIAssistantProvider with ChangeNotifier {
     _categoryProvider = categoryProvider;
   }
 
-  // --- API KEY MANAGEMENT ---
+  // --- API KEY MANAGEMENT (Kept for PDF backups) ---
 
   Future<void> setGeminiApiKey(String apiKey) async {
     _isLoading = true;
     notifyListeners();
     try {
-      // Save to centralized AIConfig immediately
-      await AIConfig.setGeminiApiKey(apiKey);
-
+      // Store the key locally (kept for backward compatibility with PDF import).
       _settings = _settings.copyWith(
         geminiApiKey: apiKey,
-        activeModel: AIModel.gemini,
+        activeModel: AIModel.gemma,
       );
       await _saveSettings();
-      _initService();
+      await _initService();
 
-      // Auto-propagate to PDF parsing service
       if (_pdfImportProvider != null) {
         _pdfImportProvider!.setGeminiApiKeyForPDF(apiKey);
-        if (kDebugMode) {
-          print(
-            '[AIAssistantProvider] Saved and propagated Gemini key to PDF parsing',
-          );
-        }
       }
     } catch (e) {
       _error = e.toString();
@@ -203,26 +169,15 @@ class AIAssistantProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      // Save to centralized AIConfig
-      await AIConfig.setClaudeApiKey(apiKey);
-
-      _settings = _settings.copyWith(
-        claudeApiKey: apiKey,
-        // Don't switch to Claude yet since it's not implemented
-        // Keep using Gemini for now
-      );
+      // Store the key locally for PDF-import compatibility only.
+      _settings = _settings.copyWith(claudeApiKey: apiKey);
       await _saveSettings();
-      _initService();
+      await _initService();
 
-      // Auto-propagate to PDF parsing service
-      if (_pdfImportProvider != null) {
-        _pdfImportProvider!.setClaudeApiKeyForPDF(apiKey);
-        if (kDebugMode) {
-          print(
-            '[AIAssistantProvider] Propagated new Claude key to PDF parsing',
-          );
-        }
-      }
+      // Claude API key support has been removed - using Gemini only
+      // if (_pdfImportProvider != null) {
+      //   _pdfImportProvider!.setClaudeApiKeyForPDF(apiKey);
+      // }
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -232,9 +187,8 @@ class AIAssistantProvider with ChangeNotifier {
   }
 
   /// Send a raw prompt and return the response string directly.
-  /// Used by background services (e.g. AI categorization).
   Future<String> sendRawPrompt(String prompt) async {
-    if (_aiService == null || !_settings.hasAnyKey) {
+    if (_aiService == null) {
       throw Exception('AI service not configured');
     }
     return await _aiService!.sendMessage(
@@ -248,10 +202,7 @@ class AIAssistantProvider with ChangeNotifier {
   // --- MESSAGING & ROUTING ---
 
   Future<void> sendMessage(String message) async {
-    if (!_settings.hasAnyKey) {
-      // Assuming handleNoKeyAttempt logic exists in your project or simply return
-      return;
-    }
+    // 🔥 UPDATED: Removed the hasAnyKey check since local models don't need it!
 
     if (_currentConversation == null) startNewConversation();
 
@@ -272,51 +223,15 @@ class AIAssistantProvider with ChangeNotifier {
         financialContext: context,
       );
 
-      // 3. ROUTING
-      AITask task = AITask.chat; // Default to Fast
-
-      if (_settings.geminiMode != GeminiMode.auto) {
-        switch (_settings.geminiMode) {
-          case GeminiMode.fast:
-            task = AITask.chat;
-          case GeminiMode.thinking:
-            task = AITask.reasoning;
-          case GeminiMode.pro:
-            task = AITask.precision;
-          case GeminiMode.auto:
-            break;
-        }
-      } else {
-        final lower = message.toLowerCase();
-        // Route strategy/advice questions to Thinking model
-        if (lower.contains('plan') ||
-            lower.contains('strategy') ||
-            lower.contains('advice') ||
-            lower.contains('how to') ||
-            lower.contains('analyze') ||
-            lower.contains('debt') ||
-            lower.contains('invest')) {
-          task = AITask.reasoning;
-        }
-
-        // Route precise data questions to Pro model
-        if (lower.contains('exact') ||
-            lower.contains('statement') ||
-            lower.contains('verify') ||
-            lower.contains('json')) {
-          task = AITask.precision;
-        }
-      }
-
-      // 4. Send
+      // 3. Send via GemmaLocalAIService
       final response = await _aiService!.sendMessage(
         message,
         systemPrompt,
         _currentConversation!.messages,
-        task: task,
+        task: AITask.chat, // Gemma is fast local, so just use chat
       );
 
-      // 5. Add Response
+      // 4. Add Response
       _currentConversation = _currentConversation!.addMessage(
         AIMessage.assistant(response),
       );
@@ -341,15 +256,25 @@ class AIAssistantProvider with ChangeNotifier {
     }
   }
 
-  // --- PDF PARSING (Called externally) ---
+  /// Cancel any ongoing AI generation (e.g., user navigated away from chat)
+  void cancelOngoingChat() {
+    try {
+      if (_aiService is GemmaLocalAIService) {
+        (_aiService as GemmaLocalAIService).cancel();
+        debugPrint('[AIAssistantProvider] Cancelled ongoing Gemma generation');
+      }
+    } catch (e) {
+      debugPrint('[AIAssistantProvider] Failed to cancel generation: $e');
+    }
+  }
 
+  // --- PDF PARSING (Using Cloud for precision if needed) ---
   Future<String> parseBankStatement(String pdfText) async {
     if (_aiService == null) throw Exception('AI not initialized');
 
     const systemPrompt =
         "You are a specialized data extraction AI. Extract the transaction data from this bank statement text into strict JSON format with fields: date, description, amount, type. Return ONLY JSON.";
 
-    // Explicitly use Gemini 3.0 Pro for precision
     return await _aiService!.sendMessage(
       pdfText,
       systemPrompt,
@@ -371,10 +296,6 @@ class AIAssistantProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ... (Keep existing _saveSettings, _loadSettings, _loadConversations, _saveConversations) ...
-  // ... (Keep existing _buildContext logic) ...
-
-  // Stub for _buildContext if you don't have it handy (but you likely do from previous files)
   String _buildContext(String query) {
     if (_accountProvider == null) return "Data loading...";
     return ContextBuilderService(

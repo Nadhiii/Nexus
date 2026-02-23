@@ -12,7 +12,7 @@ class PDFParser {
   PDFParser(String apiKey, {List<String>? modelCandidates})
     : _apiKey = apiKey,
       // Use centralized AI config for model selection
-      _modelCandidates = modelCandidates ?? AIConfig.precisionModels;
+      _modelCandidates = modelCandidates ?? [AIConfig.gemmaLocal];
 
   /// Analyzes the PDF and extracts transactions using Gemini
   Future<List<ExtractedTransaction>> parse(File pdfFile) async {

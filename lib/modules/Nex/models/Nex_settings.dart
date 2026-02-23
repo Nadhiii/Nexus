@@ -4,7 +4,7 @@ library;
 
 import '../../../core/models/pdf_parsing_provider.dart';
 
-enum AIModel { gemini, claude }
+enum AIModel { gemma, gemini, claude }
 
 enum GeminiMode { auto, fast, thinking, pro }
 
@@ -20,7 +20,7 @@ class AISettings {
   AISettings({
     this.geminiApiKey,
     this.claudeApiKey,
-    this.activeModel = AIModel.gemini,
+    this.activeModel = AIModel.gemma,
     this.geminiMode = GeminiMode.auto,
     this.pdfParsingProvider = PDFParsingProvider.gemini,
     this.enableProactiveInsights = true,
@@ -33,6 +33,8 @@ class AISettings {
 
   bool get canUseActiveModel {
     switch (activeModel) {
+      case AIModel.gemma:
+        return true;
       case AIModel.gemini:
         return hasGeminiKey;
       case AIModel.claude:
@@ -44,7 +46,7 @@ class AISettings {
   AIModel? get bestAvailableModel {
     if (hasClaudeKey) return AIModel.claude; // Prefer Claude when available
     if (hasGeminiKey) return AIModel.gemini;
-    return null;
+    return AIModel.gemma; // default to local Gemma
   }
 
   AISettings copyWith({

@@ -4,112 +4,132 @@ import '../../core/providers/category_provider.dart';
 import '../../core/models/category.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/swipe_to_delete.dart';
 import '../../core/widgets/collapsible_fab.dart';
-import 'widgets/edit_category_modal.dart';
+import 'widgets/edit_category.dart';
 
-class ManageCategoriesScreen extends StatelessWidget {
+class ManageCategoriesScreen extends StatefulWidget {
   const ManageCategoriesScreen({super.key});
+
+  @override
+  State<ManageCategoriesScreen> createState() => _ManageCategoriesScreenState();
+}
+
+class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
+  String _activeFilter = 'All'; // 'All', 'System', 'Custom'
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundBlack,
+      backgroundColor: AppColors.darkGradient.first,
       body: Consumer<CategoryProvider>(
         builder: (context, provider, child) {
-          final systemCategories = provider.categories
+          final allCategories = provider.categories;
+          final systemCategories = allCategories
               .where((c) => !c.isCustom)
               .toList();
-          final customCategories = provider.categories
+          final customCategories = allCategories
               .where((c) => c.isCustom)
               .toList();
 
+          // Apply Filter
+          List<Category> displayedCategories = allCategories;
+          if (_activeFilter == 'System') displayedCategories = systemCategories;
+          if (_activeFilter == 'Custom') displayedCategories = customCategories;
+
           return CustomScrollView(
             slivers: [
-              // 1. IMMERSIVE HEADER
+              // 1. HEADER
               SliverAppBar(
                 pinned: true,
-                expandedHeight: 110,
-                backgroundColor: AppColors.backgroundBlack,
-                surfaceTintColor: AppColors.backgroundBlack,
-                elevation: 0,
-                leading: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.cardSurface,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.05),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ),
+                expandedHeight: 120.0,
+                backgroundColor: AppColors.darkGradient.first,
+                foregroundColor: AppColors.white,
                 flexibleSpace: FlexibleSpaceBar(
-                  centerTitle: false,
-                  titlePadding: const EdgeInsets.only(left: 60, bottom: 24),
+                  centerTitle: true,
                   title: Text(
                     'Category Vault',
-                    style: AppTypography.headlineMedium.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: AppTypography.headlineMedium,
+                  ),
+                ),
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+
+              // 2. VAULT SUMMARY CARD & FILTERS
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSummaryCard(
+                        total: allCategories.length,
+                        system: systemCategories.length,
+                        custom: customCategories.length,
+                      ),
+                      const SizedBox(height: AppSpacing.xl2),
+
+                      // Filter Chips
+                      Row(
+                        children: [
+                          _buildFilterChip('All'),
+                          const SizedBox(width: AppSpacing.sm),
+                          _buildFilterChip('System'),
+                          const SizedBox(width: AppSpacing.sm),
+                          _buildFilterChip('Custom'),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                    ],
                   ),
                 ),
               ),
 
-              // 2. SYSTEM CATEGORIES (Locked)
-              if (systemCategories.isNotEmpty) ...[
-                SliverToBoxAdapter(child: _buildSectionHeader("SYSTEM CORE")),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _buildCategoryTile(
-                          context,
-                          systemCategories[index],
-                        ),
-                      ),
-                      childCount: systemCategories.length,
+              // 3. CATEGORY LIST
+              if (displayedCategories.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Text(
+                      "No categories found",
+                      style: TextStyle(color: AppColors.textTertiary),
                     ),
                   ),
-                ),
-              ],
-
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
-
-              // 3. USER CATEGORIES (Unlocked)
-              if (customCategories.isNotEmpty) ...[
-                SliverToBoxAdapter(child: _buildSectionHeader("USER DEFINED")),
+                )
+              else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xl,
+                    0,
+                    AppSpacing.xl,
+                    100,
+                  ),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate((context, index) {
-                      final category = customCategories[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: SwipeToDelete(
+                      final category = displayedCategories[index];
+                      final tile = Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: _buildCategoryTile(context, category),
+                      );
+
+                      // Only allow swipe to delete for custom categories
+                      if (category.isCustom) {
+                        return SwipeToDelete(
                           itemKey: ValueKey(category.id),
                           itemId: category.id,
                           itemName: category.name,
                           onDelete: () => provider.deleteCategory(category.id),
-                          child: _buildCategoryTile(context, category),
-                        ),
-                      );
-                    }, childCount: customCategories.length),
+                          child: tile,
+                        );
+                      }
+                      return tile;
+                    }, childCount: displayedCategories.length),
                   ),
                 ),
-              ],
             ],
           );
         },
@@ -124,16 +144,145 @@ class ManageCategoriesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+  // --- UI COMPONENTS ---
+
+  Widget _buildSummaryCard({
+    required int total,
+    required int system,
+    required int custom,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primaryBlue.withOpacity(0.15),
+            AppColors.backgroundBlack,
+          ],
+        ),
+        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "VAULT STATUS",
+                style: TextStyle(
+                  color: AppColors.primaryBlue,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const Icon(
+                Icons.pie_chart_outline,
+                color: AppColors.primaryBlue,
+                size: 16,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    total.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      height: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "TOTAL ACTIVE",
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  _buildStatPill("$system System", Colors.white24),
+                  const SizedBox(width: 8),
+                  _buildStatPill(
+                    "$custom Custom",
+                    AppColors.primaryBlue.withOpacity(0.5),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatPill(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
       child: Text(
-        title,
-        style: TextStyle(
-          color: AppColors.textTertiary,
+        label,
+        style: const TextStyle(
+          color: Colors.white,
           fontSize: 11,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1.5,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label) {
+    final isActive = _activeFilter == label;
+    return GestureDetector(
+      onTap: () => setState(() => _activeFilter = label),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive
+              ? AppColors.primaryBlue.withOpacity(0.2)
+              : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive
+                ? AppColors.primaryBlue.withOpacity(0.5)
+                : Colors.white.withOpacity(0.1),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? AppColors.primaryBlue : Colors.white70,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -149,24 +298,31 @@ class ManageCategoriesScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.cardSurface.withOpacity(0.6), // Glass effect
-          borderRadius: BorderRadius.circular(20),
+          color: AppColors.cardDarkElevated,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           border: Border.all(
             color: category.isCustom
                 ? category.color.withOpacity(0.3)
                 : Colors.white.withOpacity(0.05),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
             // Glowing Icon Container
             Container(
-              width: 48,
-              height: 48,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
                 color: category.color.withOpacity(0.1),
-                shape: BoxShape.circle,
-                border: Border.all(color: category.color.withOpacity(0.2)),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                border: Border.all(color: category.color.withOpacity(0.3)),
                 boxShadow: [
                   BoxShadow(
                     color: category.color.withOpacity(0.1),
@@ -178,11 +334,11 @@ class ManageCategoriesScreen extends StatelessWidget {
               child: Center(
                 child: Text(
                   category.emoji,
-                  style: const TextStyle(fontSize: 22),
+                  style: const TextStyle(fontSize: 24),
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: AppSpacing.md),
 
             // Info
             Expanded(
@@ -192,27 +348,37 @@ class ManageCategoriesScreen extends StatelessWidget {
                   Text(
                     category.name,
                     style: AppTypography.titleMedium.copyWith(
-                      color: AppColors.textPrimary,
+                      color: AppColors.white,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  if (isLocked)
-                    Text(
-                      "System Protected",
-                      style: TextStyle(
-                        color: AppColors.textTertiary,
-                        fontSize: 10,
-                      ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isLocked ? "System Protected" : "User Minted",
+                    style: TextStyle(
+                      color: isLocked
+                          ? AppColors.textTertiary
+                          : category.color.withOpacity(0.8),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
+                  ),
                 ],
               ),
             ),
 
             // Status Icon
-            Icon(
-              isLocked ? Icons.lock_outline : Icons.edit_outlined,
-              size: 18,
-              color: isLocked ? AppColors.textTertiary : Colors.white,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isLocked ? Icons.lock_outline : Icons.edit_outlined,
+                size: 16,
+                color: isLocked ? AppColors.textTertiary : Colors.white70,
+              ),
             ),
           ],
         ),

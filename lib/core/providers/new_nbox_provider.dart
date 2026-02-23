@@ -20,7 +20,6 @@ class NewNboxProvider extends ChangeNotifier {
   NboxSettings get settings => _settings;
 
   // Optional AI dependencies for smart categorization
-  final AIAssistantProvider? _aiAssistantProvider;
   final CategoryProvider? _categoryProvider;
 
   final Telephony _telephony = Telephony.instance;
@@ -47,8 +46,7 @@ class NewNboxProvider extends ChangeNotifier {
     GmailProvider? gmailProvider,
     AIAssistantProvider? aiAssistantProvider,
     CategoryProvider? categoryProvider,
-  }) : _aiAssistantProvider = aiAssistantProvider,
-       _categoryProvider = categoryProvider {
+  }) : _categoryProvider = categoryProvider {
     update(gmailProvider);
     // Initialize asynchronously - don't block constructor
     initialize();
@@ -152,10 +150,7 @@ class NewNboxProvider extends ChangeNotifier {
     // Create AI categorization service if dependencies available
     AICategorizationService? aiService;
     if (_categoryProvider != null) {
-      aiService = AICategorizationService(
-        aiProvider: _aiAssistantProvider,
-        categoryProvider: _categoryProvider,
-      );
+      aiService = AICategorizationService(categoryProvider: _categoryProvider);
       if (kDebugMode) {
         print('[NewNboxProvider] AI categorization enabled for SMS');
       }

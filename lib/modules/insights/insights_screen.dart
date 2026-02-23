@@ -16,9 +16,9 @@ import '../../core/providers/subscription_provider.dart';
 // Screens
 import '../investments/investment_portfolio_screen.dart';
 import '../debts/screens/liabilities_screen.dart';
-import '../subscriptions/modern_subscription_screen.dart';
-import '../budgets/modern_budgets_screen.dart'; // Assuming this exists
-import '../goals/modern_goals_screen.dart'; // Assuming this exists
+import '../subscriptions/subscription_screen.dart';
+import '../budgets/budgets_screen.dart'; // Assuming this exists
+import '../goals/goals_screen.dart'; // Assuming this exists
 // import '../accounts/accounts_screen.dart';    // Uncomment if you have an accounts screen
 
 class ModernInsightsScreen extends StatelessWidget {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_animations.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../core/theme/app_animations.dart';
 import '../../../core/models/bike.dart';
 import '../../../core/models/account.dart';
 import '../../../core/models/transaction.dart';
@@ -12,8 +12,11 @@ import '../../../core/providers/transaction_provider.dart';
 import '../../../core/providers/notification_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/logo_utils.dart';
 
+// Note: Keeping the name AddEntryDialog so your imports don't break,
+// but this is now a full screen Scaffold!
 class AddEntryDialog extends StatefulWidget {
   final Bike bike;
   final double? initialRate;
@@ -25,14 +28,12 @@ class AddEntryDialog extends StatefulWidget {
 }
 
 class _AddEntryDialogState extends State<AddEntryDialog> {
-  // --- STATE ---
   bool _isFuelMode = true;
   bool _isInputtingTrip = true;
-  bool _isFullTank = true; // <--- NEW: State for Full Tank Toggle
-  bool _linkToExpense = true; // Link garage entries to expense transactions
+  bool _isFullTank = true;
+  bool _linkToExpense = true;
   Account? _selectedAccount;
 
-  // Controllers
   final _mainInputController = TextEditingController();
   final _costController = TextEditingController();
   final _volumeController = TextEditingController();
@@ -41,9 +42,8 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
   final _customCategoryController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
-  final String _selectedCategory = 'maintenance';
+  String _selectedCategory = 'maintenance';
 
-  // Math Helpers
   double _lastOdo = 0.0;
   double _calculatedOdo = 0.0;
   double _calculatedTrip = 0.0;
@@ -57,9 +57,12 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
     if (widget.initialRate != null && widget.initialRate! > 0) {
       _rateController.text = widget.initialRate!.toStringAsFixed(2);
     }
+
+    _mainInputController.addListener(() => setState(() {}));
+    _costController.addListener(() => setState(() {}));
+    _volumeController.addListener(() => setState(() {}));
   }
 
-  // --- LOGIC ---
   void _onMainInputChanged(String val) {
     double input = double.tryParse(val) ?? 0.0;
     setState(() {
@@ -96,54 +99,48 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.primaryBlue,
+              surface: AppColors.backgroundBlack,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) setState(() => _selectedDate = picked);
   }
 
-  // --- THE CORE MILEAGE LOGIC ---
   double? _calculateExactMileage(
     List<BikeEntry> history,
     double currentOdo,
     double currentFuel,
   ) {
-    if (!_isFullTank) return null; // Partial fill-ups cannot determine mileage
+    if (!_isFullTank) return null;
 
-    // Sort history by Odometer descending (Newest first)
-    // Note: Ensure your provider returns a sorted list or sort it here
     final sortedHistory = List<BikeEntry>.from(history)
       ..sort((a, b) => b.odometerReading.compareTo(a.odometerReading));
-
-    // 1. Find the LAST "Full Tank" entry
     BikeEntry? lastFullTankEntry;
     double fuelConsumedBetween = 0.0;
 
     for (var entry in sortedHistory) {
-      // Only look at fuel entries
       if ((entry.category ?? 'fuel') != 'fuel') continue;
-
       if (entry.isFullTank) {
         lastFullTankEntry = entry;
-        break; // Found the start point!
+        break;
       } else {
-        // This was a partial fill-up between the last full tank and now.
-        // We must add this fuel to the total consumption.
         fuelConsumedBetween += entry.fuelQuantity;
       }
     }
 
-    if (lastFullTankEntry == null) {
-      return null; // This is the first ever full tank, can't calculate yet.
-    }
-
-    // 2. Calculate Distance
+    if (lastFullTankEntry == null) return null;
     double distance = currentOdo - lastFullTankEntry.odometerReading;
-
-    // 3. Calculate Total Fuel Used
-    // (Fuel added TODAY) + (Fuel added in partial fills since last full tank)
     double totalFuelUsed = currentFuel + fuelConsumedBetween;
 
     if (totalFuelUsed <= 0) return 0.0;
-
     return distance / totalFuelUsed;
   }
 
@@ -157,7 +154,6 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
       return;
     }
 
-    // Validate cost is a valid number
     final costParsed = double.tryParse(_costController.text);
     if (costParsed == null || costParsed <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -166,7 +162,6 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
       return;
     }
 
-    // Validate distance is a valid number
     final mainInputParsed = double.tryParse(_mainInputController.text);
     if (mainInputParsed == null || mainInputParsed < 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -175,7 +170,6 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
       return;
     }
 
-    // Validate account selection if linking to expense
     if (_linkToExpense && _selectedAccount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please select an account to debit")),
@@ -193,9 +187,8 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
     }
 
     double currentFuelQty = double.tryParse(_volumeController.text) ?? 0;
-
-    // Calculate Mileage using the robust function
     double? calculatedMileage;
+
     if (_isFuelMode && _isFullTank) {
       calculatedMileage = _calculateExactMileage(
         provider.currentBikeEntries,
@@ -221,14 +214,11 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
     try {
       provider.addBikeEntry(entry);
 
-      // Trigger notification if mileage was calculated (full tank)
       if (entry.isFullTank && entry.mileage != null && entry.mileage! > 0) {
-        final notificationProvider = Provider.of<NotificationProvider>(
+        Provider.of<NotificationProvider>(
           context,
           listen: false,
-        );
-
-        notificationProvider.notifyFuelLogged(
+        ).notifyFuelLogged(
           vehicleName: widget.bike.name,
           mileage: entry.mileage!,
           fuelAmount: entry.fuelQuantity,
@@ -237,18 +227,14 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
       }
 
       if (_calculatedOdo > widget.bike.currentOdometer) {
-        final updatedBike = widget.bike.copyWith(
-          currentOdometer: _calculatedOdo,
+        provider.updateBike(
+          widget.bike.copyWith(currentOdometer: _calculatedOdo),
         );
-        provider.updateBike(updatedBike);
       }
 
-      // Create expense transaction if linked
       if (_linkToExpense && _selectedAccount != null) {
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
-          final txnProvider = context.read<TransactionProvider>();
-
           final transaction = Transaction(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
             userId: user.uid,
@@ -257,9 +243,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
             description: _isFuelMode
                 ? '${widget.bike.name} - Fuel (${currentFuelQty.toStringAsFixed(1)}L)'
                 : '${widget.bike.name} - $finalCategory',
-            categoryId: _isFuelMode
-                ? 'transportation'
-                : 'transportation', // Map to Transportation category
+            categoryId: 'transportation',
             accountId: _selectedAccount!.id,
             date: _selectedDate,
             metadata: {
@@ -273,8 +257,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );
-
-          await txnProvider.addTransaction(transaction);
+          await context.read<TransactionProvider>().addTransaction(transaction);
         }
       }
 
@@ -291,360 +274,559 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted)
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text("Error adding entry: $e")));
-      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: AppColors.backgroundBlack,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-      insetPadding: const EdgeInsets.all(16),
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // HEADER
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Scaffold(
+      backgroundColor: AppColors.darkGradient.first,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            expandedHeight: 120.0,
+            backgroundColor: AppColors.darkGradient.first,
+            foregroundColor: AppColors.white,
+            flexibleSpace: FlexibleSpaceBar(
+              centerTitle: true,
+              title: Text(
+                _isFuelMode ? 'Add Fuel' : 'Add Expense',
+                style: AppTypography.headlineMedium,
+              ),
+            ),
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            actions: [
+              Container(
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Row(
+                  children: [
+                    _buildModeBtn(Icons.local_gas_station, true),
+                    _buildModeBtn(Icons.build_circle, false),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildLiveSummaryCard(),
+                  const SizedBox(height: AppSpacing.xl2),
+
                   Text(
-                    _isFuelMode ? 'Add Fuel' : 'Add Expense',
-                    style: AppTypography.headlineSmall.copyWith(
+                    _isInputtingTrip ? "Trip Distance" : "New Odometer",
+                    style: AppTypography.titleSmall.copyWith(
+                      color: AppColors.textPrimary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardSurface,
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: Colors.white10),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildModeBtn(Icons.local_gas_station, true),
-                        _buildModeBtn(Icons.build_circle, false),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // ODOMETER CARD
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _isInputtingTrip
-                                    ? "TRIP DISTANCE"
-                                    : "NEW ODOMETER",
-                                style: AppTypography.labelSmall.copyWith(
-                                  color: AppColors.primaryBlue,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _mainInputController,
+                          onChanged: _onMainInputChanged,
+                          style: AppTypography.displayMedium.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: '0.0',
+                            suffixText: ' km',
+                            suffixStyle: AppTypography.displayMedium.copyWith(
+                              color: _isFuelMode
+                                  ? AppColors.primaryBlue
+                                  : AppColors.pastelOrange,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            hintStyle: TextStyle(color: AppColors.textTertiary),
+                            filled: true,
+                            fillColor: AppColors.cardDarkElevated,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppSpacing.radiusLg,
                               ),
-                              TextField(
-                                controller: _mainInputController,
-                                keyboardType: TextInputType.number,
-                                onChanged: _onMainInputChanged,
-                                style: const TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                                decoration: const InputDecoration(
-                                  hintText: '0',
-                                  suffixText: 'km',
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                ),
-                              ),
-                            ],
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
                           ),
                         ),
-                        IconButton(
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.cardDarkElevated,
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusMd,
+                          ),
+                        ),
+                        child: IconButton(
+                          padding: const EdgeInsets.all(16),
                           onPressed: _toggleInputMode,
                           icon: const Icon(
                             Icons.swap_vert_circle,
                             color: AppColors.textTertiary,
-                            size: 32,
+                            size: 28,
                           ),
                         ),
-                      ],
-                    ),
-                    const Divider(color: Colors.white10),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl2),
+
+                  if (_isFuelMode) ...[
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          _isInputtingTrip
-                              ? "New Odometer: ${_calculatedOdo.toStringAsFixed(0)} km"
-                              : "Trip Distance: ${_calculatedTrip.toStringAsFixed(1)} km",
+                          'Full Tank Fill-up',
+                          style: AppTypography.titleSmall.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Switch(
+                          value: _isFullTank,
+                          activeColor: AppColors.primaryBlue,
+                          onChanged: (val) => setState(() => _isFullTank = val),
+                        ),
+                      ],
+                    ),
+                    if (!_isFullTank)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: Text(
+                          "Mileage won't be calculated for partial fill-ups.",
                           style: TextStyle(
                             color: AppColors.textTertiary,
                             fontSize: 12,
-                          ),
-                        ),
-                        if (_isInputtingTrip)
-                          Text(
-                            "(Prev: ${_lastOdo.toStringAsFixed(0)})",
-                            style: TextStyle(
-                              color: Colors.white24,
-                              fontSize: 12,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // FIELDS
-              if (_isFuelMode) ...[
-                // --- NEW: Full Tank Toggle ---
-                Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 0,
-                  ),
-                  child: Row(
-                    children: [
-                      Switch(
-                        value: _isFullTank,
-                        activeThumbColor: AppColors.primaryBlue,
-                        onChanged: (val) => setState(() => _isFullTank = val),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Full Tank",
-                        style: TextStyle(
-                          color: _isFullTank
-                              ? Colors.white
-                              : AppColors.textTertiary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (!_isFullTank)
-                        Text(
-                          "(Mileage won't be calculated)",
-                          style: TextStyle(
-                            color: AppColors.textTertiary,
-                            fontSize: 10,
                             fontStyle: FontStyle.italic,
                           ),
                         ),
-                    ],
-                  ),
-                ),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildGlassField(
-                        controller: _volumeController,
-                        hint: "Litres",
-                        onChanged: (_) => _onFuelMathChanged(),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildGlassField(
-                        controller: _rateController,
-                        hint: "Price/L",
-                        suffix: "₹",
-                        onChanged: (_) => _onFuelMathChanged(),
-                      ),
-                    ),
-                  ],
-                ),
-              ] else ...[
-                // (Expense UI remains the same as your original file)
-                _buildLabel('Category'),
-                // ... existing expense dropdown code ...
-              ],
-
-              const SizedBox(height: 16),
-              _buildGlassField(
-                controller: _costController,
-                hint: "Total Cost",
-                suffix: "₹",
-                isHighlight: true,
-              ),
-
-              // ... (Date and Notes UI remains the same)
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => _selectDate(context),
-                      child: Container(
-                        height: 54,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        decoration: BoxDecoration(
-                          color: AppColors.cardSurface,
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.05),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStandardTextField(
+                            controller: _volumeController,
+                            hint: "Volume",
+                            icon: Icons.water_drop_outlined,
+                            suffix: "L",
+                            onChanged: (_) => _onFuelMathChanged(),
                           ),
                         ),
-                        child: Row(
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: _buildStandardTextField(
+                            controller: _rateController,
+                            hint: "Rate/L",
+                            icon: Icons.price_change_outlined,
+                            suffix: "₹",
+                            onChanged: (_) => _onFuelMathChanged(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                  ] else ...[
+                    Text(
+                      'Category',
+                      style: AppTypography.titleSmall.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardDarkElevated,
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusMd,
+                        ),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedCategory,
+                          isExpanded: true,
+                          dropdownColor: AppColors.cardSurface,
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: AppColors.textSecondary,
+                          ),
+                          items:
+                              [
+                                    'maintenance',
+                                    'repair',
+                                    'insurance',
+                                    'fine',
+                                    'other',
+                                  ]
+                                  .map(
+                                    (c) => DropdownMenuItem(
+                                      value: c,
+                                      child: Text(
+                                        c[0].toUpperCase() + c.substring(1),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                          onChanged: (val) => setState(
+                            () => _selectedCategory = val ?? 'maintenance',
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
+
+                  Text(
+                    'Total Cost',
+                    style: AppTypography.titleSmall.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _buildStandardTextField(
+                    controller: _costController,
+                    hint: "Total Cost",
+                    icon: Icons.currency_rupee,
+                    isHighlight: true,
+                  ),
+                  const SizedBox(height: AppSpacing.xl2),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Icons.calendar_today,
-                              size: 18,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 8),
                             Text(
-                              DateFormat('dd/MM/yyyy').format(_selectedDate),
-                              style: const TextStyle(color: Colors.white),
+                              'Date',
+                              style: AppTypography.titleSmall.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            GestureDetector(
+                              onTap: () => _selectDate(context),
+                              child: Container(
+                                height: 54,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.cardDarkElevated,
+                                  borderRadius: BorderRadius.circular(
+                                    AppSpacing.radiusMd,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.calendar_today,
+                                      size: 20,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    Text(
+                                      DateFormat(
+                                        'dd/MMM/yy',
+                                      ).format(_selectedDate),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ],
                         ),
                       ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Notes',
+                              style: AppTypography.titleSmall.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            _buildStandardTextField(
+                              controller: _notesController,
+                              hint: "Optional",
+                              icon: Icons.note_alt_outlined,
+                              isNumber: false,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl2),
+
+                  _buildExpenseLinkingSection(),
+                  const SizedBox(height: AppSpacing.xl2),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _save,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _isFuelMode
+                            ? AppColors.primaryBlue
+                            : AppColors.pastelOrange,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.lg,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusMd,
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        _linkToExpense ? 'Save & Record Expense' : 'Save Entry',
+                        style: AppTypography.titleSmall.copyWith(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildGlassField(
-                      controller: _notesController,
-                      hint: "Notes",
+                  const SizedBox(height: 60),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLiveSummaryCard() {
+    final themeColor = _isFuelMode
+        ? AppColors.primaryBlue
+        : AppColors.pastelOrange;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.cardDarkElevated,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+        border: Border.all(color: themeColor.withOpacity(0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: themeColor.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "ENTRY SUMMARY",
+                style: TextStyle(
+                  color: themeColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              Icon(
+                _isFuelMode ? Icons.local_gas_station : Icons.build,
+                color: themeColor,
+                size: 16,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "CURRENT ODOMETER",
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 8,
+                    ),
+                  ),
+                  Text(
+                    "${_calculatedOdo.toStringAsFixed(0)} km",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 32),
-
-              // --- LINK TO EXPENSE SECTION ---
-              _buildExpenseLinkingSection(),
-
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _isFuelMode
-                        ? AppColors.primaryBlue
-                        : AppColors.pastelOrange,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _isFuelMode ? "VOLUME" : "CATEGORY",
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 8,
                     ),
                   ),
-                  child: Text(
-                    _linkToExpense ? 'Save & Record Expense' : 'Save Entry',
+                  Text(
+                    _isFuelMode
+                        ? "${_volumeController.text.isEmpty ? '0' : _volumeController.text} L"
+                        : _selectedCategory.toUpperCase(),
                     style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
                       color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(color: Colors.white10),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "TOTAL COST",
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                "₹${_costController.text.isEmpty ? '0' : _costController.text}",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStandardTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool isNumber = true,
+    bool isHighlight = false,
+    String? suffix,
+    Function(String)? onChanged,
+  }) {
+    return TextFormField(
+      controller: controller,
+      onChanged: onChanged,
+      keyboardType: isNumber
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: AppColors.textTertiary),
+        suffixText: suffix,
+        suffixStyle: TextStyle(
+          color: AppColors.textTertiary,
+          fontWeight: FontWeight.bold,
+        ),
+        filled: true,
+        fillColor: AppColors.cardDarkElevated,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          borderSide: isHighlight
+              ? BorderSide(
+                  color:
+                      (_isFuelMode
+                              ? AppColors.primaryBlue
+                              : AppColors.pastelOrange)
+                          .withOpacity(0.5),
+                )
+              : BorderSide.none,
+        ),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(
+            left: AppSpacing.md,
+            right: AppSpacing.sm,
+          ),
+          child: Icon(
+            icon,
+            color: isHighlight
+                ? (_isFuelMode ? AppColors.primaryBlue : AppColors.pastelOrange)
+                : AppColors.textSecondary,
+            size: 20,
           ),
         ),
       ),
     );
   }
 
-  // ... (Keep your helper methods _buildModeBtn, _buildLabel, _buildGlassField exactly as they were)
   Widget _buildModeBtn(IconData icon, bool isFuel) {
-    // ... same as your original
     final isSelected = _isFuelMode == isFuel;
     return GestureDetector(
       onTap: () => setState(() => _isFuelMode = isFuel),
       child: AnimatedContainer(
         duration: AppAnimations.standard,
-        width: 44,
-        height: 44,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           color: isSelected
-              ? (_isFuelMode ? AppColors.primaryBlue : AppColors.pastelOrange)
+              ? (isFuel ? AppColors.primaryBlue : AppColors.pastelOrange)
               : Colors.transparent,
           shape: BoxShape.circle,
         ),
         child: Icon(
           icon,
-          size: 20,
+          size: 16,
           color: isSelected ? Colors.white : AppColors.textTertiary,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLabel(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 8, left: 4),
-    child: Text(
-      text,
-      style: TextStyle(
-        color: AppColors.textTertiary,
-        fontSize: 12,
-        fontWeight: FontWeight.bold,
-      ),
-    ),
-  );
-
-  Widget _buildGlassField({
-    required TextEditingController controller,
-    required String hint,
-    String? suffix,
-    bool isHighlight = false,
-    Function(String)? onChanged,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: isHighlight
-              ? (_isFuelMode ? AppColors.primaryBlue : AppColors.pastelOrange)
-              : Colors.white.withOpacity(0.05),
-        ),
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: TextInputType.number,
-        onChanged: onChanged,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.5)),
-          suffixText: suffix,
-          suffixStyle: TextStyle(color: AppColors.textTertiary),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 16,
-          ),
         ),
       ),
     );
@@ -655,30 +837,29 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
     final accounts = accountProvider.accounts;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(24),
+        color: AppColors.cardDarkElevated,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         border: Border.all(
           color: _linkToExpense
               ? AppColors.success.withOpacity(0.3)
-              : Colors.white.withOpacity(0.05),
+              : Colors.transparent,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Toggle Row
           Row(
             children: [
               Icon(
                 Icons.link,
                 color: _linkToExpense
                     ? AppColors.success
-                    : AppColors.textTertiary,
-                size: 20,
+                    : AppColors.textSecondary,
+                size: 24,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -688,13 +869,13 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                       style: TextStyle(
                         color: _linkToExpense
                             ? Colors.white
-                            : AppColors.textTertiary,
+                            : AppColors.textSecondary,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
                     ),
                     Text(
-                      "Auto-create expense transaction",
+                      "Auto-create transaction",
                       style: TextStyle(
                         color: AppColors.textTertiary,
                         fontSize: 11,
@@ -705,7 +886,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
               ),
               Switch(
                 value: _linkToExpense,
-                activeThumbColor: AppColors.success,
+                activeColor: AppColors.success,
                 onChanged: (val) => setState(() {
                   _linkToExpense = val;
                   if (!val) _selectedAccount = null;
@@ -713,29 +894,13 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
               ),
             ],
           ),
-
-          // Account Dropdown (when enabled)
           if (_linkToExpense) ...[
-            const SizedBox(height: 16),
-            Text(
-              "DEBIT FROM",
-              style: AppTypography.labelSmall.copyWith(
-                color: AppColors.textTertiary,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-              ),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.md),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.backgroundBlack,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: _selectedAccount != null
-                      ? AppColors.success.withOpacity(0.3)
-                      : Colors.white.withOpacity(0.1),
-                ),
+                color: AppColors.cardSurface,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<Account>(
@@ -743,14 +908,12 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                   isExpanded: true,
                   dropdownColor: AppColors.cardSurface,
                   hint: Text(
-                    "Select Account",
-                    style: TextStyle(
-                      color: AppColors.textTertiary.withOpacity(0.7),
-                    ),
+                    "Select Account to Debit",
+                    style: TextStyle(color: AppColors.textTertiary),
                   ),
                   icon: const Icon(
                     Icons.keyboard_arrow_down,
-                    color: AppColors.textTertiary,
+                    color: AppColors.textSecondary,
                   ),
                   items: accounts.map((account) {
                     final bankLogo = LogoUtils.bankLogoFor(
@@ -760,44 +923,24 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                       value: account,
                       child: Row(
                         children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryBlue.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
+                          if (bankLogo != null)
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: LogoUtils.buildLogo(bankLogo, size: 20),
+                            )
+                          else
+                            const Icon(
+                              Icons.account_balance_wallet,
+                              size: 20,
+                              color: AppColors.primaryBlue,
                             ),
-                            child: Center(
-                              child: bankLogo != null
-                                  ? LogoUtils.buildLogo(bankLogo, size: 16)
-                                  : const Icon(
-                                      Icons.account_balance_wallet,
-                                      size: 16,
-                                      color: AppColors.primaryBlue,
-                                    ),
-                            ),
-                          ),
                           const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  account.name,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  "₹${account.balance.toStringAsFixed(0)}",
-                                  style: TextStyle(
-                                    color: AppColors.textTertiary,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
+                          Text(
+                            account.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],

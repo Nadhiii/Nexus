@@ -9,8 +9,6 @@ class BikeStatsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // --- SIMPLE AVERAGE CALCULATION (matches spreadsheet) ---
-    double avgMileage = 0.0;
     double totalFuel = 0.0;
     double totalKm = 0.0;
 
@@ -33,136 +31,157 @@ class BikeStatsWidget extends StatelessWidget {
         totalFuel += entry.fuelQuantity;
       }
 
-      // Simple average of individual mileages (matches spreadsheet AVERAGE)
-      final entriesWithMileage = fuelEntries
-          .where((e) => e.mileage != null && e.mileage! > 0)
-          .toList();
-      if (entriesWithMileage.isNotEmpty) {
-        final totalMileage = entriesWithMileage.fold<double>(
-          0,
-          (sum, e) => sum + e.mileage!,
-        );
-        avgMileage = totalMileage / entriesWithMileage.length;
-      }
-    }
+      // Prepare stats list
+      final stats = [
+        _StatData(
+          'Mileage',
+          totalKm > 0 && totalFuel > 0
+              ? (totalKm / totalFuel).toStringAsFixed(1)
+              : '--',
+          'km/l',
+          Icons.speed,
+        ),
+        _StatData(
+          'Fuel-ups',
+          fuelEntries.length.toString(),
+          '',
+          Icons.local_gas_station,
+        ),
+        _StatData(
+          'Distance',
+          totalKm > 0 ? totalKm.toStringAsFixed(0) : '--',
+          'km',
+          Icons.route,
+        ),
+        _StatData(
+          'Cost',
+          fuelEntries
+              .fold<double>(0, (sum, e) => sum + (e.fuelAmount))
+              .toStringAsFixed(0),
+          '₹',
+          Icons.currency_rupee,
+          subtitle: fuelEntries.isNotEmpty
+              ? '${fuelEntries.map((e) => '${e.date.day}/${e.date.month}').toSet().length} days'
+              : '',
+        ),
+      ];
 
-    final stats = [
-      _StatData(
-        'Avg Mileage',
-        avgMileage > 0 ? avgMileage.toStringAsFixed(1) : '-',
-        'km/l',
-        Icons.speed,
-      ),
-      _StatData(
-        'Cost',
-        '₹${provider.getTotalFuelCost().toStringAsFixed(0)}',
-        '',
-        Icons.account_balance_wallet_outlined,
-      ),
-      _StatData(
-        'Fill-ups',
-        '${provider.getTotalFillups()}',
-        '',
-        Icons.local_gas_station_outlined,
-      ),
-      _StatData(
-        'Distance',
-        totalKm > 0 ? totalKm.toStringAsFixed(1) : '-',
-        'km',
-        Icons.add_road,
-      ),
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.6,
-      ),
-      itemCount: stats.length,
-      itemBuilder: (context, index) {
-        final stat = stats[index];
-        final statColor = _getStatColor(index);
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [statColor.withOpacity(0.15), const Color(0xFF1E1E1E)],
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        // Explicitly set tight vertical padding to close the gap between surrounding widgets
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          childAspectRatio:
+              1.5, // Slightly adjusted to give the layout breathing room
+        ),
+        itemCount: stats.length,
+        itemBuilder: (context, index) {
+          final stat = stats[index];
+          final statColor = _getStatColor(index);
+          return Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [statColor.withOpacity(0.15), const Color(0xFF1E1E1E)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: statColor.withOpacity(0.15)),
+              boxShadow: [
+                BoxShadow(
+                  color: statColor.withOpacity(0.07),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: statColor.withOpacity(0.2)),
-            boxShadow: [
-              BoxShadow(
-                color: statColor.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    stat.label.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                      color: AppColors.white.withOpacity(0.5),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: statColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(stat.icon, size: 16, color: statColor),
-                  ),
-                ],
-              ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    stat.value,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.white,
-                      height: 1.0,
-                    ),
-                  ),
-                  if (stat.unit.isNotEmpty) ...[
-                    const SizedBox(width: 4),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 3.0),
-                      child: Text(
-                        stat.unit,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: statColor,
-                          fontWeight: FontWeight.w600,
-                        ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // TOP ROW: Heading (Left) & Logo (Right)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      stat.label.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
+                        color: Colors.white.withOpacity(0.5),
                       ),
                     ),
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: statColor.withOpacity(0.13),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(stat.icon, size: 14, color: statColor),
+                    ),
                   ],
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
+                ),
+
+                const Spacer(), // Pushes the data down to the center
+                // CENTERED DATA: Left Aligned horizontally
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      stat.value,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        height: 1.0,
+                      ),
+                    ),
+                    if (stat.unit.isNotEmpty) ...[
+                      const SizedBox(width: 4),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2.0),
+                        child: Text(
+                          stat.unit,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: statColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+
+                // SUBTEXT: Directly below the data
+                if (stat.subtitle != null && stat.subtitle!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      stat.subtitle!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: statColor.withOpacity(0.8),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+
+                const Spacer(), // Balances the vertical centering
+              ],
+            ),
+          );
+        },
+      );
+    }
+    // If no fuel entries, show empty grid
+    return const SizedBox.shrink();
   }
 
   Color _getStatColor(int index) {
@@ -181,5 +200,6 @@ class _StatData {
   final String value;
   final String unit;
   final IconData icon;
-  _StatData(this.label, this.value, this.unit, this.icon);
+  final String? subtitle;
+  _StatData(this.label, this.value, this.unit, this.icon, {this.subtitle});
 }

@@ -11,7 +11,7 @@ import '../../core/theme/app_animations.dart';
 import '../../core/widgets/swipe_to_delete.dart';
 import '../../core/widgets/collapsible_fab.dart';
 import '../../core/utils/logo_utils.dart';
-import 'widgets/add_subscription_modal.dart';
+import 'widgets/add_subscription.dart';
 
 enum SubscriptionFilter { active, history }
 
@@ -178,7 +178,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
         },
       ),
       floatingActionButton: CollapsibleFab(
-        onPressed: () => showAddSubscriptionModal(context),
+        onPressed: () => showAddSubscription(context),
         backgroundColor: AppColors.primaryBlue,
         icon: const Icon(Icons.add, color: Colors.white),
         label: 'New Sub',

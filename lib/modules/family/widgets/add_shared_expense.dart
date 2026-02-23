@@ -3,20 +3,25 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_animations.dart';
 import '../../../core/providers/shared_expense_provider.dart';
 import '../../../core/models/shared_expense.dart';
+import '../../../core/widgets/top_snackbar.dart';
 
-class AddSharedExpenseDialog extends StatefulWidget {
-  const AddSharedExpenseDialog({super.key});
+class ModernAddSharedExpenseScreen extends StatefulWidget {
+  const ModernAddSharedExpenseScreen({super.key});
 
   @override
-  State<AddSharedExpenseDialog> createState() => _AddSharedExpenseDialogState();
+  State<ModernAddSharedExpenseScreen> createState() =>
+      _ModernAddSharedExpenseScreenState();
 }
 
-class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
+class _ModernAddSharedExpenseScreenState
+    extends State<ModernAddSharedExpenseScreen> {
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
@@ -48,7 +53,6 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
       if (provider.familyMembers.isNotEmpty) {
         setState(() {
           _selectedPayer = provider.familyMembers.first.id;
-          // Select all members by default
           for (var member in provider.familyMembers) {
             _selectedParticipants.add(member.id);
             _splitControllers[member.id] = TextEditingController();
@@ -71,244 +75,305 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: AppColors.backgroundBlack,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-      insetPadding: const EdgeInsets.all(16),
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-        ),
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 24),
-                _buildDescriptionField(),
-                const SizedBox(height: 20),
-                _buildAmountField(),
-                const SizedBox(height: 20),
-                _buildDateAndCategory(),
-                const SizedBox(height: 24),
-                _buildPayerSection(),
-                const SizedBox(height: 24),
-                _buildParticipantsSection(),
-                const SizedBox(height: 24),
-                _buildSplitSection(),
-                const SizedBox(height: 20),
-                _buildNotesField(),
-                const SizedBox(height: 32),
-                _buildActions(),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: AppColors.primaryBlue.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Icon(
-            Icons.group_add,
-            color: AppColors.primaryBlue,
-            size: 22,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Add Shared Expense',
-                style: AppTypography.headlineSmall.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                'Split between family members',
-                style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDescriptionField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildLabel('DESCRIPTION'),
-        const SizedBox(height: 8),
-        _buildGlassField(
-          controller: _descriptionController,
-          hint: 'What was this expense for?',
-          icon: Icons.description_outlined,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAmountField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildLabel('TOTAL AMOUNT'),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.cardSurface,
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
-          ),
-          child: TextField(
-            controller: _amountController,
-            keyboardType: TextInputType.number,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-            onChanged: (_) => _updateSplits(),
-            decoration: InputDecoration(
-              hintText: '0',
-              hintStyle: TextStyle(
-                color: AppColors.textTertiary.withOpacity(0.5),
-                fontSize: 20,
-              ),
-              prefixIcon: const Padding(
-                padding: EdgeInsets.only(left: 20),
-                child: Text(
-                  '₹',
-                  style: TextStyle(
-                    color: AppColors.primaryBlue,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              prefixIconConstraints: const BoxConstraints(minWidth: 40),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 18,
+    return Scaffold(
+      backgroundColor: AppColors.darkGradient.first,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            expandedHeight: 120.0,
+            backgroundColor: AppColors.darkGradient.first,
+            foregroundColor: AppColors.white,
+            flexibleSpace: FlexibleSpaceBar(
+              centerTitle: true,
+              title: Text(
+                'Shared Expense',
+                style: AppTypography.headlineMedium,
               ),
             ),
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDateAndCategory() {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildLabel('DATE'),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () => _selectDate(),
-                child: Container(
-                  height: 54,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardSurface,
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.white.withOpacity(0.05)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 18,
-                        color: AppColors.textTertiary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        DateFormat('dd/MM/yyyy').format(_selectedDate),
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildLabel('CATEGORY'),
-              const SizedBox(height: 8),
-              Container(
-                height: 54,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _selectedCategory,
-                    isExpanded: true,
-                    dropdownColor: AppColors.cardSurface,
-                    icon: Icon(
-                      Icons.keyboard_arrow_down,
-                      color: AppColors.textTertiary,
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // TOTAL AMOUNT (Massive)
+                  Text(
+                    'Total Amount',
+                    style: AppTypography.titleSmall.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
                     ),
-                    items: _categories.map((cat) {
-                      return DropdownMenuItem<String>(
-                        value: cat['id'] as String,
-                        child: Row(
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  TextFormField(
+                    controller: _amountController,
+                    autofocus: true,
+                    style: AppTypography.displayMedium.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    onChanged: (_) => _updateSplits(),
+                    decoration: InputDecoration(
+                      hintText: '0.00',
+                      prefixText: '₹ ',
+                      prefixStyle: AppTypography.displayMedium.copyWith(
+                        color: AppColors.primaryBlue,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      hintStyle: TextStyle(color: AppColors.textTertiary),
+                      filled: true,
+                      fillColor: AppColors.cardDarkElevated,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusLg,
+                        ),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl2),
+
+                  // DESCRIPTION
+                  Text(
+                    'Description',
+                    style: AppTypography.titleSmall.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _buildGlassField(
+                    controller: _descriptionController,
+                    hint: 'e.g. Dinner at Absolute Barbecue',
+                    icon: Icons.description_outlined,
+                  ),
+                  const SizedBox(height: AppSpacing.xl2),
+
+                  // DATE & CATEGORY
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              cat['icon'] as IconData,
-                              size: 18,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 8),
                             Text(
-                              cat['name'] as String,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
+                              'Date',
+                              style: AppTypography.titleSmall.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            GestureDetector(
+                              onTap: _selectDate,
+                              child: Container(
+                                height: 56,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.cardDarkElevated,
+                                  borderRadius: BorderRadius.circular(
+                                    AppSpacing.radiusMd,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.calendar_today,
+                                      size: 20,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    Text(
+                                      DateFormat(
+                                        'dd MMM yyyy',
+                                      ).format(_selectedDate),
+                                      style: AppTypography.bodyLarge.copyWith(
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      );
-                    }).toList(),
-                    onChanged: (val) =>
-                        setState(() => _selectedCategory = val!),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Category',
+                              style: AppTypography.titleSmall.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Container(
+                              height: 56,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.cardDarkElevated,
+                                borderRadius: BorderRadius.circular(
+                                  AppSpacing.radiusMd,
+                                ),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedCategory,
+                                  isExpanded: true,
+                                  dropdownColor: AppColors.cardDarkElevated,
+                                  icon: Icon(
+                                    Icons.keyboard_arrow_down,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  items: _categories.map((cat) {
+                                    return DropdownMenuItem<String>(
+                                      value: cat['id'] as String,
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            cat['icon'] as IconData,
+                                            size: 20,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                          const SizedBox(width: AppSpacing.sm),
+                                          Text(
+                                            cat['name'] as String,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (val) =>
+                                      setState(() => _selectedCategory = val!),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                  const SizedBox(height: AppSpacing.xl2),
+
+                  // PAYER
+                  _buildPayerSection(),
+                  const SizedBox(height: AppSpacing.xl2),
+
+                  // PARTICIPANTS & SPLITS
+                  _buildParticipantsSection(),
+                  const SizedBox(height: AppSpacing.xl2),
+                  _buildSplitSection(),
+                  const SizedBox(height: AppSpacing.xl2),
+
+                  // NOTES
+                  Text(
+                    'Notes (Optional)',
+                    style: AppTypography.titleSmall.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _buildGlassField(
+                    controller: _notesController,
+                    hint: 'Add any extra details...',
+                    icon: Icons.note_outlined,
+                  ),
+                  const SizedBox(height: AppSpacing.xl2),
+
+                  // SUBMIT
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _save,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryBlue,
+                        foregroundColor: AppColors.white,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.lg,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusMd,
+                          ),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.white,
+                              ),
+                            )
+                          : Text(
+                              'Save Expense',
+                              style: AppTypography.titleSmall.copyWith(
+                                color: AppColors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 100),
+                ],
               ),
-            ],
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGlassField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: AppColors.textTertiary),
+        filled: true,
+        fillColor: AppColors.cardDarkElevated,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          borderSide: BorderSide.none,
         ),
-      ],
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(
+            left: AppSpacing.md,
+            right: AppSpacing.sm,
+          ),
+          child: Icon(icon, color: AppColors.textSecondary, size: 20),
+        ),
+      ),
     );
   }
 
@@ -318,11 +383,17 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildLabel('PAID BY'),
-            const SizedBox(height: 8),
+            Text(
+              'Paid By',
+              style: AppTypography.titleSmall.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
               children: provider.familyMembers.map((member) {
                 final isSelected = _selectedPayer == member.id;
                 return GestureDetector(
@@ -330,18 +401,18 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                   child: AnimatedContainer(
                     duration: AppAnimations.standard,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? AppColors.primaryBlue.withOpacity(0.2)
-                          : AppColors.cardSurface,
-                      borderRadius: BorderRadius.circular(20),
+                          : AppColors.cardDarkElevated,
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       border: Border.all(
                         color: isSelected
                             ? AppColors.primaryBlue
-                            : Colors.white.withOpacity(0.05),
+                            : Colors.transparent,
                       ),
                     ),
                     child: Row(
@@ -363,7 +434,7 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Text(
                           member.name,
                           style: TextStyle(
@@ -396,7 +467,13 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildLabel('SPLIT BETWEEN'),
+                Text(
+                  'Split Between',
+                  style: AppTypography.titleSmall.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 TextButton(
                   onPressed: () {
                     setState(() {
@@ -405,9 +482,8 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                         _selectedParticipants.clear();
                       } else {
                         _selectedParticipants.clear();
-                        for (var m in provider.familyMembers) {
+                        for (var m in provider.familyMembers)
                           _selectedParticipants.add(m.id);
-                        }
                       }
                       _updateSplits();
                     });
@@ -417,7 +493,7 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                             provider.familyMembers.length
                         ? 'Clear All'
                         : 'Select All',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.primaryBlue,
                       fontSize: 12,
                     ),
@@ -425,38 +501,35 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
               children: provider.familyMembers.map((member) {
                 final isSelected = _selectedParticipants.contains(member.id);
                 return GestureDetector(
                   onTap: () {
                     setState(() {
-                      if (isSelected) {
-                        _selectedParticipants.remove(member.id);
-                      } else {
-                        _selectedParticipants.add(member.id);
-                      }
+                      isSelected
+                          ? _selectedParticipants.remove(member.id)
+                          : _selectedParticipants.add(member.id);
                       _updateSplits();
                     });
                   },
                   child: AnimatedContainer(
                     duration: AppAnimations.standard,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? AppColors.success.withOpacity(0.2)
-                          : AppColors.cardSurface,
-                      borderRadius: BorderRadius.circular(20),
+                          : AppColors.cardDarkElevated,
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       border: Border.all(
                         color: isSelected
                             ? AppColors.success
-                            : Colors.white.withOpacity(0.05),
+                            : Colors.transparent,
                       ),
                     ),
                     child: Row(
@@ -471,7 +544,7 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                               : AppColors.textTertiary,
                           size: 18,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Text(
                           member.name,
                           style: TextStyle(
@@ -501,73 +574,86 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildLabel('SPLIT TYPE'),
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: () => setState(() {
-                    _splitEqually = true;
-                    _updateSplits();
-                  }),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _splitEqually
-                          ? AppColors.primaryBlue.withOpacity(0.2)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Equal',
-                      style: TextStyle(
+            Text(
+              'Split Type',
+              style: AppTypography.titleSmall.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.cardDarkElevated,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              ),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => setState(() {
+                      _splitEqually = true;
+                      _updateSplits();
+                    }),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.sm,
+                      ),
+                      decoration: BoxDecoration(
                         color: _splitEqually
-                            ? AppColors.primaryBlue
-                            : AppColors.textTertiary,
-                        fontWeight: _splitEqually
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        fontSize: 12,
+                            ? AppColors.primaryBlue.withOpacity(0.3)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusMd,
+                        ),
+                      ),
+                      child: Text(
+                        'Equal',
+                        style: TextStyle(
+                          color: _splitEqually
+                              ? AppColors.primaryBlue
+                              : AppColors.textTertiary,
+                          fontWeight: _splitEqually
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => setState(() => _splitEqually = false),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: !_splitEqually
-                          ? AppColors.primaryBlue.withOpacity(0.2)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Custom',
-                      style: TextStyle(
+                  GestureDetector(
+                    onTap: () => setState(() => _splitEqually = false),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.sm,
+                      ),
+                      decoration: BoxDecoration(
                         color: !_splitEqually
-                            ? AppColors.primaryBlue
-                            : AppColors.textTertiary,
-                        fontWeight: !_splitEqually
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        fontSize: 12,
+                            ? AppColors.primaryBlue.withOpacity(0.3)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusMd,
+                        ),
+                      ),
+                      child: Text(
+                        'Custom',
+                        style: TextStyle(
+                          color: !_splitEqually
+                              ? AppColors.primaryBlue
+                              : AppColors.textTertiary,
+                          fontWeight: !_splitEqually
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
         if (_selectedParticipants.isNotEmpty && totalAmount > 0) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Consumer<SharedExpenseProvider>(
             builder: (context, provider, _) {
               final perPerson = _splitEqually
@@ -575,11 +661,10 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                   : 0.0;
 
               return Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  color: AppColors.cardDarkElevated,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                 ),
                 child: Column(
                   children: _selectedParticipants.map((id) {
@@ -590,7 +675,9 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
 
                     if (_splitEqually) {
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.sm,
+                        ),
                         child: Row(
                           children: [
                             CircleAvatar(
@@ -606,7 +693,7 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: AppSpacing.md),
                             Expanded(
                               child: Text(
                                 member.name,
@@ -620,6 +707,7 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                                     ? AppColors.success
                                     : AppColors.textSecondary,
                                 fontWeight: FontWeight.bold,
+                                fontSize: 16,
                               ),
                             ),
                           ],
@@ -627,7 +715,7 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                       );
                     } else {
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(
                           children: [
                             CircleAvatar(
@@ -643,7 +731,7 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: AppSpacing.md),
                             Expanded(
                               child: Text(
                                 member.name,
@@ -651,7 +739,7 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                               ),
                             ),
                             SizedBox(
-                              width: 80,
+                              width: 100,
                               child: TextField(
                                 controller: _splitControllers[id],
                                 keyboardType: TextInputType.number,
@@ -659,25 +747,23 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
+                                  fontSize: 16,
                                 ),
                                 decoration: InputDecoration(
-                                  prefixText: '₹',
+                                  prefixText: '₹ ',
                                   prefixStyle: TextStyle(
                                     color: AppColors.textTertiary,
                                   ),
                                   isDense: true,
                                   contentPadding: const EdgeInsets.symmetric(
                                     vertical: 8,
+                                    horizontal: 8,
                                   ),
-                                  border: UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: Colors.white.withOpacity(0.1),
-                                    ),
-                                  ),
-                                  enabledBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: Colors.white.withOpacity(0.1),
-                                    ),
+                                  filled: true,
+                                  fillColor: AppColors.backgroundBlack,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide.none,
                                   ),
                                 ),
                               ),
@@ -696,125 +782,8 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
     );
   }
 
-  Widget _buildNotesField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildLabel('NOTES (OPTIONAL)'),
-        const SizedBox(height: 8),
-        _buildGlassField(
-          controller: _notesController,
-          hint: 'Add any notes...',
-          icon: Icons.note_outlined,
-          maxLines: 2,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActions() {
-    return Row(
-      children: [
-        Expanded(
-          child: SizedBox(
-            height: 56,
-            child: OutlinedButton(
-              onPressed: () => Navigator.pop(context),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Colors.white.withOpacity(0.1)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 2,
-          child: SizedBox(
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _save,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryBlue,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text(
-                      'Add Expense',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: AppTypography.labelSmall.copyWith(
-        color: AppColors.textTertiary,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 1,
-      ),
-    );
-  }
-
-  Widget _buildGlassField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    TextInputType keyboardType = TextInputType.text,
-    int maxLines = 1,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.5)),
-          prefixIcon: Icon(icon, color: AppColors.textTertiary, size: 20),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 18,
-          ),
-        ),
-      ),
-    );
-  }
-
   void _updateSplits() {
     if (!_splitEqually) return;
-
     final totalAmount = double.tryParse(_amountController.text) ?? 0;
     if (totalAmount > 0 && _selectedParticipants.isNotEmpty) {
       final perPerson = totalAmount / _selectedParticipants.length;
@@ -832,39 +801,31 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 1)),
     );
-    if (picked != null) {
-      setState(() => _selectedDate = picked);
-    }
+    if (picked != null) setState(() => _selectedDate = picked);
   }
 
   void _save() async {
-    // Validation
     final description = _descriptionController.text.trim();
     if (description.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a description')),
-      );
+      showTopSnackBar(context, 'Please enter a description', isError: true);
       return;
     }
 
     final totalAmount = double.tryParse(_amountController.text);
     if (totalAmount == null || totalAmount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid amount')),
-      );
+      showTopSnackBar(context, 'Please enter a valid amount', isError: true);
       return;
     }
 
     if (_selectedPayer == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please select who paid')));
+      showTopSnackBar(context, 'Please select who paid', isError: true);
       return;
     }
-
     if (_selectedParticipants.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one participant')),
+      showTopSnackBar(
+        context,
+        'Please select at least one participant',
+        isError: true,
       );
       return;
     }
@@ -875,7 +836,6 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
       final provider = context.read<SharedExpenseProvider>();
       final user = FirebaseAuth.instance.currentUser;
 
-      // Build splits
       final List<ExpenseSplit> splits = [];
       final perPerson = _splitEqually
           ? totalAmount / _selectedParticipants.length
@@ -886,17 +846,15 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
           (m) => m.id == id,
           orElse: () => FamilyMember(id: id, name: 'Unknown'),
         );
-
         final amount = _splitEqually
             ? perPerson
             : double.tryParse(_splitControllers[id]?.text ?? '0') ?? 0;
-
         splits.add(
           ExpenseSplit(
             personId: id,
             personName: member.name,
             amount: amount,
-            isSettled: id == _selectedPayer, // Payer's share is auto-settled
+            isSettled: id == _selectedPayer,
           ),
         );
       }
@@ -928,15 +886,10 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
 
       if (mounted) {
         Navigator.pop(context);
-        // Show option to notify participants
         _showNotifyOption(expense, splits, payerMember.name);
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
+      if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -947,11 +900,10 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
     List<ExpenseSplit> splits,
     String payerName,
   ) {
-    // Get people who owe (exclude the payer)
     final owingSplits = splits
         .where((s) => s.personId != expense.paidBy)
         .toList();
-    if (owingSplits.isEmpty) return; // No one to notify
+    if (owingSplits.isEmpty) return;
 
     showDialog(
       context: context,
@@ -990,7 +942,6 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                 style: TextStyle(color: AppColors.textTertiary, fontSize: 14),
               ),
               const SizedBox(height: 16),
-              // Show split summary
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -1027,7 +978,7 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
                               ),
                               Text(
                                 '₹${split.amount.toStringAsFixed(0)}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: AppColors.error,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1110,17 +1061,14 @@ class _AddSharedExpenseDialogState extends State<AddSharedExpenseDialog> {
     final splitDetails = owingSplits
         .map((s) => '• ${s.personName}: ₹${s.amount.toStringAsFixed(0)}')
         .join('\n');
-
     final message =
-        '''💰 Expense Split Notification
-
-$payerName paid ₹${expense.totalAmount.toStringAsFixed(0)} for "${expense.description}" on $dateStr.
-
-Your share:
-$splitDetails
-
-Please settle up when you can! 🙏''';
-
+        '''💰 Expense Split Notification\n\n$payerName paid ₹${expense.totalAmount.toStringAsFixed(0)} for "${expense.description}" on $dateStr.\n\nYour share:\n$splitDetails\n\nPlease settle up when you can! 🙏''';
     Share.share(message, subject: 'Expense Split: ${expense.description}');
   }
+}
+
+Future<void> navToAddSharedExpenseScreen(BuildContext context) {
+  return Navigator.of(context).push(
+    MaterialPageRoute(builder: (_) => const ModernAddSharedExpenseScreen()),
+  );
 }

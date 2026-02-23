@@ -19,7 +19,6 @@ class GmailProvider extends ChangeNotifier {
   );
 
   // Optional AI dependencies for smart categorization
-  final AIAssistantProvider? _aiAssistantProvider;
   final CategoryProvider? _categoryProvider;
 
   GoogleSignInAccount? _currentUser;
@@ -44,8 +43,7 @@ class GmailProvider extends ChangeNotifier {
   GmailProvider({
     AIAssistantProvider? aiAssistantProvider,
     CategoryProvider? categoryProvider,
-  }) : _aiAssistantProvider = aiAssistantProvider,
-       _categoryProvider = categoryProvider {
+  }) : _categoryProvider = categoryProvider {
     // Initialize asynchronously - don't block constructor
     initialize();
     _googleSignIn.onCurrentUserChanged.listen((account) {
@@ -158,7 +156,6 @@ class GmailProvider extends ChangeNotifier {
       AICategorizationService? aiService;
       if (_categoryProvider != null) {
         aiService = AICategorizationService(
-          aiProvider: _aiAssistantProvider,
           categoryProvider: _categoryProvider,
         );
         if (kDebugMode) {

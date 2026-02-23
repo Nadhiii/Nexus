@@ -23,12 +23,12 @@ import '../core/theme/app_animations.dart';
 import '../modules/Nex/providers/Nex_assistant_provider.dart';
 
 // Screens
-import '../modules/dashboard/modern_dashboard_screen.dart';
+import '../modules/dashboard/dashboard_screen.dart';
 import '../modules/Wallet/wallet_screen.dart';
-import '../modules/insights/modern_insights_screen.dart';
-import '../modules/more/modern_more_screen.dart';
-import '../modules/bike/ui/modern_bike_screen_ui.dart';
-import '../modules/nbox/new_modern_nbox_screen.dart';
+import '../modules/insights/insights_screen.dart';
+import '../modules/more/more_screen.dart';
+import '../modules/bike/ui/bike_screen.dart';
+import '../modules/nbox/new_nbox_screen.dart';
 import '../core/services/intent_navigation_service.dart';
 
 class MainScreen extends StatefulWidget {
@@ -114,12 +114,7 @@ class _MainScreenState extends State<MainScreen>
       categoryProvider: context.read<CategoryProvider>(),
     );
 
-    if (aiProvider.settings.hasGeminiKey &&
-        aiProvider.settings.geminiApiKey != null) {
-      context.read<PDFImportProvider>().setGeminiApiKeyForPDF(
-        aiProvider.settings.geminiApiKey!,
-      );
-    }
+    // PDF import provider no longer requires a Gemini-specific API key.
   }
 
   @override

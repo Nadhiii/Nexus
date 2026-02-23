@@ -20,8 +20,8 @@ import '../../core/models/account.dart';
 import '../../core/models/transaction.dart';
 
 // Screens
-import '../transactions/modern_add_transaction_screen.dart';
-import '../notifications/modern_notifications_screen.dart';
+import '../transactions/add_transaction_screen.dart';
+import '../notifications/notifications_screen.dart';
 
 class ModernDashboardScreen extends StatefulWidget {
   final Function(int, {int? financeTab}) onNavigate;

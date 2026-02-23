@@ -133,12 +133,16 @@ class VehicleDocumentService {
       final snapshot = await _firestore
           .collection(_vehicleDocumentsCollection)
           .where('bikeId', isEqualTo: bikeId)
-          .orderBy('uploadedAt', descending: true)
           .get();
 
-      return snapshot.docs
+      final documents = snapshot.docs
           .map((doc) => VehicleDocument.fromFirestore(doc.data(), doc.id))
           .toList();
+
+      // Sort by uploadedAt in memory to avoid composite index requirement
+      documents.sort((a, b) => b.uploadedAt.compareTo(a.uploadedAt));
+
+      return documents;
     } catch (e) {
       print('❌ Error fetching documents: $e');
       return [];
@@ -155,12 +159,16 @@ class VehicleDocumentService {
           .collection(_vehicleDocumentsCollection)
           .where('bikeId', isEqualTo: bikeId)
           .where('documentType', isEqualTo: documentType)
-          .orderBy('uploadedAt', descending: true)
           .get();
 
-      return snapshot.docs
+      final documents = snapshot.docs
           .map((doc) => VehicleDocument.fromFirestore(doc.data(), doc.id))
           .toList();
+
+      // Sort by uploadedAt in memory to avoid composite index requirement
+      documents.sort((a, b) => b.uploadedAt.compareTo(a.uploadedAt));
+
+      return documents;
     } catch (e) {
       print('❌ Error fetching documents by type: $e');
       return [];

@@ -479,6 +479,26 @@ Monthly Fixed Burn: ₹${_currencyFormat.format(monthlyBurn)}
     buffer.writeln('Last 7 Days: ₹${_currencyFormat.format(last7Expenses)}');
     buffer.writeln();
 
+    // Recent transactions (limit to 5) — keep compact to respect token limits
+    final recentTxns = last30Days.toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    buffer.writeln('Recent 5 transactions:');
+    for (final txn in recentTxns.take(5)) {
+      final date = _dateFormat.format(txn.date);
+      final merchant = (txn.description ?? 'Unknown')
+          .replaceAll('\n', ' ')
+          .trim();
+      final shortMerchant = merchant.length > 60
+          ? '${merchant.substring(0, 57)}...'
+          : merchant;
+      final cat = txn.categoryId ?? 'Uncategorized';
+      buffer.writeln(
+        '• $date — $shortMerchant — ₹${_currencyFormat.format(txn.amount)} — $cat',
+      );
+    }
+    buffer.writeln();
+
     return buffer.toString();
   }
 

@@ -54,11 +54,6 @@ class PDFImportProvider extends ChangeNotifier {
     _parsingService.setGeminiApiKey(apiKey);
   }
 
-  /// Set the Claude API key for PDF parsing
-  void setClaudeApiKeyForPDF(String apiKey) {
-    _parsingService.setClaudeApiKey(apiKey);
-  }
-
   /// Set which provider to use for PDF parsing (Gemini or Claude)
   void setPDFParsingProvider(PDFParsingProvider provider) {
     _parsingService.setPDFParsingProvider(provider);

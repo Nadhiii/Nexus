@@ -123,8 +123,11 @@ class BackupService {
         .doc();
     final createdAt = DateTime.now();
 
+    // Convert Firestore types to JSON-serializable types
+    final jsonPayload = _convertToJsonSerializable(payload);
+
     // Serialize payload to JSON
-    final jsonString = jsonEncode(payload);
+    final jsonString = jsonEncode(jsonPayload);
     final storage = FirebaseStorage.instance;
     final storagePath = 'backups/$_uid/${docRef.id}.json';
     final storageRef = storage.ref().child(storagePath);
@@ -574,5 +577,35 @@ class BackupService {
       }
     }
     print('Successfully restored $tripsRestored trips');
+  }
+
+  /// Convert Firestore types to JSON-serializable types
+  /// Handles Timestamp, GeoPoint, DocumentReference, and nested collections
+  dynamic _convertToJsonSerializable(dynamic data) {
+    if (data == null) {
+      return null;
+    } else if (data is Timestamp) {
+      // Convert Timestamp to ISO 8601 string
+      return data.toDate().toIso8601String();
+    } else if (data is DateTime) {
+      return data.toIso8601String();
+    } else if (data is GeoPoint) {
+      // Convert GeoPoint to map
+      return {'latitude': data.latitude, 'longitude': data.longitude};
+    } else if (data is DocumentReference) {
+      // Convert DocumentReference to path string
+      return data.path;
+    } else if (data is Map<String, dynamic>) {
+      // Recursively convert map values
+      return data.map(
+        (key, value) => MapEntry(key, _convertToJsonSerializable(value)),
+      );
+    } else if (data is List) {
+      // Recursively convert list items
+      return data.map(_convertToJsonSerializable).toList();
+    } else {
+      // Return primitives (String, int, double, bool) as-is
+      return data;
+    }
   }
 }

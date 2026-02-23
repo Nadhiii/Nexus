@@ -140,48 +140,7 @@ class CategoryProvider with ChangeNotifier {
   /// Returns a list of default categories that are not user-modifiable.
   List<Category> _getDefaultCategories() {
     return [
-      Category(
-        id: 'food',
-        name: 'Food & Dining',
-        emoji: '🍔',
-        color: Colors.red,
-        isCustom: false,
-      ),
-      Category(
-        id: 'shopping',
-        name: 'Shopping',
-        emoji: '🛍️',
-        color: Colors.orange,
-        isCustom: false,
-      ),
-      Category(
-        id: 'transport',
-        name: 'Transportation',
-        emoji: '🚗',
-        color: Colors.blue,
-        isCustom: false,
-      ),
-      Category(
-        id: 'bills',
-        name: 'Bills & Utilities',
-        emoji: '🧾',
-        color: Colors.purple,
-        isCustom: false,
-      ),
-      Category(
-        id: 'entertainment',
-        name: 'Entertainment',
-        emoji: '🎬',
-        color: Colors.pink,
-        isCustom: false,
-      ),
-      Category(
-        id: 'health',
-        name: 'Healthcare',
-        emoji: '🏥',
-        color: Colors.green,
-        isCustom: false,
-      ),
+      // --- INCOME ---
       Category(
         id: 'salary',
         name: 'Salary',
@@ -196,11 +155,101 @@ class CategoryProvider with ChangeNotifier {
         color: Colors.teal,
         isCustom: false,
       ),
+
+      // --- ESSENTIALS ---
+      Category(
+        id: 'food',
+        name: 'Food & Dining',
+        emoji: '🍔',
+        color: Colors.red,
+        isCustom: false,
+      ),
+      Category(
+        id: 'groceries',
+        name: 'Groceries',
+        emoji: '🛒',
+        color: Colors.lightGreen,
+        isCustom: false,
+      ),
+      Category(
+        id: 'bills',
+        name: 'Bills & Utilities',
+        emoji: '🧾',
+        color: Colors.purple,
+        isCustom: false,
+      ),
+      Category(
+        id: 'health',
+        name: 'Healthcare',
+        emoji: '🏥',
+        color: Colors.greenAccent,
+        isCustom: false,
+      ),
+      Category(
+        id: 'education',
+        name: 'Education',
+        emoji: '📚',
+        color: Colors.indigo,
+        isCustom: false,
+      ),
+
+      // --- LIFESTYLE & GARAGE ---
+      Category(
+        id: 'garage',
+        name: 'Vehicle & Garage',
+        emoji: '🏍️',
+        color: Colors.deepOrange,
+        isCustom: false,
+      ),
+      Category(
+        id: 'transport',
+        name: 'Transit & Cabs',
+        emoji: '🚇',
+        color: Colors.blue,
+        isCustom: false,
+      ),
+      Category(
+        id: 'tech',
+        name: 'Electronics & Tech',
+        emoji: '💻',
+        color: Colors.blueGrey,
+        isCustom: false,
+      ),
+      Category(
+        id: 'shopping',
+        name: 'Shopping',
+        emoji: '🛍️',
+        color: Colors.orange,
+        isCustom: false,
+      ),
+      Category(
+        id: 'entertainment',
+        name: 'Entertainment',
+        emoji: '🎬',
+        color: Colors.pink,
+        isCustom: false,
+      ),
+      Category(
+        id: 'travel',
+        name: 'Travel & Trips',
+        emoji: '🏕️',
+        color: Colors.cyan,
+        isCustom: false,
+      ),
+
+      // --- UTILITY ---
+      Category(
+        id: 'shared',
+        name: 'Shared & Splits',
+        emoji: '🤝',
+        color: Colors.amber,
+        isCustom: false,
+      ),
       Category(
         id: 'transfer',
         name: 'Transfer',
         emoji: '↔️',
-        color: Colors.blue,
+        color: Colors.grey,
         isCustom: false,
       ),
       Category(

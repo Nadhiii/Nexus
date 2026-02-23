@@ -6,8 +6,8 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/providers/shared_expense_provider.dart';
 import '../../../core/models/shared_expense.dart';
 import '../../../core/widgets/collapsible_fab.dart';
-import '../widgets/add_family_member_dialog.dart';
-import '../widgets/add_shared_expense_dialog.dart';
+import '../widgets/add_family_member.dart';
+import '../widgets/add_shared_expense.dart';
 
 class FamilyDashboardScreen extends StatefulWidget {
   const FamilyDashboardScreen({super.key});
@@ -846,14 +846,14 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
   void _showAddExpenseDialog() {
     showDialog(
       context: context,
-      builder: (context) => const AddSharedExpenseDialog(),
+      builder: (context) => ModernAddSharedExpenseScreen(),
     );
   }
 
   void _showAddMemberDialog() {
     showDialog(
       context: context,
-      builder: (context) => const AddFamilyMemberDialog(),
+      builder: (context) => ModernAddFamilyMemberScreen(),
     );
   }
 }

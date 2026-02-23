@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/bike.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_animations.dart';
-import '../../../core/utils/bike_image_utils.dart';
-import 'add_bike_dialog.dart';
+import 'add_bike.dart';
 
 class VehicleRCWidget extends StatefulWidget {
   final Bike bike;
@@ -26,10 +25,10 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: AppAnimations.ultra,
+      duration: AppAnimations.slow,
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: AppAnimations.backdropCurve),
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutBack),
     );
   }
 
@@ -76,356 +75,334 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
     );
   }
 
-  // --- FRONT SIDE (Clean & Official) ---
-  Widget _buildCardBase({required Widget child}) {
-    final imagePath = BikeImageUtils.getBikeImagePath(
-      widget.bike.image,
-      widget.bike.name,
-      widget.bike.model,
-    );
-    final hasImage = imagePath != null;
-
+  // --- BASE CARD DESIGN ---
+  Widget _buildCardBase({required Widget child, bool isBack = false}) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 0),
-      height: 200, // Fixed height for consistency during flip
-      padding: const EdgeInsets.all(20),
+      height: 240, // Increased from 220 to give the text breathing room
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: hasImage ? Colors.transparent : null,
-        gradient: hasImage
-            ? null
-            : const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF1E2D3D), // Muted Slate
-                  Color(0xFF0A0A0A), // Near-Black
-                ],
-              ),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF1E293B), // Slate 800
+            Color(0xFF0F172A), // Slate 900
+          ],
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.13),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
+        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
       ),
       clipBehavior: Clip.hardEdge,
       child: Stack(
         children: [
-          if (hasImage)
-            Positioned.fill(
-              child: Opacity(
-                opacity: 0.9,
-                child: Image.asset(
-                  imagePath,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    debugPrint('❌ RC Card image load failed: $error');
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ),
-            ),
-          if (hasImage)
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.black.withOpacity(0.35),
-                      Colors.black.withOpacity(0.75),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          // Watermark Icon
+          // Subtle background pattern/mesh
           Positioned(
-            right: -20,
-            top: -20,
+            right: -50,
+            bottom: -50,
             child: Icon(
-              _getVehicleIcon(widget.bike),
-              size: 150,
-              color: Colors.white.withOpacity(0.03),
+              Icons.fingerprint,
+              size: 250,
+              color: Colors.white.withOpacity(0.02),
             ),
           ),
+          if (isBack)
+            Positioned(
+              top: 20,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 40,
+                color: Colors.black.withOpacity(0.8),
+              ), // Magnetic stripe look
+            ),
           child,
         ],
       ),
     );
   }
 
-  // Decide icon based on make/model keywords (using API-provided values)
-  IconData _getVehicleIcon(Bike bike) {
-    final make = bike.make.toLowerCase();
-    final model = bike.model.toLowerCase();
-
-    // Scooter keywords
-    const scooter = [
-      'activa',
-      'Honda dio',
-      'jupiter',
-      'maestro',
-      'access',
-      'pleasure',
-      'fascino',
-      'ray',
-      'scooty',
-      'ntorq',
-      'burgman',
-    ];
-
-    // Common motorcycle keywords
-    const moto = [
-      'himalayan',
-      'Royal Enfield',
-      'KTM'
-          'duke',
-      'pulsar',
-      'splendor',
-      'bullet',
-      'cb',
-      'xpulse',
-      'fz',
-      'mt',
-      'r15',
-      'apache',
-      'hornet',
-      'ninja',
-      'interceptor',
-    ];
-
-    // Car keywords (if you ever use this widget for cars)
-    const car = [
-      'swift',
-      'baleno',
-      'i20',
-      'creta',
-      'seltos',
-      'city',
-      'verna',
-      'altroz',
-      'nexon',
-      'harrier',
-      'xuv',
-      'fortuner',
-      'innova',
-      'hector',
-      'taigun',
-    ];
-
-    bool containsAny(List<String> keys) =>
-        keys.any((k) => model.contains(k) || make.contains(k));
-
-    if (containsAny(car)) return Icons.directions_car;
-    if (containsAny(scooter)) {
-      return Icons.two_wheeler; // Use bike icon for scooters
-    }
-    if (containsAny(moto)) return Icons.two_wheeler;
-
-    // Fallback: prefer bike icon in Bike module
-    return Icons.two_wheeler;
-  }
-
+  // --- FRONT SIDE ---
   Widget _buildFront() {
     return _buildCardBase(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // TOP ROW: Ind & Reg No
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white24),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'IND',
-                      style: TextStyle(
-                        color: Colors.blueAccent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    widget.bike.registrationNumber.isEmpty
-                        ? 'NO REG'
-                        : widget.bike.registrationNumber,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                      fontFamily: 'monospace',
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-              const Icon(Icons.touch_app, color: Colors.white24, size: 18),
-            ],
-          ),
-
-          // MIDDLE ROW: Owner & Model
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 3,
-                child: _buildInfoField(
-                  'OWNER NAME',
-                  widget.bike.ownerName ?? 'Unknown',
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: _buildInfoField(
-                  'MODEL',
-                  '${widget.bike.make} ${widget.bike.model}',
-                ),
-              ),
-            ],
-          ),
-
-          // BOTTOM ROW: Status Badge
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildInfoField('FUEL', widget.bike.fuelType ?? 'Petrol'),
-              _buildInsuranceBadge(),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- BACK SIDE (Technical Details) ---
-  Widget _buildBack() {
-    return _buildCardBase(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "TECHNICAL SPECS",
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.3),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              GestureDetector(
-                onTap: () => _showEditDialog(context),
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryBlue.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.edit,
-                    size: 16,
-                    color: AppColors.primaryBlue,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const Divider(color: Colors.white10, height: 24),
-
-          // Details Grid
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // TOP: IND Plate & Chip
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Expanded(
-                      child: _buildInfoField(
-                        'CHASSIS NO',
-                        widget.bike.chassisNumber ?? '--',
+                    Container(
+                      width: 24,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade700,
+                        borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(4),
+                        ),
+                      ),
+                      child: const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.circle,
+                            size: 6,
+                            color: Colors.orange,
+                          ), // Chakra
+                          SizedBox(height: 2),
+                          Text(
+                            'IND',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Expanded(
-                      child: _buildInfoField(
-                        'ENGINE NO',
-                        widget.bike.engineNumber ?? '--',
+                    Container(
+                      height: 32,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        borderRadius: const BorderRadius.horizontal(
+                          right: Radius.circular(4),
+                        ),
+                      ),
+                      child: Text(
+                        widget.bike.registrationNumber.isEmpty
+                            ? 'UNREGISTERED'
+                            : widget.bike.registrationNumber,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18,
+                          letterSpacing: 1.5,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildInfoField(
-                        'RTO',
-                        widget.bike.rtoLocation?.split(',')[0] ?? 'N/A',
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildInfoField(
-                        'YEAR',
-                        widget.bike.year.toString(),
-                      ),
-                    ),
-                  ],
+                const Icon(
+                  Icons.sim_card,
+                  color: Color(0xFFFFD700),
+                  size: 32,
+                ), // Gold Chip
+              ],
+            ),
+
+            // MIDDLE: Model & Class
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${widget.bike.make} ${widget.bike.model}'.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                  ),
                 ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildInfoField(
-                        'INSURER',
-                        widget.bike.insurer ?? 'N/A',
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildInfoField(
-                        'EXPIRY',
-                        widget.bike.policyExpiry != null
-                            ? "${widget.bike.policyExpiry!.day}/${widget.bike.policyExpiry!.month}/${widget.bike.policyExpiry!.year}"
-                            : "--",
-                      ),
-                    ),
-                  ],
+                Text(
+                  '2-WHEELER • ${widget.bike.fuelType?.toUpperCase() ?? 'PETROL'}',
+                  style: TextStyle(
+                    color: AppColors.textTertiary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
+
+            // BOTTOM: Owner & Status
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'OWNER NAME',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 9,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      Text(
+                        widget.bike.ownerName?.toUpperCase() ?? 'UNKNOWN',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                _buildInsuranceBadge(),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // --- HELPERS ---
+  // --- BACK SIDE ---
+  Widget _buildBack() {
+    return _buildCardBase(
+      isBack: true,
+      child: Padding(
+        // Reduced top padding from 80 to 72, and bottom to 16
+        padding: const EdgeInsets.only(
+          top: 72,
+          left: 24,
+          right: 24,
+          bottom: 16,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "TECHNICAL DETAILS",
+                  style: TextStyle(
+                    color: AppColors.primaryBlue,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 10,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => showDialog(
+                    context: context,
+                    builder: (_) =>
+                        ModernAddBikeScreen(bikeToEdit: widget.bike),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.edit, size: 12, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'EDIT',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12), // Reduced from 16
+            Expanded(
+              child: Column(
+                // Changed from spaceEvenly to spaceBetween to prevent overflow
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildInfoField(
+                          'CHASSIS NO',
+                          widget.bike.chassisNumber ?? 'N/A',
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildInfoField(
+                          'ENGINE NO',
+                          widget.bike.engineNumber ?? 'N/A',
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildInfoField(
+                          'RTO LOCATION',
+                          widget.bike.rtoLocation?.split(',')[0] ?? 'N/A',
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildInfoField(
+                          'MFG YEAR',
+                          widget.bike.year.toString(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildInfoField(
+                          'INSURER',
+                          widget.bike.insurer ?? 'N/A',
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildInfoField(
+                          'INSURANCE EXPIRY',
+                          widget.bike.policyExpiry != null
+                              ? "${widget.bike.policyExpiry!.day}/${widget.bike.policyExpiry!.month}/${widget.bike.policyExpiry!.year}"
+                              : "N/A",
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildInfoField(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.5),
-            fontSize: 9,
+            color: Colors.white.withOpacity(0.4),
+            fontSize: 8,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
           ),
@@ -437,8 +414,9 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
+            fontFamily: 'monospace',
           ),
         ),
       ],
@@ -449,13 +427,9 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
     final now = DateTime.now();
     final expiry = widget.bike.policyExpiry;
 
-    if (expiry == null) {
-      return _buildBadge('NO INFO', Colors.grey);
-    }
-
+    if (expiry == null) return _buildBadge('NO INSURANCE', Colors.grey);
     final isExpired = expiry.isBefore(now);
-    final daysLeft = expiry.difference(now).inDays;
-    final isExpiringSoon = daysLeft < 30 && !isExpired;
+    final isExpiringSoon = expiry.difference(now).inDays < 30 && !isExpired;
 
     if (isExpired) return _buildBadge('EXPIRED', AppColors.error);
     if (isExpiringSoon) return _buildBadge('RENEW SOON', Colors.orange);
@@ -464,27 +438,21 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
 
   Widget _buildBadge(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.5), width: 1),
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.5)),
       ),
       child: Text(
         text,
         style: TextStyle(
           color: color,
-          fontWeight: FontWeight.bold,
-          fontSize: 10,
+          fontWeight: FontWeight.w900,
+          fontSize: 9,
+          letterSpacing: 1.0,
         ),
       ),
-    );
-  }
-
-  void _showEditDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AddBikeDialog(bikeToEdit: widget.bike),
     );
   }
 }

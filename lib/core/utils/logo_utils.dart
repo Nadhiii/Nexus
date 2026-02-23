@@ -30,7 +30,7 @@ class LogoUtils {
   static final Map<String, String> _subscriptionLogoMap = {
     'apple-music': 'assets/images/Subscriptions/apple-music.svg',
     'applemusic': 'assets/images/Subscriptions/apple-music.svg',
-    'spotify': 'assets/images/Subscriptions/spotify.svg',
+    'spotify': 'assets/images/Subscriptions/Spotify.png',
     'youtubemusic': 'assets/images/Subscriptions/YouTube-Music.png',
     'youtube-music': 'assets/images/Subscriptions/YouTube-Music.png',
     'netflix': 'assets/images/Subscriptions/netflix.svg',
@@ -38,22 +38,25 @@ class LogoUtils {
     'primevideo': 'assets/images/Subscriptions/prime-video.svg',
     'amazonprime': 'assets/images/Subscriptions/prime-video.svg',
     'disney': 'assets/images/Subscriptions/jiohotstar.png',
-    'appletv': 'assets/images/subscriptions/Apple-TV.png',
-    'apple-tv': 'assets/images/subscriptions/Apple-TV.png',
+    'appletv': 'assets/images/Subscriptions/Apple-TV.svg',
+    'apple-tv': 'assets/images/Subscriptions/Apple-TV.svg',
     'disneyplus': 'assets/images/Subscriptions/jiohotstar.png',
     'disney+': 'assets/images/Subscriptions/jiohotstar.png',
     'hotstar': 'assets/images/Subscriptions/jiohotstar.png',
     'jiohotstar': 'assets/images/Subscriptions/jiohotstar.png',
-    'youtube': 'assets/images/subscriptions/YouTube-Premium.png',
-    'youtubepremium': 'assets/images/subscriptions/YouTube-Premium.png',
-    'youtube-premium': 'assets/images/subscriptions/YouTube-Premium.png',
-    'crunchyroll': 'assets/images/subscriptions/crunchyroll.svg',
-    'crunchyrollpremium': 'assets/images/subscriptions/crunchyroll.svg',
-    'googleplay': 'assets/images/subscriptions/google-play.svg',
-    'google-play': 'assets/images/subscriptions/google-play.svg',
-    'play-pass': 'assets/images/subscriptions/google-play.svg',
-    'surfshark': 'assets/images/subscriptions/Surfshark.svg',
-    'surfsharkvpn': 'assets/images/subscriptions/Surfshark.svg',
+    'youtube': 'assets/images/Subscriptions/YouTube-Premium.png',
+    'youtubepremium': 'assets/images/Subscriptions/YouTube-Premium.png',
+    'youtube-premium': 'assets/images/Subscriptions/YouTube-Premium.png',
+    'crunchyroll': 'assets/images/Subscriptions/crunchyroll.svg',
+    'crunchyrollpremium': 'assets/images/Subscriptions/crunchyroll.svg',
+    'googleplay': 'assets/images/Subscriptions/google-play.svg',
+    'google-play': 'assets/images/Subscriptions/google-play.svg',
+    'play-pass': 'assets/images/Subscriptions/google-play.svg',
+    'surfshark': 'assets/images/Subscriptions/Surfshark.png',
+    'surfsharkvpn': 'assets/images/Subscriptions/Surfshark.png',
+    'github': 'assets/images/Subscriptions/github.svg',
+    'git-hub': 'assets/images/Subscriptions/github.svg',
+    'git-hub-copilot': 'assets/images/Subscriptions/github.svg',
   };
 
   static String _normalize(String input) {
@@ -109,8 +112,44 @@ class LogoUtils {
         width: size,
         height: size,
         fit: fit,
+        // Show a simple fallback while loading (and in many error cases)
+        placeholderBuilder: (context) => _svgFallback(normalizedPath, size),
       );
     }
-    return Image.asset(normalizedPath, width: size, height: size, fit: fit);
+    // Use Image with error handling for PNG/other formats
+    return Image.asset(
+      normalizedPath,
+      width: size,
+      height: size,
+      fit: fit,
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('Image load error for $normalizedPath: $error');
+        return _svgFallback(normalizedPath, size);
+      },
+    );
+  }
+
+  static Widget _svgFallback(String assetPath, double? size) {
+    // Prefer a simple generic placeholder: a circle with initials or an icon
+    final basename = assetPath.split('/').last.split('.').first;
+    final label = basename.isNotEmpty ? basename[0].toUpperCase() : '?';
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.12),
+        borderRadius: BorderRadius.circular((size ?? 24) / 6),
+      ),
+      child: Center(
+        child: Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey.shade400,
+            fontWeight: FontWeight.bold,
+            fontSize: (size ?? 24) * 0.5,
+          ),
+        ),
+      ),
+    );
   }
 }

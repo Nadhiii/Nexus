@@ -11,9 +11,9 @@ import '../../core/models/transaction.dart';
 import '../../core/providers/account_provider.dart';
 import '../../core/providers/category_provider.dart';
 import '../../core/providers/transaction_provider.dart';
-import '../accounts/modern_add_account_screen.dart';
-import '../accounts/modern_account_detail_screen.dart';
-import '../transactions/modern_add_transaction_screen.dart';
+import '../accounts/add_account_screen.dart';
+import '../accounts/account_detail_screen.dart';
+import '../transactions/add_transaction_screen.dart';
 import '../../core/utils/transaction_display.dart';
 import '../../core/utils/logo_utils.dart';
 

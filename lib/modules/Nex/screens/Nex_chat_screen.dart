@@ -40,6 +40,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   @override
   void dispose() {
+    // Cancel any in-progress generation to free resources quickly
+    try {
+      context.read<AIAssistantProvider>().cancelOngoingChat();
+    } catch (_) {}
+
     _messageController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
@@ -172,7 +177,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'Gemini 3.0 Active', // Static label as we auto-route now
+                        'Gemma (Local) Active',
                         style: TextStyle(
                           color: AppColors.textTertiary,
                           fontSize: 11,
@@ -254,7 +259,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'I\'m Nex — I see everything in your app. Transactions, debts, investments, all of it.\n\nJust need a Gemini API key to get started. It\'s free!',
+              'I\'m Nex — I see everything in your app. Transactions, debts, investments, all of it.\n\nLocal Gemma will be used when available.',
               textAlign: TextAlign.center,
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.textSecondary,

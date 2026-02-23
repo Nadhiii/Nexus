@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 // Screens - only import screens that exist and work standalone
 import '../../modules/more/reports_and_analytics_screen.dart';
 import '../../modules/more/export_reports_screen.dart';
-import '../../modules/notifications/modern_notifications_screen.dart';
-import '../../modules/goals/modern_goals_screen.dart';
-import '../../modules/subscriptions/modern_subscription_screen.dart';
-import '../../modules/bike/screens/garage_management_screen.dart';
+import '../../modules/notifications/notifications_screen.dart';
+import '../../modules/goals/goals_screen.dart';
+import '../../modules/subscriptions/subscription_screen.dart';
+import '../../modules/bike/screens/garage_screen.dart';
 import '../../modules/family/screens/family_dashboard_screen.dart';
 import '../../modules/debts/screens/liabilities_screen.dart';
 

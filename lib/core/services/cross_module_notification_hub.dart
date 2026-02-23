@@ -593,6 +593,8 @@ class CrossModuleNotificationHub {
         return 7;
       case NotificationType.systemUpdate:
         return 8;
+      case NotificationType.fuelLogged:
+        return 9;
     }
   }
 }

@@ -12,9 +12,9 @@ Ah, I see you're trying to chat without an API key. Bold move, Sir!
 
 It's like trying to start a car without keys — technically you *could* hotwire it, but why not just... you know... get the keys? 🔑
 
-**Quick setup:**
+  **Quick setup:**
 1. Tap the ⚙️ Settings icon above
-2. Get a free API key from Google (Gemini)
+2. Get a free API key from your chosen AI provider
 3. Paste it in and we're golden!
 
 The whole process takes about 60 seconds. Less time than it took you to read this message. Let's do this! 🚀
@@ -28,7 +28,7 @@ But here's the thing — without an API key, I'm basically a really expensive pa
 
 Phil's-osophy: *"You can't make an omelette without breaking eggs, and you can't get financial advice without an API key."*
 
-Come on, the free Gemini key is literally FREE. Zero rupees. Nada. Go grab one! ⚡
+Come on, the free API key is literally FREE. Zero rupees. Nada. Go grab one! ⚡
 ''',
 
     // Third attempt - Getting impatient

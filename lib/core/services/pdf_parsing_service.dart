@@ -7,14 +7,12 @@ import '../models/transaction.dart';
 import '../models/pdf_parsing_provider.dart';
 import '../config/ai_config.dart';
 import 'pdf_parser.dart';
-import 'claude_pdf_parser.dart';
 import 'local_pdf_parser.dart';
 import 'duplicate_detector.dart';
 
 class PDFParsingService extends ChangeNotifier {
-  // API keys (managed by centralized AIConfig - supports Gemini or Claude)
+  // API keys (managed by centralized AIConfig - supports Gemini only)
   String? _geminiApiKey;
-  String? _claudeApiKey;
   PDFParsingProvider _provider = PDFParsingProvider.gemini;
 
   // Local parser instance
@@ -24,12 +22,6 @@ class PDFParsingService extends ChangeNotifier {
   void setGeminiApiKey(String apiKey) {
     _geminiApiKey = apiKey;
     if (kDebugMode) print('[PDFParsingService] Gemini API key set');
-  }
-
-  /// Set the Claude API key for PDF parsing
-  void setClaudeApiKey(String apiKey) {
-    _claudeApiKey = apiKey;
-    if (kDebugMode) print('[PDFParsingService] Claude API key set');
   }
 
   /// Set which provider to use for PDF parsing
@@ -100,24 +92,24 @@ class PDFParsingService extends ChangeNotifier {
         }
 
         if (_provider == PDFParsingProvider.claude) {
-          // Use Claude for PDF parsing
-          if (_claudeApiKey == null || _claudeApiKey!.isEmpty) {
-            _claudeApiKey = await AIConfig.getClaudeApiKey();
+          // Use Gemini for PDF parsing (default, since Claude wasn't properly implemented)
+          if (_geminiApiKey == null || _geminiApiKey!.isEmpty) {
+            _geminiApiKey = await AIConfig.getGeminiApiKey();
           }
 
-          if (_claudeApiKey == null || _claudeApiKey!.isEmpty) {
+          if (_geminiApiKey == null || _geminiApiKey!.isEmpty) {
             return PDFParseResult(
               success: false,
               errors: [
-                'Claude API key required for PDF parsing. Please add it in Nex settings.',
+                'Gemini API key required for PDF parsing. Please add it in Nex settings.',
               ],
             );
           }
 
           if (kDebugMode) {
-            print('[PDFParsingService] Sending to Claude parser...');
+            print('[PDFParsingService] Sending to Gemini parser...');
           }
-          final parser = ClaudePDFParser(_claudeApiKey!);
+          final parser = PDFParser(_geminiApiKey!);
           transactions = await parser.parse(tempUnlockedFile);
         } else {
           // Use Gemini for PDF parsing (default)

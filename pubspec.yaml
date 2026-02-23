@@ -30,7 +30,7 @@ dependencies:
 
   # UI & Design
   google_fonts: ^6.2.1
-  flutter_svg: ^2.0.10+1
+  flutter_svg: ^2.1.0
   lottie: ^3.1.2
   animations: ^2.0.11
   flutter_slidable: ^3.1.1
@@ -85,6 +85,7 @@ dependencies:
   extension_google_sign_in_as_googleapis_auth: ^2.0.13
   flutter_dotenv: ^6.0.0
   syncfusion_flutter_pdf: ^26.2.14
+  flutter_gemma: ^0.11.16
 
   # Android Auto - Package not available on pub.dev
   # car_app: ^0.6.0 # Commented out - not available

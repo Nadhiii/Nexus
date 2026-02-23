@@ -10,8 +10,8 @@ import '../../core/models/account.dart';
 import '../../core/models/transaction.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../../core/utils/logo_utils.dart';
-import '../transactions/modern_add_transaction_screen.dart';
-import 'modern_add_account_screen.dart';
+import '../transactions/add_transaction_screen.dart';
+import 'add_account_screen.dart';
 
 class ModernAccountDetailScreen extends StatefulWidget {
   final Account account;

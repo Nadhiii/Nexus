@@ -47,6 +47,26 @@ class BikeProvider with ChangeNotifier {
     _init();
   }
 
+  /// Returns the number of unique calendar days where a transaction occurred.
+  /// If 2 fuel-ups happen on 18/02/2026, it counts as 1 day.
+  int getUniqueActiveDays() {
+    final uniqueDays = _currentBikeEntries.map((entry) {
+      // Standardize to YYYY-MM-DD to ignore time differences
+      return "${entry.date.year}-${entry.date.month}-${entry.date.day}";
+    }).toSet();
+
+    print('🗓️ getUniqueActiveDays: ${uniqueDays.length} unique days');
+    return uniqueDays.length;
+  }
+
+  List<BikeEntry> get filteredTimeline {
+    List<BikeEntry> entries = List.from(_currentBikeEntries);
+    // Default Sort: Newest to Oldest
+    entries.sort((a, b) => b.date.compareTo(a.date));
+    // You can add 'where' clauses here later for date filters
+    return entries;
+  }
+
   void _init() {
     final user = _auth.currentUser;
     if (user != null) {
