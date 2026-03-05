@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
@@ -77,6 +78,7 @@ class _ModernAddSubscriptionScreenState
   @override
   Widget build(BuildContext context) {
     final title = _isEditMode ? 'Edit Subscription' : 'New Subscription';
+    final subscriptionId = widget.subscriptionToEdit?.id ?? '';
 
     return Scaffold(
       backgroundColor: AppColors.darkGradient.first,
@@ -181,11 +183,13 @@ class _ModernAddSubscriptionScreenState
                                 width: 50,
                                 height: 50,
                                 decoration: BoxDecoration(
-                                  color: (s['color'] as Color).withOpacity(0.2),
+                                  color: (s['color'] as Color).withValues(
+                                    alpha: 0.2,
+                                  ),
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: (s['color'] as Color).withOpacity(
-                                      0.5,
+                                    color: (s['color'] as Color).withValues(
+                                      alpha: 0.5,
                                     ),
                                   ),
                                 ),
@@ -336,6 +340,14 @@ class _ModernAddSubscriptionScreenState
                     ),
                     const SizedBox(height: AppSpacing.xl2),
 
+                    if (subscriptionId.isNotEmpty)
+                      Center(
+                        child: _buildOpenInTasksButton(context, subscriptionId),
+                      ),
+
+                    if (subscriptionId.isNotEmpty)
+                      const SizedBox(height: AppSpacing.sm),
+
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -395,7 +407,10 @@ class _ModernAddSubscriptionScreenState
       decoration: BoxDecoration(
         color: AppColors.cardDarkElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        border: Border.all(color: _brandColor.withOpacity(0.3), width: 1.5),
+        border: Border.all(
+          color: _brandColor.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
       ),
       child: Row(
         children: [
@@ -403,7 +418,7 @@ class _ModernAddSubscriptionScreenState
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: _brandColor.withOpacity(0.15),
+              color: _brandColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
             ),
             child: Center(
@@ -463,8 +478,12 @@ class _ModernAddSubscriptionScreenState
     final lastDate = DateTime(now.year + 10, now.month, now.day);
 
     DateTime initialDate = _nextDueDate;
-    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
-    if (initialDate.isAfter(lastDate)) initialDate = lastDate;
+    if (initialDate.isBefore(firstDate)) {
+      initialDate = firstDate;
+    }
+    if (initialDate.isAfter(lastDate)) {
+      initialDate = lastDate;
+    }
 
     final date = await showDatePicker(
       context: context,
@@ -472,7 +491,9 @@ class _ModernAddSubscriptionScreenState
       firstDate: firstDate,
       lastDate: lastDate,
     );
-    if (date != null) setState(() => _nextDueDate = date);
+    if (date != null) {
+      setState(() => _nextDueDate = date);
+    }
   }
 
   Future<void> _submit() async {
@@ -480,10 +501,12 @@ class _ModernAddSubscriptionScreenState
       setState(() => _isLoading = true);
       try {
         final user = FirebaseAuth.instance.currentUser;
-        if (user == null) return;
+        if (user == null) {
+          return;
+        }
 
         String colorString =
-            '#${_brandColor.value.toRadixString(16).substring(2)}';
+            '#${_brandColor.toARGB32().toRadixString(16).substring(2)}';
 
         final sub = Subscription(
           id: widget.subscriptionToEdit?.id ?? '',
@@ -510,11 +533,41 @@ class _ModernAddSubscriptionScreenState
           showTopSnackBar(context, 'Subscription saved');
         }
       } catch (e) {
-        if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+        if (mounted) {
+          showTopSnackBar(context, 'Error: $e', isError: true);
+        }
       } finally {
-        if (mounted) setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     }
+  }
+
+  Future<void> _launchTasksForItem(String itemId) async {
+    try {
+      final uri = Uri.parse('nexustasks://open/tasks/$itemId');
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      }
+      // If Tasks not installed: silently do nothing
+    } catch (_) {
+      // Swallow all errors silently
+    }
+  }
+
+  Widget _buildOpenInTasksButton(BuildContext context, String itemId) {
+    return TextButton.icon(
+      onPressed: () => _launchTasksForItem(itemId),
+      icon: Icon(Icons.checklist_rounded, size: 14, color: Colors.white38),
+      label: Text(
+        'Open in Tasks →',
+        style: TextStyle(color: Colors.white38, fontSize: 12),
+      ),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+    );
   }
 }
 

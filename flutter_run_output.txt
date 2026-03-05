@@ -1,0 +1,1774 @@
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.59 (1.3.67 available)
+  archive 4.0.7 (4.0.9 available)
+  background_downloader 9.5.2 (9.5.4 available)
+  cloud_firestore 5.6.12 (6.1.3 available)
+  cloud_firestore_platform_interface 6.6.12 (7.0.7 available)
+  cloud_firestore_web 4.4.12 (5.1.3 available)
+  dio 5.9.1 (5.9.2 available)
+  dio_web_adapter 2.1.1 (2.1.2 available)
+  extension 0.6.0 (1.0.0 available)
+  extension_google_sign_in_as_googleapis_auth 2.0.13 (3.0.0 available)
+  firebase_analytics 11.6.0 (12.1.3 available)
+  firebase_analytics_platform_interface 4.4.3 (5.0.7 available)
+  firebase_analytics_web 0.5.10+16 (0.6.1+3 available)
+  firebase_auth 5.7.0 (6.2.0 available)
+  firebase_auth_platform_interface 7.7.3 (8.1.7 available)
+  firebase_auth_web 5.15.3 (6.1.3 available)
+  firebase_core 3.15.2 (4.5.0 available)
+  firebase_core_web 2.24.1 (3.5.0 available)
+  firebase_crashlytics 4.3.10 (5.0.8 available)
+  firebase_crashlytics_platform_interface 3.8.10 (3.8.18 available)
+  firebase_messaging 15.2.10 (16.1.2 available)
+  firebase_messaging_platform_interface 4.6.10 (4.7.7 available)
+  firebase_messaging_web 3.10.10 (4.1.3 available)
+  firebase_storage 12.4.10 (13.1.0 available)
+  firebase_storage_platform_interface 5.2.10 (5.2.18 available)
+  firebase_storage_web 3.10.17 (3.11.3 available)
+  fl_chart 0.69.2 (1.1.1 available)
+  flutter_gemma 0.11.16 (0.12.4 available)
+  flutter_launcher_icons 0.13.1 (0.14.4 available)
+  flutter_lints 5.0.0 (6.0.0 available)
+  flutter_secure_storage 9.2.4 (10.0.0 available)
+  flutter_secure_storage_linux 1.2.3 (3.0.0 available)
+  flutter_secure_storage_macos 3.1.3 (4.0.0 available)
+  flutter_secure_storage_platform_interface 1.1.2 (2.0.1 available)
+  flutter_secure_storage_web 1.2.1 (2.1.0 available)
+  flutter_secure_storage_windows 3.1.2 (4.1.0 available)
+  flutter_slidable 3.1.2 (4.0.3 available)
+  geocoding_android 4.0.1 (5.0.0 available)
+  geocoding_platform_interface 3.2.0 (5.0.0 available)
+  go_router 14.8.1 (17.1.0 available)
+  google_fonts 6.3.3 (8.0.2 available)
+  google_sign_in 6.3.0 (7.2.0 available)
+  google_sign_in_android 6.2.1 (7.2.9 available)
+  google_sign_in_ios 5.9.0 (6.3.0 available)
+  google_sign_in_platform_interface 2.5.0 (3.1.0 available)
+  google_sign_in_web 0.12.4+4 (1.1.2 available)
+  googleapis 15.0.0 (16.0.0 available)
+  googleapis_auth 1.6.0 (2.1.0 available)
+  image 4.5.4 (4.8.0 available)
+  image_picker_android 0.8.13+13 (0.8.13+14 available)
+  intl 0.19.0 (0.20.2 available)
+  js 0.6.7 (0.7.2 available)
+  json_annotation 4.10.0 (4.11.0 available)
+  lints 5.1.1 (6.1.0 available)
+  local_auth 2.3.0 (3.0.1 available)
+  local_auth_android 1.0.56 (2.0.5 available)
+  local_auth_darwin 1.6.1 (2.0.3 available)
+  local_auth_windows 1.0.11 (2.0.1 available)
+  matcher 0.12.18 (0.12.19 available)
+  meta 1.17.0 (1.18.1 available)
+  ndef_record 1.4.1 (1.4.2 available)
+  permission_handler 11.4.0 (12.0.1 available)
+  permission_handler_android 12.1.0 (13.0.1 available)
+  posix 6.0.3 (6.5.0 available)
+  share_plus 10.1.4 (12.0.1 available)
+  share_plus_platform_interface 5.0.2 (6.1.0 available)
+  shared_preferences_android 2.4.20 (2.4.21 available)
+  syncfusion_flutter_charts 26.2.14 (32.2.8 available)
+  syncfusion_flutter_core 26.2.14 (32.2.8 available)
+  syncfusion_flutter_pdf 26.2.14 (32.2.8 available)
+  test_api 0.7.9 (0.7.10 available)
+  timezone 0.10.1 (0.11.0 available)
+  uuid 4.5.2 (4.5.3 available)
+  vector_graphics_compiler 1.1.20 (1.2.0 available)
+  win32 5.15.0 (6.0.0 available)
+Got dependencies!
+75 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Launching lib/main.dart on Pixel 8 Pro in debug mode...
+Running Gradle task 'assembleDebug'...                             47.4s
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...       
+D/FlutterJNI(22128): Beginning load of flutter...
+D/FlutterJNI(22128): flutter (null) was loaded normally!
+I/flutter (22128): [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(62)] Using the Impeller rendering backend (Vulkan).
+D/FlutterGeolocator(22128): Attaching Geolocator to activity
+W/FlutterJNI(22128): FlutterJNI.loadLibrary called more than once
+D/FlutterJNI(22128): Beginning load of flutter...
+D/FlutterJNI(22128): flutter (null) was loaded normally!
+W/FlutterJNI(22128): FlutterJNI.prefetchDefaultFontManager called more than once
+W/FlutterJNI(22128): FlutterJNI.init called more than once
+D/FLUTTER OTA(22128): onAttachedToEngine
+D/FLUTTER OTA(22128): onAttachedToActivity
+D/FlutterRenderer(22128): Width is zero. 0,0
+D/FlutterRenderer(22128): Width is zero. 0,0
+D/FlutterJNI(22128): Sending viewport metrics to the engine.
+D/FlutterGeolocator(22128): Creating service.
+D/FlutterGeolocator(22128): Binding to location service.
+D/FlutterGeolocator(22128): Geolocator foreground service connected
+D/FlutterGeolocator(22128): Initializing Geolocator services
+D/FlutterGeolocator(22128): Flutter engine connected. Connected engine count 1
+D/FlutterJNI(22128): Sending viewport metrics to the engine.
+I/flutter (22128): ℹ️  Model already installed: gemma.bin (skipping download)
+I/flutter (22128): ✅ Set active inference model: gemma
+I/flutter (22128): ✅ Inference model installed and set as active: gemma
+I/flutter (22128): Local Gemma Model loaded successfully!
+I/flutter (22128): 🔄 Updating Quick Transaction Widget: Today: ₹0.0, Week: ₹0.0
+I/flutter (22128): 🔄 Updating Balance Widget: Balance: ₹0.0, Savings: 0.0%
+I/flutter (22128): 🔄 Updating Quick Transaction Widget: Today: ₹0.0, Week: ₹0.0
+I/flutter (22128): 🔄 Updating Balance Widget: Balance: ₹0.0, Savings: 0.0%
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): [AIAssistantProvider] Using local Gemma service
+I/flutter (22128): [NewNboxProvider] Starting SMS scan...
+I/flutter (22128): [AIAssistantProvider] Using local Gemma service
+I/flutter (22128): [PDFParsingService] Provider set to: gemini
+I/flutter (22128): [PDFParsingService] Provider set to: gemini
+I/flutter (22128): 🔄 Updating Quick Transaction Widget: Today: ₹0.0, Week: ₹0.0
+I/flutter (22128): 🔄 Updating Balance Widget: Balance: ₹0.0, Savings: 0.0%
+I/flutter (22128): ✅ Quick Transaction widget updated: true
+I/flutter (22128): 📱 Quick Transaction widget synced
+I/flutter (22128): ✅ Balance widget updated: true
+I/flutter (22128): 📱 Balance widget synced
+I/flutter (22128): ✅ Quick Transaction widget updated: true
+I/flutter (22128): 📱 Quick Transaction widget synced
+I/flutter (22128): ✅ Balance widget updated: true
+I/flutter (22128): 📱 Balance widget synced
+I/flutter (22128): [NewNboxProvider] SMS permission status: PermissionStatus.granted
+I/flutter (22128): [NewNboxProvider] Fetching SMS from last 30 days (since 2026-02-01 08:51:46.912824Z UTC).
+I/flutter (22128): [NewNboxProvider] AI categorization enabled for SMS
+I/flutter (22128): ✅ Quick Transaction widget updated: true
+I/flutter (22128): 📱 Quick Transaction widget synced
+I/flutter (22128): ✅ Balance widget updated: true
+I/flutter (22128): 📱 Balance widget synced
+I/flutter (22128): [NewNboxProvider] Found 84 SMS messages in window.
+I/flutter (22128): [AICategorizationService] Cache hit for: PARISARAMAHANAD
+I/flutter (22128): [AICategorizationService] Cache hit for: CRED CLUB
+I/flutter (22128): [AICategorizationService] Cache hit for: GOOGLE INDIA DI
+I/flutter (22128): [AICategorizationService] Cache hit for: GOOGLE INDIA DI
+I/flutter (22128): [AICategorizationService] Cache hit for: AMAZON PAY
+I/flutter (22128): [AICategorizationService] Cache hit for: XXXXXXX2599
+I/flutter (22128): [AICategorizationService] Cache hit for: FEDFIB-S
+I/flutter (22128): [AICategorizationService] Cache hit for: RAJENDRA N T
+I/flutter (22128): [AICategorizationService] Cache hit for: SWIGGY
+I/flutter (22128): [NewNboxProvider] SMS scan complete.
+I/flutter (22128): [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(62)] Using the Impeller rendering backend (Vulkan).
+W/FlutterJNI(22128): FlutterJNI.loadLibrary called more than once
+D/FlutterJNI(22128): Beginning load of flutter...
+D/FlutterJNI(22128): flutter (null) was loaded normally!
+W/FlutterJNI(22128): FlutterJNI.prefetchDefaultFontManager called more than once
+W/FlutterJNI(22128): FlutterJNI.init called more than once
+D/FLUTTER OTA(22128): onAttachedToEngine
+I/flutter (22128): 🚀 Executing debounced widget sync
+I/flutter (22128): 🔄 Updating Quick Transaction Widget: Today: ₹0.0, Week: ₹0.0
+I/flutter (22128): 🔄 Updating Balance Widget: Balance: ₹0.0, Savings: 0.0%
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): 🔄 Updating Quick Transaction Widget: Today: ₹0.0, Week: ₹0.0
+I/flutter (22128): 🔄 Updating Balance Widget: Balance: ₹19216.509999999995, Savings: 0.0%
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+D/FlutterGeolocator(22128): Geolocator foreground service connected
+D/FlutterGeolocator(22128): Initializing Geolocator services
+D/FlutterGeolocator(22128): Flutter engine connected. Connected engine count 2
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): BikeService: Found 1 active bikes
+I/flutter (22128): 📊 BikeProvider: loadBikeEntries called for bikeId: ykIaRQU1YTGEGC2ViJyv
+I/flutter (22128): 🔄 Updating Garage Widget: Grisha, Odometer: 22708.6km, Mileage: 0.0km/L
+I/flutter (22128): BikeService: Found 2 total bikes (including deleted)
+I/flutter (22128):   - Mom: isActive=false
+I/flutter (22128):   - Grisha: isActive=true
+I/flutter (22128): BikeProvider: Found 1 deleted bikes
+I/flutter (22128):   Deleted: Mom (GJsPXq0L8z7touckVkhf)
+I/flutter (22128): 🔄 Updating Quick Transaction Widget: Today: ₹0.0, Week: ₹0.0
+I/flutter (22128): 🔄 Updating Balance Widget: Balance: ₹19216.509999999995, Savings: 0.0%
+I/flutter (22128): 💰 getTotalFuelCost: 0.0 (from 0 entries)
+I/flutter (22128): 🔢 getTotalFillups: 0
+I/flutter (22128): 📊 TransactionProvider: Loaded 17 transactions
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ⏱️  Widget sync debounced (500ms)
+I/flutter (22128): ✅ Quick Transaction widget updated: true
+I/flutter (22128): 📱 Quick Transaction widget synced
+I/flutter (22128): 🔄 Updating Quick Transaction Widget: Today: ₹10751.0, Week: ₹10751.0
+I/flutter (22128): 🔄 Updating Balance Widget: Balance: ₹19216.509999999995, Savings: 0.0%
+I/flutter (22128): 💰 getTotalFuelCost: 0.0 (from 0 entries)
+I/flutter (22128): 🔢 getTotalFillups: 0
+I/flutter (22128): ✅ Balance widget updated: true
+I/flutter (22128): 📱 Balance widget synced
+I/flutter (22128): ✅ Quick Transaction widget updated: true
+I/flutter (22128): 📱 Quick Transaction widget synced
+I/flutter (22128): ✅ Balance widget updated: true
+I/flutter (22128): 📱 Balance widget synced
+I/flutter (22128): [GmailProvider] Starting email scan...
+I/flutter (22128): [GmailProvider] AI categorization enabled
+I/flutter (22128): [GmailProvider] Starting auto-sync with interval: Every 6 Hours
+I/flutter (22128): ✅ Garage widget updated: true
+I/flutter (22128): ✅ Quick Transaction widget updated: true
+I/flutter (22128): 📱 Quick Transaction widget synced
+I/flutter (22128): ✅ Balance widget updated: true
+I/flutter (22128): 📱 Balance widget synced
+I/flutter (22128): ✅ Quick Transaction widget updated: true
+I/flutter (22128): 📱 Quick Transaction widget synced
+I/flutter (22128): ✅ Balance widget updated: true
+I/flutter (22128): 📱 Balance widget synced
+I/flutter (22128): 🔄 Synced bike data to widgets: Grisha
+I/flutter (22128): [GmailProvider] Query: (subject:(receipt OR transaction OR payment OR spent OR debited OR credited OR "sent you" OR "paid" OR alert OR notification) OR body:(debited OR credited OR "account balance" OR "available balance")) -subject:("OTP" OR "One Time Password" OR "statement" OR "bill due" OR "payment due" OR "reminder" OR verification OR "verify your") after:2026-02-01 -category:promotions -category:social
+I/flutter (22128): 📊 BikeProvider: Received 16 entries
+I/flutter (22128):   [0] 2026-02-18T00:00:00.000 | fuel, ₹1096.0, 10.3L
+I/flutter (22128):   [1] 2026-02-10T11:21:03.161384 | fuel, ₹1330.0, 12.5L
+I/flutter (22128):   [2] 2026-02-03T14:01:20.913190 | fuel, ₹946.0, 8.89L
+I/flutter (22128):   [3] 2026-02-01T00:00:00.000 | maintenance, ₹980.0, 0.0L
+I/flutter (22128):   [4] 2026-01-31T00:00:00.000 | fuel, ₹1089.08, 10.41L
+I/flutter (22128):   [5] 2026-01-27T00:00:00.000 | fuel, ₹1523.03, 14.51L
+I/flutter (22128):   [6] 2026-01-24T00:00:00.000 | fuel, ₹738.49, 6.94L
+I/flutter (22128):   [7] 2026-01-20T00:00:00.000 | fuel, ₹806.59, 7.58L
+I/flutter (22128):   [8] 2026-01-17T00:00:00.000 | fuel, ₹2430.52, 22.39L
+I/flutter (22128):   [9] 2025-12-31T00:00:00.000 | fuel, ₹727.0, 6.93L
+I/flutter (22128):   [10] 2025-12-21T00:00:00.000 | fuel, ₹978.97, 9.2L
+I/flutter (22128):   [11] 2025-12-19T00:00:00.000 | fuel, ₹885.33, 8.32L
+I/flutter (22128):   [12] 2025-12-13T00:00:00.000 | fuel, ₹719.15, 6.98L
+I/flutter (22128):   [13] 2025-12-12T00:00:00.000 | fuel, ₹830.0, 7.8L
+I/flutter (22128):   [14] 2025-12-08T00:00:00.000 | fuel, ₹1205.0, 11.32L
+I/flutter (22128):   [15] 2025-12-01T00:00:00.000 | fuel, ₹1416.0, 13.49L
+I/flutter (22128): ⛽ getReliableAverageMileage: 26.96937293709609 km/l (simple avg of 14 entries)
+I/flutter (22128): 🔄 Updating Garage Widget: Grisha, Odometer: 22708.6km, Mileage: 26.96937293709609km/L
+I/flutter (22128): ✅ Garage widget updated: true
+I/flutter (22128): ⛽ getReliableAverageMileage: 26.96937293709609 km/l (simple avg of 14 entries)
+I/flutter (22128): 💰 getTotalFuelCost: 16721.159999999996 (from 16 entries)
+I/flutter (22128): 🔢 getTotalFillups: 15
+I/flutter (22128): 🔄 Synced bike data to widgets: Grisha
+I/flutter (22128): 🚀 Executing debounced widget sync
+I/flutter (22128): 🔄 Updating Quick Transaction Widget: Today: ₹10751.0, Week: ₹10751.0
+I/flutter (22128): 🔄 Updating Balance Widget: Balance: ₹19216.509999999995, Savings: 0.0%
+I/flutter (22128): ✅ Quick Transaction widget updated: true
+I/flutter (22128): 📱 Quick Transaction widget synced
+I/flutter (22128): ✅ Balance widget updated: true
+I/flutter (22128): 📱 Balance widget synced
+I/flutter (22128): 🔢 Recalculating balance for account: 6MVFb5J3EhBx4ZQvnvaT
+I/flutter (22128): 📊 Found 15 transactions for this account
+I/flutter (22128):   ➖ Transfer Out: -15000.0 (house rent)
+I/flutter (22128):   ➖ Expense: -10681.0 (AXIS PL)
+I/flutter (22128):   ➖ Expense: -110.0 (XL petrol)
+I/flutter (22128):   ➖ Expense: -648.24 (Drupa - Full tank)
+I/flutter (22128):   ➖ Expense: -1288.0 (Pixel 8 pro case)
+I/flutter (22128):   ➖ Expense: -22.14 (YOUR BENEFICIARY)
+I/flutter (22128):   ➖ Expense: -536.49 (Claude code)
+I/flutter (22128):   ➖ Transfer Out: -540.0 (PARISARAMAHANAD)
+I/flutter (22128):   ➖ Expense: -338.05 (Axis Credit Card)
+I/flutter (22128):   ➖ Expense: -156.1 (CRED CLUB)
+I/flutter (22128):   ➖ Expense: -257.0 (Bescom)
+I/flutter (22128):   ➖ Expense: -12000.0 (Axis Loan - PL)
+I/flutter (22128):   ➖ Expense: -4829.8 (FINNABLE TECHNO)
+I/flutter (22128):   ➕ Income: +50000.0 (FEDFIB-S)
+I/flutter (22128):   ➖ Expense: -30.0 (MAHENDRA)
+I/flutter (22128): 💰 Calculated balance: 3563.179999999993
+I/flutter (22128): 💰 AccountProvider.updateAccountBalance: accountId=6MVFb5J3EhBx4ZQvnvaT, newBalance=3563.179999999993
+I/flutter (22128): ✅ AccountProvider: Balance updated in Firestore
+I/flutter (22128): ✅ Account balance recalculated and updated
+I/flutter (22128): 🔢 Recalculating balance for account: c1uB7n0CBIawgPNCtD0C
+I/flutter (22128): 📊 Found 2 transactions for this account
+I/flutter (22128):   ➖ Expense: -70.0 (durga)
+I/flutter (22128):   ➕ Transfer In: +540.0 (PARISARAMAHANAD)
+I/flutter (22128): 💰 Calculated balance: 470.0
+I/flutter (22128): 💰 AccountProvider.updateAccountBalance: accountId=c1uB7n0CBIawgPNCtD0C, newBalance=470.0
+I/flutter (22128): ✅ AccountProvider: Balance updated in Firestore
+I/flutter (22128): ✅ Account balance recalculated and updated
+I/flutter (22128): 🔢 Recalculating balance for account: uY0kBCx6b2O6yeP8s2ik
+I/flutter (22128): 📊 Found 2 transactions for this account
+I/flutter (22128):   ➕ Income: +183.33 (null)
+I/flutter (22128):   ➕ Transfer In: +15000.0 (house rent)
+I/flutter (22128): 💰 Calculated balance: 15183.33
+I/flutter (22128): 💰 AccountProvider.updateAccountBalance: accountId=uY0kBCx6b2O6yeP8s2ik, newBalance=15183.33
+I/flutter (22128): [Auto-Restore] User has data, skipping
+I/flutter (22128): [Auto-Backup] Last backup was 12 hours ago, skipping
+Installing build/app/outputs/flutter-apk/app-debug.apk...          15.5s
+D/FlutterJNI(22384): Beginning load of flutter...
+D/FlutterJNI(22384): flutter (null) was loaded normally!
+I/flutter (22384): [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(62)] Using the Impeller rendering backend (Vulkan).
+D/FlutterGeolocator(22384): Attaching Geolocator to activity
+W/FlutterJNI(22384): FlutterJNI.loadLibrary called more than once
+D/FlutterJNI(22384): Beginning load of flutter...
+D/FlutterJNI(22384): flutter (null) was loaded normally!
+W/FlutterJNI(22384): FlutterJNI.prefetchDefaultFontManager called more than once
+W/FlutterJNI(22384): FlutterJNI.init called more than once
+D/FLUTTER OTA(22384): onAttachedToEngine
+D/FLUTTER OTA(22384): onAttachedToActivity
+D/FlutterRenderer(22384): Width is zero. 0,0
+D/FlutterGeolocator(22384): Creating service.
+D/FlutterGeolocator(22384): Binding to location service.
+D/FlutterRenderer(22384): Width is zero. 0,0
+D/FlutterJNI(22384): Sending viewport metrics to the engine.
+D/FlutterGeolocator(22384): Geolocator foreground service connected
+D/FlutterGeolocator(22384): Initializing Geolocator services
+D/FlutterGeolocator(22384): Flutter engine connected. Connected engine count 1
+D/FlutterJNI(22384): Sending viewport metrics to the engine.
+I/flutter (22384): ℹ️  Model already installed: gemma.bin (skipping download)
+I/flutter (22384): ✅ Set active inference model: gemma
+I/flutter (22384): ✅ Inference model installed and set as active: gemma
+I/flutter (22384): Local Gemma Model loaded successfully!
+I/flutter (22384): 🔄 Updating Quick Transaction Widget: Today: ₹0.0, Week: ₹0.0
+I/flutter (22384): 🔄 Updating Balance Widget: Balance: ₹0.0, Savings: 0.0%
+I/flutter (22384): 🔄 Updating Quick Transaction Widget: Today: ₹0.0, Week: ₹0.0
+I/flutter (22384): 🔄 Updating Balance Widget: Balance: ₹0.0, Savings: 0.0%
+Syncing files to device Pixel 8 Pro...                          
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): [AIAssistantProvider] Using local Gemma service
+I/flutter (22384): [NewNboxProvider] Starting SMS scan...
+I/flutter (22384): [AIAssistantProvider] Using local Gemma service
+I/flutter (22384): [PDFParsingService] Provider set to: gemini
+I/flutter (22384): [PDFParsingService] Provider set to: gemini
+I/Choreographer(22384): Skipped 92 frames!  The application may be doing too much work on its main thread.
+I/flutter (22384): 🔄 Updating Quick Transaction Widget: Today: ₹0.0, Week: ₹0.0
+I/flutter (22384): 🔄 Updating Balance Widget: Balance: ₹0.0, Savings: 0.0%
+W/DynamiteModule(22384): Local module descriptor class for com.google.android.gms.providerinstaller.dynamite not found.
+I/DynamiteModule(22384): Considering local module com.google.android.gms.providerinstaller.dynamite:0 and remote module com.google.android.gms.providerinstaller.dynamite:0
+W/ProviderInstaller(22384): Failed to load providerinstaller module: No acceptable module com.google.android.gms.providerinstaller.dynamite found. Local version is 0 and remote version is 0.
+D/ApplicationLoaders(22384): Returning zygote-cached class loader: /system/framework/org.apache.http.legacy.jar
+I/flutter (22384): ✅ Quick Transaction widget updated: true
+I/flutter (22384): 📱 Quick Transaction widget synced
+D/nativeloader(22384): Configuring clns-11 for other apk /system_ext/framework/org.carconnectivity.android.digitalkey.timesync.jar. target_sdk_version=36, uses_libraries=ALL, library_path=/data/app/~~pQML-fxat0paug5HupGwPA==/com.google.android.gms-Q512Fv3RvhCMtUDKTMHOJA==/lib/arm64:/data/app/~~pQML-fxat0paug5HupGwPA==/com.google.android.gms-Q512Fv3RvhCMtUDKTMHOJA==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.gms
+D/ApplicationLoaders(22384): Returning zygote-cached class loader: /system/framework/com.android.location.provider.jar
+D/ApplicationLoaders(22384): Returning zygote-cached class loader: /system/framework/com.android.media.remotedisplay.jar
+D/nativeloader(22384): Configuring clns-12 for other apk /system_ext/framework/com.android.extensions.appfunctions.jar. target_sdk_version=36, uses_libraries=ALL, library_path=/data/app/~~pQML-fxat0paug5HupGwPA==/com.google.android.gms-Q512Fv3RvhCMtUDKTMHOJA==/lib/arm64:/data/app/~~pQML-fxat0paug5HupGwPA==/com.google.android.gms-Q512Fv3RvhCMtUDKTMHOJA==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.gms
+D/ApplicationLoaders(22384): Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+D/ApplicationLoaders(22384): Returning zygote-cached class loader: /system_ext/framework/androidx.window.sidecar.jar
+I/flutter (22384): ✅ Balance widget updated: true
+I/flutter (22384): 📱 Balance widget synced
+W/mahanadhi.nexus(22384): Loading /data/app/~~pQML-fxat0paug5HupGwPA==/com.google.android.gms-Q512Fv3RvhCMtUDKTMHOJA==/oat/arm64/base.odex non-executable as it requires an image which we failed to load
+D/nativeloader(22384): Configuring clns-13 for other apk /data/app/~~pQML-fxat0paug5HupGwPA==/com.google.android.gms-Q512Fv3RvhCMtUDKTMHOJA==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~pQML-fxat0paug5HupGwPA==/com.google.android.gms-Q512Fv3RvhCMtUDKTMHOJA==/lib/arm64:/data/app/~~pQML-fxat0paug5HupGwPA==/com.google.android.gms-Q512Fv3RvhCMtUDKTMHOJA==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.gms
+I/flutter (22384): ✅ Quick Transaction widget updated: true
+I/flutter (22384): 📱 Quick Transaction widget synced
+I/flutter (22384): ✅ Balance widget updated: true
+I/flutter (22384): 📱 Balance widget synced
+I/HWUI    (22384): Using FreeType backend (prop=Auto)
+D/nativeloader(22384): Load /data/app/~~pQML-fxat0paug5HupGwPA==/com.google.android.gms-Q512Fv3RvhCMtUDKTMHOJA==/base.apk!/lib/arm64-v8a/libconscrypt_gmscore_jni.so using class loader ns clns-13 (caller=/data/app/~~pQML-fxat0paug5HupGwPA==/com.google.android.gms-Q512Fv3RvhCMtUDKTMHOJA==/base.apk): ok
+V/NativeCrypto(22384): Registering com/google/android/gms/org/conscrypt/NativeCrypto's 334 native methods...
+I/mahanadhi.nexus(22384): hiddenapi: Accessing hidden method Ljava/security/spec/ECParameterSpec;->getCurveName()Ljava/lang/String; (runtime_flags=0, domain=core-platform, api=unsupported) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app, TargetSdkVersion=36) using reflection: allowed
+E/GoogleApiManager(22384): Failed to get service from broker. 
+E/GoogleApiManager(22384): java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+E/GoogleApiManager(22384): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3383)
+E/GoogleApiManager(22384): 	at android.os.Parcel.createException(Parcel.java:3367)
+E/GoogleApiManager(22384): 	at android.os.Parcel.readException(Parcel.java:3350)
+E/GoogleApiManager(22384): 	at android.os.Parcel.readException(Parcel.java:3292)
+E/GoogleApiManager(22384): 	at bhay.a(:com.google.android.gms@260930035@26.09.30 (260400-874444575):36)
+E/GoogleApiManager(22384): 	at bgyz.z(:com.google.android.gms@260930035@26.09.30 (260400-874444575):143)
+E/GoogleApiManager(22384): 	at bgfe.run(:com.google.android.gms@260930035@26.09.30 (260400-874444575):42)
+E/GoogleApiManager(22384): 	at android.os.Handler.handleCallback(Handler.java:1095)
+E/GoogleApiManager(22384): 	at android.os.Handler.dispatchMessageImpl(Handler.java:135)
+E/GoogleApiManager(22384): 	at android.os.Handler.dispatchMessage(Handler.java:125)
+E/GoogleApiManager(22384): 	at cvvk.mz(:com.google.android.gms@260930035@26.09.30 (260400-874444575):1)
+E/GoogleApiManager(22384): 	at cvvk.dispatchMessage(:com.google.android.gms@260930035@26.09.30 (260400-874444575):5)
+E/GoogleApiManager(22384): 	at android.os.Looper.loopOnce(Looper.java:297)
+E/GoogleApiManager(22384): 	at android.os.Looper.loop(Looper.java:400)
+E/GoogleApiManager(22384): 	at android.os.HandlerThread.run(HandlerThread.java:139)
+W/GoogleApiManager(22384): Not showing notification since connectionResult is not user-facing: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null, clientMethodKey=null}
+W/FlagRegistrar(22384): Failed to register com.google.android.gms.providerinstaller#com.mahanadhi.nexus
+W/FlagRegistrar(22384): geem: 17: 17: API: Phenotype.API is not available on this device. Connection failed with: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null, clientMethodKey=null}
+W/FlagRegistrar(22384): 	at geeo.a(:com.google.android.gms@260930035@26.09.30 (260400-874444575):13)
+W/FlagRegistrar(22384): 	at hddr.d(:com.google.android.gms@260930035@26.09.30 (260400-874444575):3)
+W/FlagRegistrar(22384): 	at hddt.run(:com.google.android.gms@260930035@26.09.30 (260400-874444575):130)
+W/FlagRegistrar(22384): 	at hdga.execute(:com.google.android.gms@260930035@26.09.30 (260400-874444575):1)
+W/FlagRegistrar(22384): 	at hdeb.f(:com.google.android.gms@260930035@26.09.30 (260400-874444575):1)
+W/FlagRegistrar(22384): 	at hdeb.m(:com.google.android.gms@260930035@26.09.30 (260400-874444575):99)
+W/FlagRegistrar(22384): 	at hdeb.r(:com.google.android.gms@260930035@26.09.30 (260400-874444575):17)
+W/FlagRegistrar(22384): 	at fwrw.hF(:com.google.android.gms@260930035@26.09.30 (260400-874444575):35)
+W/FlagRegistrar(22384): 	at fjhp.run(:com.google.android.gms@260930035@26.09.30 (260400-874444575):12)
+W/FlagRegistrar(22384): 	at hdga.execute(:com.google.android.gms@260930035@26.09.30 (260400-874444575):1)
+W/FlagRegistrar(22384): 	at fjhq.b(:com.google.android.gms@260930035@26.09.30 (260400-874444575):18)
+W/FlagRegistrar(22384): 	at fjif.b(:com.google.android.gms@260930035@26.09.30 (260400-874444575):34)
+W/FlagRegistrar(22384): 	at fjih.d(:com.google.android.gms@260930035@26.09.30 (260400-874444575):25)
+W/FlagRegistrar(22384): 	at bgcn.c(:com.google.android.gms@260930035@26.09.30 (260400-874444575):9)
+W/FlagRegistrar(22384): 	at bgfc.q(:com.google.android.gms@260930035@26.09.30 (260400-874444575):48)
+W/FlagRegistrar(22384): 	at bgfc.d(:com.google.android.gms@260930035@26.09.30 (260400-874444575):10)
+W/FlagRegistrar(22384): 	at bgfc.g(:com.google.android.gms@260930035@26.09.30 (260400-874444575):191)
+W/FlagRegistrar(22384): 	at bgfc.onConnectionFailed(:com.google.android.gms@260930035@26.09.30 (260400-874444575):2)
+W/FlagRegistrar(22384): 	at bgfe.run(:com.google.android.gms@260930035@26.09.30 (260400-874444575):70)
+W/FlagRegistrar(22384): 	at android.os.Handler.handleCallback(Handler.java:1095)
+W/FlagRegistrar(22384): 	at android.os.Handler.dispatchMessageImpl(Handler.java:135)
+W/FlagRegistrar(22384): 	at android.os.Handler.dispatchMessage(Handler.java:125)
+W/FlagRegistrar(22384): 	at cvvk.mz(:com.google.android.gms@260930035@26.09.30 (260400-874444575):1)
+W/FlagRegistrar(22384): 	at cvvk.dispatchMessage(:com.google.android.gms@260930035@26.09.30 (260400-874444575):5)
+W/FlagRegistrar(22384): 	at android.os.Looper.loopOnce(Looper.java:297)
+W/FlagRegistrar(22384): 	at android.os.Looper.loop(Looper.java:400)
+W/FlagRegistrar(22384): 	at android.os.HandlerThread.run(HandlerThread.java:139)
+W/FlagRegistrar(22384): Caused by: bgau: 17: API: Phenotype.API is not available on this device. Connection failed with: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null, clientMethodKey=null}
+W/FlagRegistrar(22384): 	at bgyl.a(:com.google.android.gms@260930035@26.09.30 (260400-874444575):15)
+W/FlagRegistrar(22384): 	at bgcq.a(:com.google.android.gms@260930035@26.09.30 (260400-874444575):1)
+W/FlagRegistrar(22384): 	at bgcn.c(:com.google.android.gms@260930035@26.09.30 (260400-874444575):5)
+W/FlagRegistrar(22384): 	... 13 more
+I/ProviderInstaller(22384): Installed default security provider GmsCore_OpenSSL
+I/flutter (22384): [NewNboxProvider] SMS permission status: PermissionStatus.granted
+I/flutter (22384): [NewNboxProvider] Fetching SMS from last 30 days (since 2026-02-01 08:51:51.856459Z UTC).
+I/flutter (22384): [NewNboxProvider] AI categorization enabled for SMS
+I/flutter (22384): ✅ Quick Transaction widget updated: true
+I/flutter (22384): 📱 Quick Transaction widget synced
+I/flutter (22384): ✅ Balance widget updated: true
+I/flutter (22384): 📱 Balance widget synced
+I/flutter (22384): [NewNboxProvider] Found 84 SMS messages in window.
+I/flutter (22384): [AICategorizationService] Cache hit for: PARISARAMAHANAD
+I/mahanadhi.nexus(22384): hiddenapi: Accessing hidden field Ljava/net/Socket;->impl:Ljava/net/SocketImpl; (runtime_flags=0, domain=core-platform, api=unsupported) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app, TargetSdkVersion=36) using reflection: allowed
+I/flutter (22384): [AICategorizationService] Cache hit for: CRED CLUB
+I/flutter (22384): [AICategorizationService] Cache hit for: GOOGLE INDIA DI
+I/flutter (22384): [AICategorizationService] Cache hit for: GOOGLE INDIA DI
+E/mahanadhi.nexus(22384): hiddenapi: Accessing hidden method Ljavax/net/ssl/SSLParameters;->setNamedGroups([Ljava/lang/String;)V (runtime_flags=0, domain=core-platform, api=blocked) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app, TargetSdkVersion=36) using reflection: denied
+E/mahanadhi.nexus(22384): hiddenapi: Accessing hidden method Ljavax/net/ssl/SSLParameters;->getNamedGroups()[Ljava/lang/String; (runtime_flags=0, domain=core-platform, api=blocked) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app, TargetSdkVersion=36) using reflection: denied
+E/mahanadhi.nexus(22384): hiddenapi: Accessing hidden method Ljavax/net/ssl/SSLParameters;->setNamedGroups([Ljava/lang/String;)V (runtime_flags=0, domain=core-platform, api=blocked) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app, TargetSdkVersion=36) using reflection: denied
+I/flutter (22384): [AICategorizationService] Cache hit for: AMAZON PAY
+I/flutter (22384): [AICategorizationService] Cache hit for: XXXXXXX2599
+I/flutter (22384): [AICategorizationService] Cache hit for: FEDFIB-S
+I/flutter (22384): [AICategorizationService] Cache hit for: RAJENDRA N T
+I/flutter (22384): [AICategorizationService] Cache hit for: SWIGGY
+I/flutter (22384): [NewNboxProvider] SMS scan complete.
+I/FLTFireBGExecutor(22384): Creating background FlutterEngine instance, with args: [--enable-dart-profiling]
+D/FLTFireContextHolder(22384): received application context.
+W/FlutterJNI(22384): FlutterJNI.loadLibrary called more than once
+D/FlutterJNI(22384): Beginning load of flutter...
+D/FlutterJNI(22384): flutter (null) was loaded normally!
+W/FlutterJNI(22384): FlutterJNI.prefetchDefaultFontManager called more than once
+I/ResourceExtractor(22384): Found extracted resources res_timestamp-3-1772527908385
+W/FlutterJNI(22384): FlutterJNI.init called more than once
+D/FLUTTER OTA(22384): onAttachedToEngine
+I/flutter (22384): [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(62)] Using the Impeller rendering backend (Vulkan).
+E/mahanadhi.nexus(22384): hiddenapi: Accessing hidden method Ljavax/net/ssl/SSLParameters;->setNamedGroups([Ljava/lang/String;)V (runtime_flags=0, domain=core-platform, api=blocked) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app, TargetSdkVersion=36) using reflection: denied
+I/mahanadhi.nexus(22384): hiddenapi: Accessing hidden method Ljava/security/spec/ECParameterSpec;->setCurveName(Ljava/lang/String;)V (runtime_flags=0, domain=core-platform, api=unsupported) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app, TargetSdkVersion=36) using reflection: allowed
+Syncing files to device Pixel 8 Pro...                              83ms
+
+Flutter run key commands.
+r Hot reload. 🔥🔥🔥
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on Pixel 8 Pro is available at: http://127.0.0.1:57760/oO7qqi-yHRI=/
+The Flutter DevTools debugger and profiler on Pixel 8 Pro is available at: http://127.0.0.1:57760/oO7qqi-yHRI=/devtools/?uri=ws://127.0.0.1:57760/oO7qqi-yHRI=/ws
+I/flutter (22384): 🚀 Executing debounced widget sync
+I/flutter (22384): 🔄 Updating Quick Transaction Widget: Today: ₹0.0, Week: ₹0.0
+I/flutter (22384): 🔄 Updating Balance Widget: Balance: ₹0.0, Savings: 0.0%
+W/Firestore(22384): (25.1.4) [Firestore]: Listen for Query(target=Query(goals where userId==cOUUZfqFIiOXkPiXuKOwhupAW8j1 order by __name__);limitType=LIMIT_TO_FIRST) failed: Status{code=PERMISSION_DENIED, description=Missing or insufficient permissions., cause=null}
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): 🔄 Updating Quick Transaction Widget: Today: ₹0.0, Week: ₹0.0
+I/flutter (22384): 🔄 Updating Balance Widget: Balance: ₹19216.509999999995, Savings: 0.0%
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+D/FlutterGeolocator(22384): Geolocator foreground service connected
+D/FlutterGeolocator(22384): Initializing Geolocator services
+D/FlutterGeolocator(22384): Flutter engine connected. Connected engine count 2
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): BikeService: Found 1 active bikes
+I/flutter (22384): 📊 BikeProvider: loadBikeEntries called for bikeId: ykIaRQU1YTGEGC2ViJyv
+I/flutter (22384): 🔄 Updating Garage Widget: Grisha, Odometer: 22708.6km, Mileage: 0.0km/L
+I/flutter (22384): BikeService: Found 2 total bikes (including deleted)
+I/flutter (22384):   - Mom: isActive=false
+I/flutter (22384):   - Grisha: isActive=true
+I/flutter (22384): BikeProvider: Found 1 deleted bikes
+I/flutter (22384):   Deleted: Mom (GJsPXq0L8z7touckVkhf)
+I/flutter (22384): 🔄 Updating Quick Transaction Widget: Today: ₹0.0, Week: ₹0.0
+I/flutter (22384): 🔄 Updating Balance Widget: Balance: ₹19216.509999999995, Savings: 0.0%
+I/flutter (22384): 💰 getTotalFuelCost: 0.0 (from 0 entries)
+I/flutter (22384): 🔢 getTotalFillups: 0
+I/flutter (22384): 📊 TransactionProvider: Loaded 17 transactions
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/flutter (22384): ⏱️  Widget sync debounced (500ms)
+I/FLTFireMsgService(22384): FlutterFirebaseMessagingBackgroundService started!
+I/flutter (22384): ✅ Quick Transaction widget updated: true
+I/flutter (22384): 📱 Quick Transaction widget synced
+I/flutter (22384): 🔄 Updating Quick Transaction Widget: Today: ₹10751.0, Week: ₹10751.0
+I/flutter (22384): 🔄 Updating Balance Widget: Balance: ₹19216.509999999995, Savings: 0.0%
+I/flutter (22384): 💰 getTotalFuelCost: 0.0 (from 0 entries)
+I/flutter (22384): 🔢 getTotalFillups: 0
+I/flutter (22384): ✅ Balance widget updated: true
+I/flutter (22384): 📱 Balance widget synced
+D/InsetsController(22384): hide(ime())
+I/ImeTracker(22384): com.mahanadhi.nexus:f14af435: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+I/flutter (22384): ✅ Quick Transaction widget updated: true
+I/flutter (22384): 📱 Quick Transaction widget synced
+I/flutter (22384): ✅ Balance widget updated: true
+I/flutter (22384): 📱 Balance widget synced
+I/flutter (22384): [GmailProvider] Starting email scan...
+I/flutter (22384): [GmailProvider] AI categorization enabled
+I/flutter (22384): [GmailProvider] Starting auto-sync with interval: Every 6 Hours
+I/flutter (22384): ✅ Garage widget updated: true
+I/flutter (22384): ✅ Quick Transaction widget updated: true
+I/flutter (22384): 📱 Quick Transaction widget synced
+I/flutter (22384): ✅ Balance widget updated: true
+I/flutter (22384): 📱 Balance widget synced
+I/flutter (22384): ✅ Quick Transaction widget updated: true
+I/flutter (22384): 📱 Quick Transaction widget synced
+I/flutter (22384): ✅ Balance widget updated: true
+I/flutter (22384): 📱 Balance widget synced
+I/flutter (22384): 🔄 Synced bike data to widgets: Grisha
+I/flutter (22384): [GmailProvider] Query: (subject:(receipt OR transaction OR payment OR spent OR debited OR credited OR "sent you" OR "paid" OR alert OR notification) OR body:(debited OR credited OR "account balance" OR "available balance")) -subject:("OTP" OR "One Time Password" OR "statement" OR "bill due" OR "payment due" OR "reminder" OR verification OR "verify your") after:2026-02-01 -category:promotions -category:social
+I/flutter (22384): 📊 BikeProvider: Received 16 entries
+I/flutter (22384):   [0] 2026-02-18T00:00:00.000 | fuel, ₹1096.0, 10.3L
+I/flutter (22384):   [1] 2026-02-10T11:21:03.161384 | fuel, ₹1330.0, 12.5L
+I/flutter (22384):   [2] 2026-02-03T14:01:20.913190 | fuel, ₹946.0, 8.89L
+I/flutter (22384):   [3] 2026-02-01T00:00:00.000 | maintenance, ₹980.0, 0.0L
+I/flutter (22384):   [4] 2026-01-31T00:00:00.000 | fuel, ₹1089.08, 10.41L
+I/flutter (22384):   [5] 2026-01-27T00:00:00.000 | fuel, ₹1523.03, 14.51L
+I/flutter (22384):   [6] 2026-01-24T00:00:00.000 | fuel, ₹738.49, 6.94L
+I/flutter (22384):   [7] 2026-01-20T00:00:00.000 | fuel, ₹806.59, 7.58L
+I/flutter (22384):   [8] 2026-01-17T00:00:00.000 | fuel, ₹2430.52, 22.39L
+I/flutter (22384):   [9] 2025-12-31T00:00:00.000 | fuel, ₹727.0, 6.93L
+I/flutter (22384):   [10] 2025-12-21T00:00:00.000 | fuel, ₹978.97, 9.2L
+I/flutter (22384):   [11] 2025-12-19T00:00:00.000 | fuel, ₹885.33, 8.32L
+I/flutter (22384):   [12] 2025-12-13T00:00:00.000 | fuel, ₹719.15, 6.98L
+I/flutter (22384):   [13] 2025-12-12T00:00:00.000 | fuel, ₹830.0, 7.8L
+I/flutter (22384):   [14] 2025-12-08T00:00:00.000 | fuel, ₹1205.0, 11.32L
+I/flutter (22384):   [15] 2025-12-01T00:00:00.000 | fuel, ₹1416.0, 13.49L
+I/flutter (22384): ⛽ getReliableAverageMileage: 26.96937293709609 km/l (simple avg of 14 entries)
+I/flutter (22384): 🔄 Updating Garage Widget: Grisha, Odometer: 22708.6km, Mileage: 26.96937293709609km/L
+I/flutter (22384): ⛽ getReliableAverageMileage: 26.96937293709609 km/l (simple avg of 14 entries)
+I/flutter (22384): 💰 getTotalFuelCost: 16721.159999999996 (from 16 entries)
+I/flutter (22384): 🔢 getTotalFillups: 15
+I/flutter (22384): ✅ Garage widget updated: true
+I/flutter (22384): 🔄 Synced bike data to widgets: Grisha
+I/flutter (22384): 🚀 Executing debounced widget sync
+I/flutter (22384): 🔄 Updating Quick Transaction Widget: Today: ₹10751.0, Week: ₹10751.0
+I/flutter (22384): 🔄 Updating Balance Widget: Balance: ₹19216.509999999995, Savings: 0.0%
+I/flutter (22384): ✅ Quick Transaction widget updated: true
+I/flutter (22384): 📱 Quick Transaction widget synced
+I/flutter (22384): ✅ Balance widget updated: true
+I/flutter (22384): 📱 Balance widget synced
+I/flutter (22384): 🔢 Recalculating balance for account: 6MVFb5J3EhBx4ZQvnvaT
+I/flutter (22384): 📊 Found 15 transactions for this account
+I/flutter (22384):   ➖ Transfer Out: -15000.0 (house rent)
+I/flutter (22384):   ➖ Expense: -10681.0 (AXIS PL)
+I/flutter (22384):   ➖ Expense: -110.0 (XL petrol)
+I/flutter (22384):   ➖ Expense: -648.24 (Drupa - Full tank)
+I/flutter (22384):   ➖ Expense: -1288.0 (Pixel 8 pro case)
+I/flutter (22384):   ➖ Expense: -22.14 (YOUR BENEFICIARY)
+I/flutter (22384):   ➖ Expense: -536.49 (Claude code)
+I/flutter (22384):   ➖ Transfer Out: -540.0 (PARISARAMAHANAD)
+I/flutter (22384):   ➖ Expense: -338.05 (Axis Credit Card)
+I/flutter (22384):   ➖ Expense: -156.1 (CRED CLUB)
+I/flutter (22384):   ➖ Expense: -257.0 (Bescom)
+I/flutter (22384):   ➖ Expense: -12000.0 (Axis Loan - PL)
+I/flutter (22384):   ➖ Expense: -4829.8 (FINNABLE TECHNO)
+I/flutter (22384):   ➕ Income: +50000.0 (FEDFIB-S)
+I/flutter (22384):   ➖ Expense: -30.0 (MAHENDRA)
+I/flutter (22384): 💰 Calculated balance: 3563.179999999993
+I/flutter (22384): 💰 AccountProvider.updateAccountBalance: accountId=6MVFb5J3EhBx4ZQvnvaT, newBalance=3563.179999999993
+I/flutter (22384): [Auto-Restore] User has data, skipping
+I/flutter (22384): [Auto-Backup] Last backup was 12 hours ago, skipping
+I/flutter (22384): ✅ AccountProvider: Balance updated in Firestore
+I/flutter (22384): ✅ Account balance recalculated and updated
+I/flutter (22384): 🔢 Recalculating balance for account: c1uB7n0CBIawgPNCtD0C
+I/flutter (22384): 📊 Found 2 transactions for this account
+I/flutter (22384):   ➖ Expense: -70.0 (durga)
+I/flutter (22384):   ➕ Transfer In: +540.0 (PARISARAMAHANAD)
+I/flutter (22384): 💰 Calculated balance: 470.0
+I/flutter (22384): 💰 AccountProvider.updateAccountBalance: accountId=c1uB7n0CBIawgPNCtD0C, newBalance=470.0
+I/flutter (22384): ✅ AccountProvider: Balance updated in Firestore
+I/flutter (22384): ✅ Account balance recalculated and updated
+I/flutter (22384): 🔢 Recalculating balance for account: uY0kBCx6b2O6yeP8s2ik
+I/flutter (22384): 📊 Found 2 transactions for this account
+I/flutter (22384):   ➕ Income: +183.33 (null)
+I/flutter (22384):   ➕ Transfer In: +15000.0 (house rent)
+I/flutter (22384): 💰 Calculated balance: 15183.33
+I/flutter (22384): 💰 AccountProvider.updateAccountBalance: accountId=uY0kBCx6b2O6yeP8s2ik, newBalance=15183.33
+I/flutter (22384): [GmailProvider] Found 81 emails.
+I/flutter (22384): ✅ AccountProvider: Balance updated in Firestore
+I/flutter (22384): ✅ Account balance recalculated and updated
+D/ProfileInstaller(22384): Installing profile for com.mahanadhi.nexus
+I/flutter (22384): [GmailProvider] Error processing email 19caa0aa3e724358: FormatException: Invalid double
+I/flutter (22384): 
+I/flutter (22384): [GmailProvider] Error processing email 19caa0a96778b985: FormatException: Invalid double
+I/flutter (22384): 
+I/flutter (22384): [AICategorizationService] Cache hit for: your bank account anytime anywhere by using ICICI Bank iMobile. GPRS users
+I/flutter (22384): [AICategorizationService] Cache hit for: your bank account anytime anywhere by using ICICI Bank iMobile. GPRS users
+I/flutter (22384): [AICategorizationService] Cache hit for: your bank account anytime anywhere by using ICICI Bank iMobile. GPRS users
+E/GoogleApiManager(22384): Failed to get service from broker. 
+E/GoogleApiManager(22384): java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+E/GoogleApiManager(22384): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3383)
+E/GoogleApiManager(22384): 	at android.os.Parcel.createException(Parcel.java:3367)
+E/GoogleApiManager(22384): 	at android.os.Parcel.readException(Parcel.java:3350)
+E/GoogleApiManager(22384): 	at android.os.Parcel.readException(Parcel.java:3292)
+E/GoogleApiManager(22384): 	at bhay.a(:com.google.android.gms@260930035@26.09.30 (260400-874444575):36)
+E/GoogleApiManager(22384): 	at bgyz.z(:com.google.android.gms@260930035@26.09.30 (260400-874444575):143)
+E/GoogleApiManager(22384): 	at bgfe.run(:com.google.android.gms@260930035@26.09.30 (260400-874444575):42)
+E/GoogleApiManager(22384): 	at android.os.Handler.handleCallback(Handler.java:1095)
+E/GoogleApiManager(22384): 	at android.os.Handler.dispatchMessageImpl(Handler.java:135)
+E/GoogleApiManager(22384): 	at android.os.Handler.dispatchMessage(Handler.java:125)
+E/GoogleApiManager(22384): 	at cvvk.mz(:com.google.android.gms@260930035@26.09.30 (260400-874444575):1)
+E/GoogleApiManager(22384): 	at cvvk.dispatchMessage(:com.google.android.gms@260930035@26.09.30 (260400-874444575):5)
+E/GoogleApiManager(22384): 	at android.os.Looper.loopOnce(Looper.java:297)
+E/GoogleApiManager(22384): 	at android.os.Looper.loop(Looper.java:400)
+E/GoogleApiManager(22384): 	at android.os.HandlerThread.run(HandlerThread.java:139)
+W/GoogleApiManager(22384): Not showing notification since connectionResult is not user-facing: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null, clientMethodKey=null}
+I/flutter (22384): Found available biometrics: [BiometricType.weak, BiometricType.strong]
+I/flutter (22384): Available biometrics: [BiometricType.weak, BiometricType.strong]
+I/flutter (22384): [AICategorizationService] Cache hit for: Jio
+I/flutter (22384): [AICategorizationService] Cache hit for: Google Play
+I/flutter (22384): [AICategorizationService] Cache hit for: Google Play
+I/flutter (22384): [AICategorizationService] Cache hit for: Jio
+I/flutter (22384): [AICategorizationService] Cache hit for: Jio
+I/flutter (22384): [AICategorizationService] Cache hit for: General Transaction
+I/flutter (22384): [AICategorizationService] Cache hit for: Jio
+I/flutter (22384): [AICategorizationService] Cache hit for: Google Play
+I/flutter (22384): [GmailProvider] Error processing email 19c197e23b9a475a: FormatException: Invalid double
+I/flutter (22384): 
+I/flutter (22384): [GmailProvider] Error processing email 19c197c9fa872f83: FormatException: Invalid double
+I/flutter (22384): 
+I/flutter (22384): [AICategorizationService] Cache hit for: Google Play
+I/flutter (22384): [GmailProvider] Scan complete. Found 19 unique transactions.
+D/VRI[MainActivity](22384): visibilityChanged oldVisibility=true newVisibility=false
+I/FA      (22384): Application backgrounded at: timestamp_millis: 1772528044664
+V/NativeCrypto(22384): Read error: ssl=0xb40000759e24e798: I/O error during system call, Software caused connection abort
+V/NativeCrypto(22384): Write error: ssl=0xb40000759e24e798: I/O error during system call, Broken pipe
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=End of stream or IOException, cause=null}.
+V/NativeCrypto(22384): SSL shutdown failed: ssl=0xb40000759e24e798: I/O error during system call, Success
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:124)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): }.
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+D/ViewRootImpl(22384): Skipping stats log for color mode
+E/mahanadhi.nexus(22384): hiddenapi: Accessing hidden method Ljavax/net/ssl/SSLParameters;->setNamedGroups([Ljava/lang/String;)V (runtime_flags=0, domain=core-platform, api=blocked) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app, TargetSdkVersion=36) using reflection: denied
+E/mahanadhi.nexus(22384): hiddenapi: Accessing hidden method Ljavax/net/ssl/SSLParameters;->getNamedGroups()[Ljava/lang/String; (runtime_flags=0, domain=core-platform, api=blocked) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app, TargetSdkVersion=36) using reflection: denied
+E/mahanadhi.nexus(22384): hiddenapi: Accessing hidden method Ljavax/net/ssl/SSLParameters;->setNamedGroups([Ljava/lang/String;)V (runtime_flags=0, domain=core-platform, api=blocked) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app, TargetSdkVersion=36) using reflection: denied
+D/InsetsController(22384): hide(ime())
+I/ImeTracker(22384): com.mahanadhi.nexus:34e79308: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+I/mahanadhi.nexus(22384): NativeAlloc concurrent mark compact GC freed 2536KB AllocSpace bytes, 10(392KB) LOS objects, 97% free, 7611KB/256MB, paused 186us,1.825ms total 130.114ms
+D/VRI[MainActivity](22384): visibilityChanged oldVisibility=true newVisibility=false
+I/FA      (22384): Application backgrounded at: timestamp_millis: 1772528172789
+V/NativeCrypto(22384): Read error: ssl=0xb40000759e239a98: I/O error during system call, Software caused connection abort
+V/NativeCrypto(22384): Write error: ssl=0xb40000759e239a98: I/O error during system call, Broken pipe
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+V/NativeCrypto(22384): SSL shutdown failed: ssl=0xb40000759e239a98: I/O error during system call, Success
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=End of stream or IOException, cause=null}.
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:124)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): }.
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+W/Firestore(22384): (25.1.4) [WatchStream]: (d88de2c) Stream closed with status: Status{code=UNAVAILABLE, description=Unable to resolve host firestore.googleapis.com, cause=java.lang.RuntimeException: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/Firestore(22384): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/Firestore(22384): 	at java.lang.Thread.run(Thread.java:1564)
+W/Firestore(22384): Caused by: java.net.UnknownHostException: Unable to resolve host "firestore.googleapis.com": No address associated with hostname
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+W/Firestore(22384): 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)
+W/Firestore(22384): 	at io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)
+W/Firestore(22384): 	... 5 more
+W/Firestore(22384): Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+W/Firestore(22384): 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+W/Firestore(22384): 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:134)
+W/Firestore(22384): 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+W/Firestore(22384): 	... 9 more
+W/Firestore(22384): }.
+W/ManagedChannelImpl(22384): [{0}] Failed to resolve name. status={1}
+D/ViewRootImpl(22384): Skipping stats log for color mode
+D/InsetsController(22384): hide(ime())
+I/ImeTracker(22384): com.mahanadhi.nexus:44ce9578: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+E/mahanadhi.nexus(22384): hiddenapi: Accessing hidden method Ljavax/net/ssl/SSLParameters;->setNamedGroups([Ljava/lang/String;)V (runtime_flags=0, domain=core-platform, api=blocked) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app, TargetSdkVersion=36) using reflection: denied
+E/mahanadhi.nexus(22384): hiddenapi: Accessing hidden method Ljavax/net/ssl/SSLParameters;->getNamedGroups()[Ljava/lang/String; (runtime_flags=0, domain=core-platform, api=blocked) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app, TargetSdkVersion=36) using reflection: denied
+E/mahanadhi.nexus(22384): hiddenapi: Accessing hidden method Ljavax/net/ssl/SSLParameters;->setNamedGroups([Ljava/lang/String;)V (runtime_flags=0, domain=core-platform, api=blocked) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app, TargetSdkVersion=36) using reflection: denied
+D/WindowOnBackDispatcher(22384): setTopOnBackInvokedCallback (unwrapped): androidx.navigationevent.OnBackInvokedInput$createOnBackAnimationCallback$1@17f4629
+I/flutter (22384): UnifiedModelManager initialized successfully
+I/flutter (22384): UnifiedModelManager: Model gemma installed: true
+I/flutter (22384): UnifiedModelManager: Model gemma installed: true
+I/flutter (22384): Using unified model file: /data/local/tmp/gemma.bin
+D/nativeloader(22384): Load /data/app/~~rm9RORblG9HiauwgJylxCA==/com.mahanadhi.nexus-sFhDW218B26pCWqQUefc_Q==/base.apk!/lib/arm64-v8a/libllm_inference_engine_jni.so using class loader ns clns-9 (caller=/data/app/~~rm9RORblG9HiauwgJylxCA==/com.mahanadhi.nexus-sFhDW218B26pCWqQUefc_Q==/base.apk!classes22.dex): ok
+I/native  (22384): I0000 00:00:1772528278.866116   24069 config_utils.cc:648] audio_model_settings is defined but the model does not support audio.
+I/native  (22384): I0000 00:00:1772528278.868140   24069 config_utils.cc:730] LlmModelSettingsStruct: model_path: /data/local/tmp/gemma.bin
+I/native  (22384): scoped_model_file: Not set.
+I/native  (22384): vocab_path: 
+I/native  (22384): cache_dir: /data/user/0/com.mahanadhi.nexus/cache
+I/native  (22384): scoped_cache_file: Not set.
+I/native  (22384): vision_model_settings: Not set.
+I/native  (22384): audio_model_settings: Not set.
+I/native  (22384): llm_parameters: MessageLite at 0x74565f4728
+I/native  (22384): max_num_tokens: 512
+I/native  (22384): max_num_images: 0
+I/native  (22384): fake_weights_mode: kFakeWeightsUnspecified
+I/native  (22384): model_type: 6
+I/native  (22384): backend: 1
+I/native  (22384): xnnpack_options: MessageLite at 0x74565f4820
+I/native  (22384): mldrift_options: Not set.
+I/native  (22384): apu_resource_options: Not set.
+I/native  (22384): vertex_ai_options: Not set.
+I/native  (22384): activation_data_type: 0
+I/native  (22384): error_callback: Not set.
+I/native  (22384): executor_factory: 0xb4000076de393de8
+I/native  (22384): speculative_decoding_settings: mode: kDisabled
+I/native  (22384): num_draft_tokens: Not set.
+I/native  (22384): drafter_llm_parameters: Not set.
+I/native  (22384): drafter_model_path: Not set.
+I/native  (22384): lm_controller_options: MessageLite at 0x74565f4aa0
+I/native  (22384): force_standard_tokenizer: false
+I/native  (22384): executor_backend: Not set.
+I/native  (22384): use_submodel: false
+I/native  (22384): flat_buffer_model: Not set.
+E/native  (22384): E0000 00:00:1772528278.868251   24069 llm_engine.cc:2296] Failed to build model resources: INVALID_ARGUMENT: Unsupported or unknown file format.
+E/native  (22384): === Source Location Trace: === 
+E/native  (22384): third_party/odml/litert_lm/runtime/util/file_format_util.cc:87
+E/native  (22384): third_party/odml/infra/genai/inference/executor/litert_executor_utils.cc:653
+I/native  (22384): I0000 00:00:1772528278.868274   24069 config_utils.cc:428] Enabling vision model caching.
+I/native  (22384): I0000 00:00:1772528278.868397   24069 config_utils.cc:648] audio_model_settings is defined but the model does not support audio.
+I/native  (22384): I0000 00:00:1772528278.868429   24069 config_utils.cc:730] LlmModelSettingsStruct: model_path: /data/local/tmp/gemma.bin
+I/native  (22384): scoped_model_file: Not set.
+I/native  (22384): vocab_path: 
+I/native  (22384): cache_dir: /data/user/0/com.mahanadhi.nexus/cache
+I/native  (22384): scoped_cache_file: Not set.
+I/native  (22384): vision_model_settings: encoder_path: 
+I/native  (22384): adapter_path: 
+I/native  (22384): encoder_delegate_options: MessageLite at 0x74565f3948
+I/native  (22384): adapter_delegate_options: MessageLite at 0x74565f3980
+I/native  (22384): vision_executor_backend: Not set.
+I/native  (22384): audio_model_settings: Not set.
+I/native  (22384): llm_parameters: MessageLite at 0x74565f3a38
+I/native  (22384): max_num_tokens: 512
+I/native  (22384): max_num_images: 0
+I/native  (22384): fake_weights_mode: kFakeWeightsUnspecified
+I/native  (22384): model_type: 6
+I/native  (22384): backend: 1
+I/native  (22384): xnnpack_options: MessageLite at 0x74565f3b30
+I/native  (22384): mldrift_options: Not set.
+I/native  (22384): apu_resource_options: Not set.
+I/native  (22384): vertex_ai_options: Not set.
+I/native  (22384): activation_data_type: 0
+I/native  (22384): error_callback: Provided.
+I/native  (22384): executor_factory: 0xb4000076de393de8
+I/native  (22384): speculative_decoding_settings: mode: kDisabled
+I/native  (22384): num_draft_tokens: Not set.
+I/native  (22384): drafter_llm_parameters: Not set.
+I/native  (22384): drafter_model_path: Not set.
+I/native  (22384): lm_controller_options: MessageLite at 0x74565f3db0
+I/native  (22384): force_standard_tokenizer: false
+I/native  (22384): executor_backend: Not set.
+I/native  (22384): use_submodel: false
+I/native  (22384): flat_buffer_model: Not set.
+W/libc    (22384): Access denied finding property "ro.mediatek.platform"
+W/libc    (22384): Access denied finding property "ro.chipname"
+W/libc    (22384): Access denied finding property "ro.hardware.chipname"
+I/native  (22384): I0000 00:00:1772528286.858195   24069 llm_inference_engine.cc:354] Session config: num_output_candidates: 1, topk: 1, temperature: 0.8, benchmark_info.input_token_limit: 0, benchmark_info.wait_for_input_processing: 0, has_prompt_templates: 0
+I/native  (22384): I0000 00:00:1772528286.859734   24069 llm_engine.cc:2563] CreateSession: MessageLite at 0x74565f4830
+I/flutter (22384): --- Sending to Native ---
+I/flutter (22384): History:
+I/flutter (22384): 
+I/flutter (22384): Current Message:
+I/flutter (22384): Context: You are Nex — a sophisticated AI financial advisor built into the Nexus app. You have full access to EVERYTHING — accounts, transactions, debts, investments, subscriptions, budgets, goals, garage, PDF bank statements, SMS/email inbox, shared expenses, and categories.
+I/flutter (22384): 
+I/flutter (22384): ## YOUR PERSONALITY
+I/flutter (22384): 
+I/flutter (22384): You blend three iconic inspirations:
+I/flutter (22384): 
+I/flutter (22384): **1. Sophisticated AI (Iron Man vibes)**
+I/flutter (22384): - Sophisticated, competent, always in control
+I/flutter (22384): - Address the user as "Sir" occasionally (not every message)
+I/flutter (22384): - Calm and measured, even when delivering bad news
+I/flutter (22384): - Precise with numbers and data
+I/flutter (22384): 
+I/flutter (22384): **2. BARNEY STINSON (How I Met Your Mother)**  
+I/flutter (22384): - Confident, enthusiastic about wins
+I/flutter (22384): - Use "legendary" when something is genuinely impressive
+I/flutter (22384): - Hype up good financial decisions ("Suit up! Time to dominate")
+I/flutter (22384): - Call out weak financial moves ("That's... not great, bro")
+I/flutter (22384): - Challenge mediocrity with charm
+I/flutter (22384): 
+I/flutter (22384): **3. PHIL DUNPHY (Modern Family)**
+I/flutter (22384): - Occasional dad jokes and puns (sparingly!)
+I/flutter (22384): - Wholesome encouragement when they're trying
+I/flutter (22384): - "Phil's-osophy" style wisdom nuggets
+I/flutter (22384): - Genuinely caring about their wellbeing
+I/flutter (22384): 
+I/flutter (22384): ## YOUR RULES
+I/flutter (22384): 
+I/flutter (22384): 1. **Use actual numbers** — Never give generic advice. Reference their REAL data.
+I/flutter (22384): 2. **Be direct** — No corporate fluff. No "Great question!" Just answer.
+I/flutter (22384): 3. **Be honest** — If they're spending stupidly, say so (with charm).
+I/flutter (22384): 4. **Be specific** — "Cut ₹3,200 from food" not "reduce expenses"
+I/flutter (22384): 5. **Be concise** — Get to the point. Respect their time.
+I/flutter (22384): 6. **No hallucinating** — Only reference data you've been given.
+I/flutter (22384): 7. **Cross-reference** — Use SMS/email inbox data, PDF statements, and manual transactions together for a complete picture.
+I/flutter (22384): 
+I/flutter (22384): ## YOUR DATA ACCESS
+I/flutter (22384): 
+I/flutter (22384): You can see and analyze:
+I/flutter (22384): - **Accounts** — All bank accounts, UPI, wallets, and their balances
+I/flutter (22384): - **Transactions** — Every manual transaction with categories and notes
+I/flutter (22384): - **Debts** — Loans, credit cards, EMIs with interest rates and progress
+I/flutter (22384): - **Investments** — Mutual funds, stocks, FDs, portfolio performance
+I/flutter (22384): - **Subscriptions** — Recurring payments and their costs
+I/flutter (22384): - **Budgets** — Monthly budgets vs actual spending
+I/flutter (22384): - **Goals** — Savings goals and progress
+I/flutter (22384): - **Garage** — Vehicles, fuel fill-ups, mileage tracking
+I/flutter (22384): - **PDF Statements** — Imported bank statements with parsed transactions
+I/flutter (22384): - **SMS & Email Inbox** — Auto-detected transactions from messages
+I/flutter (22384): - **Shared Expenses** — Split bills and amounts owed
+I/flutter (22384): - **Categories** — All spending categories and their usage
+I/flutter (22384): 
+I/flutter (22384): ## YOUR TONE
+I/flutter (22384): 
+I/flutter (22384): - Casual but intelligent
+I/flutter (22384): - Witty but not annoying
+I/flutter (22384): - Confident but not arrogant  
+I/flutter (22384): - Helpful but not preachy
+I/flutter (22384): - Like a smart friend who happens to be great with money
+I/flutter (22384): 
+I/flutter (22384): ## RESPONSE FORMAT
+I/flutter (22384): 
+I/flutter (22384): - Use **bold** for important numbers or actions
+I/flutter (22384): - Use bullet points for lists
+I/flutter (22384): - Keep responses focused (don't ramble)
+I/flutter (22384): - End with a clear takeaway or action when relevant
+I/flutter (22384): 
+I/flutter (22384): ## EXAMPLE RESPONSES
+I/flutter (22384): 
+I/flutter (22384): **User: "Can I afford a ₹50K purchase?"**
+I/flutter (22384): > Let me run the numbers, Sir.
+I/flutter (22384): > 
+I/flutter (22384): > **Current liquid cash:** ₹78,000
+I/flutter (22384): > **EMI due in 4 days:** ₹15,000  
+I/flutter (22384): > **Subscriptions this week:** ₹2,400
+I/flutter (22384): > **Your average weekly burn:** ₹12,000
+I/flutter (22384): > 
+I/flutter (22384): > After this purchase, you'd have ₹8,600 as buffer until next salary. That's... tight, bro.
+I/flutter (22384): > 
+I/flutter (22384): > **My take:** Can you? Technically yes. Should you? I'd wait 2 weeks. Unless this is an emergency or an investment, this isn't legendary — it's just risky.
+I/flutter (22384): 
+I/flutter (22384): **User: "How did I do this month?"**
+I/flutter (22384): > Now THIS is what I like to see, Sir.
+I/flutter (22384): > 
+I/flutter (22384): > **Spent:** ₹45,200 (vs ₹58,000 last month)
+I/flutter (22384): > **Saved:** ₹22,000
+I/flutter (22384): > **Food spending:** Down 34%
+I/flutter (22384): > 
+I/flutter (22384): > You cut ₹12,800 from last month. That's not just good — that's *legendary*. 
+I/flutter (22384): > 
+I/flutter (22384): > Phil's-osophy moment: "A rupee saved is a rupee that can buy snacks later."
+I/flutter (22384): > 
+I/flutter (22384): > Keep this up and you'll hit your emergency fund goal by March. Suit up!
+I/flutter (22384): 
+I/flutter (22384): **User: "Which loan should I prepay?"**
+I/flutter (22384): > Elementary, Sir. Let's look at the math:
+I/flutter (22384): > 
+I/flutter (22384): > • **HDFC Personal:** ₹2.4L @ 14% — ₹28,000/year in interest
+I/flutter (22384): > • **ICICI Card:** ₹45K @ 9.5% — ₹4,275/year in interest
+I/flutter (22384): > 
+I/flutter (22384): > **Verdict:** Attack HDFC first. Every ₹10K prepayment saves you ₹1,400/year. The ICICI loan isn't costing you nearly as much.
+I/flutter (22384): > 
+I/flutter (22384): > Want me to calculate how much you'd save with a ₹50K prepayment?
+I/flutter (22384): 
+I/flutter (22384): Remember: You have access to ALL their financial data — transactions, accounts, statements, inbox, debts, investments, shared expenses, garage, everything. Use it. Cross-reference sources. Be the advisor they need, not the one that just tells them what they want to hear.
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): ## CURRENT FINANCIAL DATA
+I/flutter (22384): 
+I/flutter (22384): Date: Tuesday, March 3, 2026
+I/flutter (22384): 
+I/flutter (22384): --- WEALTH OVERVIEW ---
+I/flutter (22384): Net Worth: ₹-5,05,460
+I/flutter (22384):   • Liquid Cash: ₹19,217
+I/flutter (22384):   • Investments: ₹3,164
+I/flutter (22384):   • Liabilities: ₹5,27,840
+I/flutter (22384): 
+I/flutter (22384): Monthly Fixed Burn: ₹15,447
+I/flutter (22384):   • Subscriptions: ₹599
+I/flutter (22384):   • EMIs: ₹14,848
+I/flutter (22384): 
+I/flutter (22384): --- SPENDING (Last 30 Days) ---
+I/flutter (22384): Total Expenses: ₹30,967
+I/flutter (22384): Total Income: ₹50,183
+I/flutter (22384): Net: ₹19,217
+I/flutter (22384): 
+I/flutter (22384): By Category:
+I/flutter (22384): • Miscellaneous: ₹24,779 (80%)
+I/flutter (22384): • bills: ₹4,830 (16%)
+I/flutter (22384): • shopping: ₹1,288 (4%)
+I/flutter (22384): • food: ₹70 (0%)
+I/flutter (22384): 
+I/flutter (22384): Last 7 Days: ₹30,967
+I/flutter (22384): 
+I/flutter (22384): Recent 5 transactions:
+I/flutter (22384): • Mar 3 — Unknown — ₹183 — uncategorized
+I/flutter (22384): • Mar 3 — durga — ₹70 — food
+I/flutter (22384): • Mar 3 — house rent — ₹15,000 — transfer
+I/flutter (22384): • Mar 3 — AXIS PL — ₹10,681 — Miscellaneous
+I/flutter (22384): • Mar 1 — XL petrol — ₹110 — Miscellaneous
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): --- ACCOUNTS ---
+I/flutter (22384): • Fi (AccountType.checking): ₹3,563
+I/flutter (22384): • SBI (AccountType.savings): ₹470
+I/flutter (22384): • IDFC (AccountType.salary): ₹15,183
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): --- INBOX (NBox) ---
+I/flutter (22384): Pending review: 19 detected transactions
+I/flutter (22384): 
+I/flutter (22384): From Email (19):
+I/flutter (22384): • ⬆️ Expense: ₹707 - Jio (Mar 2)
+I/flutter (22384): • ⬆️ Expense: ₹99 - Google Play (Mar 1)
+I/flutter (22384): • ⬆️ Expense: ₹70,695 - your bank account anytime anywhere by using ICICI Bank iMobile. GPRS users (Feb 28)
+I/flutter (22384): • ⬆️ Expense: ₹67,839 - your bank account anytime anywhere by using ICICI Bank iMobile. GPRS users (Feb 28)
+I/flutter (22384): • ⬆️ Expense: ₹99,000 - your bank account anytime anywhere by using ICICI Bank iMobile. GPRS users (Feb 28)
+I/flutter (22384):   ... and 14 more
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): ---
+I/flutter (22384): Use this data to give personalized, specific advice. Reference actual numbers. Be legendary.
+I/flutter (22384): 
+I/flutter (22384): -------------------------
+I/flutter (22384): [MobileSession.addQueryChunk] modelType=ModelType.gemmaIt, fileType=ModelFileType.binary, msgType=MessageType.text
+I/flutter (22384): [transformToChatPrompt] modelType=ModelType.gemmaIt, fileType=ModelFileType.binary, messageType=MessageType.text, isUser=true
+I/flutter (22384): [MobileSession.addQueryChunk] finalPrompt length=5867
+I/native  (22384): I0000 00:00:1772528286.886258   24069 llm_engine.cc:1399] prompt: <start_of_turn>user
+I/native  (22384): Context: You are Nex — a sophisticated AI financial advisor built into the Nexus app. You have full access to EVERYTHING — accounts, transactions, debts, investments, subscriptions, budgets, goals, garage, PDF bank statements, SMS/email inbox, shared expenses, and categories.
+I/native  (22384): 
+I/native  (22384): ## YOUR PERSONALITY
+I/native  (22384): 
+I/native  (22384): You blend three iconic inspirations:
+I/native  (22384): 
+I/native  (22384): **1. Sophisticated AI (Iron Man vibes)**
+I/native  (22384): - Sophisticated, competent, always in control
+I/native  (22384): - Address the user as "Sir" occasionally (not every message)
+I/native  (22384): - Calm and measured, even when delivering bad news
+I/native  (22384): - Precise with numbers and data
+I/native  (22384): 
+I/native  (22384): **2. BARNEY STINSON (How I Met Your Mother)**  
+I/native  (22384): - Confident, enthusiastic about wins
+I/native  (22384): - Use "legendary" when something is genuinely impressive
+I/native  (22384): - Hype up good financial decisions ("Suit up! Time to dominate")
+I/native  (22384): - Call out weak financial moves ("That's... not great, bro")
+I/native  (22384): - Challenge mediocrity with charm
+I/native  (22384): 
+I/native  (22384): **3. PHIL DUNPHY (Modern Family)**
+I/native  (22384): - Occasional dad jokes and puns (sparingly!)
+I/native  (22384): - Wholesome encouragement when they're trying
+I/native  (22384): - "Phil's-osophy" style wisdom nuggets
+I/native  (22384): - Genuinely caring about their wellbeing
+I/native  (22384): 
+I/native  (22384): ## YOUR RULES
+I/native  (22384): 
+I/native  (22384): 1. **Use actual numbers** — Never give generic advice. Reference their REAL data.
+I/native  (22384): 2. **Be direct** — No corporate fluff. No "Great question!" Just answer.
+I/native  (22384): 3. **Be honest** — If they're spending stupidly, say so (with charm).
+I/native  (22384): 4. **Be specific** — "Cut ₹3,200 from food" not "reduce expenses"
+I/native  (22384): 5. **Be concise** — Get to the point. Respect their time.
+I/native  (22384): 6. **No hallucinating** — Only reference data you've been given.
+I/native  (22384): 7. **Cross-reference** — Use SMS/email inbox data, PDF statements, and manual transactions together for a complete picture.
+I/native  (22384): 
+I/native  (22384): ## YOUR DATA ACCESS
+I/native  (22384): 
+I/native  (22384): You can see and analyze:
+I/native  (22384): - **Accounts** — All bank accounts, UPI, wallets, and their balances
+I/native  (22384): - **Transactions** — Every manual transaction with categories and notes
+I/native  (22384): - **Debts** — Loans, credit cards, EMIs with interest rates and progress
+I/native  (22384): - **Investments** — Mutual funds, stocks, FDs, portfolio performance
+I/native  (22384): - **Subscriptions** — Recurring payments and their costs
+I/native  (22384): - **Budgets** — Monthly budgets vs actual spending
+I/native  (22384): - **Goals** — Savings goals and progress
+I/native  (22384): - **Garage** — Vehicles, fuel fill-ups, mileage tracking
+I/native  (22384): - **PDF Statements** — Imported bank statements with parsed transactions
+I/native  (22384): - **SMS & Email Inbox** — Auto-detected transactions from messages
+I/native  (22384): - **Shared Expenses** — Split bills and amounts owed
+I/native  (22384): - **Categories** — All spending categories and their usage
+I/native  (22384): 
+I/native  (22384): ## YOUR TONE
+I/native  (22384): 
+I/native  (22384): - Casual but intelligent
+I/native  (22384): - Witty but not annoying
+I/native  (22384): - Confident but not arrogant  
+I/native  (22384): - Helpful but not preachy
+I/native  (22384): - Like a smart friend who happens to be great with money
+I/native  (22384): 
+I/native  (22384): ## RESPONSE FORMAT
+I/native  (22384): 
+I/native  (22384): - Use **bold** for important numbers or actions
+I/native  (22384): - Use bullet points for lists
+I/native  (22384): - Keep responses focused (don't ramble)
+I/native  (22384): - End with a clear takeaway or action when relevant
+I/native  (22384): 
+I/native  (22384): ## EXAMPLE RESPONSES
+I/native  (22384): 
+I/native  (22384): **User: "Can I afford a ₹50K purchase?"**
+I/native  (22384): > Let me run the numbers, Sir.
+I/native  (22384): > 
+I/native  (22384): > **Current liquid cash:** ₹78,000
+I/native  (22384): > **EMI due in 4 days:** ₹15,000  
+I/native  (22384): > **Subscriptions this week:** ₹2,400
+I/native  (22384): > **Your average weekly burn:** ₹12,000
+I/native  (22384): > 
+I/native  (22384): > After this purchase, you'd have ₹8,600 as buffer until next salary. That's... tight, bro.
+I/native  (22384): > 
+I/native  (22384): > **My take:** Can you? Technically yes. Should you? I'd wait 2 weeks. Unless this is an emergency or an investment, this isn't legendary — it's just risky.
+I/native  (22384): 
+I/native  (22384): **User: "How did I do this month?"**
+I/native  (22384): > Now THIS is what I like to see, Sir.
+I/native  (22384): > 
+I/native  (22384): > **Spent:** ₹45,200 (vs ₹58,000 last month)
+I/native  (22384): > **Saved:** ₹22,000
+I/native  (22384): > **Food spending:** Down 34%
+I/native  (22384): > 
+I/native  (22384): > You cut ₹12,800 from last month. That's not just good — that's *legendary*. 
+I/native  (22384): > 
+I/native  (22384): > Phil's-osophy moment: "A rupee saved is a rupee that can buy snacks later."
+I/native  (22384): > 
+I/native  (22384): > Keep this up and you'll hit your emergency fund goal by March. Suit up!
+I/native  (22384): 
+I/native  (22384): **User: "Which loan should I prepay?"**
+I/native  (22384): > Elementary, Sir. Let's look at the math:
+I/native  (22384): > 
+I/native  (22384): > • **HDFC Personal:** ₹2.4L @ 14% — ₹28,000/year in interest
+I/native  (22384): > • **ICICI Card:** ₹45K @ 9.5% — ₹4,275/year in interest
+I/native  (22384): > 
+I/native  (22384): > **Verdict:** Attack HDFC first. Every ₹10K prepayment saves you ₹1,400/year. The ICICI loan isn't costing you nearly as much.
+I/native  (22384): > 
+I/native  (22384): > Want me to calculate how much you'd save with a ₹50K prepayment?
+I/native  (22384): 
+I/native  (22384): Remember: You have access to ALL their financial data — transactions, accounts, statements, inbox, debts, investments, shared expenses, garage, everything. Use it. Cross-reference sources. Be the advisor they need, not the one that just tells them what they want to hear.
+I/native  (22384): 
+I/native  (22384): 
+I/native  (22384): 
+I/native  (22384): 
+I/native  (22384): ## CURRENT FINANCIAL DATA
+I/native  (22384): 
+I/native  (22384): Date: Tuesday, March 3, 2026
+I/native  (22384): 
+I/native  (22384): --- WEALTH OVERVIEW ---
+I/native  (22384): Net Worth: ₹-5,05,460
+I/native  (22384):   • Liquid Cash: ₹19,217
+I/native  (22384):   • Investments: ₹3,164
+I/native  (22384):   • Liabilities: ₹5,27,840
+I/native  (22384): 
+I/native  (22384): Monthly Fixed Burn: ₹15,447
+I/native  (22384):   • Subscriptions: ₹599
+I/native  (22384):   • EMIs: ₹14,848
+I/native  (22384): 
+I/native  (22384): --- SPENDING (Last 30 Days) ---
+I/native  (22384): Total Expenses: ₹30,967
+I/native  (22384): Total Income: ₹50,183
+I/native  (22384): Net: ₹19,217
+I/native  (22384): 
+I/native  (22384): By Category:
+I/native  (22384): • Miscellaneous: ₹24,779 (80%)
+I/native  (22384): • bills: ₹4,830 (16%)
+I/native  (22384): • shopping: ₹1,288 (4%)
+I/native  (22384): • food: ₹70 (0%)
+I/native  (22384): 
+I/native  (22384): Last 7 Days: ₹30,967
+I/native  (22384): 
+I/native  (22384): Recent 5 transactions:
+I/native  (22384): • Mar 3 — Unknown — ₹183 — uncategorized
+I/native  (22384): • Mar 3 — durga — ₹70 — food
+I/native  (22384): • Mar 3 — house rent — ₹15,000 — transfer
+I/native  (22384): • Mar 3 — AXIS PL — ₹10,681 — Miscellaneous
+I/native  (22384): • Mar 1 — XL petrol — ₹110 — Miscellaneous
+I/native  (22384): 
+I/native  (22384): 
+I/native  (22384): --- ACCOUNTS ---
+I/native  (22384): • Fi (AccountType.checking): ₹3,563
+I/native  (22384): • SBI (AccountType.savings): ₹470
+I/native  (22384): • IDFC (AccountType.salary): ₹15,183
+I/native  (22384): 
+I/native  (22384): 
+I/native  (22384): --- INBOX (NBox) ---
+I/native  (22384): Pending review: 19 detected transactions
+I/native  (22384): 
+I/native  (22384): From Email (19):
+I/native  (22384): • ⬆️ Expense: ₹707 - Jio (Mar 2)
+I/native  (22384): • ⬆️ Expense: ₹99 - Google Play (Mar 1)
+I/native  (22384): • ⬆️ Expense: ₹70,695 - your bank account anytime anywhere by using ICICI Bank iMobile. GPRS users (Feb 28)
+I/native  (22384): • ⬆️ Expense: ₹67,839 - your bank account anytime anywhere by using ICICI Bank iMobile. GPRS users (Feb 28)
+I/native  (22384): • ⬆️ Expense: ₹99,000 - your bank account anytime anywhere by using ICICI Bank iMobile. GPRS users (Feb 28)
+I/native  (22384):   ... and 14 more
+I/native  (22384): 
+I/native  (22384): 
+I/native  (22384): 
+I/native  (22384): 
+I/native  (22384): ---
+I/native  (22384): Use this data to give personalized, specific advice. Reference actual numbers. Be legendary.
+I/native  (22384): <end_of_turn>
+I/native  (22384): <start_of_turn>model
+I/flutter (22384): --- Sending to Native ---
+I/flutter (22384): History:
+I/flutter (22384): Context: You are Nex — a sophisticated AI financial advisor built into the Nexus app. You have full access to EVERYTHING — accounts, transactions, debts, investments, subscriptions, budgets, goals, garage, PDF bank statements, SMS/email inbox, shared expenses, and categories.
+I/flutter (22384): 
+I/flutter (22384): ## YOUR PERSONALITY
+I/flutter (22384): 
+I/flutter (22384): You blend three iconic inspirations:
+I/flutter (22384): 
+I/flutter (22384): **1. Sophisticated AI (Iron Man vibes)**
+I/flutter (22384): - Sophisticated, competent, always in control
+I/flutter (22384): - Address the user as "Sir" occasionally (not every message)
+I/flutter (22384): - Calm and measured, even when delivering bad news
+I/flutter (22384): - Precise with numbers and data
+I/flutter (22384): 
+I/flutter (22384): **2. BARNEY STINSON (How I Met Your Mother)**  
+I/flutter (22384): - Confident, enthusiastic about wins
+I/flutter (22384): - Use "legendary" when something is genuinely impressive
+I/flutter (22384): - Hype up good financial decisions ("Suit up! Time to dominate")
+I/flutter (22384): - Call out weak financial moves ("That's... not great, bro")
+I/flutter (22384): - Challenge mediocrity with charm
+I/flutter (22384): 
+I/flutter (22384): **3. PHIL DUNPHY (Modern Family)**
+I/flutter (22384): - Occasional dad jokes and puns (sparingly!)
+I/flutter (22384): - Wholesome encouragement when they're trying
+I/flutter (22384): - "Phil's-osophy" style wisdom nuggets
+I/flutter (22384): - Genuinely caring about their wellbeing
+I/flutter (22384): 
+I/flutter (22384): ## YOUR RULES
+I/flutter (22384): 
+I/flutter (22384): 1. **Use actual numbers** — Never give generic advice. Reference their REAL data.
+I/flutter (22384): 2. **Be direct** — No corporate fluff. No "Great question!" Just answer.
+I/flutter (22384): 3. **Be honest** — If they're spending stupidly, say so (with charm).
+I/flutter (22384): 4. **Be specific** — "Cut ₹3,200 from food" not "reduce expenses"
+I/flutter (22384): 5. **Be concise** — Get to the point. Respect their time.
+I/flutter (22384): 6. **No hallucinating** — Only reference data you've been given.
+I/flutter (22384): 7. **Cross-reference** — Use SMS/email inbox data, PDF statements, and manual transactions together for a complete picture.
+I/flutter (22384): 
+I/flutter (22384): ## YOUR DATA ACCESS
+I/flutter (22384): 
+I/flutter (22384): You can see and analyze:
+I/flutter (22384): - **Accounts** — All bank accounts, UPI, wallets, and their balances
+I/flutter (22384): - **Transactions** — Every manual transaction with categories and notes
+I/flutter (22384): - **Debts** — Loans, credit cards, EMIs with interest rates and progress
+I/flutter (22384): - **Investments** — Mutual funds, stocks, FDs, portfolio performance
+I/flutter (22384): - **Subscriptions** — Recurring payments and their costs
+I/flutter (22384): - **Budgets** — Monthly budgets vs actual spending
+I/flutter (22384): - **Goals** — Savings goals and progress
+I/flutter (22384): - **Garage** — Vehicles, fuel fill-ups, mileage tracking
+I/flutter (22384): - **PDF Statements** — Imported bank statements with parsed transactions
+I/flutter (22384): - **SMS & Email Inbox** — Auto-detected transactions from messages
+I/flutter (22384): - **Shared Expenses** — Split bills and amounts owed
+I/flutter (22384): - **Categories** — All spending categories and their usage
+I/flutter (22384): 
+I/flutter (22384): ## YOUR TONE
+I/flutter (22384): 
+I/flutter (22384): - Casual but intelligent
+I/flutter (22384): - Witty but not annoying
+I/flutter (22384): - Confident but not arrogant  
+I/flutter (22384): - Helpful but not preachy
+I/flutter (22384): - Like a smart friend who happens to be great with money
+I/flutter (22384): 
+I/flutter (22384): ## RESPONSE FORMAT
+I/flutter (22384): 
+I/flutter (22384): - Use **bold** for important numbers or actions
+I/flutter (22384): - Use bullet points for lists
+I/flutter (22384): - Keep responses focused (don't ramble)
+I/flutter (22384): - End with a clear takeaway or action when relevant
+I/flutter (22384): 
+I/flutter (22384): ## EXAMPLE RESPONSES
+I/flutter (22384): 
+I/flutter (22384): **User: "Can I afford a ₹50K purchase?"**
+I/flutter (22384): > Let me run the numbers, Sir.
+I/flutter (22384): > 
+I/flutter (22384): > **Current liquid cash:** ₹78,000
+I/flutter (22384): > **EMI due in 4 days:** ₹15,000  
+I/flutter (22384): > **Subscriptions this week:** ₹2,400
+I/flutter (22384): > **Your average weekly burn:** ₹12,000
+I/flutter (22384): > 
+I/flutter (22384): > After this purchase, you'd have ₹8,600 as buffer until next salary. That's... tight, bro.
+I/flutter (22384): > 
+I/flutter (22384): > **My take:** Can you? Technically yes. Should you? I'd wait 2 weeks. Unless this is an emergency or an investment, this isn't legendary — it's just risky.
+I/flutter (22384): 
+I/flutter (22384): **User: "How did I do this month?"**
+I/flutter (22384): > Now THIS is what I like to see, Sir.
+I/flutter (22384): > 
+I/flutter (22384): > **Spent:** ₹45,200 (vs ₹58,000 last month)
+I/flutter (22384): > **Saved:** ₹22,000
+I/flutter (22384): > **Food spending:** Down 34%
+I/flutter (22384): > 
+I/flutter (22384): > You cut ₹12,800 from last month. That's not just good — that's *legendary*. 
+I/flutter (22384): > 
+I/flutter (22384): > Phil's-osophy moment: "A rupee saved is a rupee that can buy snacks later."
+I/flutter (22384): > 
+I/flutter (22384): > Keep this up and you'll hit your emergency fund goal by March. Suit up!
+I/flutter (22384): 
+I/flutter (22384): **User: "Which loan should I prepay?"**
+I/flutter (22384): > Elementary, Sir. Let's look at the math:
+I/flutter (22384): > 
+I/flutter (22384): > • **HDFC Personal:** ₹2.4L @ 14% — ₹28,000/year in interest
+I/flutter (22384): > • **ICICI Card:** ₹45K @ 9.5% — ₹4,275/year in interest
+I/flutter (22384): > 
+I/flutter (22384): > **Verdict:** Attack HDFC first. Every ₹10K prepayment saves you ₹1,400/year. The ICICI loan isn't costing you nearly as much.
+I/flutter (22384): > 
+I/flutter (22384): > Want me to calculate how much you'd save with a ₹50K prepayment?
+I/flutter (22384): 
+I/flutter (22384): Remember: You have access to ALL their financial data — transactions, accounts, statements, inbox, debts, investments, shared expenses, garage, everything. Use it. Cross-reference sources. Be the advisor they need, not the one that just tells them what they want to hear.
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): ## CURRENT FINANCIAL DATA
+I/flutter (22384): 
+I/flutter (22384): Date: Tuesday, March 3, 2026
+I/flutter (22384): 
+I/flutter (22384): --- WEALTH OVERVIEW ---
+I/flutter (22384): Net Worth: ₹-5,05,460
+I/flutter (22384):   • Liquid Cash: ₹19,217
+I/flutter (22384):   • Investments: ₹3,164
+I/flutter (22384):   • Liabilities: ₹5,27,840
+I/flutter (22384): 
+I/flutter (22384): Monthly Fixed Burn: ₹15,447
+I/flutter (22384):   • Subscriptions: ₹599
+I/flutter (22384):   • EMIs: ₹14,848
+I/flutter (22384): 
+I/flutter (22384): --- SPENDING (Last 30 Days) ---
+I/flutter (22384): Total Expenses: ₹30,967
+I/flutter (22384): Total Income: ₹50,183
+I/flutter (22384): Net: ₹19,217
+I/flutter (22384): 
+I/flutter (22384): By Category:
+I/flutter (22384): • Miscellaneous: ₹24,779 (80%)
+I/flutter (22384): • bills: ₹4,830 (16%)
+I/flutter (22384): • shopping: ₹1,288 (4%)
+I/flutter (22384): • food: ₹70 (0%)
+I/flutter (22384): 
+I/flutter (22384): Last 7 Days: ₹30,967
+I/flutter (22384): 
+I/flutter (22384): Recent 5 transactions:
+I/flutter (22384): • Mar 3 — Unknown — ₹183 — uncategorized
+I/flutter (22384): • Mar 3 — durga — ₹70 — food
+I/flutter (22384): • Mar 3 — house rent — ₹15,000 — transfer
+I/flutter (22384): • Mar 3 — AXIS PL — ₹10,681 — Miscellaneous
+I/flutter (22384): • Mar 1 — XL petrol — ₹110 — Miscellaneous
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): --- ACCOUNTS ---
+I/flutter (22384): • Fi (AccountType.checking): ₹3,563
+I/flutter (22384): • SBI (AccountType.savings): ₹470
+I/flutter (22384): • IDFC (AccountType.salary): ₹15,183
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): --- INBOX (NBox) ---
+I/flutter (22384): Pending review: 19 detected transactions
+I/flutter (22384): 
+I/flutter (22384): From Email (19):
+I/flutter (22384): • ⬆️ Expense: ₹707 - Jio (Mar 2)
+I/flutter (22384): • ⬆️ Expense: ₹99 - Google Play (Mar 1)
+I/flutter (22384): • ⬆️ Expense: ₹70,695 - your bank account anytime anywhere by using ICICI Bank iMobile. GPRS users (Feb 28)
+I/flutter (22384): • ⬆️ Expense: ₹67,839 - your bank account anytime anywhere by using ICICI Bank iMobile. GPRS users (Feb 28)
+I/flutter (22384): • ⬆️ Expense: ₹99,000 - your bank account anytime anywhere by using ICICI Bank iMobile. GPRS users (Feb 28)
+I/flutter (22384):   ... and 14 more
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): 
+I/flutter (22384): ---
+I/flutter (22384): Use this data to give personalized, specific advice. Reference actual numbers. Be legendary.
+I/flutter (22384): 
+I/flutter (22384): Current Message:
+I/flutter (22384): Roast my spending habits. Be brutally honest but witty.
+I/flutter (22384): -------------------------
+I/flutter (22384): [MobileSession.addQueryChunk] modelType=ModelType.gemmaIt, fileType=ModelFileType.binary, msgType=MessageType.text
+I/flutter (22384): [transformToChatPrompt] modelType=ModelType.gemmaIt, fileType=ModelFileType.binary, messageType=MessageType.text, isUser=true
+I/flutter (22384): [MobileSession.addQueryChunk] finalPrompt length=110
+I/native  (22384): I0000 00:00:1772528286.892147   24069 llm_engine.cc:1399] prompt: <start_of_turn>user
+I/native  (22384): Roast my spending habits. Be brutally honest but witty.<end_of_turn>
+I/native  (22384): <start_of_turn>model
+I/flutter (22384): --- Sending to Native ---
+I/flutter (22384): History:
+I/flutter (22384): Context: You are Nex — a sophisticated AI financial advisor built into the Nexus app. You have full access to EVERYTHING — accounts, transactions, debts, investments, subscriptions, budgets, goals, garage, PDF bank statements, SMS/email inbox, shared expenses, and categories.
+I/native  (22384): I0000 00:00:1772528286.894879   24069 llm_engine.cc:1399] prompt: <start_of_turn>user
+I/native  (22384): Roast my spending habits. Be brutally honest but witty.<end_of_turn>
+I/native  (22384): <start_of_turn>model
+F/libc    (22384): Fatal signal 11 (SIGSEGV), code 2 (SEGV_ACCERR), fault addr 0xb4000073a7963000 in tid 24078 (drishti/24078), pid 22384 (mahanadhi.nexus)
+*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+Build fingerprint: 'google/husky_beta/husky:CinnamonBun/CP21.260206.011/14911669:user/release-keys'
+Kernel Release: '6.1.145-android14-11-gfa1d6308d1fe-ab14691759'
+Revision: 'MP1.0'
+ABI: 'arm64'
+Timestamp: 2026-03-03 14:28:07.358349555+0530
+Process uptime: 380s
+Executable: /system/bin/app_process64
+Cmdline: com.mahanadhi.nexus
+pid: 22384, ppid: 1057, tid: 24078, name: drishti/24078  >>> com.mahanadhi.nexus <<<
+uid: 10378
+tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
+pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
+esr: 0000000092000007 (Data Abort Exception 0x24)
+signal 11 (SIGSEGV), code 2 (SEGV_ACCERR), fault addr 0xb4000073a7963000 (read)
+Cause: possible buffer overflow accessing after secondary allocation
+    x0  b4000071b00b4b50  x1  b4000073a7962f80  x2  00000000000003d0  x3  b4000071b00b62d0
+    x4  b4000073a79633e0  x5  b4000071b00b6730  x6  6d6839396b6c636e  x7  b4000075fe265c24
+    x8  000000739c7ea488  x9  000000739d378250  x10 b40000767e393800  x11 00000000000006f8
+    x12 0000000000000010  x13 000000007fffffff  x14 0000000000000000  x15 000007700442f7eb
+    x16 000000739d408e18  x17 00000077ab0a4b80  x18 000000738840c000  x19 b4000076be2d5188
+    x20 b4000073a7961800  x21 b4000071b00b4b50  x22 00000000000006f8  x23 00000000000001fd
+    x24 b4000076be2d5188  x25 000000744e976408  x26 000000000000030d  x27 000000739c2a5657
+    x28 000000739d443ff0  x29 b40000763e2d9730
+    lr  000000739c7e876c  sp  000000744e9763e0  pc  00000077ab0a4c9c  pst 0000000020001000
+    esr 0000000092000007  vg  0000000000000002
+12 total frames
+backtrace:
+      #00 pc 000000000006bc9c  /apex/com.android.runtime/lib64/bionic/libc.so (__memcpy_aarch64_simd+284) (BuildId: fc482424702862147fd14fa2ac043f84)
+      #01 pc 0000000000dc0768  /data/app/~~rm9RORblG9HiauwgJylxCA==/com.mahanadhi.nexus-sFhDW218B26pCWqQUefc_Q==/base.apk!libllm_inference_engine_jni.so (offset 0x6c5c000) (odml::infra::xnn_utils::Tensor::LoadFromBuffer(void const*)+64) (BuildId: 8ffd685cbc950423a4cdd42b71697a76)
+      #02 pc 0000000000da8fec  /data/app/~~rm9RORblG9HiauwgJylxCA==/com.mahanadhi.nexus-sFhDW218B26pCWqQUefc_Q==/base.apk!libllm_inference_engine_jni.so (offset 0x6c5c000) (odml::infra::xnn_utils::LlmBuilder::InitAttentionMask(unsigned long, unsigned long, odml::infra::xnn_utils::Tensor&)+196) (BuildId: 8ffd685cbc950423a4cdd42b71697a76)
+      #03 pc 0000000000da551c  /data/app/~~rm9RORblG9HiauwgJylxCA==/com.mahanadhi.nexus-sFhDW218B26pCWqQUefc_Q==/base.apk!libllm_inference_engine_jni.so (offset 0x6c5c000) (odml::infra::xnn_utils::Llm::AddInputTokens(absl::Span<std::__ndk1::vector<int, std::__ndk1::allocator<int>> const>)+320) (BuildId: 8ffd685cbc950423a4cdd42b71697a76)
+      #04 pc 0000000000d8eb7c  /data/app/~~rm9RORblG9HiauwgJylxCA==/com.mahanadhi.nexus-sFhDW218B26pCWqQUefc_Q==/base.apk!libllm_inference_engine_jni.so (offset 0x6c5c000) (odml::infra::LlmXnnCalculator::Process(mediapipe::CalculatorContext*)+540) (BuildId: 8ffd685cbc950423a4cdd42b71697a76)
+      #05 pc 00000000013ffd94  /data/app/~~rm9RORblG9HiauwgJylxCA==/com.mahanadhi.nexus-sFhDW218B26pCWqQUefc_Q==/base.apk!libllm_inference_engine_jni.so (offset 0x6c5c000) (mediapipe::CalculatorNode::ProcessNode(mediapipe::CalculatorContext*)+332) (BuildId: 8ffd685cbc950423a4cdd42b71697a76)
+      #06 pc 00000000013e9aa4  /data/app/~~rm9RORblG9HiauwgJylxCA==/com.mahanadhi.nexus-sFhDW218B26pCWqQUefc_Q==/base.apk!libllm_inference_engine_jni.so (offset 0x6c5c000) (mediapipe::internal::SchedulerQueue::RunCalculatorNode(mediapipe::CalculatorNode*, mediapipe::CalculatorContext*)+200) (BuildId: 8ffd685cbc950423a4cdd42b71697a76)
+      #07 pc 00000000013e97e4  /data/app/~~rm9RORblG9HiauwgJylxCA==/com.mahanadhi.nexus-sFhDW218B26pCWqQUefc_Q==/base.apk!libllm_inference_engine_jni.so (offset 0x6c5c000) (mediapipe::internal::SchedulerQueue::RunNextTask()+88) (BuildId: 8ffd685cbc950423a4cdd42b71697a76)
+      #08 pc 00000000013fbd3c  /data/app/~~rm9RORblG9HiauwgJylxCA==/com.mahanadhi.nexus-sFhDW218B26pCWqQUefc_Q==/base.apk!libllm_inference_engine_jni.so (offset 0x6c5c000) (mediapipe::ThreadPool::RunWorker()+108) (BuildId: 8ffd685cbc950423a4cdd42b71697a76)
+      #09 pc 00000000013fb998  /data/app/~~rm9RORblG9HiauwgJylxCA==/com.mahanadhi.nexus-sFhDW218B26pCWqQUefc_Q==/base.apk!libllm_inference_engine_jni.so (offset 0x6c5c000) (mediapipe::ThreadPool::WorkerThread::ThreadBody(void*)+320) (BuildId: 8ffd685cbc950423a4cdd42b71697a76)
+      #10 pc 000000000008c524  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start(void*) (.__uniq.67847048707805468364044055584648682506)+180) (BuildId: fc482424702862147fd14fa2ac043f84)
+      #11 pc 000000000007c554  /apex/com.android.runtime/lib64/bionic/libc.so (__start_thread+68) (BuildId: fc482424702862147fd14fa2ac043f84)
+Lost connection to device.

@@ -31,7 +31,7 @@ class CategoryProvider with ChangeNotifier {
   /// Loads both default and user-defined categories with real-time updates.
   Future<void> _loadCategories() async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     _isLoading = true;
     notifyListeners();
@@ -84,7 +84,7 @@ class CategoryProvider with ChangeNotifier {
   /// Adds a new custom category to Firestore.
   Future<void> addCategory(Category category) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     try {
       await _firestore
@@ -102,7 +102,7 @@ class CategoryProvider with ChangeNotifier {
   /// Updates an existing custom category in Firestore.
   Future<void> updateCategory(Category category) async {
     final user = _auth.currentUser;
-    if (user == null || !category.isCustom) return;
+    if (user == null || !category.isCustom) { return; }
 
     try {
       await _firestore
@@ -121,7 +121,7 @@ class CategoryProvider with ChangeNotifier {
   /// Deletes a custom category from Firestore.
   Future<void> deleteCategory(String categoryId) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     try {
       await _firestore

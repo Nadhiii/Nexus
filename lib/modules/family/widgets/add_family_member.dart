@@ -100,7 +100,7 @@ class ModernAddFamilyMemberScreen extends StatelessWidget {
                             AppSpacing.radiusLg,
                           ),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.05),
+                            color: Colors.white.withValues(alpha: 0.05),
                           ),
                         ),
                         child: ListView.separated(
@@ -109,7 +109,7 @@ class ModernAddFamilyMemberScreen extends StatelessWidget {
                           padding: EdgeInsets.zero,
                           itemCount: users.length,
                           separatorBuilder: (context, index) => Divider(
-                            color: Colors.white.withOpacity(0.05),
+                            color: Colors.white.withValues(alpha: 0.05),
                             height: 1,
                           ),
                           itemBuilder: (context, index) {
@@ -127,7 +127,7 @@ class ModernAddFamilyMemberScreen extends StatelessWidget {
                               ),
                               leading: CircleAvatar(
                                 backgroundColor: AppColors.primaryBlue
-                                    .withOpacity(0.2),
+                                    .withValues(alpha: 0.2),
                                 child: Text(
                                   initial,
                                   style: const TextStyle(
@@ -156,7 +156,7 @@ class ModernAddFamilyMemberScreen extends StatelessWidget {
                                 onPressed: () => _addMember(context, user),
                                 style: OutlinedButton.styleFrom(
                                   side: BorderSide(
-                                    color: AppColors.primaryBlue.withOpacity(
+                                    color: AppColors.primaryBlue.withValues(alpha: 
                                       0.5,
                                     ),
                                   ),

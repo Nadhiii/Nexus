@@ -44,7 +44,9 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
   }
 
   void _initializeBikes() {
-    if (_initialized) return;
+    if (_initialized) {
+      return;
+    }
     _initialized = true;
 
     final provider = context.read<BikeProvider>();
@@ -182,13 +184,19 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
-                                    AppColors.primaryBlue.withOpacity(0.15),
-                                    AppColors.primaryBlue.withOpacity(0.05),
+                                    AppColors.primaryBlue.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    AppColors.primaryBlue.withValues(
+                                      alpha: 0.05,
+                                    ),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: AppColors.primaryBlue.withOpacity(0.3),
+                                  color: AppColors.primaryBlue.withValues(
+                                    alpha: 0.3,
+                                  ),
                                   width: 1,
                                 ),
                               ),
@@ -206,7 +214,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
                                           color: AppColors.primaryBlue
-                                              .withOpacity(0.2),
+                                              .withValues(alpha: 0.2),
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
@@ -244,8 +252,8 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                                   ),
                                   Icon(
                                     Icons.arrow_forward_ios,
-                                    color: AppColors.primaryBlue.withOpacity(
-                                      0.6,
+                                    color: AppColors.primaryBlue.withValues(
+                                      alpha: 0.6,
                                     ),
                                     size: 16,
                                   ),
@@ -302,13 +310,13 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                                     vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.pastelGreen.withOpacity(
-                                      0.1,
+                                    color: AppColors.pastelGreen.withValues(
+                                      alpha: 0.1,
                                     ),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: AppColors.pastelGreen.withOpacity(
-                                        0.2,
+                                      color: AppColors.pastelGreen.withValues(
+                                        alpha: 0.2,
                                       ),
                                     ),
                                   ),
@@ -372,13 +380,13 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isActive
-              ? AppColors.primaryBlue.withOpacity(0.2)
-              : Colors.white.withOpacity(0.05),
+              ? AppColors.primaryBlue.withValues(alpha: 0.2)
+              : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isActive
-                ? AppColors.primaryBlue.withOpacity(0.5)
-                : Colors.white.withOpacity(0.1),
+                ? AppColors.primaryBlue.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.1),
           ),
         ),
         child: Row(
@@ -444,15 +452,17 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
     String title,
     String value,
     String groupValue,
-    ValueChanged onChanged,
+    ValueChanged<String> onChanged,
   ) {
-    return RadioListTile(
-      title: Text(title, style: const TextStyle(color: Colors.white)),
-      value: value,
-      groupValue: groupValue,
-      onChanged: onChanged,
-      activeColor: AppColors.primaryBlue,
+    final isSelected = value == groupValue;
+    return ListTile(
       contentPadding: EdgeInsets.zero,
+      onTap: () => onChanged(value),
+      title: Text(title, style: const TextStyle(color: Colors.white)),
+      trailing: Icon(
+        isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+        color: isSelected ? AppColors.primaryBlue : Colors.white54,
+      ),
     );
   }
 
@@ -544,10 +554,14 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                         label: Text(cat),
                         selected: isSelected,
                         onSelected: (selected) {
-                          if (selected) setModalState(() => tempCategory = cat);
+                          if (selected) {
+                            setModalState(() => tempCategory = cat);
+                          }
                         },
                         backgroundColor: AppColors.backgroundBlack,
-                        selectedColor: AppColors.primaryBlue.withOpacity(0.2),
+                        selectedColor: AppColors.primaryBlue.withValues(
+                          alpha: 0.2,
+                        ),
                         labelStyle: TextStyle(
                           color: isSelected
                               ? AppColors.primaryBlue
@@ -555,7 +569,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                         ),
                         side: BorderSide(
                           color: isSelected
-                              ? AppColors.primaryBlue.withOpacity(0.5)
+                              ? AppColors.primaryBlue.withValues(alpha: 0.5)
                               : Colors.white24,
                         ),
                         shape: RoundedRectangleBorder(
@@ -615,7 +629,9 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                           }
                         },
                         backgroundColor: AppColors.backgroundBlack,
-                        selectedColor: AppColors.primaryBlue.withOpacity(0.2),
+                        selectedColor: AppColors.primaryBlue.withValues(
+                          alpha: 0.2,
+                        ),
                         labelStyle: TextStyle(
                           color: isSelected
                               ? AppColors.primaryBlue
@@ -623,7 +639,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                         ),
                         side: BorderSide(
                           color: isSelected
-                              ? AppColors.primaryBlue.withOpacity(0.5)
+                              ? AppColors.primaryBlue.withValues(alpha: 0.5)
                               : Colors.white24,
                         ),
                         shape: RoundedRectangleBorder(
@@ -835,7 +851,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: color.withOpacity(0.4),
+                            color: color.withValues(alpha: 0.4),
                             blurRadius: 6,
                             spreadRadius: 1,
                           ),
@@ -869,15 +885,17 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              color.withOpacity(0.12),
+                              color.withValues(alpha: 0.12),
                               AppColors.cardSurface,
                             ],
                           ),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: color.withOpacity(0.2)),
+                          border: Border.all(
+                            color: color.withValues(alpha: 0.2),
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: color.withOpacity(0.08),
+                              color: color.withValues(alpha: 0.08),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -925,7 +943,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: color.withOpacity(0.15),
+                                        color: color.withValues(alpha: 0.15),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: Icon(icon, size: 16, color: color),
@@ -952,13 +970,13 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
                                         colors: [
-                                          color.withOpacity(0.2),
-                                          color.withOpacity(0.1),
+                                          color.withValues(alpha: 0.2),
+                                          color.withValues(alpha: 0.1),
                                         ],
                                       ),
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
-                                        color: color.withOpacity(0.3),
+                                        color: color.withValues(alpha: 0.3),
                                       ),
                                     ),
                                     child: Text(
@@ -1050,7 +1068,9 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
 
   void _showAddEntryDialog(BuildContext context, double currentPrice) {
     final provider = context.read<BikeProvider>();
-    if (provider.selectedBike == null) return;
+    if (provider.selectedBike == null) {
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(

@@ -90,14 +90,14 @@ class ExpenseTrendsWidget extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.cardDark,
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          border: Border.all(color: statusColor.withOpacity(0.3)),
+          border: Border.all(color: statusColor.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
             Container(
               padding: EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.2),
+                color: statusColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
               ),
               child: Icon(
@@ -214,10 +214,10 @@ class ExpenseTrendsWidget extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [statusColor.withOpacity(0.2), statusColor.withOpacity(0.05)],
+          colors: [statusColor.withValues(alpha: 0.2), statusColor.withValues(alpha: 0.05)],
         ),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: statusColor.withOpacity(0.3)),
+        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -249,7 +249,7 @@ class ExpenseTrendsWidget extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.3),
+                  color: statusColor.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 ),
                 child: Text(
@@ -299,7 +299,7 @@ class ExpenseTrendsWidget extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
-        color: AppColors.cardElevated.withOpacity(0.5),
+        color: AppColors.cardElevated.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       ),
       child: Column(
@@ -325,7 +325,7 @@ class ExpenseTrendsWidget extends StatelessWidget {
   }
 
   Widget _buildMonthlyChart(List<MonthlySpending> data) {
-    if (data.isEmpty) return const SizedBox.shrink();
+    if (data.isEmpty) { return const SizedBox.shrink(); }
 
     final maxExpense = data
         .map((d) => d.totalExpenses)
@@ -368,7 +368,7 @@ class ExpenseTrendsWidget extends StatelessWidget {
                       Container(
                         height: height,
                         decoration: BoxDecoration(
-                          color: AppColors.primaryBlue.withOpacity(0.8),
+                          color: AppColors.primaryBlue.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -394,7 +394,7 @@ class ExpenseTrendsWidget extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.cardElevated.withOpacity(0.5),
+        color: AppColors.cardElevated.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       ),
       child: Column(
@@ -470,7 +470,7 @@ class ExpenseTrendsWidget extends StatelessWidget {
   Widget _buildBudgetGuidance(SpendingVelocity velocity) {
     final hasLastMonth = velocity.lastMonthTotal > 0;
 
-    if (!hasLastMonth) return const SizedBox.shrink();
+    if (!hasLastMonth) { return const SizedBox.shrink(); }
 
     final dailyBudget = velocity.dailyBudgetRemaining;
     final isOverBudget = dailyBudget <= 0;
@@ -478,13 +478,13 @@ class ExpenseTrendsWidget extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: (isOverBudget ? AppColors.error : AppColors.success).withOpacity(
+        color: (isOverBudget ? AppColors.error : AppColors.success).withValues(alpha: 
           0.1,
         ),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         border: Border.all(
           color: (isOverBudget ? AppColors.error : AppColors.success)
-              .withOpacity(0.3),
+              .withValues(alpha: 0.3),
         ),
       ),
       child: Row(

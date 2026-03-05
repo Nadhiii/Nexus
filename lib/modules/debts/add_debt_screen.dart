@@ -372,7 +372,7 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
             : null,
       ),
       validator: (value) {
-        if (isRequired && (value == null || value.isEmpty)) return "Required";
+        if (isRequired && (value == null || value.isEmpty)) { return "Required"; }
         return null;
       },
     );
@@ -391,7 +391,7 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
           firstDate: DateTime(2000),
           lastDate: DateTime(2050),
         );
-        if (picked != null) onSelect(picked);
+        if (picked != null) { onSelect(picked); }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(
@@ -428,12 +428,12 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
   }
 
   Future<void> _saveDebt() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) { return; }
     setState(() => _isLoading = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+      if (user == null) { return; }
 
       final balance = double.parse(_balanceController.text);
       final emi = double.tryParse(_emiController.text);
@@ -472,9 +472,9 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
         showTopSnackBar(context, 'Liability saved successfully');
       }
     } catch (e) {
-      if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+      if (mounted) { showTopSnackBar(context, 'Error: $e', isError: true); }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) { setState(() => _isLoading = false); }
     }
   }
 }

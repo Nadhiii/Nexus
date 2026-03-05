@@ -22,7 +22,7 @@ class CrashReportingService {
   ///
   /// Call this in main() before runApp()
   Future<void> initialize() async {
-    if (_isInitialized) return;
+    if (_isInitialized) { return; }
 
     // Only enable in release mode
     if (kReleaseMode) {
@@ -105,8 +105,8 @@ class CrashReportingService {
   }) async {
     if (!kReleaseMode) {
       // In debug mode, just print
-      print('🔴 Error: $exception');
-      if (stack != null) print(stack);
+      debugPrint('🔴 Error: $exception');
+      if (stack != null) { debugPrint(stack.toString()); }
       return;
     }
 
@@ -124,7 +124,7 @@ class CrashReportingService {
   /// Use to verify Crashlytics is working
   void testCrash() {
     if (kDebugMode) {
-      print('⚠️ Test crash - Crashlytics disabled in debug mode');
+      debugPrint('⚠️ Test crash - Crashlytics disabled in debug mode');
       return;
     }
     FirebaseCrashlytics.instance.crash();

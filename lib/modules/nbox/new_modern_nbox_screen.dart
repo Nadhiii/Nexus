@@ -27,20 +27,26 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   bool _isGmailLoading = false;
 
   Future<void> _refreshSms() async {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _isSmsLoading = true;
     });
     final nbox = context.read<NewNboxProvider>();
     await nbox.scanSmsInbox();
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _isSmsLoading = false;
     });
   }
 
   Future<void> _refreshGmail() async {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _isGmailLoading = true;
     });
@@ -48,7 +54,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     if (nbox.isGmailLinked) {
       await nbox.scanEmails();
     }
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _isGmailLoading = false;
     });
@@ -61,21 +69,27 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   }
 
   Future<void> _refreshData() async {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _isSmsLoading = true;
       _isGmailLoading = true;
     });
     final nbox = context.read<NewNboxProvider>();
     await nbox.scanSmsInbox();
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _isSmsLoading = false;
     });
     if (nbox.isGmailLinked) {
       await nbox.scanEmails();
     }
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _isGmailLoading = false;
     });
@@ -86,7 +100,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     setState(() {
       if (_selectedIds.contains(id)) {
         _selectedIds.remove(id);
-        if (_selectedIds.isEmpty) _isSelectionMode = false;
+        if (_selectedIds.isEmpty) {
+          _isSelectionMode = false;
+        }
       } else {
         _isSelectionMode = true;
         _selectedIds.add(id);
@@ -379,13 +395,16 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     final borderColor = isSelected
         ? AppColors.primaryBlue
         : (isExpanded
-              ? highlightColor.withOpacity(0.3)
-              : Colors.white.withOpacity(0.05));
+              ? highlightColor.withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.05));
     final bgGradient = isExpanded
         ? LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [highlightColor.withOpacity(0.15), AppColors.cardSurface],
+            colors: [
+              highlightColor.withValues(alpha: 0.15),
+              AppColors.cardSurface,
+            ],
           )
         : LinearGradient(
             colors: [AppColors.cardSurface, AppColors.cardSurface],
@@ -406,10 +425,13 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: isLast
-                    ? [highlightColor.withOpacity(0.3), Colors.transparent]
+                    ? [
+                        highlightColor.withValues(alpha: 0.3),
+                        Colors.transparent,
+                      ]
                     : [
-                        highlightColor.withOpacity(0.3),
-                        highlightColor.withOpacity(0.1),
+                        highlightColor.withValues(alpha: 0.3),
+                        highlightColor.withValues(alpha: 0.1),
                       ],
               ),
             ),
@@ -447,7 +469,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: highlightColor.withOpacity(0.5),
+                          color: highlightColor.withValues(alpha: 0.5),
                           blurRadius: 10,
                           spreadRadius: 2,
                         ),
@@ -476,7 +498,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                         boxShadow: isExpanded
                             ? [
                                 BoxShadow(
-                                  color: highlightColor.withOpacity(0.15),
+                                  color: highlightColor.withValues(alpha: 0.15),
                                   blurRadius: 20,
                                   offset: const Offset(0, 6),
                                 ),
@@ -593,7 +615,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                     children: [
                                       Divider(
                                         height: 1,
-                                        color: Colors.white.withOpacity(0.05),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.05,
+                                        ),
                                       ),
 
                                       // 1. ANALYSIS
@@ -667,13 +691,15 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                         padding: const EdgeInsets.all(12),
                                         width: double.infinity,
                                         decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.3),
+                                          color: Colors.black.withValues(
+                                            alpha: 0.3,
+                                          ),
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
                                           border: Border.all(
-                                            color: Colors.white.withOpacity(
-                                              0.05,
+                                            color: Colors.white.withValues(
+                                              alpha: 0.05,
                                             ),
                                           ),
                                         ),
@@ -695,11 +721,11 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                         padding: const EdgeInsets.all(16),
                                         decoration: BoxDecoration(
                                           color: AppColors.cardSurface
-                                              .withOpacity(0.5),
+                                              .withValues(alpha: 0.5),
                                           border: Border(
                                             top: BorderSide(
-                                              color: Colors.white.withOpacity(
-                                                0.05,
+                                              color: Colors.white.withValues(
+                                                alpha: 0.05,
                                               ),
                                             ),
                                           ),
@@ -737,7 +763,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                                       Icons.close,
                                                       AppColors.error,
                                                       AppColors.error
-                                                          .withOpacity(0.1),
+                                                          .withValues(
+                                                            alpha: 0.1,
+                                                          ),
                                                       () =>
                                                           _rejectTransaction(t),
                                                     ),
@@ -783,15 +811,15 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primaryBlue.withOpacity(0.15),
-            AppColors.primaryBlue.withOpacity(0.05),
+            AppColors.primaryBlue.withValues(alpha: 0.15),
+            AppColors.primaryBlue.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.2)),
+        border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.1),
+            color: AppColors.primaryBlue.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -830,14 +858,14 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
             ? LinearGradient(
                 colors: [
                   AppColors.primaryBlue,
-                  AppColors.primaryBlue.withOpacity(0.8),
+                  AppColors.primaryBlue.withValues(alpha: 0.8),
                 ],
               )
             : null,
         boxShadow: isPrimary
             ? [
                 BoxShadow(
-                  color: AppColors.primaryBlue.withOpacity(0.3),
+                  color: AppColors.primaryBlue.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -870,16 +898,16 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF6D28D9).withOpacity(0.9),
+            const Color(0xFF6D28D9).withValues(alpha: 0.9),
             const Color(0xFF4C1D95),
             AppColors.cardSurface,
           ],
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.purple.withOpacity(0.3)),
+        border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: Colors.purple.withOpacity(0.2),
+            color: Colors.purple.withValues(alpha: 0.2),
             blurRadius: 30,
             offset: const Offset(0, 10),
           ),
@@ -894,7 +922,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
               Text(
                 'PENDING REVIEW',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
@@ -908,7 +936,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                 decoration: BoxDecoration(
                   color: Colors.black26,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.purple.withOpacity(0.3)),
+                  border: Border.all(
+                    color: Colors.purple.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -945,7 +975,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
               Text(
                 'Detected from SMS and Email',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.white.withValues(alpha: 0.5),
                   fontSize: 12,
                 ),
               ),
@@ -1004,13 +1034,13 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [color.withOpacity(0.2), color.withOpacity(0.1)],
+          colors: [color.withValues(alpha: 0.2), color.withValues(alpha: 0.1)],
         ),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.15),
+            color: color.withValues(alpha: 0.15),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -1034,15 +1064,15 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     String label;
 
     if (t.isHighConfidence) {
-      bgColor = AppColors.accentTeal.withOpacity(0.15);
+      bgColor = AppColors.accentTeal.withValues(alpha: 0.15);
       textColor = AppColors.accentTeal;
       label = '✓ High';
     } else if (t.isLowConfidence) {
-      bgColor = AppColors.pastelOrange.withOpacity(0.15);
+      bgColor = AppColors.pastelOrange.withValues(alpha: 0.15);
       textColor = AppColors.pastelOrange;
       label = '⚠ Low';
     } else {
-      bgColor = Colors.white.withOpacity(0.1);
+      bgColor = Colors.white.withValues(alpha: 0.1);
       textColor = AppColors.textSecondary;
       label = 'Medium';
     }
@@ -1054,7 +1084,10 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: textColor.withOpacity(0.3), width: 0.5),
+          border: Border.all(
+            color: textColor.withValues(alpha: 0.3),
+            width: 0.5,
+          ),
         ),
         child: Text(
           label,
@@ -1074,8 +1107,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     final now = DateTime.now();
     if (_isSameDay(date, now)) {
       label = "Today";
-    } else if (_isSameDay(date, now.subtract(const Duration(days: 1))))
+    } else if (_isSameDay(date, now.subtract(const Duration(days: 1)))) {
       label = "Yesterday";
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
       child: Text(
@@ -1098,13 +1132,13 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Colors.purple.withOpacity(0.1), AppColors.cardSurface],
+          colors: [Colors.purple.withValues(alpha: 0.1), AppColors.cardSurface],
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.purple.withOpacity(0.2)),
+        border: Border.all(color: Colors.purple.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-            color: Colors.purple.withOpacity(0.1),
+            color: Colors.purple.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -1117,7 +1151,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.purple.withOpacity(0.1),
+              color: Colors.purple.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -1160,7 +1194,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     );
     if (success == true) {
       nbox.markAsApproved(t.id, t.source);
-      if (mounted) showTopNotification(context, "Verified & Added");
+      if (mounted) {
+        showTopNotification(context, "Verified & Added");
+      }
     }
   }
 

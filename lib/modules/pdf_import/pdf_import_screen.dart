@@ -151,7 +151,7 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
-                      color: AppColors.green.withOpacity(0.1),
+                      color: AppColors.green.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                       border: Border.all(color: Colors.green),
                     ),
@@ -179,8 +179,8 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: provider.lastParseResult?.success ?? false
-                  ? AppColors.green.withOpacity(0.1)
-                  : Colors.red.withOpacity(0.1),
+                  ? AppColors.green.withValues(alpha: 0.1)
+                  : Colors.red.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             ),
             child: Text(provider.status, style: AppTypography.bodySmall),
@@ -192,7 +192,7 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
           Container(
             padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
-              color: AppColors.warning.withOpacity(0.1),
+              color: AppColors.warning.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               border: Border.all(color: AppColors.warning),
             ),
@@ -221,7 +221,7 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
                     hintText: 'Enter PDF password',
                     prefixIcon: const Icon(Icons.lock_outline),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
+                    fillColor: Colors.white.withValues(alpha: 0.05),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                     ),
@@ -268,7 +268,7 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
           Container(
             padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
+              color: Colors.orange.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               border: Border.all(color: Colors.orange),
             ),
@@ -328,7 +328,9 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
     PDFImportProvider provider,
   ) {
     final statement = provider.currentStatement;
-    if (statement == null) return const SizedBox();
+    if (statement == null) {
+      return const SizedBox();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -390,7 +392,7 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppColors.green.withOpacity(0.1),
+              color: AppColors.green.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             ),
             child: Row(
@@ -415,7 +417,7 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppColors.info.withOpacity(0.1),
+              color: AppColors.info.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             ),
             child: Row(
@@ -443,7 +445,9 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
 
   Widget _buildPreviewStep(BuildContext context, PDFImportProvider provider) {
     final statement = provider.currentStatement;
-    if (statement == null) return const SizedBox();
+    if (statement == null) {
+      return const SizedBox();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -514,7 +518,9 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
               itemBuilder: (context, index) {
                 final entry = provider.duplicateResults!.entries
                     .toList()[index];
-                if (!entry.value.isDuplicate) return const SizedBox();
+                if (!entry.value.isDuplicate) {
+                  return const SizedBox();
+                }
 
                 return Padding(
                   padding: const EdgeInsets.all(AppSpacing.md),
@@ -583,7 +589,7 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
 
   Widget _buildSummaryCard(String label, String value, Color color) {
     return Card(
-      color: color.withOpacity(0.1),
+      color: color.withValues(alpha: 0.1),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
@@ -621,11 +627,12 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
         }
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error picking file: $e')));
+      if (!context.mounted) {
+        return;
       }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error picking file: $e')));
     }
   }
 
@@ -663,7 +670,9 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
       }
     }
 
-    if (!context.mounted) return;
+    if (!context.mounted) {
+      return;
+    }
 
     showDialog(
       context: context,
@@ -702,10 +711,10 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.1),
+                    color: AppColors.success.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.success.withOpacity(0.3),
+                      color: AppColors.success.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -741,13 +750,13 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
                         margin: const EdgeInsets.only(bottom: 8),
                         decoration: BoxDecoration(
                           color: isMatched
-                              ? AppColors.primaryBlue.withOpacity(0.1)
+                              ? AppColors.primaryBlue.withValues(alpha: 0.1)
                               : AppColors.cardSurface,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isMatched
-                                ? AppColors.primaryBlue.withOpacity(0.3)
-                                : Colors.white.withOpacity(0.05),
+                                ? AppColors.primaryBlue.withValues(alpha: 0.3)
+                                : Colors.white.withValues(alpha: 0.05),
                           ),
                         ),
                         child: ListTile(
@@ -873,7 +882,7 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
                         color: AppColors.cardSurface,
                         borderRadius: BorderRadius.circular(30),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white.withValues(alpha: 0.05),
                         ),
                       ),
                       child: DropdownButtonHideUnderline(
@@ -967,7 +976,7 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: TextFormField(
         initialValue: initialValue,
@@ -975,7 +984,9 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
         onChanged: onChanged,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.5)),
+          hintStyle: TextStyle(
+            color: AppColors.textTertiary.withValues(alpha: 0.5),
+          ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 20,
@@ -1052,13 +1063,13 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? AppColors.primaryBlue.withOpacity(0.2)
+                                ? AppColors.primaryBlue.withValues(alpha: 0.2)
                                 : AppColors.cardSurface,
                             borderRadius: BorderRadius.circular(30),
                             border: Border.all(
                               color: isSelected
                                   ? AppColors.primaryBlue
-                                  : Colors.white.withOpacity(0.05),
+                                  : Colors.white.withValues(alpha: 0.05),
                             ),
                           ),
                           child: Text(
@@ -1089,6 +1100,9 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
                                   _selectedFilePath!,
                                   userSelectedBank: selectedBank,
                                 );
+                                if (!context.mounted) {
+                                  return;
+                                }
                               }
                             }
                           : null,
@@ -1124,22 +1138,22 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
     BuildContext context,
     PDFImportProvider provider,
   ) async {
-    print('[PDF Import] Starting duplicate check...');
+    debugPrint('[PDF Import] Starting duplicate check...');
 
     // Fetch existing transactions from TransactionProvider
     final transactionProvider = context.read<TransactionProvider>();
     final existingTransactions = transactionProvider.transactions;
 
-    print(
+    debugPrint(
       '[PDF Import] Checking against ${existingTransactions.length} existing transactions',
     );
 
     await provider.checkDuplicates(existingTransactions);
 
-    print(
+    debugPrint(
       '[PDF Import] Duplicate check complete. Duplicate results: ${provider.duplicateResults != null}',
     );
-    print(
+    debugPrint(
       '[PDF Import] Importable count: ${provider.importableCount}, Duplicate count: ${provider.duplicateCount}',
     );
   }
@@ -1148,7 +1162,7 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
     BuildContext context,
     PDFImportProvider provider,
   ) async {
-    print('[PDF Import] Starting import process...');
+    debugPrint('[PDF Import] Starting import process...');
 
     // Show loading dialog
     showDialog(
@@ -1186,7 +1200,7 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
       // Step 1: Create account if needed
       String accountId;
       if (provider.accountToCreate != null) {
-        print(
+        debugPrint(
           '[PDF Import] Creating new account: ${provider.accountToCreate!.name}',
         );
 
@@ -1199,10 +1213,10 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
         );
         accountId = newAccount.id;
 
-        print('[PDF Import] Account created with ID: $accountId');
+        debugPrint('[PDF Import] Account created with ID: $accountId');
       } else if (provider.selectedAccount != null) {
         accountId = provider.selectedAccount!.id;
-        print(
+        debugPrint(
           '[PDF Import] Using existing account: ${provider.selectedAccount!.name} ($accountId)',
         );
       } else {
@@ -1225,7 +1239,7 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
           // Check if this duplicate needs a type update
           if (duplicateCheck.needsTypeUpdate &&
               duplicateCheck.matchingTransactionId != null) {
-            print(
+            debugPrint(
               '[PDF Import] Updating transaction type: ${pdfTransaction.description}',
             );
 
@@ -1266,11 +1280,13 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
             updatedCount++;
 
             if (updatedCount % 10 == 0) {
-              print('[PDF Import] Updated $updatedCount transaction types...');
+              debugPrint(
+                '[PDF Import] Updated $updatedCount transaction types...',
+              );
             }
           } else {
             skippedCount++;
-            print(
+            debugPrint(
               '[PDF Import] Skipping duplicate: ${pdfTransaction.description}',
             );
           }
@@ -1303,11 +1319,11 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
         importedCount++;
 
         if (importedCount % 10 == 0) {
-          print('[PDF Import] Imported $importedCount transactions...');
+          debugPrint('[PDF Import] Imported $importedCount transactions...');
         }
       }
 
-      print(
+      debugPrint(
         '[PDF Import] Import complete! Imported: $importedCount, Updated: $updatedCount, Skipped: $skippedCount',
       );
 
@@ -1317,7 +1333,9 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
       }
 
       // Step 3: Show success message and close
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1335,14 +1353,16 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
       provider.reset();
       Navigator.of(context).pop();
     } catch (e) {
-      print('[PDF Import] Error during import: $e');
+      debugPrint('[PDF Import] Error during import: $e');
 
       // Close loading dialog
       if (context.mounted) {
         Navigator.of(context).pop();
       }
 
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

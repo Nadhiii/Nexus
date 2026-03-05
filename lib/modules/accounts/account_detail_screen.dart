@@ -248,20 +248,20 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
             hasLogo ? const Color(0xFF1A1A1A) : widget.account.color,
             hasLogo
                 ? const Color(0xFF111111)
-                : widget.account.color.withOpacity(0.6),
-            Colors.black.withOpacity(0.8),
+                : widget.account.color.withValues(alpha: 0.6),
+            Colors.black.withValues(alpha: 0.8),
           ],
         ),
         boxShadow: [
           BoxShadow(
             color: hasLogo
-                ? Colors.black.withOpacity(0.5)
-                : widget.account.color.withOpacity(0.3),
+                ? Colors.black.withValues(alpha: 0.5)
+                : widget.account.color.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Stack(
         children: [
@@ -302,7 +302,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                           )
                         : Icon(
                             widget.account.icon,
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withValues(alpha: 0.8),
                             size: 28,
                           ),
                   ],
@@ -313,7 +313,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                     Text(
                       "BALANCE",
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                        color: Colors.white.withValues(alpha: 0.6),
                         fontSize: 10,
                       ),
                     ),
@@ -337,14 +337,14 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                           Text(
                             "ACCOUNT #",
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 9,
                             ),
                           ),
                           Text(
                             widget.account.accountNumber ?? "—",
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                               fontFamily: "Monospace",
                               fontSize: 14,
                             ),
@@ -359,14 +359,14 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                           Text(
                             "IFSC",
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 9,
                             ),
                           ),
                           Text(
                             widget.account.ifscCode ?? "—",
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -386,7 +386,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
               message: "Tap to flip",
               child: Icon(
                 Icons.flip,
-                color: Colors.white.withOpacity(0.4),
+                color: Colors.white.withValues(alpha: 0.4),
                 size: 16,
               ),
             ),
@@ -408,17 +408,17 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
           colors: [
             const Color(0xFF1A1A1A),
             const Color(0xFF111111),
-            Colors.black.withOpacity(0.8),
+            Colors.black.withValues(alpha: 0.8),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Stack(
         children: [
@@ -448,14 +448,14 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                       Text(
                         "CARD",
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.6),
+                          color: Colors.white.withValues(alpha: 0.6),
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Icon(
                         Icons.credit_card,
-                        color: Colors.white.withOpacity(0.6),
+                        color: Colors.white.withValues(alpha: 0.6),
                         size: 20,
                       ),
                     ],
@@ -466,7 +466,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                       Text(
                         "CARD NUMBER",
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                           fontSize: 9,
                         ),
                       ),
@@ -493,7 +493,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                           Text(
                             "HOLDER",
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 9,
                             ),
                           ),
@@ -514,7 +514,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                           Text(
                             "EXPIRY",
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 9,
                             ),
                           ),
@@ -536,14 +536,14 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                     Text(
                       "FLIP TO VIEW ACCOUNT",
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 9,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
                     Icon(
                       Icons.flip,
-                      color: Colors.white.withOpacity(0.4),
+                      color: Colors.white.withValues(alpha: 0.4),
                       size: 16,
                     ),
                   ],
@@ -569,14 +569,14 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 20),
@@ -645,7 +645,9 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                   decoration: BoxDecoration(
                     color: AppColors.cardSurface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.05),
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

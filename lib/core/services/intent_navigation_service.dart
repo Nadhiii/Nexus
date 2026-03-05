@@ -15,7 +15,7 @@ class IntentNavigationService {
   static Stream<int> get tabStream => _tabController.stream;
 
   static void initialize() {
-    if (_initialized) return;
+    if (_initialized) { return; }
     _initialized = true;
 
     _channel.setMethodCallHandler((call) async {

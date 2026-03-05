@@ -1,4 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/foundation.dart';
 
 /// Manages secure storage and retrieval of PDF passwords
 class PDFPasswordManager {
@@ -27,7 +28,7 @@ class PDFPasswordManager {
         value: passwords.join('|||'), // Use delimiter to join passwords
       );
     } catch (e) {
-      print('Error saving PDF password: $e');
+      debugPrint('Error saving PDF password: $e');
     }
   }
 
@@ -40,7 +41,7 @@ class PDFPasswordManager {
       }
       return stored.split('|||').where((p) => p.isNotEmpty).toList();
     } catch (e) {
-      print('Error retrieving PDF passwords: $e');
+      debugPrint('Error retrieving PDF passwords: $e');
       return [];
     }
   }
@@ -60,7 +61,7 @@ class PDFPasswordManager {
         );
       }
     } catch (e) {
-      print('Error removing PDF password: $e');
+      debugPrint('Error removing PDF password: $e');
     }
   }
 
@@ -69,7 +70,7 @@ class PDFPasswordManager {
     try {
       await _secureStorage.delete(key: _storageKey);
     } catch (e) {
-      print('Error clearing PDF passwords: $e');
+      debugPrint('Error clearing PDF passwords: $e');
     }
   }
 
@@ -79,7 +80,7 @@ class PDFPasswordManager {
       final passwords = await getSavedPasswords();
       return passwords.length;
     } catch (e) {
-      print('Error getting password count: $e');
+      debugPrint('Error getting password count: $e');
       return 0;
     }
   }
@@ -90,7 +91,7 @@ class PDFPasswordManager {
       final count = await getPasswordCount();
       return count > 0;
     } catch (e) {
-      print('Error checking if passwords exist: $e');
+      debugPrint('Error checking if passwords exist: $e');
       return false;
     }
   }

@@ -1,24 +1,36 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     // User-scoped data
     match /users/{userId} {
-      // 1. Global User Profiles: Required for family/sharing features
+      // 1) Global User Profiles: needed for family/sharing features
       allow read: if request.auth != null;
-      
-      // 2. User can update their OWN profile document
+
+      // 2) User can update only their own profile doc
       allow write: if request.auth != null && request.auth.uid == userId;
 
-      // 3. Applies to ALL current and future subcollections (bikes, debts, transactions, backups, etc.)
+      // 3) All current/future subcollections under /users/{uid}/...
+      //    covers: tasks, task_templates, transactions, accounts, categories, loans, goals, etc.
       match /{allPaths=**} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
 
-    // Legacy/Root-level collections
-    match /subscriptions/{id} { allow read: if request.auth != null; allow write: if false; }
-    match /investments/{id} { allow read: if request.auth != null; allow write: if false; }
-    match /cryptos/{id} { allow read: if request.auth != null; allow write: if false; }
+    // Legacy/root-level collections (read-only)
+    match /subscriptions/{id} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    match /investments/{id} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    match /cryptos/{id} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
   }
 }

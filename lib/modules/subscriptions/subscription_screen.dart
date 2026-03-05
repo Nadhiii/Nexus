@@ -420,17 +420,17 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
           borderRadius: BorderRadius.circular(isCompact ? 20 : 32),
           border: Border.all(
             color: dueStatus?.urgent == true
-                ? dueStatus!.color.withOpacity(0.5)
+                ? dueStatus!.color.withValues(alpha: 0.5)
                 : isZombie
-                ? Colors.grey.withOpacity(0.3)
-                : Colors.white.withOpacity(0.05),
+                ? Colors.grey.withValues(alpha: 0.3)
+                : Colors.white.withValues(alpha: 0.05),
             width: dueStatus?.urgent == true ? 2 : 1,
           ),
           boxShadow: [
             BoxShadow(
               color: dueStatus?.urgent == true
-                  ? dueStatus!.color.withOpacity(0.15)
-                  : brandColor.withOpacity(0.05),
+                  ? dueStatus!.color.withValues(alpha: 0.15)
+                  : brandColor.withValues(alpha: 0.05),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -476,7 +476,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                             color: AppColors.backgroundBlack,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: Colors.grey.withOpacity(0.3),
+                              color: Colors.grey.withValues(alpha: 0.3),
                             ),
                           ),
                           child: const Icon(
@@ -500,10 +500,14 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
-                                      color: dueStatus.color.withOpacity(0.2),
+                                      color: dueStatus.color.withValues(
+                                        alpha: 0.2,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: dueStatus.color.withOpacity(0.5),
+                                        color: dueStatus.color.withValues(
+                                          alpha: 0.5,
+                                        ),
                                       ),
                                     ),
                                     child: Icon(
@@ -547,7 +551,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: dueStatus.color.withOpacity(0.2),
+                              color: dueStatus.color.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -659,7 +663,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: dueStatus.color.withOpacity(0.5),
+                        color: dueStatus.color.withValues(alpha: 0.5),
                         blurRadius: 8,
                         spreadRadius: 2,
                       ),
@@ -682,7 +686,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Row(
           children: [
@@ -690,7 +694,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.2),
+                color: Colors.grey.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
@@ -743,16 +747,16 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
           end: Alignment.bottomRight,
           colors: [
             AppColors.cardSurface,
-            AppColors.cardSurface.withOpacity(0.8),
+            AppColors.cardSurface.withValues(alpha: 0.8),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: overdue.isNotEmpty
-              ? AppColors.error.withOpacity(0.3)
+              ? AppColors.error.withValues(alpha: 0.3)
               : dueSoon.isNotEmpty
-              ? AppColors.pastelOrange.withOpacity(0.3)
-              : Colors.grey.withOpacity(0.2),
+              ? AppColors.pastelOrange.withValues(alpha: 0.3)
+              : Colors.grey.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -876,10 +880,10 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
           colors: AppColors.summaryCardGradient,
         ),
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -908,7 +912,11 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
               ),
             ],
           ),
-          Container(width: 1, height: 50, color: Colors.white.withOpacity(0.1)),
+          Container(
+            width: 1,
+            height: 50,
+            color: Colors.white.withValues(alpha: 0.1),
+          ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -982,7 +990,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
           border: Border.all(
             color: isSelected
                 ? Colors.transparent
-                : Colors.white.withOpacity(0.1),
+                : Colors.white.withValues(alpha: 0.1),
           ),
         ),
         child: Text(
@@ -1002,7 +1010,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
           Icon(
             isHistory ? Icons.history : Icons.subscriptions_outlined,
             size: 64,
-            color: AppColors.textTertiary.withOpacity(0.3),
+            color: AppColors.textTertiary.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(

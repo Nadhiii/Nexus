@@ -14,7 +14,7 @@ class NewSmsParser {
     final lower = cleanBody.toLowerCase();
 
     // 2. GUARD: Explicit Non-Transactions
-    if (_isIgnorable(lower)) return null;
+    if (_isIgnorable(lower)) { return null; }
 
     // 3. EXTRACT AMOUNT
     // Robust match for: Rs. 1,200 | INR 1200.50 | Rs 1200
@@ -23,11 +23,11 @@ class NewSmsParser {
       caseSensitive: false,
     );
     final match = amountPattern.firstMatch(cleanBody);
-    if (match == null) return null;
+    if (match == null) { return null; }
 
     String rawAmount = match.group(1)!.replaceAll(',', '');
     double? amount = double.tryParse(rawAmount);
-    if (amount == null || amount == 0) return null;
+    if (amount == null || amount == 0) { return null; }
 
     // 4. DETERMINE TYPE
     String type = 'expense';
@@ -85,21 +85,21 @@ class NewSmsParser {
         lower.contains('could not')) {
       return true;
     }
-    if (lower.contains('reversed')) return true;
+    if (lower.contains('reversed')) { return true; }
 
     // --- CATEGORY C: FUTURE / REQUESTS (The "Autopay" Problem) ---
     // Example: "UPI auto-payment request received"
-    if (lower.contains('request received')) return true;
-    if (lower.contains('trying to collect')) return true;
-    if (lower.contains('requested for')) return true;
-    if (lower.contains('will be debited')) return true;
-    if (lower.contains('scheduled for')) return true;
-    if (lower.contains('due')) return true;
+    if (lower.contains('request received')) { return true; }
+    if (lower.contains('trying to collect')) { return true; }
+    if (lower.contains('requested for')) { return true; }
+    if (lower.contains('will be debited')) { return true; }
+    if (lower.contains('scheduled for')) { return true; }
+    if (lower.contains('due')) { return true; }
 
     // --- CATEGORY D: SETUP / ALERTS (Your specific examples) ---
     // Example: "You have successfully created a mandate"
-    if (lower.contains('created a mandate')) return true;
-    if (lower.contains('mandate') && lower.contains('success')) return true;
+    if (lower.contains('created a mandate')) { return true; }
+    if (lower.contains('mandate') && lower.contains('success')) { return true; }
 
     // Example: "We've registered a as requested auto-payment"
     if (lower.contains('registered') && lower.contains('auto-payment')) {
@@ -107,7 +107,7 @@ class NewSmsParser {
     }
 
     // Example: "e-mandate declined" (Caught by 'declined' above, but good to be specific)
-    if (lower.contains('e-mandate')) return true;
+    if (lower.contains('e-mandate')) { return true; }
 
     if (lower.contains('autopay') &&
         (lower.contains('registered') ||
@@ -152,7 +152,7 @@ class NewSmsParser {
       caseSensitive: false,
     );
     final upiMatch = upiPattern.firstMatch(body);
-    if (upiMatch != null) return upiMatch.group(1)!.toLowerCase();
+    if (upiMatch != null) { return upiMatch.group(1)!.toLowerCase(); }
 
     // 2. "At/To/Via" Keywords
     final atPattern = RegExp(

@@ -72,7 +72,7 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,7 +83,7 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.pastelOrange.withOpacity(0.15),
+                  color: AppColors.pastelOrange.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -120,7 +120,7 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.red.withOpacity(0.15),
+                  color: AppColors.red.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -186,7 +186,7 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(10),
             ),
           ),
@@ -199,7 +199,7 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
                   width: 100,
                   height: 14,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(7),
                   ),
                 ),
@@ -208,7 +208,7 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
                   width: 150,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.03),
+                    color: Colors.white.withValues(alpha: 0.03),
                     borderRadius: BorderRadius.circular(5),
                   ),
                 ),
@@ -226,14 +226,14 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.green.withOpacity(0.15),
+              color: AppColors.green.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -297,7 +297,7 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -306,7 +306,7 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: typeColor.withOpacity(0.15),
+              color: typeColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart';
 
 class GoogleDriveService {
   static const String _vehicleDocumentsFolderName = 'Nexus - Vehicle Documents';
@@ -19,19 +20,19 @@ class GoogleDriveService {
     try {
       final account = await _googleSignIn.signIn();
       if (account == null) {
-        print('❌ Google Sign-In failed');
+        debugPrint('❌ Google Sign-In failed');
         return null;
       }
 
       final auth = await _googleSignIn.authenticatedClient();
       if (auth == null) {
-        print('❌ Failed to get authenticated client');
+        debugPrint('❌ Failed to get authenticated client');
         return null;
       }
 
       return drive.DriveApi(auth);
     } catch (e) {
-      print('❌ Error getting Drive API: $e');
+      debugPrint('❌ Error getting Drive API: $e');
       return null;
     }
   }
@@ -56,10 +57,10 @@ class GoogleDriveService {
 
         final createdVehicleFolder = await driveApi.files.create(vehicleFolder);
         _vehicleDocumentsFolderId = createdVehicleFolder.id;
-        print('✅ Created Vehicle Documents folder: $_vehicleDocumentsFolderId');
+        debugPrint('✅ Created Vehicle Documents folder: $_vehicleDocumentsFolderId');
       } else {
         _vehicleDocumentsFolderId = vehicleFileList.files!.first.id;
-        print('✅ Found Vehicle Documents folder: $_vehicleDocumentsFolderId');
+        debugPrint('✅ Found Vehicle Documents folder: $_vehicleDocumentsFolderId');
       }
 
       // Check and create Challans folder
@@ -79,13 +80,13 @@ class GoogleDriveService {
 
         final createdChallanFolder = await driveApi.files.create(challanFolder);
         _challansFolderId = createdChallanFolder.id;
-        print('✅ Created Challans folder: $_challansFolderId');
+        debugPrint('✅ Created Challans folder: $_challansFolderId');
       } else {
         _challansFolderId = challanFileList.files!.first.id;
-        print('✅ Found Challans folder: $_challansFolderId');
+        debugPrint('✅ Found Challans folder: $_challansFolderId');
       }
     } catch (e) {
-      print('❌ Error ensuring folders: $e');
+      debugPrint('❌ Error ensuring folders: $e');
     }
   }
 
@@ -104,7 +105,7 @@ class GoogleDriveService {
       final createdFolder = await driveApi.files.create(folder);
       return createdFolder.id;
     } catch (e) {
-      print('❌ Error creating subfolder: $e');
+      debugPrint('❌ Error creating subfolder: $e');
       return null;
     }
   }
@@ -117,7 +118,7 @@ class GoogleDriveService {
   }) async {
     try {
       final driveApi = await _getDriveApi();
-      if (driveApi == null) return null;
+      if (driveApi == null) { return null; }
 
       // Ensure folders exist
       await _ensureFoldersExist(driveApi);
@@ -152,10 +153,10 @@ class GoogleDriveService {
         uploadMedia: drive.Media(file.openRead(), file.lengthSync()),
       );
 
-      print('✅ Document uploaded: ${uploadedFile.name} (${uploadedFile.id})');
+      debugPrint('✅ Document uploaded: ${uploadedFile.name} (${uploadedFile.id})');
       return uploadedFile.id;
     } catch (e) {
-      print('❌ Error uploading document: $e');
+      debugPrint('❌ Error uploading document: $e');
       return null;
     }
   }
@@ -168,7 +169,7 @@ class GoogleDriveService {
   }) async {
     try {
       final driveApi = await _getDriveApi();
-      if (driveApi == null) return null;
+      if (driveApi == null) { return null; }
 
       // Ensure folders exist
       await _ensureFoldersExist(driveApi);
@@ -203,10 +204,10 @@ class GoogleDriveService {
         uploadMedia: drive.Media(file.openRead(), file.lengthSync()),
       );
 
-      print('✅ Challan receipt uploaded: ${uploadedFile.name}');
+      debugPrint('✅ Challan receipt uploaded: ${uploadedFile.name}');
       return uploadedFile.id;
     } catch (e) {
-      print('❌ Error uploading challan receipt: $e');
+      debugPrint('❌ Error uploading challan receipt: $e');
       return null;
     }
   }
@@ -225,13 +226,13 @@ class GoogleDriveService {
   Future<bool> deleteFile(String fileId) async {
     try {
       final driveApi = await _getDriveApi();
-      if (driveApi == null) return false;
+      if (driveApi == null) { return false; }
 
       await driveApi.files.delete(fileId);
-      print('✅ File deleted: $fileId');
+      debugPrint('✅ File deleted: $fileId');
       return true;
     } catch (e) {
-      print('❌ Error deleting file: $e');
+      debugPrint('❌ Error deleting file: $e');
       return false;
     }
   }
@@ -240,14 +241,14 @@ class GoogleDriveService {
   Future<List<drive.File>> listFilesInFolder(String folderId) async {
     try {
       final driveApi = await _getDriveApi();
-      if (driveApi == null) return [];
+      if (driveApi == null) { return []; }
 
       final query = "parents='$folderId' and trashed=false";
       final fileList = await driveApi.files.list(q: query, spaces: 'drive');
 
       return fileList.files ?? [];
     } catch (e) {
-      print('❌ Error listing files: $e');
+      debugPrint('❌ Error listing files: $e');
       return [];
     }
   }

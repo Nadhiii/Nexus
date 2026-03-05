@@ -41,7 +41,9 @@ class _FuelAPISettingsDialogState extends State<FuelAPISettingsDialog> {
     }
 
     try {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       final priceProvider = Provider.of<FuelPriceProvider>(
         context,
@@ -65,7 +67,7 @@ class _FuelAPISettingsDialogState extends State<FuelAPISettingsDialog> {
         }
       }
     } catch (e) {
-      print('Error saving API key: $e');
+      debugPrint('Error saving API key: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -131,13 +133,13 @@ class _FuelAPISettingsDialogState extends State<FuelAPISettingsDialog> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: _message!.contains('Error')
-                        ? AppColors.error.withOpacity(0.1)
-                        : AppColors.success.withOpacity(0.1),
+                        ? AppColors.error.withValues(alpha: 0.1)
+                        : AppColors.success.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: _message!.contains('Error')
-                          ? AppColors.error.withOpacity(0.3)
-                          : AppColors.success.withOpacity(0.3),
+                          ? AppColors.error.withValues(alpha: 0.3)
+                          : AppColors.success.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -173,10 +175,10 @@ class _FuelAPISettingsDialogState extends State<FuelAPISettingsDialog> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryBlue.withOpacity(0.1),
+                  color: AppColors.primaryBlue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppColors.primaryBlue.withOpacity(0.3),
+                    color: AppColors.primaryBlue.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -262,7 +264,7 @@ class _FuelAPISettingsDialogState extends State<FuelAPISettingsDialog> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: TextField(
         controller: controller,
@@ -270,7 +272,9 @@ class _FuelAPISettingsDialogState extends State<FuelAPISettingsDialog> {
         maxLines: maxLines,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.5)),
+          hintStyle: TextStyle(
+            color: AppColors.textTertiary.withValues(alpha: 0.5),
+          ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 20,

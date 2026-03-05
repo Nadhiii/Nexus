@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/investment.dart';
+import 'package:flutter/foundation.dart';
 
 class NavService {
   static const String baseUrl = 'https://api.mfapi.in/mf';
@@ -19,7 +20,7 @@ class NavService {
         }
       }
     } catch (e) {
-      print('Error fetching NAV for scheme $schemeCode: $e');
+      debugPrint('Error fetching NAV for scheme $schemeCode: $e');
     }
     return null;
   }

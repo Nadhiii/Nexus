@@ -97,13 +97,13 @@ class GoalProvider extends ChangeNotifier {
 
   Future<void> clearAllData() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
     await _goalService.clearAllGoals(user.uid);
   }
 
   Future<void> restoreFromBackup(List<dynamic> data) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
     final goals = data
         .map((d) => Goal.fromJson(d as Map<String, dynamic>))
         .toList();

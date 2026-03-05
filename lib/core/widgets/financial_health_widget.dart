@@ -130,15 +130,15 @@ class _FinancialHealthWidgetState extends State<FinancialHealthWidget>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              _report!.gradeColor.withOpacity(0.15),
+              _report!.gradeColor.withValues(alpha: 0.15),
               AppColors.cardSurface,
             ],
           ),
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: _report!.gradeColor.withOpacity(0.3)),
+          border: Border.all(color: _report!.gradeColor.withValues(alpha: 0.3)),
           boxShadow: [
             BoxShadow(
-              color: _report!.gradeColor.withOpacity(0.2),
+              color: _report!.gradeColor.withValues(alpha: 0.2),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -186,7 +186,9 @@ class _FinancialHealthWidgetState extends State<FinancialHealthWidget>
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: _report!.gradeColor.withOpacity(0.2),
+                                color: _report!.gradeColor.withValues(
+                                  alpha: 0.2,
+                                ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -226,7 +228,7 @@ class _FinancialHealthWidgetState extends State<FinancialHealthWidget>
             // Category Breakdown (Expanded)
             if (_isExpanded) ...[
               const SizedBox(height: 20),
-              Container(height: 1, color: Colors.white.withOpacity(0.05)),
+              Container(height: 1, color: Colors.white.withValues(alpha: 0.05)),
               const SizedBox(height: 16),
               _buildCategoryBreakdown(),
               const SizedBox(height: 16),
@@ -264,7 +266,7 @@ class _FinancialHealthWidgetState extends State<FinancialHealthWidget>
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               shape: BoxShape.circle,
             ),
             child: const Center(
@@ -284,7 +286,7 @@ class _FinancialHealthWidgetState extends State<FinancialHealthWidget>
                   width: 120,
                   height: 16,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
@@ -293,7 +295,7 @@ class _FinancialHealthWidgetState extends State<FinancialHealthWidget>
                   width: 180,
                   height: 12,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.03),
+                    color: Colors.white.withValues(alpha: 0.03),
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
@@ -317,7 +319,7 @@ class _FinancialHealthWidgetState extends State<FinancialHealthWidget>
             painter: _ScoreCirclePainter(
               progress: score / 100,
               color: _report!.gradeColor,
-              backgroundColor: Colors.white.withOpacity(0.1),
+              backgroundColor: Colors.white.withValues(alpha: 0.1),
             ),
           ),
           // Score text
@@ -396,7 +398,7 @@ class _FinancialHealthWidgetState extends State<FinancialHealthWidget>
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: insight.color.withOpacity(0.15),
+              color: insight.color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(insight.icon, color: insight.color, size: 14),

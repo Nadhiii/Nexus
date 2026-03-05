@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class FuelPriceService {
   // Free API options:
@@ -117,7 +118,7 @@ class FuelPriceService {
         }
       }
     } catch (e) {
-      print('Error fetching fuel price from RapidAPI: $e');
+      debugPrint('Error fetching fuel price from RapidAPI: $e');
     }
     return null;
   }
@@ -134,7 +135,7 @@ class FuelPriceService {
       };
       await prefs.setString('${_cacheKey}_$city', json.encode(cacheData));
     } catch (e) {
-      print('Error caching fuel price: $e');
+      debugPrint('Error caching fuel price: $e');
     }
   }
 
@@ -159,7 +160,7 @@ class FuelPriceService {
         }
       }
     } catch (e) {
-      print('Error reading cached fuel price: $e');
+      debugPrint('Error reading cached fuel price: $e');
     }
     return null;
   }

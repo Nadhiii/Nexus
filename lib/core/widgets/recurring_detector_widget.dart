@@ -70,7 +70,7 @@ class _RecurringDetectorWidgetState extends State<RecurringDetectorWidget> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,7 +81,7 @@ class _RecurringDetectorWidgetState extends State<RecurringDetectorWidget> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.pastelPurple.withOpacity(0.15),
+                  color: AppColors.pastelPurple.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -181,10 +181,10 @@ class _RecurringDetectorWidgetState extends State<RecurringDetectorWidget> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(12),
         border: pattern.isDueInNextWeek
-            ? Border.all(color: AppColors.pastelOrange.withOpacity(0.3))
+            ? Border.all(color: AppColors.pastelOrange.withValues(alpha: 0.3))
             : null,
       ),
       child: Row(
@@ -198,8 +198,12 @@ class _RecurringDetectorWidgetState extends State<RecurringDetectorWidget> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  _getConfidenceColor(pattern.confidence).withOpacity(0.2),
-                  _getConfidenceColor(pattern.confidence).withOpacity(0.05),
+                  _getConfidenceColor(
+                    pattern.confidence,
+                  ).withValues(alpha: 0.2),
+                  _getConfidenceColor(
+                    pattern.confidence,
+                  ).withValues(alpha: 0.05),
                 ],
               ),
               borderRadius: BorderRadius.circular(10),
@@ -242,7 +246,7 @@ class _RecurringDetectorWidgetState extends State<RecurringDetectorWidget> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.pastelOrange.withOpacity(0.2),
+                          color: AppColors.pastelOrange.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -285,7 +289,7 @@ class _RecurringDetectorWidgetState extends State<RecurringDetectorWidget> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.primaryBlue.withOpacity(0.15),
+                color: AppColors.primaryBlue.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(Icons.add, color: AppColors.primaryBlue, size: 18),
@@ -297,8 +301,12 @@ class _RecurringDetectorWidgetState extends State<RecurringDetectorWidget> {
   }
 
   Color _getConfidenceColor(double confidence) {
-    if (confidence >= 0.8) return AppColors.green;
-    if (confidence >= 0.6) return AppColors.pastelOrange;
+    if (confidence >= 0.8) {
+      return AppColors.green;
+    }
+    if (confidence >= 0.6) {
+      return AppColors.pastelOrange;
+    }
     return AppColors.textTertiary;
   }
 
@@ -402,7 +410,7 @@ class _RecurringDetectorWidgetState extends State<RecurringDetectorWidget> {
         categoryId: 'bills', // Default category
         accountId: '', // Will need to be selected
         isActive: true,
-        color: AppColors.primaryBlue.value.toRadixString(16),
+        color: AppColors.primaryBlue.toARGB32().toRadixString(16),
         createdAt: DateTime.now(),
       );
 

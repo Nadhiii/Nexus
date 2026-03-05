@@ -6,7 +6,9 @@ import '../../core/providers/debt_provider.dart';
 import '../../core/models/debt.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/logo_utils.dart';
 import '../../core/widgets/collapsible_fab.dart';
+import 'utils/debt_logo_utils.dart';
 import 'widgets/add_debt_modal.dart';
 import 'widgets/pay_debt_modal.dart';
 import '../../core/widgets/swipe_to_delete.dart';
@@ -166,7 +168,7 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
           border: Border.all(
             color: isSelected
                 ? Colors.transparent
-                : Colors.white.withOpacity(0.1),
+                : Colors.white.withValues(alpha: 0.1),
           ),
         ),
         child: Text(
@@ -204,10 +206,10 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
           colors: AppColors.lossGradient,
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             blurRadius: 30,
             offset: const Offset(0, 10),
           ),
@@ -222,7 +224,7 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
               Text(
                 'TOTAL OUTSTANDING',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
@@ -291,7 +293,7 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
                   Text(
                     'EMI: ₹${NumberFormat.compact().format(totalEMI)}/mo',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -320,6 +322,8 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
     // Visual Style changes if Settled
     final accentColor = isPaidOff ? AppColors.success : AppColors.error;
     final typeColor = _getColorForType(debt.type);
+    final bankLogo = DebtLogoUtils.bankLogoForDebt(debt);
+    final logoScale = DebtLogoUtils.bankLogoScaleForDebt(debt);
 
     return SwipeToDelete(
       itemKey: ValueKey(debt.id),
@@ -337,22 +341,24 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      typeColor.withOpacity(0.12),
+                      typeColor.withValues(alpha: 0.12),
                       AppColors.cardSurface,
                     ],
                   ),
-            color: isPaidOff ? AppColors.cardSurface.withOpacity(0.5) : null,
+            color: isPaidOff
+                ? AppColors.cardSurface.withValues(alpha: 0.5)
+                : null,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: isPaidOff
-                  ? AppColors.success.withOpacity(0.3)
-                  : typeColor.withOpacity(0.2),
+                  ? AppColors.success.withValues(alpha: 0.3)
+                  : typeColor.withValues(alpha: 0.2),
             ),
             boxShadow: isPaidOff
                 ? null
                 : [
                     BoxShadow(
-                      color: typeColor.withOpacity(0.1),
+                      color: typeColor.withValues(alpha: 0.1),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
                     ),
@@ -367,20 +373,22 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: (isPaidOff ? AppColors.success : typeColor)
-                          .withOpacity(0.15),
+                          .withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: (isPaidOff ? AppColors.success : typeColor)
-                            .withOpacity(0.2),
+                            .withValues(alpha: 0.2),
                       ),
                     ),
-                    child: Icon(
-                      isPaidOff
-                          ? Icons.check_circle
-                          : _getIconForType(debt.type),
-                      color: isPaidOff ? AppColors.success : typeColor,
-                      size: 22,
-                    ),
+                    child: bankLogo != null
+                        ? LogoUtils.buildLogo(bankLogo, size: 22 * logoScale)
+                        : Icon(
+                            isPaidOff
+                                ? Icons.check_circle
+                                : _getIconForType(debt.type),
+                            color: isPaidOff ? AppColors.success : typeColor,
+                            size: 22,
+                          ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -416,7 +424,7 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.success.withOpacity(0.2),
+                            color: AppColors.success.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Text(
@@ -459,7 +467,7 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
                     height: 8,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
+                      color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -471,13 +479,13 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
                         gradient: LinearGradient(
                           colors: isPaidOff
                               ? [AppColors.success, AppColors.success]
-                              : [typeColor.withOpacity(0.8), accentColor],
+                              : [typeColor.withValues(alpha: 0.8), accentColor],
                         ),
                         borderRadius: BorderRadius.circular(4),
                         boxShadow: [
                           BoxShadow(
                             color: (isPaidOff ? AppColors.success : accentColor)
-                                .withOpacity(0.5),
+                                .withValues(alpha: 0.5),
                             blurRadius: 8,
                             spreadRadius: 1,
                           ),
@@ -498,7 +506,7 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: accentColor.withOpacity(0.1),
+                      color: accentColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -539,7 +547,7 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
           Icon(
             isHistory ? Icons.history : Icons.check_circle_outline,
             size: 64,
-            color: AppColors.textTertiary.withOpacity(0.3),
+            color: AppColors.textTertiary.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -552,7 +560,7 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
                 ? "Cleared debts will appear here."
                 : "You have no active liabilities.",
             style: TextStyle(
-              color: AppColors.textTertiary.withOpacity(0.5),
+              color: AppColors.textTertiary.withValues(alpha: 0.5),
               fontSize: 12,
             ),
           ),

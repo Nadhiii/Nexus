@@ -41,13 +41,13 @@ class UpcomingBillsWidget extends StatelessWidget {
                       border: Border.all(
                         color: Theme.of(
                           context,
-                        ).colorScheme.outline.withOpacity(0.2),
+                        ).colorScheme.outline.withValues(alpha: 0.2),
                       ),
                     ),
                     child: Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: bill['color'].withOpacity(0.1),
+                          backgroundColor: bill['color'].withValues(alpha: 0.1),
                           child: Icon(
                             bill['icon'],
                             color: bill['color'],
@@ -92,7 +92,7 @@ class UpcomingBillsWidget extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: bill['color'].withOpacity(0.1),
+                                color: bill['color'].withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 class RTOService {
   static const String _apiKey =
@@ -12,7 +13,7 @@ class RTOService {
 
       final uri = Uri.https(_apiHost, '/address', {'registration': cleanRegNo});
 
-      print('🚀 RTO: Fetching full details for $cleanRegNo...');
+      debugPrint('🚀 RTO: Fetching full details for $cleanRegNo...');
 
       final response = await http.get(
         uri,
@@ -53,7 +54,7 @@ class RTOService {
       }
       return null;
     } catch (e) {
-      print('❌ RTO Error: $e');
+      debugPrint('❌ RTO Error: $e');
       return null;
     }
   }

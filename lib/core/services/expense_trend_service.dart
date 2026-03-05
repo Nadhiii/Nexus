@@ -254,7 +254,7 @@ class ExpenseTrendService {
         .where((t) => t.type == TransactionType.expense)
         .toList();
 
-    if (expenses.isEmpty) return anomalies;
+    if (expenses.isEmpty) { return anomalies; }
 
     final amounts = expenses.map((t) => t.amount).toList();
     final mean = amounts.reduce((a, b) => a + b) / amounts.length;
@@ -304,14 +304,14 @@ class ExpenseTrendService {
     DateTime? endDate,
   ) {
     return transactions.where((t) {
-      if (startDate != null && t.date.isBefore(startDate)) return false;
-      if (endDate != null && t.date.isAfter(endDate)) return false;
+      if (startDate != null && t.date.isBefore(startDate)) { return false; }
+      if (endDate != null && t.date.isAfter(endDate)) { return false; }
       return true;
     });
   }
 
   double _calculateVariance(List<double> values) {
-    if (values.isEmpty) return 0;
+    if (values.isEmpty) { return 0; }
     final mean = values.reduce((a, b) => a + b) / values.length;
     return values.map((v) => math.pow(v - mean, 2)).reduce((a, b) => a + b) /
         values.length;

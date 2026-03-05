@@ -249,8 +249,8 @@ class _ModernAddTransactionScreenState
                                             AppSpacing.xs,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: account.color.withOpacity(
-                                              0.2,
+                                            color: account.color.withValues(
+                                              alpha: 0.2,
                                             ),
                                             borderRadius: BorderRadius.circular(
                                               AppSpacing.radiusSm,
@@ -344,7 +344,7 @@ class _ModernAddTransactionScreenState
                                                 ),
                                                 decoration: BoxDecoration(
                                                   color: account.color
-                                                      .withOpacity(0.2),
+                                                      .withValues(alpha: 0.2),
                                                   borderRadius:
                                                       BorderRadius.circular(
                                                         AppSpacing.radiusSm,
@@ -465,8 +465,8 @@ class _ModernAddTransactionScreenState
                                       ? []
                                       : [
                                           BoxShadow(
-                                            color: selectedColor.withOpacity(
-                                              0.2,
+                                            color: selectedColor.withValues(
+                                              alpha: 0.2,
                                             ),
                                             blurRadius: 8,
                                           ),
@@ -519,8 +519,9 @@ class _ModernAddTransactionScreenState
                                                               AppSpacing.xs,
                                                         ),
                                                     decoration: BoxDecoration(
-                                                      color: c.color
-                                                          .withOpacity(0.2),
+                                                      color: c.color.withValues(
+                                                        alpha: 0.2,
+                                                      ),
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                             AppSpacing.radiusSm,
@@ -569,14 +570,14 @@ class _ModernAddTransactionScreenState
                                           border: Border.all(
                                             color: _selectedCategory == null
                                                 ? AppColors.textTertiary
-                                                      .withOpacity(0.2)
+                                                      .withValues(alpha: 0.2)
                                                 : AppColors.primaryBlue
-                                                      .withOpacity(0.4),
+                                                      .withValues(alpha: 0.4),
                                           ),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Colors.black.withOpacity(
-                                                0.08,
+                                              color: Colors.black.withValues(
+                                                alpha: 0.08,
                                               ),
                                               blurRadius: 8,
                                               offset: const Offset(0, 4),
@@ -595,7 +596,7 @@ class _ModernAddTransactionScreenState
                                                     ),
                                                 decoration: BoxDecoration(
                                                   color: selectedCat.color
-                                                      .withOpacity(0.2),
+                                                      .withValues(alpha: 0.2),
                                                   borderRadius:
                                                       BorderRadius.circular(
                                                         AppSpacing.radiusSm,
@@ -964,11 +965,11 @@ class _ModernAddTransactionScreenState
         _selectedCategory = resolvedCategoryId;
       }
 
-      print('🔄 Creating transfer transaction:');
-      print('   Type: $_selectedType');
-      print('   From Account ID: $_selectedAccountId');
-      print('   To Account ID: $_toAccountId');
-      print('   Amount: $amount');
+      debugPrint('🔄 Creating transfer transaction:');
+      debugPrint('   Type: $_selectedType');
+      debugPrint('   From Account ID: $_selectedAccountId');
+      debugPrint('   To Account ID: $_toAccountId');
+      debugPrint('   Amount: $amount');
 
       final transaction = Transaction(
         id: _isEditMode ? widget.transaction!.id : '',
@@ -990,9 +991,9 @@ class _ModernAddTransactionScreenState
         updatedAt: now,
       );
 
-      print('📝 Transaction object created:');
-      print('   accountId: ${transaction.accountId}');
-      print('   toAccountId: ${transaction.toAccountId}');
+      debugPrint('📝 Transaction object created:');
+      debugPrint('   accountId: ${transaction.accountId}');
+      debugPrint('   toAccountId: ${transaction.toAccountId}');
 
       final provider = context.read<TransactionProvider>();
       final success = _isEditMode
@@ -1023,6 +1024,9 @@ class _ModernAddTransactionScreenState
             if (subs.isNotEmpty) {
               final sub = subs.first;
               await subscriptionProvider.markSubscriptionPaid(sub);
+              if (!mounted) {
+                return;
+              }
             }
           }
         }
@@ -1070,7 +1074,10 @@ class _ModernAddTransactionScreenState
           // }
         }
 
-        if (widget.detectedTransaction != null && mounted) {
+        if (!mounted) {
+          return;
+        }
+        if (widget.detectedTransaction != null) {
           context.read<NewNboxProvider>().markAsApproved(
             widget.detectedTransaction!.id,
             widget.detectedTransaction!.source,
@@ -1081,8 +1088,18 @@ class _ModernAddTransactionScreenState
               context,
               transaction: transaction,
             );
+            if (!mounted) {
+              return;
+            }
+          }
+          if (!mounted) {
+            return;
           }
           Navigator.of(context).pop(true);
+          return;
+        }
+
+        if (!mounted) {
           return;
         }
 
@@ -1100,6 +1117,9 @@ class _ModernAddTransactionScreenState
             context,
             transaction: transaction,
           );
+          if (!mounted) {
+            return;
+          }
         } else {
           Navigator.of(context).pop();
         }

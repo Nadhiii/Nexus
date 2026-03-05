@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../../../core/models/goal.dart';
@@ -91,6 +92,7 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
   @override
   Widget build(BuildContext context) {
     final title = widget.goalToEdit != null ? "Edit Goal" : "Create Goal";
+    final goalId = widget.goalToEdit?.id ?? '';
 
     return Scaffold(
       backgroundColor: AppColors.darkGradient.first,
@@ -329,7 +331,7 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
                                 boxShadow: isSelected
                                     ? [
                                         BoxShadow(
-                                          color: color.withOpacity(0.6),
+                                          color: color.withValues(alpha: 0.6),
                                           blurRadius: 10,
                                         ),
                                       ]
@@ -349,12 +351,18 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
                     ),
                     const SizedBox(height: AppSpacing.xl2),
 
+                    if (goalId.isNotEmpty)
+                      Center(child: _buildOpenInTasksButton(context, goalId)),
+
+                    if (goalId.isNotEmpty)
+                      const SizedBox(height: AppSpacing.sm),
+
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _createGoal,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _selectedColor,
+                          backgroundColor: AppColors.primaryBlue,
                           foregroundColor: AppColors.white,
                           padding: const EdgeInsets.symmetric(
                             vertical: AppSpacing.lg,
@@ -376,8 +384,8 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
                               )
                             : Text(
                                 widget.goalToEdit != null
-                                    ? "Update Goal"
-                                    : "Create Goal",
+                                    ? 'Save Changes'
+                                    : 'Save Goal',
                                 style: AppTypography.titleSmall.copyWith(
                                   color: AppColors.white,
                                   fontWeight: FontWeight.bold,
@@ -435,17 +443,22 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
     final target = double.tryParse(_targetAmountController.text) ?? 0;
     final current = double.tryParse(_currentAmountController.text) ?? 0;
     double progress = target > 0 ? (current / target) : 0.05;
-    if (progress > 1.0) progress = 1.0;
+    if (progress > 1.0) {
+      progress = 1.0;
+    }
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
         color: AppColors.cardDarkElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-        border: Border.all(color: _selectedColor.withOpacity(0.3), width: 1.5),
+        border: Border.all(
+          color: _selectedColor.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: _selectedColor.withOpacity(0.1),
+            color: _selectedColor.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -460,7 +473,7 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: _selectedColor.withOpacity(0.2),
+                  color: _selectedColor.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.flag, color: _selectedColor, size: 20),
@@ -496,7 +509,7 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
             borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
             child: LinearProgressIndicator(
               value: progress,
-              backgroundColor: Colors.white.withOpacity(0.1),
+              backgroundColor: Colors.white.withValues(alpha: 0.1),
               color: _selectedColor,
               minHeight: 8,
             ),
@@ -513,7 +526,9 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
     );
-    if (picked != null) setState(() => _selectedDeadline = picked);
+    if (picked != null) {
+      setState(() => _selectedDeadline = picked);
+    }
   }
 
   Future<void> _createGoal() async {
@@ -524,10 +539,12 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
         final current = double.tryParse(_currentAmountController.text) ?? 0.0;
         final user = FirebaseAuth.instance.currentUser;
 
-        if (user == null) return;
+        if (user == null) {
+          return;
+        }
 
         String colorString =
-            '#${_selectedColor.value.toRadixString(16).substring(2)}';
+            '#${_selectedColor.toARGB32().toRadixString(16).substring(2)}';
 
         final goal = Goal(
           id:
@@ -546,13 +563,45 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
         );
 
         widget.onGoalAdded(goal);
-        if (mounted) Navigator.pop(context);
+        if (mounted) {
+          Navigator.pop(context);
+        }
       } catch (e) {
-        if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+        if (mounted) {
+          showTopSnackBar(context, 'Error: $e', isError: true);
+        }
       } finally {
-        if (mounted) setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     }
+  }
+
+  Future<void> _launchTasksForItem(String itemId) async {
+    try {
+      final uri = Uri.parse('nexustasks://open/tasks/$itemId');
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      }
+      // If Tasks not installed: silently do nothing
+    } catch (_) {
+      // Swallow all errors silently
+    }
+  }
+
+  Widget _buildOpenInTasksButton(BuildContext context, String itemId) {
+    return TextButton.icon(
+      onPressed: () => _launchTasksForItem(itemId),
+      icon: Icon(Icons.checklist_rounded, size: 14, color: Colors.white38),
+      label: Text(
+        'Open in Tasks →',
+        style: TextStyle(color: Colors.white38, fontSize: 12),
+      ),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+    );
   }
 }
 

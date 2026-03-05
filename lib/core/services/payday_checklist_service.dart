@@ -34,7 +34,9 @@ class PaydayChecklistService {
   /// Check if income should trigger a checklist
   bool shouldShowChecklist(double amount, String? category) {
     // Always show for salary category
-    if (category?.toLowerCase() == 'salary') return true;
+    if (category?.toLowerCase() == 'salary') {
+      return true;
+    }
 
     // Show for significant income
     return amount >= minimumIncomeThreshold;
@@ -67,10 +69,18 @@ class PaydayChecklistService {
     // Sort by priority, then by due date
     items.sort((a, b) {
       final priorityCompare = a.priority.index.compareTo(b.priority.index);
-      if (priorityCompare != 0) return priorityCompare;
-      if (a.dueDate == null && b.dueDate == null) return 0;
-      if (a.dueDate == null) return 1;
-      if (b.dueDate == null) return -1;
+      if (priorityCompare != 0) {
+        return priorityCompare;
+      }
+      if (a.dueDate == null && b.dueDate == null) {
+        return 0;
+      }
+      if (a.dueDate == null) {
+        return 1;
+      }
+      if (b.dueDate == null) {
+        return -1;
+      }
       return a.dueDate!.compareTo(b.dueDate!);
     });
 
@@ -103,7 +113,9 @@ class PaydayChecklistService {
 
   /// Get debt EMI items
   List<PaydayChecklistItem> _getDebtItems() {
-    if (debtProvider == null) return [];
+    if (debtProvider == null) {
+      return [];
+    }
 
     final items = <PaydayChecklistItem>[];
     final now = DateTime.now();
@@ -111,16 +123,24 @@ class PaydayChecklistService {
 
     for (final debt in debtProvider!.debts) {
       // Skip "owed to me" debts and fully paid debts
-      if (debt.type == DebtType.owedToMe || debt.currentBalance <= 0) continue;
+      if (debt.type == DebtType.owedToMe || debt.currentBalance <= 0) {
+        continue;
+      }
 
       // Skip debts without EMI
-      if (debt.monthlyEMI == null || debt.monthlyEMI! <= 0) continue;
+      if (debt.monthlyEMI == null || debt.monthlyEMI! <= 0) {
+        continue;
+      }
 
       final dueDate = debt.nextPaymentDate;
-      if (dueDate == null) continue;
+      if (dueDate == null) {
+        continue;
+      }
 
       // Only include if due within look-ahead period
-      if (dueDate.isAfter(lookAheadDate)) continue;
+      if (dueDate.isAfter(lookAheadDate)) {
+        continue;
+      }
 
       final priority = _getPriorityFromDueDate(dueDate);
 
@@ -148,14 +168,18 @@ class PaydayChecklistService {
 
   /// Get family debt items (money you owe others)
   List<PaydayChecklistItem> _getFamilyDebtItems() {
-    if (familyDebtProvider == null) return [];
+    if (familyDebtProvider == null) {
+      return [];
+    }
 
     final items = <PaydayChecklistItem>[];
     final now = DateTime.now();
 
     // Get debts where user owes money
     for (final debt in familyDebtProvider!.debtsIOweTo) {
-      if (debt.isSettled || debt.currentAmount <= 0) continue;
+      if (debt.isSettled || debt.currentAmount <= 0) {
+        continue;
+      }
 
       final dueDate = debt.dueDate;
       ChecklistItemPriority priority;
@@ -196,19 +220,25 @@ class PaydayChecklistService {
 
   /// Get subscription items
   List<PaydayChecklistItem> _getSubscriptionItems() {
-    if (subscriptionProvider == null) return [];
+    if (subscriptionProvider == null) {
+      return [];
+    }
 
     final items = <PaydayChecklistItem>[];
     final now = DateTime.now();
     final lookAheadDate = now.add(Duration(days: lookAheadDays));
 
     for (final sub in subscriptionProvider!.subscriptions) {
-      if (!sub.isActive) continue;
+      if (!sub.isActive) {
+        continue;
+      }
 
       final dueDate = sub.nextDueDate;
 
       // Only include if due within look-ahead period
-      if (dueDate.isAfter(lookAheadDate) && !sub.isOverdue) continue;
+      if (dueDate.isAfter(lookAheadDate) && !sub.isOverdue) {
+        continue;
+      }
 
       final priority = _getPriorityFromDueDate(dueDate);
 
@@ -236,12 +266,16 @@ class PaydayChecklistService {
 
   /// Get goal contribution suggestions
   List<PaydayChecklistItem> _getGoalItems(double incomeAmount) {
-    if (goalProvider == null) return [];
+    if (goalProvider == null) {
+      return [];
+    }
 
     final items = <PaydayChecklistItem>[];
 
     for (final goal in goalProvider!.goals) {
-      if (goal.isCompleted) continue;
+      if (goal.isCompleted) {
+        continue;
+      }
 
       // Calculate suggested contribution based on time remaining
       final daysRemaining = goal.targetDate.difference(DateTime.now()).inDays;
@@ -253,7 +287,9 @@ class PaydayChecklistService {
 
       // Only suggest if meaningful amount (at least 1% of income or ₹500)
       final minSuggestion = (incomeAmount * 0.01).clamp(500, double.infinity);
-      if (suggestedMonthly < minSuggestion) continue;
+      if (suggestedMonthly < minSuggestion) {
+        continue;
+      }
 
       // Cap suggestion at 20% of income
       final cappedSuggestion = suggestedMonthly
@@ -283,9 +319,15 @@ class PaydayChecklistService {
 
     // Sort by urgency (less time remaining = higher priority)
     items.sort((a, b) {
-      if (a.dueDate == null && b.dueDate == null) return 0;
-      if (a.dueDate == null) return 1;
-      if (b.dueDate == null) return -1;
+      if (a.dueDate == null && b.dueDate == null) {
+        return 0;
+      }
+      if (a.dueDate == null) {
+        return 1;
+      }
+      if (b.dueDate == null) {
+        return -1;
+      }
       return a.dueDate!.compareTo(b.dueDate!);
     });
 
@@ -295,12 +337,16 @@ class PaydayChecklistService {
 
   /// Get budget allocation suggestions
   List<PaydayChecklistItem> _getBudgetItems(double incomeAmount) {
-    if (budgetProvider == null) return [];
+    if (budgetProvider == null) {
+      return [];
+    }
 
     final items = <PaydayChecklistItem>[];
 
     for (final budget in budgetProvider!.budgets) {
-      if (!budget.isActive) continue;
+      if (!budget.isActive) {
+        continue;
+      }
 
       // Check if budget period is current
       final now = DateTime.now();
@@ -319,7 +365,9 @@ class PaydayChecklistService {
       final percentRemaining = daysRemaining / daysInPeriod;
 
       // Only suggest if significant remaining and early in period
-      if (percentRemaining < 0.5) continue;
+      if (percentRemaining < 0.5) {
+        continue;
+      }
 
       items.add(
         PaydayChecklistItem(
@@ -350,9 +398,15 @@ class PaydayChecklistService {
     final daysUntilDue = dueDate.difference(now).inDays;
 
     if (daysUntilDue < 0) return ChecklistItemPriority.urgent; // Overdue
-    if (daysUntilDue <= 3) return ChecklistItemPriority.urgent;
-    if (daysUntilDue <= 7) return ChecklistItemPriority.high;
-    if (daysUntilDue <= 14) return ChecklistItemPriority.medium;
+    if (daysUntilDue <= 3) {
+      return ChecklistItemPriority.urgent;
+    }
+    if (daysUntilDue <= 7) {
+      return ChecklistItemPriority.high;
+    }
+    if (daysUntilDue <= 14) {
+      return ChecklistItemPriority.medium;
+    }
     return ChecklistItemPriority.low;
   }
 

@@ -406,7 +406,7 @@ class _ModernAddSharedExpenseScreenState
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.primaryBlue.withOpacity(0.2)
+                          ? AppColors.primaryBlue.withValues(alpha: 0.2)
                           : AppColors.cardDarkElevated,
                       borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       border: Border.all(
@@ -422,7 +422,7 @@ class _ModernAddSharedExpenseScreenState
                           radius: 12,
                           backgroundColor: isSelected
                               ? AppColors.primaryBlue
-                              : AppColors.textTertiary.withOpacity(0.3),
+                              : AppColors.textTertiary.withValues(alpha: 0.3),
                           child: Text(
                             member.name[0].toUpperCase(),
                             style: TextStyle(
@@ -524,7 +524,7 @@ class _ModernAddSharedExpenseScreenState
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.success.withOpacity(0.2)
+                          ? AppColors.success.withValues(alpha: 0.2)
                           : AppColors.cardDarkElevated,
                       borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       border: Border.all(
@@ -601,7 +601,7 @@ class _ModernAddSharedExpenseScreenState
                       ),
                       decoration: BoxDecoration(
                         color: _splitEqually
-                            ? AppColors.primaryBlue.withOpacity(0.3)
+                            ? AppColors.primaryBlue.withValues(alpha: 0.3)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(
                           AppSpacing.radiusMd,
@@ -629,7 +629,7 @@ class _ModernAddSharedExpenseScreenState
                       ),
                       decoration: BoxDecoration(
                         color: !_splitEqually
-                            ? AppColors.primaryBlue.withOpacity(0.3)
+                            ? AppColors.primaryBlue.withValues(alpha: 0.3)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(
                           AppSpacing.radiusMd,
@@ -683,8 +683,9 @@ class _ModernAddSharedExpenseScreenState
                           children: [
                             CircleAvatar(
                               radius: 14,
-                              backgroundColor: AppColors.primaryBlue
-                                  .withOpacity(0.2),
+                              backgroundColor: AppColors.primaryBlue.withValues(
+                                alpha: 0.2,
+                              ),
                               child: Text(
                                 member.name[0].toUpperCase(),
                                 style: const TextStyle(
@@ -721,8 +722,9 @@ class _ModernAddSharedExpenseScreenState
                           children: [
                             CircleAvatar(
                               radius: 14,
-                              backgroundColor: AppColors.primaryBlue
-                                  .withOpacity(0.2),
+                              backgroundColor: AppColors.primaryBlue.withValues(
+                                alpha: 0.2,
+                              ),
                               child: Text(
                                 member.name[0].toUpperCase(),
                                 style: const TextStyle(
@@ -784,7 +786,9 @@ class _ModernAddSharedExpenseScreenState
   }
 
   void _updateSplits() {
-    if (!_splitEqually) return;
+    if (!_splitEqually) {
+      return;
+    }
     final totalAmount = double.tryParse(_amountController.text) ?? 0;
     if (totalAmount > 0 && _selectedParticipants.isNotEmpty) {
       final perPerson = totalAmount / _selectedParticipants.length;
@@ -802,7 +806,9 @@ class _ModernAddSharedExpenseScreenState
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 1)),
     );
-    if (picked != null) setState(() => _selectedDate = picked);
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+    }
   }
 
   void _save() async {
@@ -890,9 +896,13 @@ class _ModernAddSharedExpenseScreenState
         _showNotifyOption(expense, splits, payerMember.name);
       }
     } catch (e) {
-      if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+      if (mounted) {
+        showTopSnackBar(context, 'Error: $e', isError: true);
+      }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -904,7 +914,9 @@ class _ModernAddSharedExpenseScreenState
     final owingSplits = splits
         .where((s) => s.personId != expense.paidBy)
         .toList();
-    if (owingSplits.isEmpty) return;
+    if (owingSplits.isEmpty) {
+      return;
+    }
 
     showDialog(
       context: context,
@@ -920,7 +932,7 @@ class _ModernAddSharedExpenseScreenState
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.2),
+                  color: AppColors.success.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -958,8 +970,8 @@ class _ModernAddSharedExpenseScreenState
                             children: [
                               CircleAvatar(
                                 radius: 14,
-                                backgroundColor: AppColors.error.withOpacity(
-                                  0.2,
+                                backgroundColor: AppColors.error.withValues(
+                                  alpha: 0.2,
                                 ),
                                 child: Text(
                                   split.personName[0].toUpperCase(),
@@ -1001,7 +1013,7 @@ class _ModernAddSharedExpenseScreenState
                         onPressed: () => Navigator.pop(ctx),
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(25),

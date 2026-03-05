@@ -105,7 +105,9 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
     );
-    if (picked != null) setState(() => _selectedDate = picked);
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+    }
   }
 
   double? _calculateExactMileage(
@@ -113,7 +115,9 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
     double currentOdo,
     double currentFuel,
   ) {
-    if (!_isFullTank) return null;
+    if (!_isFullTank) {
+      return null;
+    }
     final sortedHistory = List<BikeEntry>.from(history)
       ..sort((a, b) => b.odometerReading.compareTo(a.odometerReading));
 
@@ -121,7 +125,9 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
     double fuelConsumedBetween = 0.0;
 
     for (var entry in sortedHistory) {
-      if ((entry.category ?? 'fuel') != 'fuel') continue;
+      if ((entry.category ?? 'fuel') != 'fuel') {
+        continue;
+      }
       if (entry.isFullTank) {
         lastFullTankEntry = entry;
         break;
@@ -130,11 +136,15 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
       }
     }
 
-    if (lastFullTankEntry == null) return null;
+    if (lastFullTankEntry == null) {
+      return null;
+    }
 
     double distance = currentOdo - lastFullTankEntry.odometerReading;
     double totalFuelUsed = currentFuel + fuelConsumedBetween;
-    if (totalFuelUsed <= 0) return 0.0;
+    if (totalFuelUsed <= 0) {
+      return 0.0;
+    }
     return distance / totalFuelUsed;
   }
 
@@ -633,7 +643,7 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         border: Border.all(
           color: _linkToExpense
-              ? AppColors.success.withOpacity(0.3)
+              ? AppColors.success.withValues(alpha: 0.3)
               : Colors.transparent,
           width: 1.5,
         ),
@@ -678,7 +688,9 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
                 activeThumbColor: AppColors.success,
                 onChanged: (val) => setState(() {
                   _linkToExpense = val;
-                  if (!val) _selectedAccount = null;
+                  if (!val) {
+                    _selectedAccount = null;
+                  }
                 }),
               ),
             ],
@@ -692,8 +704,8 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 border: Border.all(
                   color: _selectedAccount != null
-                      ? AppColors.success.withOpacity(0.3)
-                      : Colors.white.withOpacity(0.1),
+                      ? AppColors.success.withValues(alpha: 0.3)
+                      : Colors.white.withValues(alpha: 0.1),
                 ),
               ),
               child: DropdownButtonHideUnderline(

@@ -35,8 +35,8 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
 
           // Apply Filter
           List<Category> displayedCategories = allCategories;
-          if (_activeFilter == 'System') displayedCategories = systemCategories;
-          if (_activeFilter == 'Custom') displayedCategories = customCategories;
+          if (_activeFilter == 'System') { displayedCategories = systemCategories; }
+          if (_activeFilter == 'Custom') { displayedCategories = customCategories; }
 
           return CustomScrollView(
             slivers: [
@@ -159,14 +159,14 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.primaryBlue.withOpacity(0.15),
+            AppColors.primaryBlue.withValues(alpha: 0.15),
             AppColors.backgroundBlack,
           ],
         ),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.05),
+            color: AppColors.primaryBlue.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 5),
           ),
@@ -215,7 +215,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                   Text(
                     "TOTAL ACTIVE",
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -228,7 +228,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                   const SizedBox(width: 8),
                   _buildStatPill(
                     "$custom Custom",
-                    AppColors.primaryBlue.withOpacity(0.5),
+                    AppColors.primaryBlue.withValues(alpha: 0.5),
                   ),
                 ],
               ),
@@ -243,9 +243,9 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
         label,
@@ -267,13 +267,13 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isActive
-              ? AppColors.primaryBlue.withOpacity(0.2)
-              : Colors.white.withOpacity(0.05),
+              ? AppColors.primaryBlue.withValues(alpha: 0.2)
+              : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isActive
-                ? AppColors.primaryBlue.withOpacity(0.5)
-                : Colors.white.withOpacity(0.1),
+                ? AppColors.primaryBlue.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.1),
           ),
         ),
         child: Text(
@@ -302,12 +302,12 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           border: Border.all(
             color: category.isCustom
-                ? category.color.withOpacity(0.3)
-                : Colors.white.withOpacity(0.05),
+                ? category.color.withValues(alpha: 0.3)
+                : Colors.white.withValues(alpha: 0.05),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -320,12 +320,12 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: category.color.withOpacity(0.1),
+                color: category.color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                border: Border.all(color: category.color.withOpacity(0.3)),
+                border: Border.all(color: category.color.withValues(alpha: 0.3)),
                 boxShadow: [
                   BoxShadow(
-                    color: category.color.withOpacity(0.1),
+                    color: category.color.withValues(alpha: 0.1),
                     blurRadius: 12,
                     spreadRadius: 2,
                   ),
@@ -358,7 +358,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                     style: TextStyle(
                       color: isLocked
                           ? AppColors.textTertiary
-                          : category.color.withOpacity(0.8),
+                          : category.color.withValues(alpha: 0.8),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -371,7 +371,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
               child: Icon(

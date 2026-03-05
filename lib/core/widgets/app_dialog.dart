@@ -103,7 +103,9 @@ class AppDialog extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: (iconColor ?? effectiveConfirmColor).withOpacity(0.1),
+                  color: (iconColor ?? effectiveConfirmColor).withValues(
+                    alpha: 0.1,
+                  ),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
@@ -144,9 +146,11 @@ class AppDialog extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.1),
+                  color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -176,7 +180,7 @@ class AppDialog extends StatelessWidget {
                         onPressed: onCancel ?? () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),

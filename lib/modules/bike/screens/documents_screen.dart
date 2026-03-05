@@ -51,7 +51,9 @@ class _VehicleDocumentsExampleScreenState
       );
       if (result != null && result.files.isNotEmpty) {
         final file = File(result.files.first.path!);
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
         setState(() => _isUploading = true);
 
         final provider = context.read<VehicleManagementProvider>();
@@ -66,7 +68,9 @@ class _VehicleDocumentsExampleScreenState
         );
 
         await provider.fetchVehicleDocuments(widget.bike.id);
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
         setState(() => _isUploading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -76,7 +80,9 @@ class _VehicleDocumentsExampleScreenState
         );
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() => _isUploading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -102,6 +108,7 @@ class _VehicleDocumentsExampleScreenState
   }
 
   void _openDocument(String fileUrl) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
     try {
       if (await canLaunchUrl(Uri.parse(fileUrl))) {
         await launchUrl(
@@ -110,9 +117,9 @@ class _VehicleDocumentsExampleScreenState
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Cannot open document: $e')));
+      messenger?.showSnackBar(
+        SnackBar(content: Text('Cannot open document: $e')),
+      );
     }
   }
 
@@ -185,10 +192,10 @@ class _VehicleDocumentsExampleScreenState
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.primaryBlue.withOpacity(0.05),
+        color: AppColors.primaryBlue.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
         border: Border.all(
-          color: AppColors.primaryBlue.withOpacity(0.3),
+          color: AppColors.primaryBlue.withValues(alpha: 0.3),
           width: 2,
         ),
       ),
@@ -235,7 +242,7 @@ class _VehicleDocumentsExampleScreenState
       label: Text(label),
       backgroundColor: AppColors.cardSurface,
       labelStyle: const TextStyle(color: Colors.white, fontSize: 12),
-      side: BorderSide(color: Colors.white.withOpacity(0.1)),
+      side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       onPressed: _isUploading ? null : () => _uploadDocument(docType),
     );
   }
@@ -270,7 +277,7 @@ class _VehicleDocumentsExampleScreenState
             decoration: BoxDecoration(
               color: AppColors.cardDarkElevated,
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              border: Border.all(color: Colors.white.withOpacity(0.05)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
             ),
             child: Text(
               'No documents uploaded yet.',
@@ -301,10 +308,10 @@ class _VehicleDocumentsExampleScreenState
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         border: Border.all(
           color: isExpired
-              ? AppColors.error.withOpacity(0.5)
+              ? AppColors.error.withValues(alpha: 0.5)
               : isExpiring
-              ? Colors.orange.withOpacity(0.5)
-              : Colors.white.withOpacity(0.05),
+              ? Colors.orange.withValues(alpha: 0.5)
+              : Colors.white.withValues(alpha: 0.05),
         ),
       ),
       child: ListTile(
@@ -315,7 +322,7 @@ class _VehicleDocumentsExampleScreenState
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.1),
+            color: Colors.red.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 20),
@@ -367,8 +374,8 @@ class _VehicleDocumentsExampleScreenState
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: color.withValues(alpha: 0.1),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       ),
       child: Row(

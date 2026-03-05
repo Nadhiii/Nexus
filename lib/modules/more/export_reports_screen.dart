@@ -138,7 +138,7 @@ class _ExportReportsScreenState extends State<ExportReportsScreen> {
         padding: EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primaryBlue.withOpacity(0.2)
+              ? AppColors.primaryBlue.withValues(alpha: 0.2)
               : AppColors.cardDark,
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           border: Border.all(
@@ -283,7 +283,9 @@ class _ExportReportsScreenState extends State<ExportReportsScreen> {
     final dateRange = _getDateRange();
 
     final transactionsCount = transactionProvider.transactions.where((t) {
-      if (dateRange.$1 != null && t.date.isBefore(dateRange.$1!)) return false;
+      if (dateRange.$1 != null && t.date.isBefore(dateRange.$1!)) {
+        return false;
+      }
       if (dateRange.$2 != null &&
           t.date.isAfter(dateRange.$2!.add(const Duration(days: 1)))) {
         return false;
@@ -481,7 +483,9 @@ class _ExportReportsScreenState extends State<ExportReportsScreen> {
       helpText: 'Select Start Date',
     );
 
-    if (startDate == null || !mounted) return;
+    if (startDate == null || !mounted) {
+      return;
+    }
 
     final endDate = await showDatePicker(
       context: context,

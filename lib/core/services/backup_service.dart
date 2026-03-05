@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:convert';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 class BackupSummary {
   final String id;
@@ -69,7 +69,7 @@ class BackupService {
   Future<DateTime?> getLastBackupAt() async {
     final prefs = await SharedPreferences.getInstance();
     final ms = prefs.getInt(_prefLastBackupMs);
-    if (ms == null) return null;
+    if (ms == null) { return null; }
     return DateTime.fromMillisecondsSinceEpoch(ms);
   }
 
@@ -81,7 +81,7 @@ class BackupService {
   /// Create a full backup of all primary collections for the current user.
   /// If [isAutoBackup] is true, deletes old auto-backups and marks this one as auto.
   Future<BackupSummary> createBackup({bool isAutoBackup = false}) async {
-    if (_uid == null) throw Exception('Not authenticated');
+    if (_uid == null) { throw Exception('Not authenticated'); }
 
     // Expanded backup scope: add all relevant collections
     final collections = <String>[
@@ -146,10 +146,10 @@ class BackupService {
       if (uploadTask.state == TaskState.success) {
         storageUrl = await storageRef.getDownloadURL();
       } else {
-        print('Upload completed but state was: ${uploadTask.state}');
+        debugPrint('Upload completed but state was: ${uploadTask.state}');
       }
     } catch (e) {
-      print('❌ Storage Upload Error (Skipping Storage): $e');
+      debugPrint('❌ Storage Upload Error (Skipping Storage): $e');
       // We DO NOT throw an exception here anymore!
       // We will let Firestore save the metadata anyway so the backup doesn't completely fail.
     }
@@ -174,7 +174,7 @@ class BackupService {
 
   /// List backups (latest first).
   Future<List<BackupSummary>> listBackups() async {
-    if (_uid == null) throw Exception('Not authenticated');
+    if (_uid == null) { throw Exception('Not authenticated'); }
     final snap = await _firestore
         .collection('users')
         .doc(_uid)
@@ -195,13 +195,13 @@ class BackupService {
 
   Future<BackupSummary?> latestBackup() async {
     final list = await listBackups();
-    if (list.isEmpty) return null;
+    if (list.isEmpty) { return null; }
     return list.first;
   }
 
   /// Delete a specific backup (Firestore doc + Storage file).
   Future<void> deleteBackup(String id) async {
-    if (_uid == null) throw Exception('Not authenticated');
+    if (_uid == null) { throw Exception('Not authenticated'); }
     final docRef = _backupDoc(id);
     final docSnap = await docRef.get();
     if (docSnap.exists) {
@@ -212,12 +212,12 @@ class BackupService {
         } on FirebaseException catch (e) {
           // ✅ FIX: Safely ignore if the file was already deleted
           if (e.code == 'object-not-found') {
-            print('Backup file already missing, safe to proceed.');
+            debugPrint('Backup file already missing, safe to proceed.');
           } else {
-            print('Warning: Failed to delete storage file: $e');
+            debugPrint('Warning: Failed to delete storage file: $e');
           }
         } catch (e) {
-          print('Warning: Failed to delete storage file: $e');
+          debugPrint('Warning: Failed to delete storage file: $e');
         }
       }
       await docRef.delete();
@@ -226,7 +226,7 @@ class BackupService {
 
   /// Delete all previous auto-backups (keeps only manual backups)
   Future<void> _deleteOldAutoBackups() async {
-    if (_uid == null) return;
+    if (_uid == null) { return; }
 
     final snap = await _firestore
         .collection('users')
@@ -243,30 +243,30 @@ class BackupService {
         } on FirebaseException catch (e) {
           // ✅ FIX: Safely ignore if the file was already deleted
           if (e.code == 'object-not-found') {
-            print('Old auto-backup file already missing, safe to proceed.');
+            debugPrint('Old auto-backup file already missing, safe to proceed.');
           } else {
-            print('Warning: Failed to delete old auto-backup file: $e');
+            debugPrint('Warning: Failed to delete old auto-backup file: $e');
           }
         } catch (e) {
-          print('Warning: Failed to delete old auto-backup file: $e');
+          debugPrint('Warning: Failed to delete old auto-backup file: $e');
         }
       }
       await doc.reference.delete();
     }
 
     if (snap.docs.isNotEmpty) {
-      print('Deleted ${snap.docs.length} old auto-backup(s)');
+      debugPrint('Deleted ${snap.docs.length} old auto-backup(s)');
     }
   }
 
   /// Perform auto-backup if enabled and last backup is older than 24 hours.
   /// Replaces the previous auto-backup.
   Future<void> performAutoBackupIfNeeded() async {
-    if (_uid == null) return;
+    if (_uid == null) { return; }
 
     final isEnabled = await getAutoBackupEnabled();
     if (!isEnabled) {
-      print('[Auto-Backup] Disabled, skipping');
+      debugPrint('[Auto-Backup] Disabled, skipping');
       return;
     }
 
@@ -276,19 +276,19 @@ class BackupService {
     if (lastBackup != null) {
       final hoursSinceLastBackup = now.difference(lastBackup).inHours;
       if (hoursSinceLastBackup < 24) {
-        print(
+        debugPrint(
           '[Auto-Backup] Last backup was $hoursSinceLastBackup hours ago, skipping',
         );
         return;
       }
     }
 
-    print('[Auto-Backup] Creating auto-backup...');
+    debugPrint('[Auto-Backup] Creating auto-backup...');
     try {
       await createBackup(isAutoBackup: true);
-      print('[Auto-Backup] Successfully created auto-backup');
+      debugPrint('[Auto-Backup] Successfully created auto-backup');
     } catch (e) {
-      print('[Auto-Backup] Error: $e');
+      debugPrint('[Auto-Backup] Error: $e');
     }
   }
 
@@ -296,49 +296,49 @@ class BackupService {
   /// Restores latest backup in merge mode.
   /// Returns true if data was restored, false otherwise.
   Future<bool> performAutoRestoreIfNeeded() async {
-    if (_uid == null) return false;
+    if (_uid == null) { return false; }
 
     final isEnabled = await getAutoRestoreEnabled();
     if (!isEnabled) {
-      print('[Auto-Restore] Disabled, skipping');
+      debugPrint('[Auto-Restore] Disabled, skipping');
       return false;
     }
 
     final hasData = await hasAnyUserData();
     if (hasData) {
-      print('[Auto-Restore] User has data, skipping');
+      debugPrint('[Auto-Restore] User has data, skipping');
       return false;
     }
 
-    print('[Auto-Restore] No data found, checking for backups...');
+    debugPrint('[Auto-Restore] No data found, checking for backups...');
     final latest = await latestBackup();
     if (latest == null) {
-      print('[Auto-Restore] No backups available');
+      debugPrint('[Auto-Restore] No backups available');
       return false;
     }
 
-    print('[Auto-Restore] Restoring latest backup (merge mode)...');
+    debugPrint('[Auto-Restore] Restoring latest backup (merge mode)...');
     try {
       await restoreBackup(latest.id, replace: false);
-      print('[Auto-Restore] Successfully restored backup');
+      debugPrint('[Auto-Restore] Successfully restored backup');
       return true;
     } catch (e) {
-      print('[Auto-Restore] Error: $e');
+      debugPrint('[Auto-Restore] Error: $e');
       return false;
     }
   }
 
   /// Restore from a backup. If [replace] is true, existing collections are cleared first.
   Future<void> restoreBackup(String backupId, {bool replace = false}) async {
-    if (_uid == null) throw Exception('Not authenticated');
+    if (_uid == null) { throw Exception('Not authenticated'); }
 
     final doc = await _backupDoc(backupId).get();
-    if (!doc.exists) throw Exception('Backup not found');
+    if (!doc.exists) { throw Exception('Backup not found'); }
     final data = doc.data()!;
 
     // Download and parse JSON from Cloud Storage
     final storageUrl = data['storageUrl'] as String?;
-    if (storageUrl == null) throw Exception('Backup file missing storageUrl');
+    if (storageUrl == null) { throw Exception('Backup file missing storageUrl'); }
 
     // Download JSON file
     final storage = FirebaseStorage.instance;
@@ -346,7 +346,7 @@ class BackupService {
     final jsonString = await ref
         .getData(10 * 1024 * 1024) // 10 MiB max
         .then((bytes) => bytes != null ? String.fromCharCodes(bytes) : null);
-    if (jsonString == null) throw Exception('Failed to download backup file');
+    if (jsonString == null) { throw Exception('Failed to download backup file'); }
 
     // Parse JSON
     Map<String, dynamic> payload;
@@ -378,7 +378,7 @@ class BackupService {
 
   /// Check if the user has any data in primary collections.
   Future<bool> hasAnyUserData() async {
-    if (_uid == null) return false;
+    if (_uid == null) { return false; }
     final collections = <String>[
       'accounts',
       'transactions',
@@ -392,7 +392,7 @@ class BackupService {
 
     for (final col in collections) {
       final snap = await _collection(col).limit(1).get();
-      if (snap.docs.isNotEmpty) return true;
+      if (snap.docs.isNotEmpty) { return true; }
     }
     return false;
   }
@@ -401,7 +401,7 @@ class BackupService {
     const chunk = 400;
     while (true) {
       final snap = await _collection(name).limit(chunk).get();
-      if (snap.docs.isEmpty) break;
+      if (snap.docs.isEmpty) { break; }
       final batch = _firestore.batch();
       for (final d in snap.docs) {
         batch.delete(d.reference);
@@ -420,7 +420,7 @@ class BackupService {
       final part = items.skip(i).take(chunk);
       for (final item in part) {
         final id = item['id'] as String?;
-        if (id == null || id.isEmpty) continue;
+        if (id == null || id.isEmpty) { continue; }
         final data = Map<String, dynamic>.from(item)..remove('id');
         batch.set(_collection(name).doc(id), data, SetOptions(merge: true));
       }
@@ -443,7 +443,7 @@ class BackupService {
       // Only backup active bikes (skip deleted ones)
       final isActive = bikeData['isActive'] ?? true;
       if (!isActive) {
-        print('Skipping deleted bike: ${bikeData['name']}');
+        debugPrint('Skipping deleted bike: ${bikeData['name']}');
         continue;
       }
 
@@ -500,13 +500,13 @@ class BackupService {
     final entriesList =
         (payload['bike_entries'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
-    print(
+    debugPrint(
       'Restore: Found ${bikesList.length} bikes and ${entriesList.length} entries',
     );
 
     // If we have entries but no bikes, try to reconstruct bikes from entries
     if (bikesList.isEmpty && entriesList.isNotEmpty) {
-      print(
+      debugPrint(
         'Warning: No bikes found but have entries. Creating bikes from entries...',
       );
       final bikeMap = <String, Map<String, dynamic>>{};
@@ -535,26 +535,26 @@ class BackupService {
       }
 
       bikesList = bikeMap.values.toList();
-      print('Reconstructed ${bikesList.length} bikes from entries');
+      debugPrint('Reconstructed ${bikesList.length} bikes from entries');
     }
 
     // Restore bikes as-is (preserving their isActive status)
-    print('Restoring ${bikesList.length} bikes...');
+    debugPrint('Restoring ${bikesList.length} bikes...');
     await _writeBatch('bikes', bikesList);
 
     // Restore bike entries - wait a bit to ensure bikes are written
-    print('Restoring ${entriesList.length} bike entries...');
+    debugPrint('Restoring ${entriesList.length} bike entries...');
     int entriesRestored = 0;
     for (final entry in entriesList) {
       final bikeId = entry['bikeId'] as String?;
       if (bikeId == null || bikeId.isEmpty) {
-        print('  Skipping entry: missing bikeId');
+        debugPrint('  Skipping entry: missing bikeId');
         continue;
       }
 
       final entryId = entry['id'] as String?;
       if (entryId == null || entryId.isEmpty) {
-        print('  Skipping entry: missing entryId');
+        debugPrint('  Skipping entry: missing entryId');
         continue;
       }
 
@@ -573,26 +573,26 @@ class BackupService {
             .set(data, SetOptions(merge: true));
         entriesRestored++;
       } catch (e) {
-        print('  Error restoring entry $entryId: $e');
+        debugPrint('  Error restoring entry $entryId: $e');
       }
     }
-    print('Successfully restored $entriesRestored entries');
+    debugPrint('Successfully restored $entriesRestored entries');
 
     // Restore bike trips
     final tripsList =
         (payload['bike_trips'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-    print('Restoring ${tripsList.length} bike trips...');
+    debugPrint('Restoring ${tripsList.length} bike trips...');
     int tripsRestored = 0;
     for (final trip in tripsList) {
       final bikeId = trip['bikeId'] as String?;
       if (bikeId == null || bikeId.isEmpty) {
-        print('  Skipping trip: missing bikeId');
+        debugPrint('  Skipping trip: missing bikeId');
         continue;
       }
 
       final tripId = trip['id'] as String?;
       if (tripId == null || tripId.isEmpty) {
-        print('  Skipping trip: missing tripId');
+        debugPrint('  Skipping trip: missing tripId');
         continue;
       }
 
@@ -611,10 +611,10 @@ class BackupService {
             .set(data, SetOptions(merge: true));
         tripsRestored++;
       } catch (e) {
-        print('  Error restoring trip $tripId: $e');
+        debugPrint('  Error restoring trip $tripId: $e');
       }
     }
-    print('Successfully restored $tripsRestored trips');
+    debugPrint('Successfully restored $tripsRestored trips');
   }
 
   /// Convert Firestore types to JSON-serializable types

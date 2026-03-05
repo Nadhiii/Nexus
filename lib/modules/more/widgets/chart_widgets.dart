@@ -38,7 +38,7 @@ class CategorySpendingChart extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Center(
           child: Text(
@@ -54,13 +54,13 @@ class CategorySpendingChart extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         children: sortedEntries.take(5).map((e) {
           final percentage = e.value / totalSpent;
           // Dynamic color based on intensity
-          final barColor = AppColors.primaryBlue.withOpacity(
+          final barColor = AppColors.primaryBlue.withValues(alpha: 
             0.4 + (percentage * 0.6),
           );
 
@@ -110,7 +110,7 @@ class CategorySpendingChart extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                           boxShadow: [
                             BoxShadow(
-                              color: barColor.withOpacity(0.5),
+                              color: barColor.withValues(alpha: 0.5),
                               blurRadius: 8,
                               spreadRadius: 1,
                             ),

@@ -131,9 +131,9 @@ class Bike {
   factory Bike.fromMap(Map<String, dynamic> map, String docId) {
     // Helper function to parse dates from either Timestamp or String
     DateTime? parseDateTime(dynamic value) {
-      if (value == null) return null;
-      if (value is Timestamp) return value.toDate();
-      if (value is String) return DateTime.parse(value);
+      if (value == null) { return null; }
+      if (value is Timestamp) { return value.toDate(); }
+      if (value is String) { return DateTime.parse(value); }
       return null;
     }
 

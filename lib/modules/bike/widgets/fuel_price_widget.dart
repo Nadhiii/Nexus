@@ -72,10 +72,10 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
           decoration: BoxDecoration(
             color: AppColors.cardSurface,
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -88,7 +88,7 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryBlue.withOpacity(0.15),
+                      color: AppColors.primaryBlue.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -151,9 +151,11 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
                             ? null
                             : () async {
                                 await priceProvider.detectAndLoadCity();
+                                if (!context.mounted) {
+                                  return;
+                                }
                                 _calculateFinalPrice();
-                                if (mounted &&
-                                    priceProvider.selectedCity != null) {
+                                if (priceProvider.selectedCity != null) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
@@ -254,7 +256,9 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
                       borderRadius: BorderRadius.circular(
                         AppSpacing.radiusFull,
                       ),
-                      border: Border.all(color: Colors.white.withOpacity(0.05)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.05),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -328,7 +332,7 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.2) : Colors.transparent,
+          color: isSelected ? color.withValues(alpha: 0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
         ),
         child: Text(

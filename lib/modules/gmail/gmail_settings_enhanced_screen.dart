@@ -85,10 +85,12 @@ class _GmailSettingsEnhancedScreenState
                 decoration: BoxDecoration(
                   color: AppColors.cardSurface,
                   borderRadius: AppSpacing.borderRadiusMd,
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),
@@ -116,7 +118,7 @@ class _GmailSettingsEnhancedScreenState
                       ),
                       activeThumbColor: AppColors.primaryBlue,
                     ),
-                    Divider(color: Colors.white.withOpacity(0.05)),
+                    Divider(color: Colors.white.withValues(alpha: 0.05)),
                     SwitchListTile(
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.lg,
@@ -124,7 +126,9 @@ class _GmailSettingsEnhancedScreenState
                       value: gmailEnabled,
                       onChanged: gmailEnabled
                           ? (val) {
-                              if (!val) provider.unlinkAccount();
+                              if (!val) {
+                                provider.unlinkAccount();
+                              }
                             }
                           : null,
                       title: const Text('Enable Gmail Reading'),
@@ -202,7 +206,7 @@ class _GmailSettingsEnhancedScreenState
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,7 +268,7 @@ class _GmailSettingsEnhancedScreenState
           decoration: BoxDecoration(
             color: AppColors.cardSurface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: Column(
             children: [
@@ -286,7 +290,7 @@ class _GmailSettingsEnhancedScreenState
                 activeThumbColor: AppColors.accentTeal,
               ),
               if (_settings.autoSyncEnabled) ...[
-                Divider(color: Colors.white.withOpacity(0.05)),
+                Divider(color: Colors.white.withValues(alpha: 0.05)),
                 Padding(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
@@ -331,7 +335,7 @@ class _GmailSettingsEnhancedScreenState
           border: Border.all(
             color: isSelected
                 ? AppColors.primaryBlue
-                : Colors.white.withOpacity(0.1),
+                : Colors.white.withValues(alpha: 0.1),
           ),
         ),
         child: Text(
@@ -360,7 +364,7 @@ class _GmailSettingsEnhancedScreenState
           decoration: BoxDecoration(
             color: AppColors.cardSurface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: Column(
             children: [
@@ -390,7 +394,7 @@ class _GmailSettingsEnhancedScreenState
                   },
                 ),
               ),
-              Divider(color: Colors.white.withOpacity(0.05)),
+              Divider(color: Colors.white.withValues(alpha: 0.05)),
               SwitchListTile(
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md,
@@ -407,7 +411,7 @@ class _GmailSettingsEnhancedScreenState
                 },
                 activeThumbColor: AppColors.accentTeal,
               ),
-              Divider(color: Colors.white.withOpacity(0.05)),
+              Divider(color: Colors.white.withValues(alpha: 0.05)),
               SwitchListTile(
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md,
@@ -444,7 +448,7 @@ class _GmailSettingsEnhancedScreenState
           decoration: BoxDecoration(
             color: AppColors.cardSurface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: Column(
             children: [
@@ -472,7 +476,7 @@ class _GmailSettingsEnhancedScreenState
                 },
                 activeThumbColor: AppColors.accentTeal,
               ),
-              Divider(color: Colors.white.withOpacity(0.05)),
+              Divider(color: Colors.white.withValues(alpha: 0.05)),
               SwitchListTile(
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md,
@@ -520,7 +524,7 @@ class _GmailSettingsEnhancedScreenState
           decoration: BoxDecoration(
             color: AppColors.cardSurface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
@@ -635,7 +639,9 @@ class _GmailSettingsEnhancedScreenState
                 decoration: BoxDecoration(
                   color: AppColors.cardSurface,
                   borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.05),
+                  ),
                 ),
                 child: TextField(
                   controller: controller,
@@ -643,7 +649,7 @@ class _GmailSettingsEnhancedScreenState
                   decoration: InputDecoration(
                     hintText: 'e.g., promo@example.com',
                     hintStyle: TextStyle(
-                      color: AppColors.textTertiary.withOpacity(0.5),
+                      color: AppColors.textTertiary.withValues(alpha: 0.5),
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
@@ -741,7 +747,9 @@ class _GmailSettingsEnhancedScreenState
         showTopSnackBar(context, 'Failed to save settings: $e', isError: true);
       }
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 }

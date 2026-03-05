@@ -14,12 +14,16 @@ class ModernBudgetsScreen extends StatefulWidget {
 }
 
 class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
+  bool _didInitProvider = false;
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () => Provider.of<BudgetProvider>(context, listen: false).initialize(),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _didInitProvider) { return; }
+      _didInitProvider = true;
+      context.read<BudgetProvider>().initialize();
+    });
   }
 
   void _showDeleteConfirmation(BuildContext context, Budget budget) {
@@ -57,7 +61,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                         onPressed: () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
@@ -221,16 +225,18 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.accentPurple.withOpacity(0.25),
-            AppColors.accentPurple.withOpacity(0.08),
+            AppColors.accentPurple.withValues(alpha: 0.25),
+            AppColors.accentPurple.withValues(alpha: 0.08),
             AppColors.cardSurface,
           ],
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.accentPurple.withOpacity(0.2)),
+        border: Border.all(
+          color: AppColors.accentPurple.withValues(alpha: 0.2),
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.accentPurple.withOpacity(0.15),
+            color: AppColors.accentPurple.withValues(alpha: 0.15),
             blurRadius: 30,
             offset: const Offset(0, 10),
           ),
@@ -245,7 +251,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
               Text(
                 'BUDGET REMAINING',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
@@ -257,9 +263,9 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.15),
+                  color: statusColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: statusColor.withOpacity(0.3)),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -298,7 +304,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
             Text(
               'Over Budget',
               style: TextStyle(
-                color: AppColors.error.withOpacity(0.8),
+                color: AppColors.error.withValues(alpha: 0.8),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -329,7 +335,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                       borderRadius: BorderRadius.circular(5),
                       boxShadow: [
                         BoxShadow(
-                          color: statusColor.withOpacity(0.6),
+                          color: statusColor.withValues(alpha: 0.6),
                           blurRadius: 12,
                           spreadRadius: 2,
                         ),
@@ -347,7 +353,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                 child: _buildMiniStat(
                   'Spent',
                   '₹${_formatAmount(totalSpent)}',
-                  AppColors.error.withOpacity(0.8),
+                  AppColors.error.withValues(alpha: 0.8),
                 ),
               ),
               const SizedBox(width: 12),
@@ -377,7 +383,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.2),
+        color: Colors.black.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -394,7 +400,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               fontSize: 10,
             ),
           ),
@@ -559,13 +565,16 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [categoryColor.withOpacity(0.2), AppColors.cardSurface],
+                colors: [
+                  categoryColor.withValues(alpha: 0.2),
+                  AppColors.cardSurface,
+                ],
               ),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: categoryColor.withOpacity(0.2)),
+              border: Border.all(color: categoryColor.withValues(alpha: 0.2)),
               boxShadow: [
                 BoxShadow(
-                  color: categoryColor.withOpacity(0.1),
+                  color: categoryColor.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -579,7 +588,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: categoryColor.withOpacity(0.15),
+                        color: categoryColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -595,7 +604,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.15),
+                        color: statusColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -641,7 +650,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                       height: 5,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
+                        color: Colors.white.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(3),
                       ),
                     ),
@@ -656,7 +665,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                           borderRadius: BorderRadius.circular(3),
                           boxShadow: [
                             BoxShadow(
-                              color: statusColor.withOpacity(0.5),
+                              color: statusColor.withValues(alpha: 0.5),
                               blurRadius: 8,
                             ),
                           ],
@@ -693,17 +702,20 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: [categoryColor.withOpacity(0.15), AppColors.cardSurface],
+              colors: [
+                categoryColor.withValues(alpha: 0.15),
+                AppColors.cardSurface,
+              ],
             ),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: categoryColor.withOpacity(0.15)),
+            border: Border.all(color: categoryColor.withValues(alpha: 0.15)),
           ),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: categoryColor.withOpacity(0.15),
+                  color: categoryColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
@@ -733,7 +745,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                           height: 6,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.08),
+                            color: Colors.white.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),
@@ -776,7 +788,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.15),
+                      color: statusColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -814,7 +826,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
           decoration: BoxDecoration(
             color: AppColors.cardSurface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: categoryColor.withOpacity(0.15)),
+            border: Border.all(color: categoryColor.withValues(alpha: 0.15)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -850,7 +862,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                     height: 4,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
+                      color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -884,7 +896,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.15),
+                      color: statusColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -938,19 +950,19 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.accentPurple.withOpacity(0.2),
-                    AppColors.accentPurple.withOpacity(0.05),
+                    AppColors.accentPurple.withValues(alpha: 0.2),
+                    AppColors.accentPurple.withValues(alpha: 0.05),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(32),
                 border: Border.all(
-                  color: AppColors.accentPurple.withOpacity(0.2),
+                  color: AppColors.accentPurple.withValues(alpha: 0.2),
                 ),
               ),
               child: Icon(
                 Icons.pie_chart_outline_rounded,
                 size: 56,
-                color: AppColors.accentPurple.withOpacity(0.6),
+                color: AppColors.accentPurple.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 32),
@@ -980,13 +992,13 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                     gradient: LinearGradient(
                       colors: [
                         AppColors.accentPurple,
-                        AppColors.accentPurple.withOpacity(0.8),
+                        AppColors.accentPurple.withValues(alpha: 0.8),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.accentPurple.withOpacity(0.3),
+                        color: AppColors.accentPurple.withValues(alpha: 0.3),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -1031,7 +1043,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                     color: AppColors.cardSurface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.accentPurple.withOpacity(0.3),
+                      color: AppColors.accentPurple.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Material(

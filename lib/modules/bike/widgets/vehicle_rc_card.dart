@@ -92,12 +92,12 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
-        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
       ),
       clipBehavior: Clip.hardEdge,
       child: Stack(
@@ -109,7 +109,7 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
             child: Icon(
               Icons.fingerprint,
               size: 250,
-              color: Colors.white.withOpacity(0.02),
+              color: Colors.white.withValues(alpha: 0.02),
             ),
           ),
           if (isBack)
@@ -119,7 +119,7 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
               right: 0,
               child: Container(
                 height: 40,
-                color: Colors.black.withOpacity(0.8),
+                color: Colors.black.withValues(alpha: 0.8),
               ), // Magnetic stripe look
             ),
           child,
@@ -178,7 +178,7 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         borderRadius: const BorderRadius.horizontal(
                           right: Radius.circular(4),
                         ),
@@ -242,7 +242,7 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
                       Text(
                         'OWNER NAME',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                           fontSize: 9,
                           letterSpacing: 1.0,
                         ),
@@ -308,7 +308,7 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Row(
@@ -401,7 +401,7 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.4),
+            color: Colors.white.withValues(alpha: 0.4),
             fontSize: 8,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
@@ -427,12 +427,12 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
     final now = DateTime.now();
     final expiry = widget.bike.policyExpiry;
 
-    if (expiry == null) return _buildBadge('NO INSURANCE', Colors.grey);
+    if (expiry == null) { return _buildBadge('NO INSURANCE', Colors.grey); }
     final isExpired = expiry.isBefore(now);
     final isExpiringSoon = expiry.difference(now).inDays < 30 && !isExpired;
 
-    if (isExpired) return _buildBadge('EXPIRED', AppColors.error);
-    if (isExpiringSoon) return _buildBadge('RENEW SOON', Colors.orange);
+    if (isExpired) { return _buildBadge('EXPIRED', AppColors.error); }
+    if (isExpiringSoon) { return _buildBadge('RENEW SOON', Colors.orange); }
     return _buildBadge('ACTIVE', AppColors.success);
   }
 
@@ -440,9 +440,9 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
         text,

@@ -115,7 +115,7 @@ class BudgetProvider extends ChangeNotifier {
 
   Future<void> createBudget(Budget budget) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     try {
       _setLoading(true);
@@ -130,7 +130,7 @@ class BudgetProvider extends ChangeNotifier {
 
   Future<void> updateBudget(Budget budget) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     try {
       _setLoading(true);
@@ -144,7 +144,7 @@ class BudgetProvider extends ChangeNotifier {
 
   Future<void> deleteBudget(String budgetId) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     try {
       _setLoading(true);

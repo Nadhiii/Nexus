@@ -133,12 +133,12 @@ class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
                   border: Border.all(
                     color: isSelected
                         ? AppColors.primaryBlue
-                        : Colors.white.withOpacity(0.05),
+                        : Colors.white.withValues(alpha: 0.05),
                   ),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: AppColors.primaryBlue.withOpacity(0.4),
+                            color: AppColors.primaryBlue.withValues(alpha: 0.4),
                             blurRadius: 8,
                           ),
                         ]
@@ -168,7 +168,7 @@ class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
           Icon(
             Icons.pie_chart_outline,
             size: 64,
-            color: AppColors.textTertiary.withOpacity(0.3),
+            color: AppColors.textTertiary.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -179,7 +179,7 @@ class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
           Text(
             "Try selecting a different time range",
             style: TextStyle(
-              color: AppColors.textTertiary.withOpacity(0.5),
+              color: AppColors.textTertiary.withValues(alpha: 0.5),
               fontSize: 12,
             ),
           ),

@@ -59,7 +59,7 @@ class CrossModuleNotificationHub {
     notifications.sort((a, b) {
       final priorityA = _getNotificationPriority(a.type);
       final priorityB = _getNotificationPriority(b.type);
-      if (priorityA != priorityB) return priorityA.compareTo(priorityB);
+      if (priorityA != priorityB) { return priorityA.compareTo(priorityB); }
       return b.createdAt.compareTo(a.createdAt);
     });
 

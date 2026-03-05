@@ -1,6 +1,7 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class LocationService {
   static const String _selectedCityKey = 'selected_city';
@@ -11,7 +12,7 @@ class LocationService {
       // Check if location services are enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        print('Location services are disabled');
+        debugPrint('Location services are disabled');
         return null;
       }
 
@@ -21,17 +22,17 @@ class LocationService {
         try {
           permission = await Geolocator.requestPermission();
         } catch (e) {
-          print('Error requesting location permission: $e');
+          debugPrint('Error requesting location permission: $e');
           return null;
         }
         if (permission == LocationPermission.denied) {
-          print('Location permission denied');
+          debugPrint('Location permission denied');
           return null;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        print('Location permission denied forever');
+        debugPrint('Location permission denied forever');
         return null;
       }
 
@@ -39,11 +40,13 @@ class LocationService {
       Position? position;
       try {
         position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.medium,
-          timeLimit: const Duration(seconds: 5),
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.medium,
+            timeLimit: Duration(seconds: 5),
+          ),
         );
       } catch (e) {
-        print('Error getting position: $e');
+        debugPrint('Error getting position: $e');
         return null;
       }
 
@@ -55,7 +58,7 @@ class LocationService {
           position.longitude,
         );
       } catch (e) {
-        print('Error getting placemarks: $e');
+        debugPrint('Error getting placemarks: $e');
         return null;
       }
 
@@ -74,7 +77,7 @@ class LocationService {
         }
       }
     } catch (e) {
-      print('Error getting current city: $e');
+      debugPrint('Error getting current city: $e');
     }
     return null;
   }
@@ -85,7 +88,7 @@ class LocationService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_selectedCityKey);
     } catch (e) {
-      print('Error getting selected city: $e');
+      debugPrint('Error getting selected city: $e');
       return null;
     }
   }
@@ -96,7 +99,7 @@ class LocationService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_selectedCityKey, city);
     } catch (e) {
-      print('Error setting selected city: $e');
+      debugPrint('Error setting selected city: $e');
     }
   }
 
@@ -106,7 +109,7 @@ class LocationService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_selectedCityKey);
     } catch (e) {
-      print('Error clearing selected city: $e');
+      debugPrint('Error clearing selected city: $e');
     }
   }
 

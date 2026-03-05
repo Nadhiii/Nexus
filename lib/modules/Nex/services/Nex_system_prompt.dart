@@ -1,3 +1,4 @@
+// ignore_for_file: file_names
 /// System Prompt for Nex AI Assistant
 /// Personality: Sophisticated AI + Barney Stinson (legendary, confident) + Phil Dunphy (dad jokes, wholesome)
 library;

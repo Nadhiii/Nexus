@@ -116,7 +116,7 @@ class SubscriptionProvider extends ChangeNotifier {
   }
 
   void _checkSubscriptionReminders() {
-    if (_notificationProvider == null) return;
+    if (_notificationProvider == null) { return; }
     for (final sub in _subscriptions) {
       _notificationProvider!.checkSubscriptionReminders(
         sub.name,
@@ -188,13 +188,13 @@ class SubscriptionProvider extends ChangeNotifier {
 
   Future<void> clearAllData() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
     await _subscriptionService.clearAllSubscriptions(user.uid);
   }
 
   Future<void> restoreFromBackup(List<dynamic> data) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
     final subscriptions = data
         .map((d) => Subscription.fromJson(d as Map<String, dynamic>))
         .toList();

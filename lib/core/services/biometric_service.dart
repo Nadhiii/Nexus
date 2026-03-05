@@ -21,29 +21,29 @@ class BiometricService {
         try {
           final biometrics = await _localAuth.getAvailableBiometrics();
           if (biometrics.isNotEmpty) {
-            print('Found available biometrics: $biometrics');
+            debugPrint('Found available biometrics: $biometrics');
             return true;
           }
         } catch (e) {
-          print('getAvailableBiometrics failed: $e');
+          debugPrint('getAvailableBiometrics failed: $e');
         }
 
         // Then try the standard checks
         try {
           final bool isAvailable = await _localAuth.canCheckBiometrics;
           final bool isDeviceSupported = await _localAuth.isDeviceSupported();
-          print(
+          debugPrint(
             'Biometric availability - canCheckBiometrics: $isAvailable, isDeviceSupported: $isDeviceSupported',
           );
           return isAvailable || isDeviceSupported; // Either should work
         } catch (e) {
-          print('Standard biometric checks failed: $e');
+          debugPrint('Standard biometric checks failed: $e');
         }
 
         // If all else fails, assume biometrics are available on Android devices
         // since most modern Android devices have some form of biometric authentication
         if (defaultTargetPlatform == TargetPlatform.android) {
-          print('Assuming biometrics available on Android device');
+          debugPrint('Assuming biometrics available on Android device');
           return true;
         }
       }
@@ -58,16 +58,16 @@ class BiometricService {
 
       return false;
     } on PlatformException catch (e) {
-      print('PlatformException checking biometric availability: $e');
+      debugPrint('PlatformException checking biometric availability: $e');
       // On Android, if we get a channel error but we're on a mobile platform,
       // let's assume biometrics might still work and let the user try
       if (defaultTargetPlatform == TargetPlatform.android) {
-        print('Assuming biometrics might work despite channel error');
+        debugPrint('Assuming biometrics might work despite channel error');
         return true;
       }
       return false;
     } catch (e) {
-      print('Unexpected error checking biometric availability: $e');
+      debugPrint('Unexpected error checking biometric availability: $e');
       return false;
     }
   }
@@ -79,7 +79,7 @@ class BiometricService {
       if (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS) {
         final biometrics = await _localAuth.getAvailableBiometrics();
-        print('Available biometrics: $biometrics');
+        debugPrint('Available biometrics: $biometrics');
         return biometrics;
       }
 
@@ -94,17 +94,17 @@ class BiometricService {
 
       return [];
     } on PlatformException catch (e) {
-      print('PlatformException getting available biometrics: $e');
+      debugPrint('PlatformException getting available biometrics: $e');
       // If we get a channel error on Android, assume common biometric types are available
       if (defaultTargetPlatform == TargetPlatform.android) {
-        print(
+        debugPrint(
           'Assuming fingerprint available on Android despite channel error',
         );
         return [BiometricType.fingerprint];
       }
       return [];
     } catch (e) {
-      print('Unexpected error getting available biometrics: $e');
+      debugPrint('Unexpected error getting available biometrics: $e');
       // Return a default list if we can't determine available types
       if (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS) {
@@ -135,7 +135,7 @@ class BiometricService {
       // due to channel errors
       if (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS) {
-        print('Attempting biometric authentication with reason: $reason');
+        debugPrint('Attempting biometric authentication with reason: $reason');
         final bool didAuthenticate = await _localAuth.authenticate(
           localizedReason: reason,
           options: AuthenticationOptions(
@@ -144,33 +144,33 @@ class BiometricService {
           ),
         );
 
-        print('Authentication result: $didAuthenticate');
+        debugPrint('Authentication result: $didAuthenticate');
         return didAuthenticate;
       }
 
       return false;
     } on PlatformException catch (e) {
-      print('PlatformException during authentication: $e');
+      debugPrint('PlatformException during authentication: $e');
       // Handle specific error codes
       if (e.code == 'NotAvailable') {
-        print('Biometric authentication is not available on this device');
+        debugPrint('Biometric authentication is not available on this device');
       } else if (e.code == 'NotEnrolled') {
-        print('No biometric credentials are enrolled');
+        debugPrint('No biometric credentials are enrolled');
       } else if (e.code == 'LockedOut') {
-        print('Biometric authentication is temporarily locked out');
+        debugPrint('Biometric authentication is temporarily locked out');
       } else if (e.code == 'channel-error') {
-        print(
+        debugPrint(
           'Channel communication error - the local_auth plugin may need to be reinitialized',
         );
       } else if (e.code == 'no_fragment_activity') {
-        print(
+        debugPrint(
           'MainActivity needs to extend FlutterFragmentActivity for biometric authentication',
         );
         // This should be fixed by updating MainActivity.kt
       }
       return false;
     } catch (e) {
-      print('Unexpected error during authentication: $e');
+      debugPrint('Unexpected error during authentication: $e');
       return false;
     }
   }
@@ -306,7 +306,7 @@ class BiometricService {
         return BiometricSetupResult.authenticationFailed;
       }
     } catch (e) {
-      print('Error setting up biometric: $e');
+      debugPrint('Error setting up biometric: $e');
       return BiometricSetupResult.error;
     }
   }

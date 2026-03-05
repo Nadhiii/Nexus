@@ -40,7 +40,7 @@ class _CollapsibleFabState extends State<CollapsibleFab> {
     setState(() => _expanded = true);
     _collapseTimer?.cancel();
     _collapseTimer = Timer(widget.expandedDuration, () {
-      if (!mounted) return;
+      if (!mounted) { return; }
       setState(() => _expanded = false);
     });
   }

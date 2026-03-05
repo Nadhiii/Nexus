@@ -239,7 +239,7 @@ class _AIInitializerState extends State<_AIInitializer> {
     if (!_initialized) {
       _initialized = true;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted) return;
+        if (!mounted) { return; }
         _initializeAIProvider(context);
         // ONLY initialize notifications here, do NOT check for update yet
         await _otaService.initNotifications();

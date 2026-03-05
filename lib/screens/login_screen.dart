@@ -16,12 +16,12 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   Future<void> _handle(Future<void> Function() action) async {
-    if (_isLoading) return;
+    if (_isLoading) { return; }
     setState(() => _isLoading = true);
     try {
       await action();
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) { return; }
 
       String errorMessage = e.toString();
 
@@ -56,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       showTopSnackBar(context, errorMessage, isError: true);
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) { setState(() => _isLoading = false); }
     }
   }
 

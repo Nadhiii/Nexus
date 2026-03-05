@@ -60,7 +60,7 @@ class PDFParser {
 
     for (final modelName in _modelCandidates) {
       try {
-        if (kDebugMode) print('Attempting PDF parse with model: $modelName');
+        if (kDebugMode) { debugPrint('Attempting PDF parse with model: $modelName'); }
 
         final model = GenerativeModel(
           model: modelName,
@@ -86,7 +86,7 @@ class PDFParser {
         final List<dynamic> rawList = jsonDecode(cleanJson);
 
         if (kDebugMode) {
-          print(
+          debugPrint(
             'Success! Extracted ${rawList.length} transactions using $modelName.',
           );
         }
@@ -106,7 +106,7 @@ class PDFParser {
       } catch (e) {
         lastError = e.toString();
         // Log the error but continue to the next model
-        if (kDebugMode) print('Model $modelName failed: $e');
+        if (kDebugMode) { debugPrint('Model $modelName failed: $e'); }
 
         // Quota errors (429) or Not Found (404) should trigger fallback
         continue;

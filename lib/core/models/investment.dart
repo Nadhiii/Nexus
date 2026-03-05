@@ -61,14 +61,14 @@ class Investment {
 
     // Handle Dates
     DateTime parseDate(dynamic val) {
-      if (val is Timestamp) return val.toDate();
-      if (val is String) return DateTime.parse(val);
+      if (val is Timestamp) { return val.toDate(); }
+      if (val is String) { return DateTime.parse(val); }
       return DateTime.now();
     }
 
     // Determine Type (Fallback to MutualFund for old data)
     InvestmentType parseType(String? typeStr) {
-      if (typeStr == null) return InvestmentType.mutualFund;
+      if (typeStr == null) { return InvestmentType.mutualFund; }
       return InvestmentType.values.firstWhere(
         (e) => e.toString().split('.').last == typeStr,
         orElse: () => InvestmentType.other,

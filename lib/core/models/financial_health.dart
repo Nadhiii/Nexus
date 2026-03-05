@@ -74,31 +74,57 @@ class FinancialHealthScore {
   /// Get grade (A, B, C, D, F)
   String get grade {
     final score = overallScore;
-    if (score >= 90) return 'A+';
-    if (score >= 80) return 'A';
-    if (score >= 70) return 'B';
-    if (score >= 60) return 'C';
-    if (score >= 50) return 'D';
+    if (score >= 90) {
+      return 'A+';
+    }
+    if (score >= 80) {
+      return 'A';
+    }
+    if (score >= 70) {
+      return 'B';
+    }
+    if (score >= 60) {
+      return 'C';
+    }
+    if (score >= 50) {
+      return 'D';
+    }
     return 'F';
   }
 
   /// Get color for the score
   Color get scoreColor {
     final score = overallScore;
-    if (score >= 80) return const Color(0xFF00E676); // Green
-    if (score >= 60) return const Color(0xFFFFEA00); // Yellow
-    if (score >= 40) return const Color(0xFFFF9800); // Orange
+    if (score >= 80) {
+      return const Color(0xFF00E676); // Green
+    }
+    if (score >= 60) {
+      return const Color(0xFFFFEA00); // Yellow
+    }
+    if (score >= 40) {
+      return const Color(0xFFFF9800); // Orange
+    }
     return const Color(0xFFFF3D00); // Red
   }
 
   /// Get descriptive status
   String get status {
     final score = overallScore;
-    if (score >= 90) return 'Excellent! Keep it up!';
-    if (score >= 80) return 'Very Good Financial Health';
-    if (score >= 70) return 'Good, with room to improve';
-    if (score >= 60) return 'Fair - needs attention';
-    if (score >= 50) return 'Below Average - take action';
+    if (score >= 90) {
+      return 'Excellent! Keep it up!';
+    }
+    if (score >= 80) {
+      return 'Very Good Financial Health';
+    }
+    if (score >= 70) {
+      return 'Good, with room to improve';
+    }
+    if (score >= 60) {
+      return 'Fair - needs attention';
+    }
+    if (score >= 50) {
+      return 'Below Average - take action';
+    }
     return 'Needs Improvement';
   }
 
@@ -222,15 +248,25 @@ class FinancialHealthScore {
   ];
 
   int get _savingsScore {
-    if (savingsRate >= 20) return 25;
-    if (savingsRate >= 10) return (15 + (savingsRate - 10)).round();
-    if (savingsRate >= 5) return (10 + (savingsRate - 5)).round();
+    if (savingsRate >= 20) {
+      return 25;
+    }
+    if (savingsRate >= 10) {
+      return (15 + (savingsRate - 10)).round();
+    }
+    if (savingsRate >= 5) {
+      return (10 + (savingsRate - 5)).round();
+    }
     return (savingsRate * 2).round();
   }
 
   int get _debtScore {
-    if (debtToIncomeRatio <= 20) return 25;
-    if (debtToIncomeRatio <= 35) return (25 - (debtToIncomeRatio - 20)).round();
+    if (debtToIncomeRatio <= 20) {
+      return 25;
+    }
+    if (debtToIncomeRatio <= 35) {
+      return (25 - (debtToIncomeRatio - 20)).round();
+    }
     if (debtToIncomeRatio <= 50) {
       return (10 - (debtToIncomeRatio - 35) * 0.5).round();
     }
@@ -238,7 +274,9 @@ class FinancialHealthScore {
   }
 
   int get _emergencyScore {
-    if (emergencyFundMonths >= 6) return 15;
+    if (emergencyFundMonths >= 6) {
+      return 15;
+    }
     if (emergencyFundMonths >= 3) {
       return (10 + (emergencyFundMonths - 3) * (5 / 3)).round();
     }

@@ -461,10 +461,10 @@ class FinancialHealthService {
   }
 
   static HealthGrade _getGrade(double score) {
-    if (score >= 90) return HealthGrade.excellent;
-    if (score >= 75) return HealthGrade.good;
-    if (score >= 60) return HealthGrade.fair;
-    if (score >= 40) return HealthGrade.needsWork;
+    if (score >= 90) { return HealthGrade.excellent; }
+    if (score >= 75) { return HealthGrade.good; }
+    if (score >= 60) { return HealthGrade.fair; }
+    if (score >= 40) { return HealthGrade.needsWork; }
     return HealthGrade.critical;
   }
 

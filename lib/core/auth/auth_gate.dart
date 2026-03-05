@@ -85,7 +85,7 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
 
   Future<void> _initializeProviders(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     final accountProvider = Provider.of<AccountProvider>(
       context,
@@ -139,7 +139,7 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
 
       // If data was restored, reload all providers to refresh their caches
       if (restored && mounted) {
-        print('[Backup] Data restored, refreshing providers...');
+        debugPrint('[Backup] Data restored, refreshing providers...');
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _initializeProviders(context);
         });

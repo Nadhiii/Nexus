@@ -37,7 +37,7 @@ class NotificationService {
       );
 
   Future<void> initialize(NotificationProvider notificationProvider) async {
-    if (_initialized) return;
+    if (_initialized) { return; }
     _notificationProvider = notificationProvider;
 
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
@@ -189,7 +189,7 @@ class NotificationService {
   Future<void> _storeToken(String token) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+      if (user == null) { return; }
 
       final ref = FirebaseFirestore.instance
           .collection('users')

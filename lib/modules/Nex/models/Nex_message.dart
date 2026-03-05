@@ -1,3 +1,4 @@
+// ignore_for_file: file_names
 /// AI Assistant Message Model
 /// Represents a single message in the conversation
 library;

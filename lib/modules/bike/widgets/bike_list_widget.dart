@@ -163,7 +163,7 @@ class BikeListWidget extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.cardSurface,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.05)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -213,7 +213,7 @@ class BikeListWidget extends StatelessWidget {
                                   color: AppColors.backgroundBlack,
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: AppColors.primaryBlue.withOpacity(
+                                    color: AppColors.primaryBlue.withValues(alpha: 
                                       0.3,
                                     ),
                                   ),
@@ -281,9 +281,9 @@ class BikeListWidget extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.cardSurface.withOpacity(0.5),
+                  color: AppColors.cardSurface.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.02)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.02)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -1,5 +1,7 @@
+// ignore_for_file: file_names
 import 'package:flutter_gemma/flutter_gemma.dart'; // Local Gemma import
 import '../models/Nex_message.dart';
+import 'package:flutter/foundation.dart';
 
 /// Defines the type of work required.
 /// This determines which Gemini 3 model is used.
@@ -52,7 +54,7 @@ class GemmaLocalAIService implements BaseAIService {
       _resetCancel();
 
       // Wrap model initialization with timeout to catch native crashes
-      final model = await FlutterGemma.getActiveModel(maxTokens: 512).timeout(
+      final model = await FlutterGemma.getActiveModel(maxTokens: 4096).timeout(
         const Duration(seconds: 10),
         onTimeout: () => throw Exception('Model initialization timeout'),
       );
@@ -66,7 +68,7 @@ class GemmaLocalAIService implements BaseAIService {
       }
 
       for (final msg in history) {
-        if (msg.role == MessageRole.system) continue;
+        if (msg.role == MessageRole.system) { continue; }
         await chat.addQueryChunk(
           Message.text(text: msg.content, isUser: msg.role == MessageRole.user),
         );
@@ -80,7 +82,7 @@ class GemmaLocalAIService implements BaseAIService {
       try {
         await for (final chunk in chat.generateChatResponseAsync()) {
           // Respect cancellation requests from UI/provider
-          if (_cancelRequested) break;
+          if (_cancelRequested) { break; }
 
           if (chunk is TextResponse) {
             fullResponse += chunk.token;
@@ -101,7 +103,7 @@ class GemmaLocalAIService implements BaseAIService {
           : (_cancelRequested ? 'Cancelled' : 'Could not process locally.');
     } on Exception catch (e, stackTrace) {
       // Log the error for debugging
-      print('Gemma Error: $e\n$stackTrace');
+      debugPrint('Gemma Error: $e\n$stackTrace');
 
       // Return a user-friendly error message
       if (e.toString().contains('Unsupported or unknown file format')) {
@@ -121,7 +123,7 @@ class GemmaLocalAIService implements BaseAIService {
       throw Exception('Local Gemma Error: $e');
     } catch (e) {
       // Catch any other errors (including platform exceptions from native code)
-      print('Unexpected Gemma Error: $e');
+      debugPrint('Unexpected Gemma Error: $e');
       throw Exception('Local AI crashed. Please restart the app.');
     }
   }

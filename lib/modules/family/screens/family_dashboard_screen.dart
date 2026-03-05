@@ -75,7 +75,9 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
     return Consumer<SharedExpenseProvider>(
       builder: (context, provider, _) {
         final members = provider.familyMembers;
-        if (members.isEmpty) return const SizedBox.shrink();
+        if (members.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
         return Container(
           height: 100,
@@ -131,7 +133,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
               shape: BoxShape.circle,
               gradient: LinearGradient(
                 colors: balance != 0
-                    ? [balanceColor, balanceColor.withOpacity(0.5)]
+                    ? [balanceColor, balanceColor.withValues(alpha: 0.5)]
                     : [Colors.grey.shade700, Colors.grey.shade800],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -142,7 +144,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: avatarColor.withOpacity(0.2),
+                color: avatarColor.withValues(alpha: 0.2),
                 border: Border.all(color: AppColors.backgroundBlack, width: 2),
               ),
               child: Center(
@@ -203,7 +205,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
                 shape: BoxShape.circle,
                 color: AppColors.cardSurface,
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                   width: 2,
                   strokeAlign: BorderSide.strokeAlignOutside,
                 ),
@@ -385,7 +387,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -396,7 +398,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
+                  color: color.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 16),
@@ -445,14 +447,14 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(
         children: [
           // Person who owes
           CircleAvatar(
             radius: 20,
-            backgroundColor: AppColors.error.withOpacity(0.2),
+            backgroundColor: AppColors.error.withValues(alpha: 0.2),
             child: Text(
               settlement.person2Name[0].toUpperCase(),
               style: TextStyle(
@@ -515,7 +517,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(
         children: [
@@ -523,7 +525,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: AppColors.primaryBlue.withOpacity(0.2),
+              color: AppColors.primaryBlue.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
@@ -568,7 +570,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.2),
+                    color: AppColors.success.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -661,10 +663,10 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryBlue.withOpacity(0.1),
+                  color: AppColors.primaryBlue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppColors.primaryBlue.withOpacity(0.3),
+                    color: AppColors.primaryBlue.withValues(alpha: 0.3),
                     style: BorderStyle.solid,
                   ),
                 ),
@@ -711,13 +713,13 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 24,
-            backgroundColor: AppColors.primaryBlue.withOpacity(0.2),
+            backgroundColor: AppColors.primaryBlue.withValues(alpha: 0.2),
             backgroundImage: member.avatarUrl != null
                 ? NetworkImage(member.avatarUrl!)
                 : null,
@@ -786,7 +788,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -795,7 +797,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: AppColors.primaryBlue.withOpacity(0.1),
+              color: AppColors.primaryBlue.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: AppColors.primaryBlue, size: 28),

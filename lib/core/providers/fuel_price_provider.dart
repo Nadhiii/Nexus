@@ -37,7 +37,7 @@ class FuelPriceProvider with ChangeNotifier {
         await loadPriceForCity('Mumbai');
       }
     } catch (e) {
-      print('Error initializing fuel price provider: $e');
+      debugPrint('Error initializing fuel price provider: $e');
       // Fallback to Mumbai
       _selectedCity = 'Mumbai';
       await loadPriceForCity('Mumbai');
@@ -53,7 +53,7 @@ class FuelPriceProvider with ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('Error loading saved preferences: $e');
+      debugPrint('Error loading saved preferences: $e');
     }
   }
 
@@ -95,7 +95,7 @@ class FuelPriceProvider with ChangeNotifier {
       await _locationService.setSelectedCity(city);
     } catch (e) {
       _setError('Error loading fuel price: $e');
-      print('Error loading fuel price for $city: $e');
+      debugPrint('Error loading fuel price for $city: $e');
     } finally {
       _setLoading(false);
     }
@@ -110,7 +110,7 @@ class FuelPriceProvider with ChangeNotifier {
       await loadPriceForCity(cityToRefresh);
     } catch (e) {
       _setError('Error refreshing: $e');
-      print('Error refreshing prices: $e');
+      debugPrint('Error refreshing prices: $e');
       // Don't rethrow - just log the error
     }
   }

@@ -35,7 +35,7 @@ class BikeProvider with ChangeNotifier {
   String? get error => _error;
   FirebaseAuth get auth => _auth;
   Bike? get selectedBike {
-    if (_selectedBikeId == null) return _bikes.isNotEmpty ? _bikes.first : null;
+    if (_selectedBikeId == null) { return _bikes.isNotEmpty ? _bikes.first : null; }
     try {
       return _bikes.firstWhere((b) => b.id == _selectedBikeId);
     } catch (e) {
@@ -55,7 +55,7 @@ class BikeProvider with ChangeNotifier {
       return "${entry.date.year}-${entry.date.month}-${entry.date.day}";
     }).toSet();
 
-    print('🗓️ getUniqueActiveDays: ${uniqueDays.length} unique days');
+    debugPrint('🗓️ getUniqueActiveDays: ${uniqueDays.length} unique days');
     return uniqueDays.length;
   }
 
@@ -86,14 +86,14 @@ class BikeProvider with ChangeNotifier {
 
   // Method to select a specific bike (separate from dashboard bike)
   void selectBike(String bikeId) {
-    print('🏍️ BikeProvider: selectBike called with bikeId: $bikeId');
+    debugPrint('🏍️ BikeProvider: selectBike called with bikeId: $bikeId');
     _selectedBikeId = bikeId;
     final user = _auth.currentUser;
     if (user != null) {
-      print('🏍️ BikeProvider: Loading entries for user ${user.uid}');
+      debugPrint('🏍️ BikeProvider: Loading entries for user ${user.uid}');
       loadBikeEntries(user.uid, bikeId);
     } else {
-      print('❌ BikeProvider: No current user!');
+      debugPrint('❌ BikeProvider: No current user!');
     }
     notifyListeners();
   }
@@ -136,20 +136,20 @@ class BikeProvider with ChangeNotifier {
         .listen(
           (allBikes) {
             _deletedBikes = allBikes.where((b) => !b.isActive).toList();
-            print('BikeProvider: Found ${_deletedBikes.length} deleted bikes');
+            debugPrint('BikeProvider: Found ${_deletedBikes.length} deleted bikes');
             for (var bike in _deletedBikes) {
-              print('  Deleted: ${bike.name} (${bike.id})');
+              debugPrint('  Deleted: ${bike.name} (${bike.id})');
             }
             notifyListeners();
           },
           onError: (e) {
-            print('Error loading deleted bikes: $e');
+            debugPrint('Error loading deleted bikes: $e');
           },
         );
   }
 
   void loadBikeEntries(String userId, String bikeId) {
-    print('📊 BikeProvider: loadBikeEntries called for bikeId: $bikeId');
+    debugPrint('📊 BikeProvider: loadBikeEntries called for bikeId: $bikeId');
     _setLoading(true);
     // Cancel previous subscription if it exists
     _entriesSubscription?.cancel();
@@ -158,10 +158,10 @@ class BikeProvider with ChangeNotifier {
         .watchBikeEntries(userId, bikeId)
         .listen(
           (entries) {
-            print('📊 BikeProvider: Received ${entries.length} entries');
+            debugPrint('📊 BikeProvider: Received ${entries.length} entries');
             for (var i = 0; i < entries.length; i++) {
               final entry = entries[i];
-              print(
+              debugPrint(
                 '  [$i] ${entry.date.toIso8601String()} | ${entry.category}, ₹${entry.fuelAmount}, ${entry.fuelQuantity}L',
               );
             }
@@ -174,7 +174,7 @@ class BikeProvider with ChangeNotifier {
             _syncToWidgets();
           },
           onError: (e) {
-            print('❌ BikeProvider: Error loading entries: $e');
+            debugPrint('❌ BikeProvider: Error loading entries: $e');
             _setError('Error loading entries: $e');
             _setLoading(false);
           },
@@ -252,7 +252,7 @@ class BikeProvider with ChangeNotifier {
         _bikes.removeAt(bikeIndex);
         _deletedBikes.add(deletedBike);
         notifyListeners();
-        print('Bike deleted: $bikeId');
+        debugPrint('Bike deleted: $bikeId');
       }
       if (_selectedBikeId == bikeId) {
         _selectedBikeId = null;
@@ -388,7 +388,7 @@ class BikeProvider with ChangeNotifier {
           sum +
           ((entry.category?.toLowerCase() == 'fuel') ? entry.fuelAmount : 0),
     );
-    print(
+    debugPrint(
       '💰 getTotalFuelCost: $total (from ${_currentBikeEntries.length} entries)',
     );
     return total;
@@ -399,12 +399,12 @@ class BikeProvider with ChangeNotifier {
         .where((e) => e.mileage != null && e.mileage! > 0)
         .toList();
     if (entries.isEmpty) {
-      print('⛽ getAverageMileage: 0 (no entries with mileage)');
+      debugPrint('⛽ getAverageMileage: 0 (no entries with mileage)');
       return 0;
     }
     final avg =
         entries.fold<double>(0, (sum, e) => sum + e.mileage!) / entries.length;
-    print('⛽ getAverageMileage: $avg (from ${entries.length} entries)');
+    debugPrint('⛽ getAverageMileage: $avg (from ${entries.length} entries)');
     return avg;
   }
 
@@ -432,7 +432,7 @@ class BikeProvider with ChangeNotifier {
       );
       final avg = totalMileage / entriesWithMileage.length;
 
-      print(
+      debugPrint(
         '⛽ getReliableAverageMileage: $avg km/l (simple avg of ${entriesWithMileage.length} entries)',
       );
       return avg;
@@ -445,7 +445,7 @@ class BikeProvider with ChangeNotifier {
     final count = _currentBikeEntries
         .where((e) => e.category?.toLowerCase() == 'fuel')
         .length;
-    print('🔢 getTotalFillups: $count');
+    debugPrint('🔢 getTotalFillups: $count');
     return count;
   }
 
@@ -539,7 +539,7 @@ class BikeProvider with ChangeNotifier {
   /// Sync current bike data to Android widgets and Android Auto
   Future<void> _syncToWidgets() async {
     final bike = selectedBike ?? getDashboardBike();
-    if (bike == null) return;
+    if (bike == null) { return; }
 
     // Get latest fuel entry for this bike
     final fuelEntries = _currentBikeEntries
@@ -577,7 +577,7 @@ class BikeProvider with ChangeNotifier {
       lastFuelDate: lastFuelDate,
     );
 
-    print('🔄 Synced bike data to widgets: ${bike.name}');
+    debugPrint('🔄 Synced bike data to widgets: ${bike.name}');
   }
 
   void clear() {

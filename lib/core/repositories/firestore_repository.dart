@@ -54,7 +54,7 @@ abstract class FirestoreRepository<T>
   @override
   Future<T?> getById(String id) async {
     final doc = await collection.doc(id).get();
-    if (!doc.exists) return null;
+    if (!doc.exists) { return null; }
     return fromFirestore(doc);
   }
 
@@ -107,7 +107,7 @@ abstract class FirestoreRepository<T>
   @override
   Stream<T?> watchById(String id) {
     return collection.doc(id).snapshots().map((doc) {
-      if (!doc.exists) return null;
+      if (!doc.exists) { return null; }
       return fromFirestore(doc);
     });
   }

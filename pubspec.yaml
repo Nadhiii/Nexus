@@ -140,12 +140,7 @@ flutter:
       fonts:
         - asset: assets/fonts/Rammetto_One/RammettoOne-Regular.ttf
 
-    - family: Groote
-      fonts:
-        - asset: assets/fonts/groote-font/groote-regular.ttf
-          weight: 400
-        - asset: assets/fonts/groote-font/groote-italic.ttf
-          style: italic
+
 
 flutter_native_splash:
   color: "#0F172A"

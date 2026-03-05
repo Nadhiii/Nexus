@@ -42,7 +42,8 @@ class _PDFPasswordManagerScreenState extends State<PDFPasswordManagerScreen> {
             onPressed: () async {
               await PDFPasswordManager.removePassword(password);
               _loadPasswords();
-              if (mounted) Navigator.pop(context);
+              if (!context.mounted) { return; }
+              Navigator.pop(context);
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -68,7 +69,8 @@ class _PDFPasswordManagerScreenState extends State<PDFPasswordManagerScreen> {
             onPressed: () async {
               await PDFPasswordManager.clearAllPasswords();
               _loadPasswords();
-              if (mounted) Navigator.pop(context);
+              if (!context.mounted) { return; }
+              Navigator.pop(context);
             },
             child: const Text('Clear All', style: TextStyle(color: Colors.red)),
           ),
@@ -115,7 +117,7 @@ class _PDFPasswordManagerScreenState extends State<PDFPasswordManagerScreen> {
                     Icon(
                       Icons.lock_open,
                       size: 64,
-                      color: AppColors.textTertiary.withOpacity(0.3),
+                      color: AppColors.textTertiary.withValues(alpha: 0.3),
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     Text(
@@ -145,9 +147,11 @@ class _PDFPasswordManagerScreenState extends State<PDFPasswordManagerScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: AppColors.info.withOpacity(0.1),
+                    color: AppColors.info.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                    border: Border.all(color: AppColors.info.withOpacity(0.3)),
+                    border: Border.all(
+                      color: AppColors.info.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -183,7 +187,7 @@ class _PDFPasswordManagerScreenState extends State<PDFPasswordManagerScreen> {
                             AppSpacing.radiusMd,
                           ),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.05),
+                            color: Colors.white.withValues(alpha: 0.05),
                           ),
                         ),
                         child: ListTile(
@@ -223,7 +227,7 @@ class _PDFPasswordManagerScreenState extends State<PDFPasswordManagerScreen> {
                     icon: const Icon(Icons.delete_sweep),
                     label: const Text('Clear All Passwords'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.withOpacity(0.1),
+                      backgroundColor: Colors.red.withValues(alpha: 0.1),
                       foregroundColor: Colors.red,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),

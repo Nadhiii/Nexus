@@ -51,7 +51,7 @@ class TransactionProvider with ChangeNotifier {
 
   Future<void> initialize() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     try {
       _setLoading(true);
@@ -66,7 +66,7 @@ class TransactionProvider with ChangeNotifier {
 
   Future<void> loadTransactions() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     try {
       // Cancel previous subscription to avoid multiple listeners
@@ -76,19 +76,19 @@ class TransactionProvider with ChangeNotifier {
           .watchUserTransactions(user.uid)
           .listen(
             (transactions) {
-              print(
+              debugPrint(
                 '📊 TransactionProvider: Loaded ${transactions.length} transactions',
               );
               _transactions = transactions;
               notifyListeners();
             },
             onError: (error) {
-              print('❌ TransactionProvider Error: $error');
+              debugPrint('❌ TransactionProvider Error: $error');
               _setError('Failed to load transactions: $error');
             },
           );
     } catch (e) {
-      print('❌ TransactionProvider Catch: $e');
+      debugPrint('❌ TransactionProvider Catch: $e');
       _setError('Failed to load transactions: $e');
     }
   }
@@ -103,13 +103,13 @@ class TransactionProvider with ChangeNotifier {
     try {
       _setLoading(true);
 
-      print(
+      debugPrint(
         '➕ Adding transaction: ${transaction.description}, amount: ${transaction.amount}, userId: ${transaction.userId}',
       );
       // Atomic transaction + account update
       if (transaction.type == TransactionType.transfer &&
           transaction.toAccountId != null) {
-        print('💸 Processing TRANSFER');
+        debugPrint('💸 Processing TRANSFER');
         final sourceAccount = _accountProvider!.getAccountById(
           transaction.accountId,
         );
@@ -128,9 +128,9 @@ class TransactionProvider with ChangeNotifier {
           sourceNewBalance: sourceNewBalance,
           destNewBalance: destNewBalance,
         );
-        print('✅ Transfer and balances committed atomically');
+        debugPrint('✅ Transfer and balances committed atomically');
       } else {
-        print('💰 Processing regular ${transaction.type}');
+        debugPrint('💰 Processing regular ${transaction.type}');
         final account = _accountProvider!.getAccountById(transaction.accountId);
         if (account == null) {
           _setError('Account not found');
@@ -144,7 +144,7 @@ class TransactionProvider with ChangeNotifier {
           transaction: transaction,
           newBalance: newBalance,
         );
-        print('✅ Transaction and balance committed atomically');
+        debugPrint('✅ Transaction and balance committed atomically');
       }
 
       _notificationProvider?.notifyTransaction(
@@ -177,41 +177,41 @@ class TransactionProvider with ChangeNotifier {
     }
 
     try {
-      print(
+      debugPrint(
         '🔄 Restoring transaction: ${transaction.description}, id: ${transaction.id}',
       );
-      print('📊 Current transactions count: ${_transactions.length}');
+      debugPrint('📊 Current transactions count: ${_transactions.length}');
 
       // Restore to Firestore
       await _transactionService.restoreTransaction(transaction);
-      print('✅ Transaction restored to Firestore');
+      debugPrint('✅ Transaction restored to Firestore');
 
       // Manually add to local list if not already present (stream may be delayed)
       // Check by ID to prevent duplicates
       final alreadyExists = _transactions.any((t) => t.id == transaction.id);
-      print('🔍 Transaction already in list: $alreadyExists');
+      debugPrint('🔍 Transaction already in list: $alreadyExists');
 
       if (!alreadyExists) {
         _transactions = [..._transactions, transaction];
         _transactions.sort((a, b) => b.date.compareTo(a.date));
-        print('📋 Added to local list. New count: ${_transactions.length}');
+        debugPrint('📋 Added to local list. New count: ${_transactions.length}');
       } else {
-        print(
+        debugPrint(
           '⚠️ Transaction already exists in list (stream updated), forcing UI refresh',
         );
       }
 
       // Always notify listeners to ensure UI updates
-      print(
+      debugPrint(
         '🔔 Calling notifyListeners() - transaction count: ${_transactions.length}',
       );
       notifyListeners();
-      print('✅ notifyListeners() called');
+      debugPrint('✅ notifyListeners() called');
 
       // Handle transfers between accounts
       if (transaction.type == TransactionType.transfer &&
           transaction.toAccountId != null) {
-        print('💸 Restoring TRANSFER balances');
+        debugPrint('💸 Restoring TRANSFER balances');
 
         // Deduct from source account
         await _updateAccountBalance(
@@ -238,10 +238,10 @@ class TransactionProvider with ChangeNotifier {
         );
       }
 
-      print('✅ Restore complete');
+      debugPrint('✅ Restore complete');
       return true;
     } catch (e) {
-      print('❌ Restore failed: $e');
+      debugPrint('❌ Restore failed: $e');
       _setError('Failed to restore transaction: $e');
       return false;
     }
@@ -296,7 +296,7 @@ class TransactionProvider with ChangeNotifier {
             TransactionType.income,
             isReversal: true, // Remove from destination
           );
-          print(
+          debugPrint(
             '✅ Reversed original transfer: ${originalTransaction.accountId} <- ${originalTransaction.toAccountId}',
           );
         } else if (!wasTransfer) {
@@ -307,7 +307,7 @@ class TransactionProvider with ChangeNotifier {
             originalTransaction.type,
             isReversal: true,
           );
-          print(
+          debugPrint(
             '✅ Reversed original ${originalTransaction.type}: ${originalTransaction.accountId}',
           );
         }
@@ -327,7 +327,7 @@ class TransactionProvider with ChangeNotifier {
             TransactionType.income,
             isReversal: false, // Add to destination
           );
-          print(
+          debugPrint(
             '✅ Applied new transfer: ${transaction.accountId} -> ${transaction.toAccountId}',
           );
         } else if (!isTransfer) {
@@ -338,7 +338,7 @@ class TransactionProvider with ChangeNotifier {
             transaction.type,
             isReversal: false,
           );
-          print('✅ Applied new ${transaction.type}: ${transaction.accountId}');
+          debugPrint('✅ Applied new ${transaction.type}: ${transaction.accountId}');
         }
       }
 
@@ -382,7 +382,7 @@ class TransactionProvider with ChangeNotifier {
           TransactionType.income,
           isReversal: true, // Remove from destination
         );
-        print('✅ Deleted transfer: reversed both accounts');
+        debugPrint('✅ Deleted transfer: reversed both accounts');
       } else {
         await _updateAccountBalance(
           transaction.accountId,
@@ -405,20 +405,20 @@ class TransactionProvider with ChangeNotifier {
     TransactionType type, {
     required bool isReversal,
   }) async {
-    print(
+    debugPrint(
       '🔄 _updateAccountBalance called: accountId=$accountId, amount=$amount, type=$type, isReversal=$isReversal',
     );
 
     final account = _accountProvider!.getAccountById(accountId);
     if (account == null) {
-      print('❌ Account not found for id: $accountId');
-      print(
+      debugPrint('❌ Account not found for id: $accountId');
+      debugPrint(
         '📋 Available accounts: ${_accountProvider!.accounts.map((a) => '${a.id}:${a.name}').toList()}',
       );
       return;
     }
 
-    print(
+    debugPrint(
       '✅ Found account: ${account.name}, current balance: ${account.balance}',
     );
 
@@ -433,20 +433,20 @@ class TransactionProvider with ChangeNotifier {
           : account.balance - amount;
     }
 
-    print('💰 Updating balance: ${account.balance} -> $newBalance');
+    debugPrint('💰 Updating balance: ${account.balance} -> $newBalance');
     await _accountProvider!.updateAccountBalance(accountId, newBalance);
-    print('✅ Balance update complete for ${account.name}');
+    debugPrint('✅ Balance update complete for ${account.name}');
   }
 
   Future<void> clearAllData() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
     await _transactionService.clearAllTransactions(user.uid);
   }
 
   Future<void> restoreFromBackup(List<dynamic> data) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
     final transactions = data
         .map((d) => Transaction.fromJson(d as Map<String, dynamic>))
         .toList();
@@ -466,23 +466,23 @@ class TransactionProvider with ChangeNotifier {
   /// Recalculates account balance from all transactions for a specific account
   Future<void> recalculateAccountBalance(String accountId) async {
     if (_accountProvider == null) {
-      print('❌ AccountProvider not available');
+      debugPrint('❌ AccountProvider not available');
       return;
     }
     if (accountId.isEmpty) {
-      print('⚠️ Skipping recalculation: empty accountId');
+      debugPrint('⚠️ Skipping recalculation: empty accountId');
       return;
     }
 
     try {
-      print('🔢 Recalculating balance for account: $accountId');
+      debugPrint('🔢 Recalculating balance for account: $accountId');
 
       // Get all transactions for this account
       final accountTransactions = _transactions
           .where((t) => t.accountId == accountId || t.toAccountId == accountId)
           .toList();
 
-      print(
+      debugPrint(
         '📊 Found ${accountTransactions.length} transactions for this account',
       );
 
@@ -492,41 +492,41 @@ class TransactionProvider with ChangeNotifier {
       for (final transaction in accountTransactions) {
         if (transaction.type == TransactionType.income) {
           calculatedBalance += transaction.amount;
-          print(
+          debugPrint(
             '  ➕ Income: +${transaction.amount} (${transaction.description})',
           );
         } else if (transaction.type == TransactionType.expense) {
           calculatedBalance -= transaction.amount;
-          print(
+          debugPrint(
             '  ➖ Expense: -${transaction.amount} (${transaction.description})',
           );
         } else if (transaction.type == TransactionType.transfer) {
           if (transaction.accountId == accountId) {
             // Money going out (source account)
             calculatedBalance -= transaction.amount;
-            print(
+            debugPrint(
               '  ➖ Transfer Out: -${transaction.amount} (${transaction.description})',
             );
           } else if (transaction.toAccountId == accountId) {
             // Money coming in (destination account)
             calculatedBalance += transaction.amount;
-            print(
+            debugPrint(
               '  ➕ Transfer In: +${transaction.amount} (${transaction.description})',
             );
           }
         }
       }
 
-      print('💰 Calculated balance: $calculatedBalance');
+      debugPrint('💰 Calculated balance: $calculatedBalance');
 
       // Update the account balance
       await _accountProvider!.updateAccountBalance(
         accountId,
         calculatedBalance,
       );
-      print('✅ Account balance recalculated and updated');
+      debugPrint('✅ Account balance recalculated and updated');
     } catch (e) {
-      print('❌ Error recalculating balance: $e');
+      debugPrint('❌ Error recalculating balance: $e');
       _setError('Failed to recalculate balance: $e');
     }
   }
@@ -542,7 +542,7 @@ class TransactionProvider with ChangeNotifier {
           ..sort((a, b) => a.date.compareTo(b.date));
 
     double running = 0.0;
-    print('📒 Ledger for account=$accountId, total txns=${txns.length}');
+    debugPrint('📒 Ledger for account=$accountId, total txns=${txns.length}');
 
     for (final t in txns) {
       double delta = 0.0;
@@ -563,7 +563,7 @@ class TransactionProvider with ChangeNotifier {
         }
       }
       running += delta;
-      print(
+      debugPrint(
         '  ${t.date.toIso8601String()}  ${kind.padRight(12)}  ${delta.toStringAsFixed(2).padLeft(8)}  ->  ${running.toStringAsFixed(2).padLeft(10)}  (${t.description ?? ''})',
       );
     }
@@ -571,13 +571,13 @@ class TransactionProvider with ChangeNotifier {
     // Print last N for quick view
     final start = (txns.length - lastN) < 0 ? 0 : (txns.length - lastN);
     final recent = txns.sublist(start);
-    print('🧾 Last $lastN entries:');
+    debugPrint('🧾 Last $lastN entries:');
     for (final t in recent) {
       final isDst = t.toAccountId == accountId;
       final sign = t.type == TransactionType.income || isDst ? '+' : '-';
-      print('  $sign${t.amount.toStringAsFixed(2)}  ${t.description ?? ''}');
+      debugPrint('  $sign${t.amount.toStringAsFixed(2)}  ${t.description ?? ''}');
     }
-    print('✅ Computed balance from ledger: ${running.toStringAsFixed(2)}');
+    debugPrint('✅ Computed balance from ledger: ${running.toStringAsFixed(2)}');
   }
 
   void clear() {

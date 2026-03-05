@@ -47,7 +47,7 @@ String? resolveSourceLabelFromMetadata(Map<String, dynamic>? metadata) {
 }
 
 String? _resolveSourceLabel(Map<String, dynamic>? metadata) {
-  if (metadata == null || metadata.isEmpty) return null;
+  if (metadata == null || metadata.isEmpty) { return null; }
 
   if (metadata['source'] is String) {
     final source = (metadata['source'] as String).trim().toLowerCase();
@@ -91,7 +91,7 @@ String? _resolveSourceLabel(Map<String, dynamic>? metadata) {
 }
 
 String _titleCase(String value) {
-  if (value.isEmpty) return value;
+  if (value.isEmpty) { return value; }
   final normalized = value.replaceAll(RegExp(r'[_\-]+'), ' ');
   return normalized
       .split(' ')

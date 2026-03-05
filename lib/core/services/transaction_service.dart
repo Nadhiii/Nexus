@@ -46,7 +46,7 @@ class TransactionService {
 
   Future<void> deleteTransaction(String transactionId) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return Future.value();
+    if (user == null) { return Future.value(); }
     return _getTransactionsCollection(user.uid).doc(transactionId).delete();
   }
 
@@ -114,7 +114,7 @@ class TransactionService {
     String userId,
     List<String> transactionIds,
   ) async {
-    if (transactionIds.isEmpty) return;
+    if (transactionIds.isEmpty) { return; }
     final batch = _firestore.batch();
     for (final id in transactionIds) {
       batch.delete(_getTransactionsCollection(userId).doc(id));

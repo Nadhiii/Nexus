@@ -48,7 +48,7 @@ class _GarageManagementScreenState extends State<GarageManagementScreen> {
                   child: TextButton.icon(
                     onPressed: _saveOrder,
                     style: TextButton.styleFrom(
-                      backgroundColor: AppColors.primaryBlue.withOpacity(0.15),
+                      backgroundColor: AppColors.primaryBlue.withValues(alpha: 0.15),
                       foregroundColor: AppColors.primaryBlue,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
@@ -81,7 +81,7 @@ class _GarageManagementScreenState extends State<GarageManagementScreen> {
                         _buildListTile(_orderedBikes[index], index),
                     onReorder: (oldIndex, newIndex) {
                       setState(() {
-                        if (newIndex > oldIndex) newIndex -= 1;
+                        if (newIndex > oldIndex) { newIndex -= 1; }
                         final Bike item = _orderedBikes.removeAt(oldIndex);
                         _orderedBikes.insert(newIndex, item);
                         _hasChanges = true;
@@ -114,12 +114,12 @@ class _GarageManagementScreenState extends State<GarageManagementScreen> {
             borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
             border: Border.all(
               color: bike.isDashboardBike
-                  ? Colors.amber.withOpacity(0.3)
-                  : Colors.white.withOpacity(0.05),
+                  ? Colors.amber.withValues(alpha: 0.3)
+                  : Colors.white.withValues(alpha: 0.05),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -139,7 +139,7 @@ class _GarageManagementScreenState extends State<GarageManagementScreen> {
                         end: Alignment.centerRight,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.5),
+                          Colors.black.withValues(alpha: 0.5),
                         ],
                       ).createShader(rect),
                       blendMode: BlendMode.dstIn,
@@ -159,8 +159,8 @@ class _GarageManagementScreenState extends State<GarageManagementScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: bike.isDashboardBike
-                        ? Colors.amber.withOpacity(0.1)
-                        : AppColors.primaryBlue.withOpacity(0.1),
+                        ? Colors.amber.withValues(alpha: 0.1)
+                        : AppColors.primaryBlue.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

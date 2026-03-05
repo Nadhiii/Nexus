@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_types_as_parameter_names
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -23,7 +24,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
   String? get _userId => _auth.currentUser?.uid;
 
   Stream<List<Goal>> _getGoalsStream() {
-    if (_userId == null) return Stream.value([]);
+    if (_userId == null) { return Stream.value([]); }
 
     return _firestore
         .collection('goals')
@@ -216,16 +217,16 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.accentTeal.withOpacity(0.25),
-            AppColors.accentPurple.withOpacity(0.15),
+            AppColors.accentTeal.withValues(alpha: 0.25),
+            AppColors.accentPurple.withValues(alpha: 0.15),
             AppColors.cardSurface,
           ],
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.accentTeal.withOpacity(0.2)),
+        border: Border.all(color: AppColors.accentTeal.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.accentTeal.withOpacity(0.15),
+            color: AppColors.accentTeal.withValues(alpha: 0.15),
             blurRadius: 30,
             offset: const Offset(0, 10),
           ),
@@ -240,7 +241,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
               Text(
                 'TOTAL SAVINGS',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
@@ -252,10 +253,10 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.accentTeal.withOpacity(0.15),
+                  color: AppColors.accentTeal.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.accentTeal.withOpacity(0.3),
+                    color: AppColors.accentTeal.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -294,7 +295,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                 child: Text(
                   '/ ${_formatAmount(totalTarget)}',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -325,7 +326,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                     borderRadius: BorderRadius.circular(5),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.accentTeal.withOpacity(0.6),
+                        color: AppColors.accentTeal.withValues(alpha: 0.6),
                         blurRadius: 12,
                         spreadRadius: 2,
                       ),
@@ -342,7 +343,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
               Text(
                 'Remaining: ₹${_formatAmount(totalTarget - totalSaved)}',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
+                  color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 12,
                 ),
               ),
@@ -352,7 +353,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.accentTeal.withOpacity(0.15),
+                  color: AppColors.accentTeal.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -529,7 +530,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        AppColors.success.withOpacity(0.2),
+                        AppColors.success.withValues(alpha: 0.2),
                         AppColors.cardSurface,
                       ],
                     )
@@ -537,19 +538,19 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        goalColor.withOpacity(0.2),
+                        goalColor.withValues(alpha: 0.2),
                         AppColors.cardSurface,
                       ],
                     ),
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
                 color: (isCompleted ? AppColors.success : goalColor)
-                    .withOpacity(0.2),
+                    .withValues(alpha: 0.2),
               ),
               boxShadow: [
                 BoxShadow(
                   color: (isCompleted ? AppColors.success : goalColor)
-                      .withOpacity(0.1),
+                      .withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -564,7 +565,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: (isCompleted ? AppColors.success : goalColor)
-                            .withOpacity(0.15),
+                            .withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
@@ -581,7 +582,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.success.withOpacity(0.2),
+                          color: AppColors.success.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Text(
@@ -600,7 +601,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: goalColor.withOpacity(0.15),
+                          color: goalColor.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -628,7 +629,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                 Text(
                   '₹${_formatAmount(goal.currentAmount)} / ${_formatAmount(goal.targetAmount)}',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
@@ -641,7 +642,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                       height: 6,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
+                        color: Colors.white.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(3),
                       ),
                     ),
@@ -662,7 +663,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                                   (isCompleted
                                           ? AppColors.success
                                           : AppColors.accentTeal)
-                                      .withOpacity(0.5),
+                                      .withValues(alpha: 0.5),
                               blurRadius: 8,
                             ),
                           ],
@@ -703,7 +704,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
-                      AppColors.success.withOpacity(0.15),
+                      AppColors.success.withValues(alpha: 0.15),
                       AppColors.cardSurface,
                     ],
                   )
@@ -711,13 +712,13 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
-                      goalColor.withOpacity(0.15),
+                      goalColor.withValues(alpha: 0.15),
                       AppColors.cardSurface,
                     ],
                   ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: (isCompleted ? AppColors.success : goalColor).withOpacity(
+              color: (isCompleted ? AppColors.success : goalColor).withValues(alpha: 
                 0.15,
               ),
             ),
@@ -728,7 +729,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: (isCompleted ? AppColors.success : goalColor)
-                      .withOpacity(0.15),
+                      .withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
@@ -758,7 +759,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                           height: 6,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.08),
+                            color: Colors.white.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),
@@ -802,7 +803,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.2),
+                        color: AppColors.success.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
@@ -821,7 +822,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: goalColor.withOpacity(0.15),
+                        color: goalColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -850,7 +851,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
             color: AppColors.cardSurface,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: (isCompleted ? AppColors.success : goalColor).withOpacity(
+              color: (isCompleted ? AppColors.success : goalColor).withValues(alpha: 
                 0.15,
               ),
             ),
@@ -889,7 +890,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                     height: 4,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
+                      color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -924,7 +925,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: (isCompleted ? AppColors.success : goalColor)
-                          .withOpacity(0.15),
+                          .withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -975,19 +976,19 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.accentTeal.withOpacity(0.2),
-                    AppColors.accentPurple.withOpacity(0.1),
+                    AppColors.accentTeal.withValues(alpha: 0.2),
+                    AppColors.accentPurple.withValues(alpha: 0.1),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(32),
                 border: Border.all(
-                  color: AppColors.accentTeal.withOpacity(0.2),
+                  color: AppColors.accentTeal.withValues(alpha: 0.2),
                 ),
               ),
               child: Icon(
                 Icons.flag_rounded,
                 size: 56,
-                color: AppColors.accentTeal.withOpacity(0.6),
+                color: AppColors.accentTeal.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 32),
@@ -1017,7 +1018,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.accentTeal.withOpacity(0.3),
+                    color: AppColors.accentTeal.withValues(alpha: 0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -1082,7 +1083,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

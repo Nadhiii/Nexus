@@ -142,12 +142,12 @@ class _FinancialHealthDashboardState extends State<FinancialHealthDashboard>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              score.scoreColor.withOpacity(0.2),
-              score.scoreColor.withOpacity(0.05),
+              score.scoreColor.withValues(alpha: 0.2),
+              score.scoreColor.withValues(alpha: 0.05),
             ],
           ),
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          border: Border.all(color: score.scoreColor.withOpacity(0.3)),
+          border: Border.all(color: score.scoreColor.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -189,7 +189,7 @@ class _FinancialHealthDashboardState extends State<FinancialHealthDashboard>
       height: 48,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: score.scoreColor.withOpacity(0.2),
+        color: score.scoreColor.withValues(alpha: 0.2),
       ),
       child: Center(
         child: Text(
@@ -397,8 +397,12 @@ class _FinancialHealthDashboardState extends State<FinancialHealthDashboard>
   }
 
   Color _getComponentColor(double percentage) {
-    if (percentage >= 70) return AppColors.success;
-    if (percentage >= 40) return AppColors.warning;
+    if (percentage >= 70) {
+      return AppColors.success;
+    }
+    if (percentage >= 40) {
+      return AppColors.warning;
+    }
     return AppColors.error;
   }
 
@@ -413,9 +417,9 @@ class _FinancialHealthDashboardState extends State<FinancialHealthDashboard>
       margin: EdgeInsets.only(bottom: AppSpacing.sm),
       padding: EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: priorityColor.withOpacity(0.1),
+        color: priorityColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-        border: Border.all(color: priorityColor.withOpacity(0.3)),
+        border: Border.all(color: priorityColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [

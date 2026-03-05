@@ -101,8 +101,8 @@ class DuplicateDetector {
   }
 
   static double _merchantSimilarity(String s1, String s2) {
-    if (s1 == s2) return 1.0;
-    if (s1.isEmpty || s2.isEmpty) return 0.0;
+    if (s1 == s2) { return 1.0; }
+    if (s1.isEmpty || s2.isEmpty) { return 0.0; }
     final distance = _levenshteinDistance(s1, s2);
     final maxLength = [s1.length, s2.length].reduce((a, b) => a > b ? a : b);
     return 1.0 - (distance / maxLength);

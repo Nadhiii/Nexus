@@ -1,3 +1,4 @@
+// ignore_for_file: file_names
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -69,7 +70,7 @@ class AIAssistantProvider with ChangeNotifier {
   // --- INITIALIZATION ---
 
   Future<void> initialize() async {
-    if (_isInitialized) return;
+    if (_isInitialized) { return; }
     await _loadSettings();
     await _loadConversations();
     await _initService();
@@ -204,7 +205,7 @@ class AIAssistantProvider with ChangeNotifier {
   Future<void> sendMessage(String message) async {
     // 🔥 UPDATED: Removed the hasAnyKey check since local models don't need it!
 
-    if (_currentConversation == null) startNewConversation();
+    if (_currentConversation == null) { startNewConversation(); }
 
     _isLoading = true;
     _error = null;
@@ -270,7 +271,7 @@ class AIAssistantProvider with ChangeNotifier {
 
   // --- PDF PARSING (Using Cloud for precision if needed) ---
   Future<String> parseBankStatement(String pdfText) async {
-    if (_aiService == null) throw Exception('AI not initialized');
+    if (_aiService == null) { throw Exception('AI not initialized'); }
 
     const systemPrompt =
         "You are a specialized data extraction AI. Extract the transaction data from this bank statement text into strict JSON format with fields: date, description, amount, type. Return ONLY JSON.";
@@ -297,7 +298,7 @@ class AIAssistantProvider with ChangeNotifier {
   }
 
   String _buildContext(String query) {
-    if (_accountProvider == null) return "Data loading...";
+    if (_accountProvider == null) { return "Data loading..."; }
     return ContextBuilderService(
       accountProvider: _accountProvider!,
       debtProvider: _debtProvider!,

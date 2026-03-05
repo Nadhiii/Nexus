@@ -66,7 +66,7 @@ class _LogSubscriptionPaymentModalState
         children: [
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(color: Colors.black.withOpacity(0.6)),
+            child: Container(color: Colors.black.withValues(alpha: 0.6)),
           ),
           Center(
             child: ScaleTransition(
@@ -78,10 +78,10 @@ class _LogSubscriptionPaymentModalState
                 decoration: BoxDecoration(
                   color: AppColors.backgroundBlack,
                   borderRadius: BorderRadius.circular(32),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.accentOrange.withOpacity(0.2),
+                      color: AppColors.accentOrange.withValues(alpha: 0.2),
                       blurRadius: 40,
                       offset: const Offset(0, 20),
                     ),
@@ -135,7 +135,7 @@ class _LogSubscriptionPaymentModalState
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.accentOrange.withOpacity(0.1),
+            color: AppColors.accentOrange.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: const Icon(Icons.autorenew, color: AppColors.accentOrange),
@@ -155,7 +155,7 @@ class _LogSubscriptionPaymentModalState
           decoration: BoxDecoration(
             color: AppColors.cardSurface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: TextFormField(
             controller: _amountController,
@@ -194,7 +194,7 @@ class _LogSubscriptionPaymentModalState
               decoration: BoxDecoration(
                 color: AppColors.cardSurface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<Account>(
@@ -260,9 +260,9 @@ class _LogSubscriptionPaymentModalState
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.accentOrange.withOpacity(0.1),
+            color: AppColors.accentOrange.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.accentOrange.withOpacity(0.3)),
+            border: Border.all(color: AppColors.accentOrange.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -311,7 +311,7 @@ class _LogSubscriptionPaymentModalState
                   borderRadius: BorderRadius.circular(25),
                 ),
                 elevation: 8,
-                shadowColor: AppColors.accentOrange.withOpacity(0.4),
+                shadowColor: AppColors.accentOrange.withValues(alpha: 0.4),
               ),
               child: _isLoading
                   ? const SizedBox(
@@ -358,7 +358,7 @@ class _LogSubscriptionPaymentModalState
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception("User not logged in");
+      if (user == null) { throw Exception("User not logged in"); }
 
       // 1. Create Transaction (Updates Account Balance)
       final transaction = Transaction(
@@ -395,9 +395,9 @@ class _LogSubscriptionPaymentModalState
         showTopSnackBar(context, "Subscription renewed!");
       }
     } catch (e) {
-      if (mounted) showTopSnackBar(context, "Error: $e", isError: true);
+      if (mounted) { showTopSnackBar(context, "Error: $e", isError: true); }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) { setState(() => _isLoading = false); }
     }
   }
 }

@@ -25,7 +25,7 @@ class SecureCardService {
 
   /// Store CVV securely for an account
   Future<void> storeCvv(String accountId, String cvv) async {
-    if (cvv.isEmpty) return;
+    if (cvv.isEmpty) { return; }
     await _storage.write(key: _cvvKey(accountId), value: cvv);
   }
 
@@ -41,7 +41,7 @@ class SecureCardService {
 
   /// Store PIN securely for an account
   Future<void> storePin(String accountId, String pin) async {
-    if (pin.isEmpty) return;
+    if (pin.isEmpty) { return; }
     await _storage.write(key: _pinKey(accountId), value: pin);
   }
 

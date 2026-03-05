@@ -53,7 +53,7 @@ class InvestmentProvider extends ChangeNotifier {
 
   /// Refresh NAV data for all investments
   Future<void> refreshNavData() async {
-    if (_investments.isEmpty) return;
+    if (_investments.isEmpty) { return; }
 
     try {
       _investments = await _navService.enrichInvestmentsWithNav(_investments);

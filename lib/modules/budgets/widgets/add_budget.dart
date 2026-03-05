@@ -4,6 +4,7 @@ import '../../../core/theme/app_animations.dart';
 import 'dart:ui';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/providers/budget_provider.dart';
 import '../../../core/providers/subscription_provider.dart';
 import '../../../core/providers/investment_provider.dart';
@@ -64,7 +65,7 @@ class _AddBudgetModalState extends State<AddBudgetModal>
         children: [
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(color: Colors.black.withOpacity(0.6)),
+            child: Container(color: Colors.black.withValues(alpha: 0.6)),
           ),
           Center(
             child: ScaleTransition(
@@ -77,10 +78,12 @@ class _AddBudgetModalState extends State<AddBudgetModal>
                   decoration: BoxDecoration(
                     color: AppColors.backgroundBlack,
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         blurRadius: 40,
                         offset: const Offset(0, 20),
                       ),
@@ -244,7 +247,9 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
       }
     }
 
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _updateCategoryName() {
@@ -270,7 +275,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
             children: [
               Text(
                 _isEditMode ? 'Edit Budget' : 'Create Budget',
-                style: AppTypography.headlineSmall.copyWith(
+                style: AppTypography.headlineMedium.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -292,7 +297,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel('CATEGORY'),
+                  _buildLabel('Category'),
                   SizedBox(
                     height: 90,
                     child: ListView.builder(
@@ -314,13 +319,15 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                             margin: const EdgeInsets.only(right: 12),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? (cat['color'] as Color).withOpacity(0.2)
+                                  ? (cat['color'] as Color).withValues(
+                                      alpha: 0.2,
+                                    )
                                   : AppColors.cardSurface,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: isSelected
                                     ? (cat['color'] as Color)
-                                    : Colors.white.withOpacity(0.05),
+                                    : Colors.white.withValues(alpha: 0.05),
                                 width: isSelected ? 2 : 1,
                               ),
                             ),
@@ -359,7 +366,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                   ),
 
                   const SizedBox(height: 24),
-                  _buildLabel('DETAILS'),
+                  _buildLabel('Details'),
                   _buildGlassTextField(
                     label: 'Budget Name',
                     controller: _categoryNameController,
@@ -383,16 +390,15 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                   const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: 54,
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _saveBudget,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.cardSurface,
-                        foregroundColor: AppColors.accentPurple,
+                        backgroundColor: AppColors.primaryBlue,
+                        foregroundColor: AppColors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          side: BorderSide(
-                            color: AppColors.accentPurple.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusMd,
                           ),
                         ),
                         elevation: 0,
@@ -403,13 +409,13 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: AppColors.accentPurple,
+                                color: AppColors.white,
                               ),
                             )
                           : Text(
                               _isEditMode ? 'Update' : 'Set Budget',
-                              style: const TextStyle(
-                                fontSize: 16,
+                              style: AppTypography.titleSmall.copyWith(
+                                color: AppColors.white,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -441,11 +447,9 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
       padding: const EdgeInsets.only(bottom: 12, left: 4),
       child: Text(
         text,
-        style: TextStyle(
-          color: AppColors.textTertiary,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1.0,
+        style: AppTypography.titleSmall.copyWith(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -459,12 +463,12 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(30), // Pill Shape
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        color: AppColors.cardDarkElevated,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -516,12 +520,14 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppColors.accentPurple.withOpacity(0.15),
+              AppColors.accentPurple.withValues(alpha: 0.15),
               AppColors.cardSurface,
             ],
           ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.accentPurple.withOpacity(0.2)),
+          border: Border.all(
+            color: AppColors.accentPurple.withValues(alpha: 0.2),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -531,7 +537,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.accentPurple.withOpacity(0.2),
+                    color: AppColors.accentPurple.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -575,7 +581,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
             ),
             if (_showCommitments) ...[
               const SizedBox(height: 16),
-              Container(height: 1, color: Colors.white.withOpacity(0.05)),
+              Container(height: 1, color: Colors.white.withValues(alpha: 0.05)),
               const SizedBox(height: 16),
               // EMIs
               if (_totalEMIs > 0)
@@ -618,9 +624,11 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
+                  color: AppColors.warning.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.warning.withOpacity(0.2)),
+                  border: Border.all(
+                    color: AppColors.warning.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -665,7 +673,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 16),
@@ -715,7 +723,9 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
   }
 
   Future<void> _saveBudget() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
     setState(() => _isLoading = true);
 
     try {
@@ -751,9 +761,13 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
         showTopSnackBar(context, 'Budget saved successfully');
       }
     } catch (e) {
-      if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+      if (mounted) {
+        showTopSnackBar(context, 'Error: $e', isError: true);
+      }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -769,7 +783,9 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
         showTopSnackBar(context, 'Budget deleted');
       }
     } catch (e) {
-      if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+      if (mounted) {
+        showTopSnackBar(context, 'Error: $e', isError: true);
+      }
       setState(() => _isLoading = false);
     }
   }
@@ -854,7 +870,9 @@ class _SmartQuickSetupModalState extends State<SmartQuickSetupModal> {
       }
     }
 
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   double get _totalCommitments => _totalEMIs + _totalSIPs + _totalSubscriptions;
@@ -864,8 +882,12 @@ class _SmartQuickSetupModalState extends State<SmartQuickSetupModal> {
     if (amount >= 10000000) {
       return '${(amount / 10000000).toStringAsFixed(1)}Cr';
     }
-    if (amount >= 100000) return '${(amount / 100000).toStringAsFixed(1)}L';
-    if (amount >= 1000) return '${(amount / 1000).toStringAsFixed(1)}K';
+    if (amount >= 100000) {
+      return '${(amount / 100000).toStringAsFixed(1)}L';
+    }
+    if (amount >= 1000) {
+      return '${(amount / 1000).toStringAsFixed(1)}K';
+    }
     return amount.toStringAsFixed(0);
   }
 
@@ -943,12 +965,14 @@ class _SmartQuickSetupModalState extends State<SmartQuickSetupModal> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Colors.orange.withOpacity(0.15),
+                          Colors.orange.withValues(alpha: 0.15),
                           AppColors.cardSurface,
                         ],
                       ),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.orange.withOpacity(0.2)),
+                      border: Border.all(
+                        color: Colors.orange.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Column(
                       children: [
@@ -982,7 +1006,7 @@ class _SmartQuickSetupModalState extends State<SmartQuickSetupModal> {
                           const SizedBox(height: 12),
                           Container(
                             height: 1,
-                            color: Colors.white.withOpacity(0.05),
+                            color: Colors.white.withValues(alpha: 0.05),
                           ),
                           const SizedBox(height: 12),
                           if (_totalEMIs > 0)
@@ -1028,21 +1052,20 @@ class _SmartQuickSetupModalState extends State<SmartQuickSetupModal> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8, left: 4),
                 child: Text(
-                  'MONTHLY INCOME',
+                  'Monthly Income',
                   style: TextStyle(
-                    color: AppColors.textTertiary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.0,
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(30),
+                  color: AppColors.cardDarkElevated,
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.accentPurple.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.06),
                   ),
                 ),
                 child: TextField(
@@ -1052,7 +1075,7 @@ class _SmartQuickSetupModalState extends State<SmartQuickSetupModal> {
                   decoration: InputDecoration(
                     hintText: 'Enter amount',
                     hintStyle: TextStyle(
-                      color: AppColors.textTertiary.withOpacity(0.5),
+                      color: AppColors.textTertiary.withValues(alpha: 0.5),
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
@@ -1162,7 +1185,9 @@ class _SmartQuickSetupModalState extends State<SmartQuickSetupModal> {
 
   Widget _buildBudgetPreview() {
     final income = double.tryParse(_incomeController.text) ?? 0;
-    if (income <= 0) return const SizedBox.shrink();
+    if (income <= 0) {
+      return const SizedBox.shrink();
+    }
 
     final availableForBudgets = income - _totalCommitments;
     final isNegative = availableForBudgets <= 0;
@@ -1171,12 +1196,12 @@ class _SmartQuickSetupModalState extends State<SmartQuickSetupModal> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isNegative
-            ? AppColors.error.withOpacity(0.1)
-            : AppColors.success.withOpacity(0.1),
+            ? AppColors.error.withValues(alpha: 0.1)
+            : AppColors.success.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: (isNegative ? AppColors.error : AppColors.success).withOpacity(
-            0.2,
+          color: (isNegative ? AppColors.error : AppColors.success).withValues(
+            alpha: 0.2,
           ),
         ),
       ),
@@ -1425,7 +1450,9 @@ class _SmartQuickSetupModalState extends State<SmartQuickSetupModal> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 }

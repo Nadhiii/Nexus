@@ -1,0 +1,115 @@
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.59 (1.3.67 available)
+  archive 4.0.7 (4.0.9 available)
+  background_downloader 9.5.2 (9.5.4 available)
+  cloud_firestore 5.6.12 (6.1.3 available)
+  cloud_firestore_platform_interface 6.6.12 (7.0.7 available)
+  cloud_firestore_web 4.4.12 (5.1.3 available)
+  dio 5.9.1 (5.9.2 available)
+  dio_web_adapter 2.1.1 (2.1.2 available)
+  extension 0.6.0 (1.0.0 available)
+  extension_google_sign_in_as_googleapis_auth 2.0.13 (3.0.0 available)
+  firebase_analytics 11.6.0 (12.1.3 available)
+  firebase_analytics_platform_interface 4.4.3 (5.0.7 available)
+  firebase_analytics_web 0.5.10+16 (0.6.1+3 available)
+  firebase_auth 5.7.0 (6.2.0 available)
+  firebase_auth_platform_interface 7.7.3 (8.1.7 available)
+  firebase_auth_web 5.15.3 (6.1.3 available)
+  firebase_core 3.15.2 (4.5.0 available)
+  firebase_core_web 2.24.1 (3.5.0 available)
+  firebase_crashlytics 4.3.10 (5.0.8 available)
+  firebase_crashlytics_platform_interface 3.8.10 (3.8.18 available)
+  firebase_messaging 15.2.10 (16.1.2 available)
+  firebase_messaging_platform_interface 4.6.10 (4.7.7 available)
+  firebase_messaging_web 3.10.10 (4.1.3 available)
+  firebase_storage 12.4.10 (13.1.0 available)
+  firebase_storage_platform_interface 5.2.10 (5.2.18 available)
+  firebase_storage_web 3.10.17 (3.11.3 available)
+  fl_chart 0.69.2 (1.1.1 available)
+  flutter_gemma 0.11.16 (0.12.4 available)
+  flutter_launcher_icons 0.13.1 (0.14.4 available)
+  flutter_lints 5.0.0 (6.0.0 available)
+  flutter_secure_storage 9.2.4 (10.0.0 available)
+  flutter_secure_storage_linux 1.2.3 (3.0.0 available)
+  flutter_secure_storage_macos 3.1.3 (4.0.0 available)
+  flutter_secure_storage_platform_interface 1.1.2 (2.0.1 available)
+  flutter_secure_storage_web 1.2.1 (2.1.0 available)
+  flutter_secure_storage_windows 3.1.2 (4.1.0 available)
+  flutter_slidable 3.1.2 (4.0.3 available)
+  geocoding_android 4.0.1 (5.0.0 available)
+  geocoding_platform_interface 3.2.0 (5.0.0 available)
+  go_router 14.8.1 (17.1.0 available)
+  google_fonts 6.3.3 (8.0.2 available)
+  google_sign_in 6.3.0 (7.2.0 available)
+  google_sign_in_android 6.2.1 (7.2.9 available)
+  google_sign_in_ios 5.9.0 (6.3.0 available)
+  google_sign_in_platform_interface 2.5.0 (3.1.0 available)
+  google_sign_in_web 0.12.4+4 (1.1.2 available)
+  googleapis 15.0.0 (16.0.0 available)
+  googleapis_auth 1.6.0 (2.1.0 available)
+  image 4.5.4 (4.8.0 available)
+  image_picker_android 0.8.13+13 (0.8.13+14 available)
+  intl 0.19.0 (0.20.2 available)
+  js 0.6.7 (0.7.2 available)
+  json_annotation 4.10.0 (4.11.0 available)
+  lints 5.1.1 (6.1.0 available)
+  local_auth 2.3.0 (3.0.1 available)
+  local_auth_android 1.0.56 (2.0.5 available)
+  local_auth_darwin 1.6.1 (2.0.3 available)
+  local_auth_windows 1.0.11 (2.0.1 available)
+  matcher 0.12.18 (0.12.19 available)
+  meta 1.17.0 (1.18.1 available)
+  ndef_record 1.4.1 (1.4.2 available)
+  permission_handler 11.4.0 (12.0.1 available)
+  permission_handler_android 12.1.0 (13.0.1 available)
+  posix 6.0.3 (6.5.0 available)
+  share_plus 10.1.4 (12.0.1 available)
+  share_plus_platform_interface 5.0.2 (6.1.0 available)
+  shared_preferences_android 2.4.20 (2.4.21 available)
+  syncfusion_flutter_charts 26.2.14 (32.2.8 available)
+  syncfusion_flutter_core 26.2.14 (32.2.8 available)
+  syncfusion_flutter_pdf 26.2.14 (32.2.8 available)
+  test_api 0.7.9 (0.7.10 available)
+  timezone 0.10.1 (0.11.0 available)
+  uuid 4.5.2 (4.5.3 available)
+  vector_graphics_compiler 1.1.20 (1.2.0 available)
+  win32 5.15.0 (6.0.0 available)
+Got dependencies!
+75 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing Nexus...                                              
+
+   info • The parameter name 'sum' matches a visible type name • lib/core/models/pdf_statement.dart:131:19 • avoid_types_as_parameter_names
+   info • The parameter name 'sum' matches a visible type name • lib/core/models/pdf_statement.dart:134:19 • avoid_types_as_parameter_names
+   info • The parameter name 'sum' matches a visible type name • lib/core/models/shared_expense.dart:48:21 • avoid_types_as_parameter_names
+   info • The parameter name 'sum' matches a visible type name • lib/core/models/shared_expense.dart:55:21 • avoid_types_as_parameter_names
+   info • The parameter name 'sum' matches a visible type name • lib/core/providers/debt_provider.dart:19:19 • avoid_types_as_parameter_names
+   info • The parameter name 'sum' matches a visible type name • lib/core/providers/family_debt_provider.dart:37:30 • avoid_types_as_parameter_names
+   info • The parameter name 'sum' matches a visible type name • lib/core/providers/family_debt_provider.dart:41:28 • avoid_types_as_parameter_names
+   info • Empty catch block • lib/core/providers/gmail_provider.dart:330:21 • empty_catches
+   info • Empty catch block • lib/core/providers/gmail_provider.dart:341:21 • empty_catches
+   info • The parameter name 'sum' matches a visible type name • lib/core/services/budget_service.dart:243:50 • avoid_types_as_parameter_names
+   info • The parameter name 'sum' matches a visible type name • lib/core/services/budget_service.dart:244:46 • avoid_types_as_parameter_names
+   info • The parameter name 'sum' matches a visible type name • lib/core/services/budget_service.dart:245:50 • avoid_types_as_parameter_names
+   info • The parameter name 'sum' matches a visible type name • lib/core/services/budget_service.dart:246:58 • avoid_types_as_parameter_names
+   info • The parameter name 'sum' matches a visible type name • lib/core/services/budget_service.dart:254:32 • avoid_types_as_parameter_names
+   info • The parameter name 'sum' matches a visible type name • lib/core/services/challan_service.dart:145:19 • avoid_types_as_parameter_names
+warning • The value of the local variable 'dailySpending' isn't used • lib/core/services/report_export_service.dart:159:11 • unused_local_variable
+   info • The file name 'Nex_conversation.dart' isn't a lower_case_with_underscores identifier • lib/modules/Nex/models/Nex_conversation.dart:1:1 • file_names
+   info • The file name 'Nex_message.dart' isn't a lower_case_with_underscores identifier • lib/modules/Nex/models/Nex_message.dart:1:1 • file_names
+   info • The file name 'Nex_settings.dart' isn't a lower_case_with_underscores identifier • lib/modules/Nex/models/Nex_settings.dart:1:1 • file_names
+   info • The file name 'Nex_assistant_provider.dart' isn't a lower_case_with_underscores identifier • lib/modules/Nex/providers/Nex_assistant_provider.dart:1:1 • file_names
+   info • The file name 'Nex_chat_screen.dart' isn't a lower_case_with_underscores identifier • lib/modules/Nex/screens/Nex_chat_screen.dart:1:1 • file_names
+   info • The file name 'Nex_service.dart' isn't a lower_case_with_underscores identifier • lib/modules/Nex/services/Nex_service.dart:1:1 • file_names
+   info • The file name 'Nex_system_prompt.dart' isn't a lower_case_with_underscores identifier • lib/modules/Nex/services/Nex_system_prompt.dart:1:1 • file_names
+warning • The declaration '_buildEmptyState' isn't referenced • lib/modules/Wallet/wallet_screen.dart:383:10 • unused_element
+warning • The member 'data' can only be used within instance members of subclasses of 'NfcTag' • lib/modules/accounts/add_account_screen.dart:258:45 • invalid_use_of_protected_member
+warning • The value of the field '_calculatedTrip' isn't used • lib/modules/bike/widgets/add_entry_dialog.dart:49:10 • unused_field
+warning • The declaration '_formatIndianNumber' isn't referenced • lib/modules/dashboard/dashboard_screen.dart:993:10 • unused_element
+   info • The parameter name 'sum' matches a visible type name • lib/modules/goals/goals_screen.dart:201:8 • avoid_types_as_parameter_names
+   info • The parameter name 'sum' matches a visible type name • lib/modules/goals/goals_screen.dart:205:8 • avoid_types_as_parameter_names
+   info • The parameter name 'sum' matches a visible type name • lib/modules/goals/modern_goals_screen.dart:201:8 • avoid_types_as_parameter_names
+   info • The parameter name 'sum' matches a visible type name • lib/modules/goals/modern_goals_screen.dart:205:8 • avoid_types_as_parameter_names
+   info • Invalid use of a private type in a public API • lib/modules/security/app_lock_screen.dart:13:3 • library_private_types_in_public_api
+

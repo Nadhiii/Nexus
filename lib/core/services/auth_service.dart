@@ -14,7 +14,7 @@ class AuthService {
 
   // Initialize Google Sign-In
   GoogleSignIn _initializeGoogleSignIn() {
-    if (_googleSignIn != null) return _googleSignIn!;
+    if (_googleSignIn != null) { return _googleSignIn!; }
     
     try {
       _googleSignIn = GoogleSignIn(

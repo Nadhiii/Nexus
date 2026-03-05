@@ -9,7 +9,9 @@ import '../../../core/models/debt.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_animations.dart';
+import '../../../core/utils/logo_utils.dart';
 import '../../../core/widgets/top_snackbar.dart';
+import '../utils/debt_logo_utils.dart';
 
 /// Floating Modal for Add/Edit Credit Card - Following Subscription Design Pattern
 class AddCreditCardModal extends StatefulWidget {
@@ -125,7 +127,7 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
           // Backdrop Blur
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(color: Colors.black.withOpacity(0.6)),
+            child: Container(color: Colors.black.withValues(alpha: 0.6)),
           ),
           // Floating Card
           Center(
@@ -143,10 +145,12 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
                   decoration: BoxDecoration(
                     color: AppColors.backgroundBlack,
                     borderRadius: BorderRadius.circular(32),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         blurRadius: 40,
                         offset: const Offset(0, 20),
                       ),
@@ -155,13 +159,26 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Title
-                      Text(
-                        _isEditMode ? "Edit Credit Card" : "New Credit Card",
-                        style: AppTypography.headlineSmall.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _isEditMode
+                                ? 'Edit Credit Card'
+                                : 'Add Credit Card',
+                            style: AppTypography.headlineSmall.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.white54,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 24),
 
@@ -178,7 +195,7 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
                                 const SizedBox(height: 32),
 
                                 // 2. QUICK ADD
-                                _buildLabel("QUICK ADD"),
+                                _buildLabel('Quick Add'),
                                 SizedBox(
                                   height: 50,
                                   child: ListView.separated(
@@ -197,15 +214,15 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
                                           height: 50,
                                           decoration: BoxDecoration(
                                             color: (card['color'] as Color)
-                                                .withOpacity(
-                                                  isSelected ? 0.4 : 0.2,
+                                                .withValues(
+                                                  alpha: isSelected ? 0.4 : 0.2,
                                                 ),
                                             shape: BoxShape.circle,
                                             border: Border.all(
                                               color: isSelected
                                                   ? card['color']
                                                   : (card['color'] as Color)
-                                                        .withOpacity(0.5),
+                                                        .withValues(alpha: 0.5),
                                               width: isSelected ? 2 : 1,
                                             ),
                                           ),
@@ -227,7 +244,7 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
                                 const SizedBox(height: 24),
 
                                 // 3. CARD DETAILS
-                                _buildLabel("CARD DETAILS"),
+                                _buildLabel('Card Details'),
                                 _buildGlassTextField(
                                   controller: _nameController,
                                   hint: "e.g. HDFC Regalia",
@@ -242,7 +259,7 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
                                 const SizedBox(height: 24),
 
                                 // 4. AMOUNTS
-                                _buildLabel("AMOUNTS"),
+                                _buildLabel('Amounts'),
                                 Row(
                                   children: [
                                     Expanded(
@@ -281,7 +298,7 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
                                 const SizedBox(height: 24),
 
                                 // 6. DUE DATE
-                                _buildLabel("BILL DUE DATE"),
+                                _buildLabel('Bill Due Date'),
                                 GestureDetector(
                                   onTap: _showDueDayPicker,
                                   child: Container(
@@ -293,7 +310,9 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
                                       color: AppColors.cardSurface,
                                       borderRadius: BorderRadius.circular(30),
                                       border: Border.all(
-                                        color: Colors.white.withOpacity(0.05),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.05,
+                                        ),
                                       ),
                                     ),
                                     child: Row(
@@ -337,15 +356,10 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
                                   child: ElevatedButton(
                                     onPressed: _isLoading ? null : _submit,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.cardSurface,
-                                      foregroundColor: AppColors.warning,
+                                      backgroundColor: AppColors.primaryBlue,
+                                      foregroundColor: AppColors.white,
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(30),
-                                        side: BorderSide(
-                                          color: AppColors.warning.withOpacity(
-                                            0.3,
-                                          ),
-                                        ),
+                                        borderRadius: BorderRadius.circular(14),
                                       ),
                                       elevation: 0,
                                     ),
@@ -355,7 +369,7 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
                                             height: 20,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
-                                              color: AppColors.warning,
+                                              color: AppColors.white,
                                             ),
                                           )
                                         : Text(
@@ -363,22 +377,11 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
                                                 ? "Save Changes"
                                                 : "Add Card",
                                             style: const TextStyle(
+                                              color: AppColors.white,
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Center(
-                                  child: TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: Text(
-                                      "Cancel",
-                                      style: TextStyle(
-                                        color: AppColors.textTertiary,
-                                      ),
-                                    ),
                                   ),
                                 ),
                               ],
@@ -404,6 +407,14 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
     final balance = double.tryParse(_balanceController.text) ?? 0;
     final limit = double.tryParse(_limitController.text) ?? 0;
     final utilization = limit > 0 ? (balance / limit * 100) : 0.0;
+    final bankLogo = DebtLogoUtils.bankLogoForParts(
+      lenderName: _bankController.text,
+      name: _nameController.text,
+    );
+    final bankLogoScale = DebtLogoUtils.bankLogoScaleForParts(
+      lenderName: _bankController.text,
+      name: _nameController.text,
+    );
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -413,14 +424,14 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
           end: Alignment.bottomRight,
           colors: [
             AppColors.cardSurface,
-            AppColors.cardSurface.withOpacity(0.8),
+            AppColors.cardSurface.withValues(alpha: 0.8),
           ],
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -435,15 +446,17 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.15),
+                  color: AppColors.warning.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Center(
-                  child: Icon(
-                    Icons.credit_card,
-                    color: AppColors.warning,
-                    size: 24,
-                  ),
+                  child: bankLogo != null
+                      ? LogoUtils.buildLogo(bankLogo, size: 24 * bankLogoScale)
+                      : Icon(
+                          Icons.credit_card,
+                          color: AppColors.warning,
+                          size: 24,
+                        ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -542,10 +555,9 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
       child: Text(
         text,
         style: TextStyle(
-          color: AppColors.textTertiary,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1.0,
+          color: AppColors.textPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -560,9 +572,9 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        color: AppColors.cardDarkElevated,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: TextFormField(
         controller: controller,
@@ -575,7 +587,9 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.5)),
+          hintStyle: TextStyle(
+            color: AppColors.textTertiary.withValues(alpha: 0.7),
+          ),
           prefixIcon: Padding(
             padding: const EdgeInsets.only(left: 16, right: 8),
             child: Icon(icon, color: AppColors.textSecondary, size: 20),
@@ -601,8 +615,12 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
     final utilization = limit > 0 ? (balance / limit * 100) : 0.0;
 
     Color getUtilizationColor() {
-      if (utilization <= 30) return AppColors.success;
-      if (utilization <= 50) return AppColors.warning;
+      if (utilization <= 30) {
+        return AppColors.success;
+      }
+      if (utilization <= 50) {
+        return AppColors.warning;
+      }
       return AppColors.error;
     }
 
@@ -616,14 +634,16 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
       }
     }
 
-    if (limit <= 0) return const SizedBox.shrink();
+    if (limit <= 0) {
+      return const SizedBox.shrink();
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: getUtilizationColor().withOpacity(0.1),
+        color: getUtilizationColor().withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: getUtilizationColor().withOpacity(0.3)),
+        border: Border.all(color: getUtilizationColor().withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -736,7 +756,9 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
   }
 
   String _getDaySuffix(int day) {
-    if (day >= 11 && day <= 13) return 'th';
+    if (day >= 11 && day <= 13) {
+      return 'th';
+    }
     switch (day % 10) {
       case 1:
         return 'st';
@@ -812,13 +834,17 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
         }
       }
 
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+      }
     } catch (e) {
       if (mounted) {
         showTopSnackBar(context, 'Error: $e', isError: true);
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 }

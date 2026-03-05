@@ -90,7 +90,7 @@ class _ModernNotificationsScreenState extends State<ModernNotificationsScreen> {
     final Map<String, List<AppNotification>> grouped = {};
     for (var n in notifications) {
       final key = _getDateHeader(n.createdAt);
-      if (!grouped.containsKey(key)) grouped[key] = [];
+      if (!grouped.containsKey(key)) { grouped[key] = []; }
       grouped[key]!.add(n);
     }
 
@@ -136,7 +136,7 @@ class _ModernNotificationsScreenState extends State<ModernNotificationsScreen> {
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
-        color: AppColors.error.withOpacity(0.2),
+        color: AppColors.error.withValues(alpha: 0.2),
         padding: const EdgeInsets.only(right: 24),
         child: const Icon(Icons.delete_outline, color: AppColors.error),
       ),
@@ -152,8 +152,8 @@ class _ModernNotificationsScreenState extends State<ModernNotificationsScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: notification.isRead
-                ? Colors.white.withOpacity(0.05)
-                : AppColors.primaryBlue.withOpacity(0.3),
+                ? Colors.white.withValues(alpha: 0.05)
+                : AppColors.primaryBlue.withValues(alpha: 0.3),
           ),
         ),
         child: ListTile(
@@ -161,7 +161,7 @@ class _ModernNotificationsScreenState extends State<ModernNotificationsScreen> {
           leading: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: style.color.withOpacity(0.15),
+              color: style.color.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(style.icon, color: style.color, size: 20),
@@ -231,7 +231,7 @@ class _ModernNotificationsScreenState extends State<ModernNotificationsScreen> {
             child: Icon(
               Icons.notifications_none_rounded,
               size: 48,
-              color: AppColors.textTertiary.withOpacity(0.5),
+              color: AppColors.textTertiary.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 24),

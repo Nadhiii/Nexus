@@ -170,7 +170,7 @@ class FinancialHealthProvider with ChangeNotifier {
 
   /// Save current score to Firestore for historical tracking
   Future<void> saveScoreToHistory() async {
-    if (_healthScore == null) return;
+    if (_healthScore == null) { return; }
 
     // TODO: Implement Firestore storage for historical tracking
     // This would allow showing score trends over time

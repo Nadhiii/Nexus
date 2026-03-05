@@ -88,13 +88,16 @@ class BikeStatsWidget extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [statColor.withOpacity(0.15), const Color(0xFF1E1E1E)],
+                colors: [
+                  statColor.withValues(alpha: 0.15),
+                  const Color(0xFF1E1E1E),
+                ],
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: statColor.withOpacity(0.15)),
+              border: Border.all(color: statColor.withValues(alpha: 0.15)),
               boxShadow: [
                 BoxShadow(
-                  color: statColor.withOpacity(0.07),
+                  color: statColor.withValues(alpha: 0.07),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -114,13 +117,13 @@ class BikeStatsWidget extends StatelessWidget {
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1.2,
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.5),
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: statColor.withOpacity(0.13),
+                        color: statColor.withValues(alpha: 0.13),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(stat.icon, size: 14, color: statColor),
@@ -167,7 +170,7 @@ class BikeStatsWidget extends StatelessWidget {
                       stat.subtitle!,
                       style: TextStyle(
                         fontSize: 11,
-                        color: statColor.withOpacity(0.8),
+                        color: statColor.withValues(alpha: 0.8),
                         fontWeight: FontWeight.w600,
                       ),
                     ),

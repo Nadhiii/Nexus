@@ -97,7 +97,7 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   void addNotification(AppNotification notification) {
-    if (_notifications.any((n) => n.id == notification.id)) return;
+    if (_notifications.any((n) => n.id == notification.id)) { return; }
     _notifications.insert(0, notification);
     _saveNotifications();
     notifyListeners();

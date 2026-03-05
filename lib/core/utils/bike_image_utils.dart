@@ -6,7 +6,7 @@ class BikeImageUtils {
 
   /// Normalizes bike image paths to ensure they're in the correct garage subdirectory
   static String? normalizeBikeImagePath(String? imagePath) {
-    if (imagePath == null || imagePath.isEmpty) return null;
+    if (imagePath == null || imagePath.isEmpty) { return null; }
 
     // If already has garage subdirectory, return as-is
     if (imagePath.toLowerCase().contains('garage/')) {
@@ -35,7 +35,7 @@ class BikeImageUtils {
   ) {
     // First try the explicit image path
     final normalized = normalizeBikeImagePath(imagePath);
-    if (normalized != null) return normalized;
+    if (normalized != null) { return normalized; }
 
     // Fallback: try to find by bike name or model using substring matching
     if (bikeName != null && bikeName.isNotEmpty) {

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 /// Service to fetch live mutual fund data from Indian Mutual Fund API
 /// Uses the free MFApi - https://www.mfapi.in/
@@ -31,7 +32,7 @@ class MutualFundApiService {
         throw Exception('Failed to search schemes: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error searching mutual fund schemes: $e');
+      debugPrint('Error searching mutual fund schemes: $e');
       rethrow;
     }
   }
@@ -50,7 +51,7 @@ class MutualFundApiService {
         throw Exception('Failed to fetch schemes: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error fetching mutual fund schemes: $e');
+      debugPrint('Error fetching mutual fund schemes: $e');
       rethrow;
     }
   }
@@ -64,11 +65,11 @@ class MutualFundApiService {
         final data = json.decode(response.body);
         return MutualFundData.fromJson(data);
       } else {
-        print('Failed to fetch scheme data: ${response.statusCode}');
+        debugPrint('Failed to fetch scheme data: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('Error fetching scheme data for $schemeCode: $e');
+      debugPrint('Error fetching scheme data for $schemeCode: $e');
       return null;
     }
   }
@@ -105,7 +106,7 @@ class MutualFundApiService {
 
       return [];
     } catch (e) {
-      print('Error fetching historical data: $e');
+      debugPrint('Error fetching historical data: $e');
       return [];
     }
   }
@@ -146,13 +147,13 @@ class MutualFundData {
 
   /// Get the latest NAV value
   double? get latestNav {
-    if (navHistory.isEmpty) return null;
+    if (navHistory.isEmpty) { return null; }
     return navHistory.first.nav;
   }
 
   /// Get the latest NAV date
   DateTime? get latestNavDate {
-    if (navHistory.isEmpty) return null;
+    if (navHistory.isEmpty) { return null; }
     return navHistory.first.date;
   }
 
@@ -206,7 +207,7 @@ class NavData {
         );
       }
     } catch (e) {
-      print('Error parsing date: $dateStr');
+      debugPrint('Error parsing date: $dateStr');
     }
     return DateTime.now();
   }

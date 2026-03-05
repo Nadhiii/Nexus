@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/bike.dart';
 import '../models/trip.dart';
+import 'package:flutter/foundation.dart';
 
 class BikeService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -15,13 +16,13 @@ class BikeService {
         .orderBy('displayOrder')
         .snapshots()
         .map((snapshot) {
-          print('BikeService: Found ${snapshot.docs.length} active bikes');
+          debugPrint('BikeService: Found ${snapshot.docs.length} active bikes');
           final bikes = <Bike>[];
           for (var doc in snapshot.docs) {
             try {
               bikes.add(Bike.fromFirestore(doc));
             } catch (e) {
-              print('Error parsing bike ${doc.id}: $e');
+              debugPrint('Error parsing bike ${doc.id}: $e');
               // Skip bikes that fail to parse
             }
           }
@@ -38,17 +39,17 @@ class BikeService {
         .orderBy('displayOrder')
         .snapshots()
         .map((snapshot) {
-          print(
+          debugPrint(
             'BikeService: Found ${snapshot.docs.length} total bikes (including deleted)',
           );
           final bikes = <Bike>[];
           for (var doc in snapshot.docs) {
             try {
               final bike = Bike.fromFirestore(doc);
-              print('  - ${bike.name}: isActive=${bike.isActive}');
+              debugPrint('  - ${bike.name}: isActive=${bike.isActive}');
               bikes.add(bike);
             } catch (e) {
-              print('Error parsing bike ${doc.id}: $e');
+              debugPrint('Error parsing bike ${doc.id}: $e');
             }
           }
           return bikes;
@@ -183,7 +184,7 @@ class BikeService {
 
   // Calculate mileage from two entries
   double calculateMileage(double fuelQuantity, double kmTraveled) {
-    if (fuelQuantity <= 0 || kmTraveled <= 0) return 0;
+    if (fuelQuantity <= 0 || kmTraveled <= 0) { return 0; }
     return kmTraveled / fuelQuantity;
   }
 

@@ -1,3 +1,4 @@
+// ignore_for_file: invalid_use_of_protected_member
 import 'dart:io' show Platform;
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -110,7 +111,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
       _cardExpiryController.text = account.cardExpiry ?? '';
       _loadSecureCvv(account.id);
       _cardHolderController.text = account.cardHolderName ?? '';
-      if (_cardNumberController.text.isNotEmpty) _hasCardDetails = true;
+      if (_cardNumberController.text.isNotEmpty) {
+        _hasCardDetails = true;
+      }
 
       _selectedType = account.type;
       _selectedColor = account.color;
@@ -158,8 +161,12 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
   }
 
   void _nextPage() {
-    if (_currentPage == 0 && !_step1Key.currentState!.validate()) return;
-    if (_currentPage == 1 && !_step2Key.currentState!.validate()) return;
+    if (_currentPage == 0 && !_step1Key.currentState!.validate()) {
+      return;
+    }
+    if (_currentPage == 1 && !_step2Key.currentState!.validate()) {
+      return;
+    }
 
     if (_currentPage < _totalPages - 1) {
       // Unfocus keyboard before sliding to next page to keep layout smooth
@@ -186,12 +193,15 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
   }
 
   Future<void> _startNfcScan() async {
-    if (!Platform.isAndroid) return;
+    if (!Platform.isAndroid) {
+      return;
+    }
 
-    bool isAvailable = await NfcManager.instance.isAvailable();
-    if (!isAvailable) {
-      if (mounted)
+    final availability = await NfcManager.instance.checkAvailability();
+    if (availability != NfcAvailability.enabled) {
+      if (mounted) {
         showTopSnackBar(context, "NFC is not available", isError: true);
+      }
       return;
     }
 
@@ -277,7 +287,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
   }
 
   String? _extractTagUid(dynamic data) {
-    if (data is! Map) return null;
+    if (data is! Map) {
+      return null;
+    }
     final candidates = [
       data['id'],
       data['identifier'],
@@ -291,7 +303,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
     ];
     for (final candidate in candidates) {
       final hex = _bytesToHex(candidate);
-      if (hex != null && hex.isNotEmpty) return hex;
+      if (hex != null && hex.isNotEmpty) {
+        return hex;
+      }
     }
     return null;
   }
@@ -299,7 +313,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
   String? _bytesToHex(dynamic value) {
     if (value is List) {
       final bytes = value.whereType<int>().toList();
-      if (bytes.isEmpty) return null;
+      if (bytes.isEmpty) {
+        return null;
+      }
       return bytes
           .map((b) => b.toRadixString(16).padLeft(2, '0'))
           .join()
@@ -360,7 +376,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                     decoration: BoxDecoration(
                       color: _currentPage == index
                           ? _selectedColor
-                          : Colors.white.withOpacity(0.2),
+                          : Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -440,10 +456,12 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                 decimal: true,
               ),
               validator: (value) {
-                if (value == null || value.trim().isEmpty)
+                if (value == null || value.trim().isEmpty) {
                   return 'Balance is required';
-                if (double.tryParse(value.trim()) == null)
+                }
+                if (double.tryParse(value.trim()) == null) {
                   return 'Please enter a valid number';
+                }
                 return null;
               },
             ),
@@ -475,9 +493,11 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                       label: Text(typeName),
                       selected: isSelected,
                       onSelected: (selected) {
-                        if (selected) setState(() => _selectedType = type);
+                        if (selected) {
+                          setState(() => _selectedType = type);
+                        }
                       },
-                      selectedColor: _selectedColor.withOpacity(0.2),
+                      selectedColor: _selectedColor.withValues(alpha: 0.2),
                       backgroundColor: AppColors.cardDarkElevated,
                       labelStyle: TextStyle(
                         color: isSelected
@@ -597,7 +617,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                 ),
                 Switch(
                   value: _hasCardDetails,
-                  activeColor: _selectedColor,
+                  activeThumbColor: _selectedColor,
                   onChanged: (val) => setState(() => _hasCardDetails = val),
                 ),
               ],
@@ -613,7 +633,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                     label: const Text("Scan Card via NFC"),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
                       padding: const EdgeInsets.symmetric(
                         vertical: AppSpacing.md,
                       ),
@@ -702,7 +724,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: color.withOpacity(0.6),
+                                  color: color.withValues(alpha: 0.6),
                                   blurRadius: 12,
                                 ),
                               ]
@@ -751,7 +773,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                         ),
                         border: Border.all(
                           color: isSelected
-                              ? Colors.white.withOpacity(0.5)
+                              ? Colors.white.withValues(alpha: 0.5)
                               : Colors.transparent,
                         ),
                       ),
@@ -778,7 +800,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
         color: AppColors.backgroundBlack,
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+        ),
       ),
       child: SafeArea(
         child: Row(
@@ -901,18 +925,21 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
           colors: [
             const Color(0xFF1A1A1A),
             const Color(0xFF111111),
-            Colors.black.withOpacity(0.8),
-            const Color(0xFF0A0A0A).withOpacity(0.9),
+            Colors.black.withValues(alpha: 0.8),
+            const Color(0xFF0A0A0A).withValues(alpha: 0.9),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: _selectedColor.withOpacity(0.2),
+            color: _selectedColor.withValues(alpha: 0.2),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
-        border: Border.all(color: _selectedColor.withOpacity(0.3), width: 1.5),
+        border: Border.all(
+          color: _selectedColor.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
       ),
       child: Stack(
         children: [
@@ -963,7 +990,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                             )
                           : Icon(
                               _selectedIcon,
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                               size: 24,
                             ),
                     ),
@@ -975,7 +1002,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                     const SizedBox(width: 8),
                     Icon(
                       Icons.wifi,
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                       size: 20,
                     ),
                   ],
@@ -1003,7 +1030,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                             Text(
                               "BALANCE",
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white.withValues(alpha: 0.6),
                                 fontSize: 8,
                               ),
                             ),
@@ -1023,7 +1050,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                             Text(
                               "EXPIRY",
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white.withValues(alpha: 0.6),
                                 fontSize: 8,
                               ),
                             ),
@@ -1052,7 +1079,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
   }
 
   void _saveAccount() async {
-    if (!_step3Key.currentState!.validate()) return;
+    if (!_step3Key.currentState!.validate()) {
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -1127,9 +1156,13 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
         Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted) showTopSnackBar(context, "Error: $e", isError: true);
+      if (mounted) {
+        showTopSnackBar(context, "Error: $e", isError: true);
+      }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 }

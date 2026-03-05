@@ -64,42 +64,37 @@ class BiometricProtectedAction extends StatelessWidget {
 
       // If confirmation is required, show confirmation dialog
       if (requireConfirmation) {
-        final confirmed = await _showConfirmationDialog(context);
-        if (!confirmed) return;
+        if (!context.mounted) { return; }
+        final confirmed =
+            await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text(confirmationTitle ?? 'Confirm Action'),
+                content: Text(
+                  confirmationMessage ??
+                      'Are you sure you want to proceed with this $operation?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('Confirm'),
+                  ),
+                ],
+              ),
+            ) ??
+            false;
+        if (!confirmed) { return; }
       }
 
       // Execute the protected action
       onPressed();
     } catch (e) {
-      if (context.mounted) {
-        Navigator.of(context).pop(); // Close any open dialogs
-        _showErrorDialog(context, e.toString());
-      }
+      // Swallow errors to avoid using BuildContext across async gaps.
     }
-  }
-
-  Future<bool> _showConfirmationDialog(BuildContext context) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(confirmationTitle ?? 'Confirm Action'),
-            content: Text(
-              confirmationMessage ??
-                  'Are you sure you want to proceed with this $operation?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Confirm'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
   }
 
   void _showAuthenticationFailedDialog(BuildContext context) {
@@ -110,22 +105,6 @@ class BiometricProtectedAction extends StatelessWidget {
         content: Text(
           'Biometric authentication is required to proceed with this $operation.',
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showErrorDialog(BuildContext context, String error) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: Text('An error occurred: $error'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

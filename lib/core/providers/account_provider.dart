@@ -66,7 +66,7 @@ class AccountProvider with ChangeNotifier {
 
   Future<void> addAccount(Account account) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     _setLoading(true);
     try {
@@ -80,7 +80,7 @@ class AccountProvider with ChangeNotifier {
 
   Future<void> updateAccount(Account account) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     _setLoading(true);
     try {
@@ -94,9 +94,9 @@ class AccountProvider with ChangeNotifier {
 
   Future<void> updateAccountBalance(String accountId, double newBalance) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
     try {
-      print(
+      debugPrint(
         '💰 AccountProvider.updateAccountBalance: accountId=$accountId, newBalance=$newBalance',
       );
       await _accountService.updateAccountBalance(
@@ -104,16 +104,16 @@ class AccountProvider with ChangeNotifier {
         accountId,
         newBalance,
       );
-      print('✅ AccountProvider: Balance updated in Firestore');
+      debugPrint('✅ AccountProvider: Balance updated in Firestore');
     } catch (e) {
-      print('❌ AccountProvider: Failed to update balance: $e');
+      debugPrint('❌ AccountProvider: Failed to update balance: $e');
       _setError('Failed to update account balance: $e');
     }
   }
 
   Future<void> deleteAccount(String accountId) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     _setLoading(true);
     try {
@@ -122,7 +122,7 @@ class AccountProvider with ChangeNotifier {
         userId: user.uid,
         accountId: accountId,
       );
-      print(
+      debugPrint(
         '🗑️ Cascade deleted account and all related transactions for account $accountId',
       );
     } catch (e) {
@@ -135,7 +135,7 @@ class AccountProvider with ChangeNotifier {
   /// Restore the last deleted account and its transactions
   Future<void> restoreDeletedAccount() async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     if (_lastDeletedAccount == null) {
       _setError('No deleted account to restore');
@@ -149,7 +149,7 @@ class AccountProvider with ChangeNotifier {
 
       // Restore the account
       await _accountService.addAccount(user.uid, accountToRestore);
-      print('✅ Restored account: ${accountToRestore.name}');
+      debugPrint('✅ Restored account: ${accountToRestore.name}');
 
       // Restore its transactions
       if (transactionsToRestore.isNotEmpty) {
@@ -157,7 +157,7 @@ class AccountProvider with ChangeNotifier {
           user.uid,
           transactionsToRestore,
         );
-        print('✅ Restored ${transactionsToRestore.length} transactions');
+        debugPrint('✅ Restored ${transactionsToRestore.length} transactions');
       }
 
       // Clear the stored deleted data
@@ -165,7 +165,7 @@ class AccountProvider with ChangeNotifier {
       _lastDeletedTransactions = [];
     } catch (e) {
       _setError('Failed to restore account: $e');
-      print('❌ Error restoring account: $e');
+      debugPrint('❌ Error restoring account: $e');
     } finally {
       _setLoading(false);
     }
@@ -175,42 +175,42 @@ class AccountProvider with ChangeNotifier {
   /// Useful for cleaning up orphaned accounts (e.g., 'SBI').
   Future<int> purgeAccountByName(String name) async {
     final user = _auth.currentUser;
-    if (user == null) return 0;
+    if (user == null) { return 0; }
     try {
       final count = await _accountService.purgeAccountsByName(user.uid, name);
-      print('🧹 Purged $count account(s) named "$name"');
+      debugPrint('🧹 Purged $count account(s) named "$name"');
       return count;
     } catch (e) {
-      print('❌ Failed to purge account "$name": $e');
+      debugPrint('❌ Failed to purge account "$name": $e');
       _setError('Failed to purge account "$name": $e');
       return 0;
     }
   }
 
   Account? getAccountById(String id) {
-    print('🔍 getAccountById called with id: "$id"');
-    print(
+    debugPrint('🔍 getAccountById called with id: "$id"');
+    debugPrint(
       '📋 Available accounts: ${_accounts.map((a) => '"${a.id}":${a.name}').toList()}',
     );
     try {
       final account = _accounts.firstWhere((acc) => acc.id == id);
-      print('✅ Found account: ${account.name}');
+      debugPrint('✅ Found account: ${account.name}');
       return account;
     } catch (e) {
-      print('❌ Account not found for id: "$id"');
+      debugPrint('❌ Account not found for id: "$id"');
       return null;
     }
   }
 
   Future<void> clearAllData() async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
     await _accountService.clearAllAccounts(user.uid);
   }
 
   Future<void> restoreFromBackup(List<dynamic> data) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
     final accounts = data
         .map((d) => Account.fromJson(d as Map<String, dynamic>))
         .toList();

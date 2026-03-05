@@ -196,7 +196,7 @@ class GoalSipLinkingService {
     final wordsA = a.toLowerCase().split(RegExp(r'\s+')).toSet();
     final wordsB = b.toLowerCase().split(RegExp(r'\s+')).toSet();
 
-    if (wordsA.isEmpty || wordsB.isEmpty) return 0;
+    if (wordsA.isEmpty || wordsB.isEmpty) { return 0; }
 
     final intersection = wordsA.intersection(wordsB);
     return intersection.length / math.max(wordsA.length, wordsB.length);
@@ -257,8 +257,8 @@ class GoalSipLinkingService {
     required double monthlySip,
     required double monthlyGrowthRate,
   }) {
-    if (currentAmount >= targetAmount) return DateTime.now();
-    if (monthlySip <= 0) return null;
+    if (currentAmount >= targetAmount) { return DateTime.now(); }
+    if (monthlySip <= 0) { return null; }
 
     double projected = currentAmount;
     int months = 0;
@@ -270,7 +270,7 @@ class GoalSipLinkingService {
       months++;
     }
 
-    if (months >= maxMonths) return null;
+    if (months >= maxMonths) { return null; }
     return DateTime.now().add(Duration(days: months * 30));
   }
 
@@ -286,24 +286,25 @@ class GoalSipLinkingService {
     double confidence = 0.5;
     if (surplusRatio > 0.2) {
       confidence = 0.9;
-    } else if (surplusRatio > 0.1)
+    } else if (surplusRatio > 0.1) {
       confidence = 0.8;
-    else if (surplusRatio > 0)
+    } else if (surplusRatio > 0) {
       confidence = 0.7;
-    else if (surplusRatio > -0.1)
+    } else if (surplusRatio > -0.1) {
       confidence = 0.5;
-    else
+    } else {
       confidence = 0.3;
+    }
 
     // Longer time horizon reduces confidence slightly
-    if (monthsRemaining > 60) confidence *= 0.9;
-    if (monthsRemaining > 120) confidence *= 0.85;
+    if (monthsRemaining > 60) { confidence *= 0.9; }
+    if (monthsRemaining > 120) { confidence *= 0.85; }
 
     return confidence.clamp(0.0, 1.0);
   }
 
   static Goal? _findSuitableGoal(Investment sip, List<Goal> goals) {
-    if (goals.isEmpty) return null;
+    if (goals.isEmpty) { return null; }
 
     Goal? bestMatch;
     double bestScore = 0;
@@ -333,10 +334,10 @@ class GoalSipLinkingService {
 
   static int _calculatePriority(Goal goal, double monthsToGoal, double amount) {
     // Lower number = higher priority
-    if (goal.isOverdue) return 1;
-    if (monthsToGoal < 3) return 2;
-    if (monthsToGoal < 6) return 3;
-    if (amount > 10000) return 4;
+    if (goal.isOverdue) { return 1; }
+    if (monthsToGoal < 3) { return 2; }
+    if (monthsToGoal < 6) { return 3; }
+    if (amount > 10000) { return 4; }
     return 5;
   }
 
@@ -344,7 +345,7 @@ class GoalSipLinkingService {
     List<Goal> goals,
     Map<String, GoalProjection> projections,
   ) {
-    if (goals.isEmpty) return 100;
+    if (goals.isEmpty) { return 100; }
 
     double totalScore = 0;
     for (final goal in goals) {

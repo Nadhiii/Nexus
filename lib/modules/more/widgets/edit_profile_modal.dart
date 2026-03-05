@@ -69,7 +69,7 @@ class _EditProfileModalState extends State<EditProfileModal>
   }
 
   Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) { return; }
 
     setState(() {
       _isLoading = true;
@@ -119,7 +119,7 @@ class _EditProfileModalState extends State<EditProfileModal>
                 opacity: _opacityAnimation.value * 0.5,
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(color: AppColors.black.withOpacity(0.3)),
+                  child: Container(color: AppColors.black.withValues(alpha: 0.3)),
                 ),
               );
             },
@@ -138,7 +138,7 @@ class _EditProfileModalState extends State<EditProfileModal>
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.black.withOpacity(0.2),
+                          color: AppColors.black.withValues(alpha: 0.2),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -155,7 +155,7 @@ class _EditProfileModalState extends State<EditProfileModal>
                                 Theme.of(context).colorScheme.primary,
                                 Theme.of(
                                   context,
-                                ).colorScheme.primary.withOpacity(0.8),
+                                ).colorScheme.primary.withValues(alpha: 0.8),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,

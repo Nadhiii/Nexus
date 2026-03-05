@@ -82,7 +82,7 @@ class NotificationSettingsScreen extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textSecondary,
                   side: BorderSide(
-                    color: AppColors.textTertiary.withOpacity(0.3),
+                    color: AppColors.textTertiary.withValues(alpha: 0.3),
                   ),
                 ),
                 child: const Text("Send Test Notification"),
@@ -113,7 +113,7 @@ class NotificationSettingsScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(children: children),
     );
@@ -140,7 +140,7 @@ class NotificationSettingsScreen extends StatelessWidget {
 
   Widget _divider() => Divider(
     height: 1,
-    color: Colors.white.withOpacity(0.05),
+    color: Colors.white.withValues(alpha: 0.05),
     indent: 16,
     endIndent: 16,
   );

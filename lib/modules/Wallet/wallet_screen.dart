@@ -1,3 +1,4 @@
+// ignore_for_file: unused_element
 import 'package:flutter/material.dart';
 import '../../core/widgets/collapsible_fab.dart';
 import 'package:provider/provider.dart';
@@ -57,7 +58,9 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
   }
 
   void _deleteSelected(TransactionProvider provider) async {
-    if (_selectedTransactionIds.isEmpty) return;
+    if (_selectedTransactionIds.isEmpty) {
+      return;
+    }
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -82,9 +85,11 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.1),
+                  color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -109,7 +114,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                         onPressed: () => Navigator.pop(context, false),
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
@@ -350,7 +355,11 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 64, color: AppColors.textTertiary.withOpacity(0.3)),
+          Icon(
+            icon,
+            size: 64,
+            color: AppColors.textTertiary.withValues(alpha: 0.3),
+          ),
           const SizedBox(height: 16),
           Text(text, style: TextStyle(color: AppColors.textTertiary)),
           const SizedBox(height: 24),
@@ -377,7 +386,11 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 64, color: AppColors.textTertiary.withOpacity(0.3)),
+          Icon(
+            icon,
+            size: 64,
+            color: AppColors.textTertiary.withValues(alpha: 0.3),
+          ),
           const SizedBox(height: 16),
           Text(text, style: TextStyle(color: AppColors.textTertiary)),
         ],
@@ -408,7 +421,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
           border: Border.all(
             color: isSelected
                 ? Colors.transparent
-                : Colors.white.withOpacity(0.1),
+                : Colors.white.withValues(alpha: 0.1),
           ),
         ),
         child: Text(
@@ -619,13 +632,16 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [account.color.withOpacity(0.15), AppColors.cardSurface],
+            colors: [
+              account.color.withValues(alpha: 0.15),
+              AppColors.cardSurface,
+            ],
           ),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: account.color.withOpacity(0.2)),
+          border: Border.all(color: account.color.withValues(alpha: 0.2)),
           boxShadow: [
             BoxShadow(
-              color: account.color.withOpacity(0.1),
+              color: account.color.withValues(alpha: 0.1),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -661,7 +677,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: account.color.withOpacity(0.1),
+                      color: account.color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -751,25 +767,25 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
         gradient: _isSelectionMode && isSelected
             ? LinearGradient(
                 colors: [
-                  AppColors.primaryBlue.withOpacity(0.12),
-                  AppColors.primaryBlue.withOpacity(0.06),
+                  AppColors.primaryBlue.withValues(alpha: 0.12),
+                  AppColors.primaryBlue.withValues(alpha: 0.06),
                 ],
               )
             : LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [color.withOpacity(0.05), AppColors.cardSurface],
+                colors: [color.withValues(alpha: 0.05), AppColors.cardSurface],
               ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: _isSelectionMode && isSelected
               ? AppColors.primaryBlue
-              : color.withOpacity(0.08),
+              : color.withValues(alpha: 0.08),
           width: _isSelectionMode && isSelected ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.03),
+            color: color.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -797,10 +813,13 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [color.withOpacity(0.12), color.withOpacity(0.06)],
+                colors: [
+                  color.withValues(alpha: 0.12),
+                  color.withValues(alpha: 0.06),
+                ],
               ),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: color.withOpacity(0.12)),
+              border: Border.all(color: color.withValues(alpha: 0.12)),
             ),
             child: Icon(icon, color: color, size: 18),
           ),
@@ -825,7 +844,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -837,6 +856,37 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                     ),
                   ),
                 ),
+                if (t.metadata?['source'] == 'nexus_tasks')
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 9,
+                          color: Colors.white54,
+                        ),
+                        SizedBox(width: 3),
+                        Text(
+                          'via Tasks',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -1030,8 +1080,8 @@ class _WalletFlipCardState extends State<_WalletFlipCard>
     final gradientColors = isNegative
         ? AppColors.netWorthNegativeGradient
         : AppColors.netWorthPositiveGradient;
-    final borderColor = Colors.white.withOpacity(0.1);
-    final boxShadowColor = Colors.black.withOpacity(0.4);
+    final borderColor = Colors.white.withValues(alpha: 0.1);
+    final boxShadowColor = Colors.black.withValues(alpha: 0.4);
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -1059,7 +1109,7 @@ class _WalletFlipCardState extends State<_WalletFlipCard>
               Text(
                 'LIQUID ASSETS',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
@@ -1103,7 +1153,7 @@ class _WalletFlipCardState extends State<_WalletFlipCard>
           Text(
             status.message,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -1120,7 +1170,7 @@ class _WalletFlipCardState extends State<_WalletFlipCard>
               Text(
                 '${widget.count} Accounts',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1144,8 +1194,8 @@ class _WalletFlipCardState extends State<_WalletFlipCard>
     final gradientColors = isNegative
         ? AppColors.netWorthNegativeGradient
         : AppColors.netWorthPositiveGradient;
-    final borderColor = Colors.white.withOpacity(0.1);
-    final boxShadowColor = Colors.black.withOpacity(0.4);
+    final borderColor = Colors.white.withValues(alpha: 0.1);
+    final boxShadowColor = Colors.black.withValues(alpha: 0.4);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -1186,7 +1236,7 @@ class _WalletFlipCardState extends State<_WalletFlipCard>
               explanation,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.85),
+                color: Colors.white.withValues(alpha: 0.85),
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),

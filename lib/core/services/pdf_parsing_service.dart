@@ -21,14 +21,14 @@ class PDFParsingService extends ChangeNotifier {
   /// Set the Gemini API key for PDF parsing
   void setGeminiApiKey(String apiKey) {
     _geminiApiKey = apiKey;
-    if (kDebugMode) print('[PDFParsingService] Gemini API key set');
+    if (kDebugMode) { debugPrint('[PDFParsingService] Gemini API key set'); }
   }
 
   /// Set which provider to use for PDF parsing
   void setPDFParsingProvider(PDFParsingProvider provider) {
     _provider = provider;
     if (kDebugMode) {
-      print('[PDFParsingService] Provider set to: ${provider.name}');
+      debugPrint('[PDFParsingService] Provider set to: ${provider.name}');
     }
   }
 
@@ -40,7 +40,7 @@ class PDFParsingService extends ChangeNotifier {
     File? tempUnlockedFile;
 
     try {
-      if (kDebugMode) print('[PDFParsingService] Processing: $filePath');
+      if (kDebugMode) { debugPrint('[PDFParsingService] Processing: $filePath'); }
 
       // --- STEP 1: Unlock PDF if needed ---
       File originalFile = File(filePath);
@@ -68,7 +68,7 @@ class PDFParsingService extends ChangeNotifier {
       }
 
       // --- STEP 2: Try local parser first ---
-      if (kDebugMode) print('[PDFParsingService] Trying local parser...');
+      if (kDebugMode) { debugPrint('[PDFParsingService] Trying local parser...'); }
 
       List<ExtractedTransaction> transactions = [];
       String? parseError;
@@ -76,19 +76,19 @@ class PDFParsingService extends ChangeNotifier {
       try {
         transactions = await _localParser.parse(tempUnlockedFile);
         if (kDebugMode) {
-          print(
+          debugPrint(
             '[PDFParsingService] Local parser succeeded with ${transactions.length} transactions',
           );
         }
       } catch (e) {
         parseError = e.toString();
         if (kDebugMode) {
-          print('[PDFParsingService] Local parser failed: $parseError');
+          debugPrint('[PDFParsingService] Local parser failed: $parseError');
         }
 
         // --- STEP 3: Fall back to AI parser ---
         if (kDebugMode) {
-          print('[PDFParsingService] Using provider: ${_provider.name}');
+          debugPrint('[PDFParsingService] Using provider: ${_provider.name}');
         }
 
         if (_provider == PDFParsingProvider.claude) {
@@ -107,7 +107,7 @@ class PDFParsingService extends ChangeNotifier {
           }
 
           if (kDebugMode) {
-            print('[PDFParsingService] Sending to Gemini parser...');
+            debugPrint('[PDFParsingService] Sending to Gemini parser...');
           }
           final parser = PDFParser(_geminiApiKey!);
           transactions = await parser.parse(tempUnlockedFile);
@@ -127,7 +127,7 @@ class PDFParsingService extends ChangeNotifier {
           }
 
           if (kDebugMode) {
-            print('[PDFParsingService] Sending to Gemini parser...');
+            debugPrint('[PDFParsingService] Sending to Gemini parser...');
           }
           final parser = PDFParser(_geminiApiKey!);
           transactions = await parser.parse(tempUnlockedFile);
@@ -163,7 +163,7 @@ class PDFParsingService extends ChangeNotifier {
         warnings: [],
       );
     } catch (e) {
-      if (kDebugMode) print('[PDFParsingService] Error: $e');
+      if (kDebugMode) { debugPrint('[PDFParsingService] Error: $e'); }
       return PDFParseResult(success: false, errors: [e.toString()]);
     } finally {
       // Clean up temp file

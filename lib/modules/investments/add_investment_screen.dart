@@ -70,7 +70,9 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
 
   // --- MUTUAL FUND API ---
   Future<void> _searchFunds(String query) async {
-    if (query.length < 3) return;
+    if (query.length < 3) {
+      return;
+    }
     setState(() => _isSearching = true);
     try {
       final response = await http.get(
@@ -245,7 +247,7 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
                               AppSpacing.radiusMd,
                             ),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.05),
+                              color: Colors.white.withValues(alpha: 0.05),
                             ),
                           ),
                           child: ListView.builder(
@@ -448,7 +450,9 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
             : null,
       ),
       validator: (value) {
-        if (isRequired && (value == null || value.isEmpty)) return "Required";
+        if (isRequired && (value == null || value.isEmpty)) {
+          return "Required";
+        }
         return null;
       },
     );
@@ -459,7 +463,9 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
       setState(() => _isLoading = true);
       try {
         final user = FirebaseAuth.instance.currentUser;
-        if (user == null) return;
+        if (user == null) {
+          return;
+        }
 
         final investment = Investment(
           id:
@@ -498,9 +504,13 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
           showTopSnackBar(context, 'Asset Saved');
         }
       } catch (e) {
-        if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+        if (mounted) {
+          showTopSnackBar(context, 'Error: $e', isError: true);
+        }
       } finally {
-        if (mounted) setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     }
   }

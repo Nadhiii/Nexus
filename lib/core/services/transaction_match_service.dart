@@ -48,7 +48,7 @@ class TransactionMatchService {
 
     // Check EMI matches
     for (final debt in debts.where((d) => d.currentBalance > 0)) {
-      if (debt.monthlyEMI == null || debt.nextPaymentDate == null) continue;
+      if (debt.monthlyEMI == null || debt.nextPaymentDate == null) { continue; }
 
       final score = _calculateMatchScore(
         transactionAmount: transaction.amount,
@@ -98,7 +98,7 @@ class TransactionMatchService {
             .toList()
           ..sort((a, b) => a.date.compareTo(b.date));
 
-    if (expenses.length < 3) return detected;
+    if (expenses.length < 3) { return detected; }
 
     // Group transactions by similar amount (within 5% tolerance)
     final amountGroups = <double, List<models.Transaction>>{};
@@ -118,7 +118,7 @@ class TransactionMatchService {
 
     // Find patterns in each group
     for (final group in amountGroups.entries) {
-      if (group.value.length < 2) continue;
+      if (group.value.length < 2) { continue; }
 
       final txns = group.value..sort((a, b) => a.date.compareTo(b.date));
 
@@ -128,7 +128,7 @@ class TransactionMatchService {
         intervals.add(txns[i].date.difference(txns[i - 1].date).inDays);
       }
 
-      if (intervals.isEmpty) continue;
+      if (intervals.isEmpty) { continue; }
 
       // Detect frequency pattern
       final avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
@@ -168,7 +168,7 @@ class TransactionMatchService {
     // Sort by confidence and occurrences
     detected.sort((a, b) {
       final confCompare = b.confidence.compareTo(a.confidence);
-      if (confCompare != 0) return confCompare;
+      if (confCompare != 0) { return confCompare; }
       return b.occurrences.compareTo(a.occurrences);
     });
 
@@ -256,14 +256,14 @@ class TransactionMatchService {
   }
 
   static String? _detectFrequency(int intervalDays) {
-    if (intervalDays >= 1 && intervalDays <= 2) return 'daily';
-    if (intervalDays >= 5 && intervalDays <= 9) return 'weekly';
-    if (intervalDays >= 12 && intervalDays <= 17) return 'biweekly';
-    if (intervalDays >= 26 && intervalDays <= 35) return 'monthly';
-    if (intervalDays >= 55 && intervalDays <= 65) return 'bimonthly';
-    if (intervalDays >= 85 && intervalDays <= 100) return 'quarterly';
-    if (intervalDays >= 175 && intervalDays <= 190) return '6months';
-    if (intervalDays >= 350 && intervalDays <= 380) return 'yearly';
+    if (intervalDays >= 1 && intervalDays <= 2) { return 'daily'; }
+    if (intervalDays >= 5 && intervalDays <= 9) { return 'weekly'; }
+    if (intervalDays >= 12 && intervalDays <= 17) { return 'biweekly'; }
+    if (intervalDays >= 26 && intervalDays <= 35) { return 'monthly'; }
+    if (intervalDays >= 55 && intervalDays <= 65) { return 'bimonthly'; }
+    if (intervalDays >= 85 && intervalDays <= 100) { return 'quarterly'; }
+    if (intervalDays >= 175 && intervalDays <= 190) { return '6months'; }
+    if (intervalDays >= 350 && intervalDays <= 380) { return 'yearly'; }
     return null;
   }
 
@@ -305,7 +305,7 @@ class TransactionMatchService {
         .map((t) => t.description!)
         .toList();
 
-    if (descriptions.isEmpty) return null;
+    if (descriptions.isEmpty) { return null; }
 
     // Find common words
     final wordCounts = <String, int>{};
@@ -395,7 +395,7 @@ class TransactionMatchService {
   }
 
   static String _capitalize(String s) {
-    if (s.isEmpty) return s;
+    if (s.isEmpty) { return s; }
     return s[0].toUpperCase() + s.substring(1);
   }
 
@@ -403,7 +403,7 @@ class TransactionMatchService {
     List<int> intervals,
     int avgInterval,
   ) {
-    if (intervals.isEmpty) return 0;
+    if (intervals.isEmpty) { return 0; }
 
     // Calculate variance
     double variance = 0;

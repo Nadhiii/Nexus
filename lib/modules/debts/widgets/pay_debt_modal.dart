@@ -14,6 +14,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/top_snackbar.dart';
 import '../../../core/utils/logo_utils.dart';
+import '../utils/debt_logo_utils.dart';
 
 class PayDebtModal extends StatefulWidget {
   final Debt debt;
@@ -116,6 +117,9 @@ class _PayDebtModalState extends State<PayDebtModal>
   }
 
   Widget _buildHeader() {
+    final debtLogo = DebtLogoUtils.bankLogoForDebt(widget.debt);
+    final debtLogoScale = DebtLogoUtils.bankLogoScaleForDebt(widget.debt);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -143,7 +147,9 @@ class _PayDebtModalState extends State<PayDebtModal>
             color: AppColors.error.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.payments_outlined, color: AppColors.error),
+          child: debtLogo != null
+              ? LogoUtils.buildLogo(debtLogo, size: 20 * debtLogoScale)
+              : const Icon(Icons.payments_outlined, color: AppColors.error),
         ),
       ],
     );
@@ -279,7 +285,7 @@ class _PayDebtModalState extends State<PayDebtModal>
                     firstDate: DateTime(2020),
                     lastDate: DateTime.now(),
                   );
-                  if (picked != null) setState(() => _selectedDate = picked);
+                  if (picked != null) { setState(() => _selectedDate = picked); }
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -391,7 +397,7 @@ class _PayDebtModalState extends State<PayDebtModal>
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception("User not logged in");
+      if (user == null) { throw Exception("User not logged in"); }
 
       // 1. Create Transaction (This handles the Account Debit automatically!)
       final transaction = Transaction(
@@ -427,7 +433,7 @@ class _PayDebtModalState extends State<PayDebtModal>
         showTopSnackBar(context, "Transaction failed: $e", isError: true);
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) { setState(() => _isLoading = false); }
     }
   }
 }

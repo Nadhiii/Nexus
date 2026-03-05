@@ -39,7 +39,7 @@ class PDFImportProvider extends ChangeNotifier {
   }
 
   int get duplicateCount {
-    if (_duplicateResults == null) return 0;
+    if (_duplicateResults == null) { return 0; }
     return _duplicateResults!.values.where((r) => r.isDuplicate).length;
   }
 
@@ -136,7 +136,7 @@ class PDFImportProvider extends ChangeNotifier {
   }
 
   Future<void> checkDuplicates(dynamic existingTransactions) async {
-    if (_currentStatement == null) return;
+    if (_currentStatement == null) { return; }
     _isLoading = true;
     _status = 'Checking for duplicates...';
     notifyListeners();
@@ -170,7 +170,7 @@ class PDFImportProvider extends ChangeNotifier {
     String? accountNumber,
     double initialBalance = 0,
   }) {
-    if (_currentStatement == null) return;
+    if (_currentStatement == null) { return; }
     _accountToCreate = Account(
       id: '',
       userId: '',

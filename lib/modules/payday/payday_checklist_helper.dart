@@ -19,17 +19,17 @@ class PaydayChecklistHelper {
   /// Check if a transaction should trigger the payday checklist
   static bool shouldTrigger(Transaction transaction) {
     // Only for income transactions
-    if (transaction.type != TransactionType.income) return false;
+    if (transaction.type != TransactionType.income) { return false; }
 
     // Check amount threshold
-    if (transaction.amount < minimumIncomeThreshold) return false;
+    if (transaction.amount < minimumIncomeThreshold) { return false; }
 
     return true;
   }
 
   /// Check if income category should trigger (e.g., salary)
   static bool isSalaryCategory(String? categoryId) {
-    if (categoryId == null) return false;
+    if (categoryId == null) { return false; }
     final lower = categoryId.toLowerCase();
     return lower == 'salary' ||
         lower == 'income' ||
@@ -44,13 +44,13 @@ class PaydayChecklistHelper {
     VoidCallback? onItemTap,
   }) async {
     // Only for income
-    if (transaction.type != TransactionType.income) return;
+    if (transaction.type != TransactionType.income) { return; }
 
     // Check if should trigger
     final isSalary = isSalaryCategory(transaction.categoryId);
     final isSignificantAmount = transaction.amount >= minimumIncomeThreshold;
 
-    if (!isSalary && !isSignificantAmount) return;
+    if (!isSalary && !isSignificantAmount) { return; }
 
     // Build the service with available providers
     final service = PaydayChecklistService(
@@ -70,7 +70,7 @@ class PaydayChecklistHelper {
     );
 
     // Only show if there are items
-    if (checklist.items.isEmpty) return;
+    if (checklist.items.isEmpty) { return; }
 
     // Small delay to let the transaction screen close
     await Future.delayed(AppAnimations.slow);

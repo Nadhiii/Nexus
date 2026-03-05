@@ -21,14 +21,14 @@ class SharedExpenseProvider with ChangeNotifier {
   /// Get current user's Firestore path for shared expenses
   String get _basePath {
     final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) throw Exception('User not logged in');
+    if (userId == null) { throw Exception('User not logged in'); }
     return 'users/$userId';
   }
 
   /// Initialize provider and load data
   Future<void> initialize() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     try {
       _setLoading(true);

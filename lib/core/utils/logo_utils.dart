@@ -68,25 +68,25 @@ class LogoUtils {
   }
 
   static String? bankLogoFor(String? bankName) {
-    if (bankName == null || bankName.trim().isEmpty) return null;
+    if (bankName == null || bankName.trim().isEmpty) { return null; }
     final normalized = _normalize(bankName);
     for (final entry in _bankLogoMap.entries) {
-      if (normalized.contains(entry.key)) return entry.value;
+      if (normalized.contains(entry.key)) { return entry.value; }
     }
     return null;
   }
 
   static String? subscriptionLogoFor(String? name) {
-    if (name == null || name.trim().isEmpty) return null;
+    if (name == null || name.trim().isEmpty) { return null; }
     final normalized = _normalize(name);
     for (final entry in _subscriptionLogoMap.entries) {
-      if (normalized.contains(entry.key)) return entry.value;
+      if (normalized.contains(entry.key)) { return entry.value; }
     }
     return null;
   }
 
   static double bankLogoScale(String? bankName) {
-    if (bankName == null || bankName.trim().isEmpty) return 1.0;
+    if (bankName == null || bankName.trim().isEmpty) { return 1.0; }
     final normalized = _normalize(bankName);
     if (normalized.contains('fi') ||
         normalized.contains('fibank') ||
@@ -141,7 +141,7 @@ class LogoUtils {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.12),
+        color: Colors.grey.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular((size ?? 24) / 6),
       ),
       child: Center(

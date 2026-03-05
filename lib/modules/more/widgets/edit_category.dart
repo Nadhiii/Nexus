@@ -153,7 +153,7 @@ class _EditCategoryModalState extends State<EditCategoryModal> {
                           AppSpacing.radiusXl,
                         ),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white.withValues(alpha: 0.05),
                         ),
                       ),
                       child: Wrap(
@@ -162,7 +162,7 @@ class _EditCategoryModalState extends State<EditCategoryModal> {
                         alignment: WrapAlignment.center,
                         children: _colorOptions.map((color) {
                           final isSelected =
-                              _selectedColor.value == color.value;
+                              _selectedColor.toARGB32() == color.toARGB32();
                           return GestureDetector(
                             onTap: () => setState(() => _selectedColor = color),
                             child: AnimatedContainer(
@@ -178,7 +178,7 @@ class _EditCategoryModalState extends State<EditCategoryModal> {
                                 boxShadow: isSelected
                                     ? [
                                         BoxShadow(
-                                          color: color.withOpacity(0.6),
+                                          color: color.withValues(alpha: 0.6),
                                           blurRadius: 12,
                                           spreadRadius: 2,
                                         ),
@@ -216,7 +216,7 @@ class _EditCategoryModalState extends State<EditCategoryModal> {
                             ),
                           ),
                           elevation: 8,
-                          shadowColor: _selectedColor.withOpacity(0.5),
+                          shadowColor: _selectedColor.withValues(alpha: 0.5),
                         ),
                         child: _isLoading
                             ? const SizedBox(
@@ -270,15 +270,18 @@ class _EditCategoryModalState extends State<EditCategoryModal> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              _selectedColor.withOpacity(0.4),
-              _selectedColor.withOpacity(0.1),
-              Colors.black.withOpacity(0.8),
+              _selectedColor.withValues(alpha: 0.4),
+              _selectedColor.withValues(alpha: 0.1),
+              Colors.black.withValues(alpha: 0.8),
             ],
           ),
-          border: Border.all(color: _selectedColor.withOpacity(0.5), width: 2),
+          border: Border.all(
+            color: _selectedColor.withValues(alpha: 0.5),
+            width: 2,
+          ),
           boxShadow: [
             BoxShadow(
-              color: _selectedColor.withOpacity(0.3),
+              color: _selectedColor.withValues(alpha: 0.3),
               blurRadius: 40,
               spreadRadius: 5,
             ),
@@ -328,7 +331,9 @@ class _EditCategoryModalState extends State<EditCategoryModal> {
       ),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.5)),
+        hintStyle: TextStyle(
+          color: AppColors.textTertiary.withValues(alpha: 0.5),
+        ),
         filled: true,
         fillColor: AppColors.cardDarkElevated,
         counterText: "",
@@ -380,9 +385,9 @@ class _EditCategoryModalState extends State<EditCategoryModal> {
           showTopSnackBar(context, 'Category minted successfully');
         }
       } catch (e) {
-        if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+        if (mounted) { showTopSnackBar(context, 'Error: $e', isError: true); }
       } finally {
-        if (mounted) setState(() => _isLoading = false);
+        if (mounted) { setState(() => _isLoading = false); }
       }
     }
   }

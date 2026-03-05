@@ -81,6 +81,9 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
           }
         });
 
+        if (!mounted) {
+          return;
+        }
         await _otaService.startOTAUpdate(context, update['apk_url']);
       } else {
         setState(() => _updateStatus = 'Nexus is up to date ($currentVersion)');
@@ -197,7 +200,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               color: Colors.transparent,
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
             clipBehavior: Clip.antiAlias,
             child: Stack(
@@ -209,7 +212,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                     width: constraints.maxWidth * _downloadProgress,
                     height: double.infinity,
                     decoration: BoxDecoration(
-                      color: AppColors.primaryBlue.withOpacity(0.2),
+                      color: AppColors.primaryBlue.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
@@ -244,7 +247,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
-                                  color: AppColors.error.withOpacity(0.2),
+                                  color: AppColors.error.withValues(alpha: 0.2),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
@@ -289,8 +292,8 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isError
-              ? AppColors.error.withOpacity(0.2)
-              : Colors.white.withOpacity(0.1),
+              ? AppColors.error.withValues(alpha: 0.2)
+              : Colors.white.withValues(alpha: 0.1),
         ),
       ),
       child: TextButton(
@@ -369,7 +372,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         children: [
@@ -399,7 +402,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         children: [
@@ -448,7 +451,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         children: [
@@ -484,7 +487,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(icon, color: color, size: 22),
@@ -516,7 +519,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
 
   Widget _divider() => Divider(
     height: 1,
-    color: Colors.white.withOpacity(0.05),
+    color: Colors.white.withValues(alpha: 0.05),
     indent: 70,
     endIndent: 20,
   );
@@ -564,7 +567,7 @@ class _ToolCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Column(
           children: [

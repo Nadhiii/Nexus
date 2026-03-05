@@ -80,7 +80,7 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.15),
+                        color: AppColors.success.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: const Icon(
@@ -104,7 +104,7 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
                           Text(
                             debt.name,
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 14,
                             ),
                           ),
@@ -121,7 +121,9 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
                   decoration: BoxDecoration(
                     color: AppColors.cardSurface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -132,7 +134,7 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
                           Text(
                             'Outstanding Balance',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 12,
                             ),
                           ),
@@ -154,7 +156,7 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
                             Text(
                               'Monthly EMI',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.5),
+                                color: Colors.white.withValues(alpha: 0.5),
                                 fontSize: 12,
                               ),
                             ),
@@ -179,7 +181,7 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
                   Text(
                     'PAYMENT AMOUNT',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.4),
+                      color: Colors.white.withValues(alpha: 0.4),
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1.2,
@@ -250,12 +252,14 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
                   decoration: InputDecoration(
                     prefixText: '₹ ',
                     prefixStyle: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
                     ),
                     hintText: '0',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.2)),
+                    hintStyle: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
                     filled: true,
                     fillColor: AppColors.cardSurface,
                     border: OutlineInputBorder(
@@ -265,7 +269,7 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: Colors.white.withOpacity(0.08),
+                        color: Colors.white.withValues(alpha: 0.08),
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -275,7 +279,7 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
                     disabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: AppColors.success.withOpacity(0.3),
+                        color: AppColors.success.withValues(alpha: 0.3),
                       ),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
@@ -292,7 +296,7 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
                     child: Text(
                       _getNewBalanceText(),
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 13,
                       ),
                     ),
@@ -367,13 +371,13 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.success.withOpacity(0.15)
+              ? AppColors.success.withValues(alpha: 0.15)
               : AppColors.cardSurface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
                 ? AppColors.success
-                : Colors.white.withOpacity(0.08),
+                : Colors.white.withValues(alpha: 0.08),
           ),
         ),
         child: Column(
@@ -501,7 +505,9 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
         showTopSnackBar(context, 'Error: $e', isError: true);
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 }

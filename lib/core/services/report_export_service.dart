@@ -1,3 +1,4 @@
+// ignore_for_file: unused_local_variable
 import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
@@ -620,7 +621,9 @@ class ReportExportService {
     DateTime? endDate,
   ) {
     return transactions.where((t) {
-      if (startDate != null && t.date.isBefore(startDate)) return false;
+      if (startDate != null && t.date.isBefore(startDate)) {
+        return false;
+      }
       if (endDate != null &&
           t.date.isAfter(endDate.add(const Duration(days: 1)))) {
         return false;

@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_types_as_parameter_names
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -77,7 +78,7 @@ class FamilyDebtProvider extends ChangeNotifier {
   }
 
   void initialize() {
-    if (_userId == null) return;
+    if (_userId == null) { return; }
 
     _loadFamilyMembers();
     _loadDebts();
@@ -127,7 +128,7 @@ class FamilyDebtProvider extends ChangeNotifier {
 
   /// Add a new family debt
   Future<void> addDebt(FamilyDebt debt) async {
-    if (_userId == null) return;
+    if (_userId == null) { return; }
 
     try {
       _setLoading(true);
@@ -150,7 +151,7 @@ class FamilyDebtProvider extends ChangeNotifier {
     double amount, {
     String? notes,
   }) async {
-    if (_userId == null) return;
+    if (_userId == null) { return; }
 
     try {
       _setLoading(true);
@@ -161,7 +162,7 @@ class FamilyDebtProvider extends ChangeNotifier {
           .doc(debtId);
 
       final debtDoc = await debtRef.get();
-      if (!debtDoc.exists) throw Exception('Debt not found');
+      if (!debtDoc.exists) { throw Exception('Debt not found'); }
 
       final debt = FamilyDebt.fromMap(debtDoc.data()!, debtDoc.id);
       final newBalance = (debt.currentAmount - amount).clamp(
@@ -191,7 +192,7 @@ class FamilyDebtProvider extends ChangeNotifier {
 
   /// Settle a debt completely
   Future<void> settleDebt(String debtId) async {
-    if (_userId == null) return;
+    if (_userId == null) { return; }
 
     try {
       _setLoading(true);
@@ -221,7 +222,7 @@ class FamilyDebtProvider extends ChangeNotifier {
 
   /// Delete a debt
   Future<void> deleteDebt(String debtId) async {
-    if (_userId == null) return;
+    if (_userId == null) { return; }
 
     try {
       _setLoading(true);
@@ -257,7 +258,7 @@ class FamilyDebtProvider extends ChangeNotifier {
 
   void _setError(String? value) {
     _error = value;
-    if (value != null) debugPrint('FamilyDebtProvider error: $value');
+    if (value != null) { debugPrint('FamilyDebtProvider error: $value'); }
     notifyListeners();
   }
 

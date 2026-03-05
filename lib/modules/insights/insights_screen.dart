@@ -63,8 +63,8 @@ class ModernInsightsScreen extends StatelessWidget {
                   .where((s) => s.isActive)
                   .toList();
               final subCost = activeSubs.fold(0.0, (sum, s) {
-                if (s.frequency == 'monthly') return sum + s.amount;
-                if (s.frequency == 'yearly') return sum + (s.amount / 12);
+                if (s.frequency == 'monthly') { return sum + s.amount; }
+                if (s.frequency == 'yearly') { return sum + (s.amount / 12); }
                 return sum + s.amount; // Simplify
               });
 
@@ -157,10 +157,10 @@ class ModernInsightsScreen extends StatelessWidget {
               : AppColors.netWorthNegativeGradient,
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             blurRadius: 30,
             offset: const Offset(0, 10),
           ),
@@ -175,7 +175,7 @@ class ModernInsightsScreen extends StatelessWidget {
               Text(
                 'NET WORTH',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
+                  color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
@@ -183,7 +183,7 @@ class ModernInsightsScreen extends StatelessWidget {
               ),
               Icon(
                 Icons.privacy_tip_outlined,
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withValues(alpha: 0.3),
                 size: 16,
               ),
             ],
@@ -216,7 +216,7 @@ class ModernInsightsScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -383,7 +383,7 @@ class ModernInsightsScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: isWide
             ? _buildWideTileContent(title, value, subtitle, icon, color)
@@ -411,7 +411,7 @@ class ModernInsightsScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
+            color: color.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           ),
           child: Icon(icon, color: color, size: 24),
@@ -445,7 +445,7 @@ class ModernInsightsScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -478,7 +478,7 @@ class ModernInsightsScreen extends StatelessWidget {
         Container(
           padding: EdgeInsets.all(isLarge ? 12 : 8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
+            color: color.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(isLarge ? 16 : 12),
           ),
           child: Icon(icon, color: color, size: isLarge ? 26 : 20),

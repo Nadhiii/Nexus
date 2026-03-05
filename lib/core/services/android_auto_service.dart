@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 /// Service to communicate with Android Auto.
 /// Uses MethodChannel to send Garage and Dashboard data to the car display.
@@ -12,14 +13,14 @@ class AndroidAutoService {
 
   /// Initialize Android Auto connection
   static Future<bool> initialize() async {
-    if (_isInitialized) return true;
+    if (_isInitialized) { return true; }
 
     try {
       final result = await _channel.invokeMethod('initializeAndroidAuto');
       _isInitialized = result == true;
       return _isInitialized;
     } catch (e) {
-      print('Error initializing Android Auto: $e');
+      debugPrint('Error initializing Android Auto: $e');
       return false;
     }
   }
@@ -56,7 +57,7 @@ class AndroidAutoService {
       });
       return result == true;
     } catch (e) {
-      print('Error updating Android Auto garage: $e');
+      debugPrint('Error updating Android Auto garage: $e');
       return false;
     }
   }
@@ -77,7 +78,7 @@ class AndroidAutoService {
       });
       return result == true;
     } catch (e) {
-      print('Error updating Android Auto dashboard: $e');
+      debugPrint('Error updating Android Auto dashboard: $e');
       return false;
     }
   }
@@ -88,7 +89,7 @@ class AndroidAutoService {
       final result = await _channel.invokeMethod('switchToGarage');
       return result == true;
     } catch (e) {
-      print('Error switching to garage: $e');
+      debugPrint('Error switching to garage: $e');
       return false;
     }
   }
@@ -99,7 +100,7 @@ class AndroidAutoService {
       final result = await _channel.invokeMethod('switchToDashboard');
       return result == true;
     } catch (e) {
-      print('Error switching to dashboard: $e');
+      debugPrint('Error switching to dashboard: $e');
       return false;
     }
   }
@@ -118,7 +119,7 @@ class AndroidAutoService {
       });
       return result == true;
     } catch (e) {
-      print('Error sending alert: $e');
+      debugPrint('Error sending alert: $e');
       return false;
     }
   }

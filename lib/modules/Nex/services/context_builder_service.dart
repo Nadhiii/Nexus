@@ -221,7 +221,7 @@ class ContextBuilderService {
       'message',
       'nbox',
     ])) {
-      if (nboxProvider != null) buffer.writeln(_buildNboxSummary());
+      if (nboxProvider != null) { buffer.writeln(_buildNboxSummary()); }
     }
 
     if (_matchesAny(lowerQuery, [
@@ -231,7 +231,7 @@ class ContextBuilderService {
       'import',
       'parse',
     ])) {
-      if (pdfImportProvider != null) buffer.writeln(_buildPdfSummary());
+      if (pdfImportProvider != null) { buffer.writeln(_buildPdfSummary()); }
     }
 
     if (_matchesAny(lowerQuery, [
@@ -283,8 +283,8 @@ class ContextBuilderService {
         .where((s) => s.isActive)
         .toList();
     final subCost = activeSubs.fold(0.0, (sum, s) {
-      if (s.frequency == 'monthly') return sum + s.amount;
-      if (s.frequency == 'yearly') return sum + (s.amount / 12);
+      if (s.frequency == 'monthly') { return sum + s.amount; }
+      if (s.frequency == 'yearly') { return sum + (s.amount / 12); }
       return sum + s.amount;
     });
     final debtEMI = activeDebts.fold(
@@ -308,7 +308,7 @@ Monthly Fixed Burn: ₹${_currencyFormat.format(monthlyBurn)}
 
   String _buildAccountsSummary() {
     final accounts = accountProvider.accounts;
-    if (accounts.isEmpty) return '--- ACCOUNTS ---\nNo accounts configured.\n';
+    if (accounts.isEmpty) { return '--- ACCOUNTS ---\nNo accounts configured.\n'; }
 
     final buffer = StringBuffer('--- ACCOUNTS ---\n');
     for (final acc in accounts) {
@@ -503,9 +503,9 @@ Monthly Fixed Burn: ₹${_currencyFormat.format(monthlyBurn)}
   }
 
   String _buildBudgetsSummary() {
-    if (budgetProvider == null) return '';
+    if (budgetProvider == null) { return ''; }
     final budgets = budgetProvider!.budgets;
-    if (budgets.isEmpty) return '--- BUDGETS ---\nNo budgets set.\n';
+    if (budgets.isEmpty) { return '--- BUDGETS ---\nNo budgets set.\n'; }
 
     final buffer = StringBuffer('--- BUDGETS ---\n');
     for (final budget in budgets) {
@@ -522,9 +522,9 @@ Monthly Fixed Burn: ₹${_currencyFormat.format(monthlyBurn)}
   }
 
   String _buildGoalsSummary() {
-    if (goalProvider == null) return '';
+    if (goalProvider == null) { return ''; }
     final goals = goalProvider!.goals;
-    if (goals.isEmpty) return '--- GOALS ---\nNo savings goals set.\n';
+    if (goals.isEmpty) { return '--- GOALS ---\nNo savings goals set.\n'; }
 
     final buffer = StringBuffer('--- GOALS ---\n');
     for (final goal in goals) {
@@ -544,7 +544,7 @@ Monthly Fixed Burn: ₹${_currencyFormat.format(monthlyBurn)}
   }
 
   String _buildBikeSummary() {
-    if (bikeProvider == null) return '';
+    if (bikeProvider == null) { return ''; }
 
     final buffer = StringBuffer('--- VEHICLE ---\n');
 
@@ -661,7 +661,7 @@ Monthly Fixed Burn: ₹${_currencyFormat.format(monthlyBurn)}
   }
 
   String _buildNboxSummary() {
-    if (nboxProvider == null) return '';
+    if (nboxProvider == null) { return ''; }
 
     final pendingSms = nboxProvider!.pendingSms;
     final pendingEmails = nboxProvider!.pendingEmails;
@@ -707,7 +707,7 @@ Monthly Fixed Burn: ₹${_currencyFormat.format(monthlyBurn)}
   }
 
   String _buildPdfSummary() {
-    if (pdfImportProvider == null) return '';
+    if (pdfImportProvider == null) { return ''; }
 
     final statement = pdfImportProvider!.currentStatement;
     if (statement == null) {
@@ -735,7 +735,7 @@ Monthly Fixed Burn: ₹${_currencyFormat.format(monthlyBurn)}
   }
 
   String _buildSharedExpensesSummary() {
-    if (sharedExpenseProvider == null) return '';
+    if (sharedExpenseProvider == null) { return ''; }
 
     final expenses = sharedExpenseProvider!.expenses;
     if (expenses.isEmpty) {

@@ -169,37 +169,37 @@ class Debt {
   // --- LOGIC GETTERS (Restored for your UI) ---
 
   int? get remainingMonths {
-    if (totalMonths == null) return null;
+    if (totalMonths == null) { return null; }
     final paid = paidMonths ?? 0;
     return (totalMonths! - paid).clamp(0, totalMonths!);
   }
 
   double get progressByMonths {
-    if (totalMonths == null || totalMonths == 0) return 0;
+    if (totalMonths == null || totalMonths == 0) { return 0; }
     final paid = paidMonths ?? 0;
     return (paid / totalMonths!).clamp(0.0, 1.0);
   }
 
   bool get isPaymentDueSoon {
-    if (nextPaymentDate == null) return false;
+    if (nextPaymentDate == null) { return false; }
     final daysUntilDue = nextPaymentDate!.difference(DateTime.now()).inDays;
     return daysUntilDue >= 0 && daysUntilDue <= 5;
   }
 
   bool get isPaymentOverdue {
-    if (nextPaymentDate == null) return false;
+    if (nextPaymentDate == null) { return false; }
     // If balance is 0, it's not overdue
-    if (currentBalance <= 0) return false;
+    if (currentBalance <= 0) { return false; }
     return nextPaymentDate!.isBefore(DateTime.now());
   }
 
   int? get daysUntilNextPayment {
-    if (nextPaymentDate == null) return null;
+    if (nextPaymentDate == null) { return null; }
     return nextPaymentDate!.difference(DateTime.now()).inDays;
   }
 
   DateTime? get estimatedPayoffDate {
-    if (remainingMonths == null || remainingMonths == 0) return null;
+    if (remainingMonths == null || remainingMonths == 0) { return null; }
     return DateTime.now().add(Duration(days: remainingMonths! * 30));
   }
 
@@ -212,36 +212,32 @@ class Debt {
   }
 
   factory Debt.fromMap(Map<String, dynamic> data) {
+    final parsedType = _parseDebtType(data['type']);
+
     return Debt(
       id: data['id'] ?? '',
       userId: data['userId'] ?? '',
       name: data['name'] ?? '',
-      // Handle Integer vs String enum storage
-      type: data['type'] is int
-          ? DebtType.values[data['type']]
-          : DebtType.values.firstWhere(
-              (e) => e.toString().split('.').last == data['type'],
-              orElse: () => DebtType.other,
-            ),
-      originalAmount: (data['originalAmount'] ?? 0).toDouble(),
-      currentBalance: (data['currentBalance'] ?? 0).toDouble(),
-      interestRate: data['interestRate']?.toDouble(),
-      monthlyEMI: data['monthlyEMI']?.toDouble(),
-      totalMonths: data['totalMonths'],
-      paidMonths: data['paidMonths'],
-      totalInterest: data['totalInterest']?.toDouble(),
-      interestPaid: data['interestPaid']?.toDouble(),
-      principalPaid: data['principalPaid']?.toDouble(),
+      type: parsedType,
+      originalAmount: _toDouble(data['originalAmount']),
+      currentBalance: _toDouble(data['currentBalance']),
+      interestRate: _toNullableDouble(data['interestRate']),
+      monthlyEMI: _toNullableDouble(data['monthlyEMI']),
+      totalMonths: _toNullableInt(data['totalMonths']),
+      paidMonths: _toNullableInt(data['paidMonths']),
+      totalInterest: _toNullableDouble(data['totalInterest']),
+      interestPaid: _toNullableDouble(data['interestPaid']),
+      principalPaid: _toNullableDouble(data['principalPaid']),
       startDate: _parseDate(data['startDate']),
       nextPaymentDate: _parseDate(data['nextPaymentDate']),
-      paymentDay: data['paymentDay'],
+      paymentDay: _toNullableInt(data['paymentDay']),
       lenderName: data['lenderName'] ?? data['personName'], // Fallback for IOU
       accountNumber: data['accountNumber'],
       linkedAccountId: data['linkedAccountId'],
       customTypeName: data['customTypeName'],
       notes: data['notes'],
       dueDate: _parseDate(data['dueDate']),
-      isAutoDebit: data['isAutoDebit'] ?? false,
+      isAutoDebit: _toBool(data['isAutoDebit']),
       createdAt: _parseDate(data['createdAt']) ?? DateTime.now(),
       updatedAt: _parseDate(data['updatedAt']) ?? DateTime.now(),
     );
@@ -341,9 +337,55 @@ class Debt {
   }
 
   static DateTime? _parseDate(dynamic date) {
-    if (date == null) return null;
-    if (date is Timestamp) return date.toDate();
-    if (date is String) return DateTime.parse(date);
+    if (date == null) { return null; }
+    if (date is Timestamp) { return date.toDate(); }
+    if (date is String) { return DateTime.tryParse(date); }
     return null;
+  }
+
+  static DebtType _parseDebtType(dynamic value) {
+    if (value is int) {
+      if (value >= 0 && value < DebtType.values.length) {
+        return DebtType.values[value];
+      }
+      return DebtType.other;
+    }
+
+    if (value is String) {
+      return DebtType.values.firstWhere(
+        (e) => e.toString().split('.').last == value,
+        orElse: () => DebtType.other,
+      );
+    }
+
+    return DebtType.other;
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value is num) { return value.toDouble(); }
+    if (value is String) { return double.tryParse(value) ?? 0.0; }
+    return 0.0;
+  }
+
+  static double? _toNullableDouble(dynamic value) {
+    if (value == null) { return null; }
+    if (value is num) { return value.toDouble(); }
+    if (value is String) { return double.tryParse(value); }
+    return null;
+  }
+
+  static int? _toNullableInt(dynamic value) {
+    if (value == null) { return null; }
+    if (value is int) { return value; }
+    if (value is num) { return value.toInt(); }
+    if (value is String) { return int.tryParse(value); }
+    return null;
+  }
+
+  static bool _toBool(dynamic value) {
+    if (value is bool) { return value; }
+    if (value is num) { return value != 0; }
+    if (value is String) { return value.toLowerCase() == 'true'; }
+    return false;
   }
 }

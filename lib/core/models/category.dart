@@ -22,7 +22,7 @@ class Category {
       'name': name,
       'emoji': emoji,
       // Store color as an integer value
-      'color_value': color.value,
+      'color_value': color.toARGB32(),
       'is_custom': isCustom,
     };
   }
@@ -32,7 +32,8 @@ class Category {
     return Category(
       id: id,
       name: map['name'] as String,
-      emoji: map['emoji'] as String? ?? '❓', // Fallback to a question mark emoji
+      emoji:
+          map['emoji'] as String? ?? '❓', // Fallback to a question mark emoji
       color: Color(map['color_value'] as int),
       isCustom: map['is_custom'] as bool? ?? true,
     );

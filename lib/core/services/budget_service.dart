@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_types_as_parameter_names
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/budget.dart';
 

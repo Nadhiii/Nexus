@@ -1,3 +1,4 @@
+// ignore_for_file: unused_element
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
@@ -50,7 +51,9 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
   void _scheduleRecalc() {
     _recalcDebounce?.cancel();
     _recalcDebounce = Timer(AppAnimations.verySlow, () {
-      if (mounted) _recalculateAllBalances();
+      if (mounted) {
+        _recalculateAllBalances();
+      }
     });
   }
 
@@ -58,7 +61,9 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     try {
       final transactionProvider = context.read<TransactionProvider>();
       final accountProvider = context.read<AccountProvider>();
-      if (accountProvider.accounts.isEmpty) return;
+      if (accountProvider.accounts.isEmpty) {
+        return;
+      }
       for (final account in accountProvider.accounts) {
         await transactionProvider.recalculateAccountBalance(account.id);
       }
@@ -83,7 +88,9 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
         onRefresh: () async {
           _recalculateAllBalances();
           await Future.delayed(const Duration(seconds: 1));
-          if (mounted) setState(() {});
+          if (mounted) {
+            setState(() {});
+          }
         },
         child: CustomScrollView(
           slivers: [
@@ -237,10 +244,10 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
               : AppColors.netWorthNegativeGradient,
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(alpha: 0.4),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -256,7 +263,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
               Text(
                 'TOTAL BALANCE',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
+                  color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
@@ -300,7 +307,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
           Text(
             status.message,
             style: AppTypography.bodySmall.copyWith(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -310,7 +317,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.06),
+              color: Colors.white.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -322,7 +329,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                       Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: AppColors.success.withOpacity(0.15),
+                          color: AppColors.success.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -339,7 +346,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                             Text(
                               'Income',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.4),
+                                color: Colors.white.withValues(alpha: 0.4),
                                 fontSize: 9,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -363,7 +370,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                 Container(
                   width: 1,
                   height: 24,
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                 ),
                 const SizedBox(width: 8),
                 // Expense
@@ -378,7 +385,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                             Text(
                               'Expense',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.4),
+                                color: Colors.white.withValues(alpha: 0.4),
                                 fontSize: 9,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -400,7 +407,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                       Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: AppColors.error.withOpacity(0.15),
+                          color: AppColors.error.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -450,7 +457,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -458,7 +465,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 20),
@@ -496,7 +503,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.06)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -507,7 +514,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryBlue.withOpacity(0.12),
+                    color: AppColors.primaryBlue.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -560,7 +567,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                       horizontal: 16,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.pastelTeal.withOpacity(0.08),
+                      color: AppColors.pastelTeal.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Column(
@@ -593,7 +600,9 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                               child: Text(
                                 'km/L',
                                 style: TextStyle(
-                                  color: AppColors.pastelTeal.withOpacity(0.7),
+                                  color: AppColors.pastelTeal.withValues(
+                                    alpha: 0.7,
+                                  ),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -616,7 +625,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                       horizontal: 16,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.pastelOrange.withOpacity(0.08),
+                      color: AppColors.pastelOrange.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Column(
@@ -704,7 +713,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
               decoration: BoxDecoration(
                 color: AppColors.cardSurface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
               ),
               child: Column(
                 children: [
@@ -713,7 +722,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                     if (i < recentTransactions.length - 1)
                       Divider(
                         height: 1,
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withValues(alpha: 0.05),
                         indent: 56,
                         endIndent: 16,
                       ),
@@ -756,7 +765,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 16),
@@ -983,7 +992,9 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
   }
 
   String _formatIndianNumber(double amount) {
-    if (amount == 0) return '0.00';
+    if (amount == 0) {
+      return '0.00';
+    }
     final isNegative = amount < 0;
     final abs = amount.abs();
 
@@ -1013,7 +1024,9 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
     final now = DateTime.now();
     final difference = now.difference(date);
 
-    if (difference.inDays == 0 && now.day == date.day) return 'Today';
+    if (difference.inDays == 0 && now.day == date.day) {
+      return 'Today';
+    }
     if (difference.inDays == 1 ||
         (difference.inDays == 0 && now.day != date.day)) {
       return 'Yesterday';

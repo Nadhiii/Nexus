@@ -1,3 +1,4 @@
+// ignore_for_file: empty_catches
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -65,7 +66,7 @@ class GmailProvider extends ChangeNotifier {
 
   /// Initialize the provider - loads settings
   Future<void> initialize() async {
-    if (_isInitialized) return;
+    if (_isInitialized) { return; }
     await _initializeSettings();
     _isInitialized = true;
   }
@@ -78,7 +79,7 @@ class GmailProvider extends ChangeNotifier {
         _settings = GmailSyncSettings.fromJson(jsonDecode(settingsJson));
       }
     } catch (e) {
-      if (kDebugMode) print('[GmailProvider] Failed to load settings: $e');
+      if (kDebugMode) { debugPrint('[GmailProvider] Failed to load settings: $e'); }
     }
   }
 
@@ -105,10 +106,10 @@ class GmailProvider extends ChangeNotifier {
   }
 
   void _startAutoSync() {
-    if (!_settings.autoSyncEnabled || _syncTimer != null) return;
+    if (!_settings.autoSyncEnabled || _syncTimer != null) { return; }
 
     if (kDebugMode) {
-      print(
+      debugPrint(
         '[GmailProvider] Starting auto-sync with interval: ${_settings.syncFrequency.displayName}',
       );
     }
@@ -121,7 +122,7 @@ class GmailProvider extends ChangeNotifier {
   void _stopAutoSync() {
     _syncTimer?.cancel();
     _syncTimer = null;
-    if (kDebugMode) print('[GmailProvider] Auto-sync stopped');
+    if (kDebugMode) { debugPrint('[GmailProvider] Auto-sync stopped'); }
   }
 
   Future<void> linkAccount() async {
@@ -144,9 +145,9 @@ class GmailProvider extends ChangeNotifier {
   }
 
   Future<void> scanEmails() async {
-    if (_currentUser == null) return;
+    if (_currentUser == null) { return; }
 
-    if (kDebugMode) print('[GmailProvider] Starting email scan...');
+    if (kDebugMode) { debugPrint('[GmailProvider] Starting email scan...'); }
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -159,11 +160,11 @@ class GmailProvider extends ChangeNotifier {
           categoryProvider: _categoryProvider,
         );
         if (kDebugMode) {
-          print('[GmailProvider] AI categorization enabled');
+          debugPrint('[GmailProvider] AI categorization enabled');
         }
       } else {
         if (kDebugMode) {
-          print(
+          debugPrint(
             '[GmailProvider] Using fallback categorization (no CategoryProvider)',
           );
         }
@@ -203,7 +204,7 @@ class GmailProvider extends ChangeNotifier {
         finalQuery += ' -from:$sender';
       }
 
-      if (kDebugMode) print('[GmailProvider] Query: $finalQuery');
+      if (kDebugMode) { debugPrint('[GmailProvider] Query: $finalQuery'); }
 
       final listResponse = await gmailApi.users.messages.list(
         'me',
@@ -215,14 +216,14 @@ class GmailProvider extends ChangeNotifier {
 
       if (listResponse.messages != null) {
         if (kDebugMode) {
-          print(
+          debugPrint(
             '[GmailProvider] Found ${listResponse.messages!.length} emails.',
           );
         }
 
         for (var message in listResponse.messages!) {
           try {
-            if (message.id == null) continue;
+            if (message.id == null) { continue; }
 
             final msg = await gmailApi.users.messages.get(
               'me',
@@ -254,7 +255,7 @@ class GmailProvider extends ChangeNotifier {
             }
           } catch (e) {
             if (kDebugMode) {
-              print("[GmailProvider] Error processing email ${message.id}: $e");
+              debugPrint("[GmailProvider] Error processing email ${message.id}: $e");
             }
           }
         }
@@ -278,13 +279,13 @@ class GmailProvider extends ChangeNotifier {
       _lastSyncTime = DateTime.now();
 
       if (kDebugMode) {
-        print(
+        debugPrint(
           '[GmailProvider] Scan complete. Found ${_detectedTransactions.length} unique transactions.',
         );
       }
     } catch (e) {
       _error = 'Failed to scan emails: $e';
-      if (kDebugMode) print('[GmailProvider] Error: $e');
+      if (kDebugMode) { debugPrint('[GmailProvider] Error: $e'); }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -293,7 +294,7 @@ class GmailProvider extends ChangeNotifier {
 
   String? _extractBody(gmail.Message message) {
     final payload = message.payload;
-    if (payload == null) return message.snippet;
+    if (payload == null) { return message.snippet; }
 
     String? body = _getPartBody(payload.parts ?? []);
 
@@ -304,7 +305,7 @@ class GmailProvider extends ChangeNotifier {
           allowMalformed: true,
         );
       } catch (e) {
-        if (kDebugMode) print('[GmailProvider] Error decoding body: $e');
+        if (kDebugMode) { debugPrint('[GmailProvider] Error decoding body: $e'); }
       }
     }
 

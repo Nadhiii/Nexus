@@ -33,7 +33,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
       _autoRestoreEnabled = await _backupService.getAutoRestoreEnabled();
     } catch (_) {}
     await _loadBackups();
-    if (mounted) setState(() => _isLoading = false);
+    if (mounted) { setState(() => _isLoading = false); }
   }
 
   Future<void> _loadBackups() async {
@@ -100,13 +100,13 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: replace
-                      ? AppColors.error.withOpacity(0.1)
-                      : AppColors.primaryBlue.withOpacity(0.1),
+                      ? AppColors.error.withValues(alpha: 0.1)
+                      : AppColors.primaryBlue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: replace
-                        ? AppColors.error.withOpacity(0.3)
-                        : AppColors.primaryBlue.withOpacity(0.3),
+                        ? AppColors.error.withValues(alpha: 0.3)
+                        : AppColors.primaryBlue.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -144,7 +144,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                         onPressed: () => Navigator.pop(context, false),
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
@@ -189,7 +189,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true) { return; }
 
     setState(() => _isLoading = true);
     try {
@@ -245,7 +245,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                         onPressed: () => Navigator.pop(context, false),
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
@@ -288,7 +288,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true) { return; }
 
     try {
       await _backupService.deleteBackup(backupId);
@@ -383,13 +383,13 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
         decoration: BoxDecoration(
           border: Border.all(
             color: isDangerous
-                ? theme.colorScheme.error.withOpacity(0.3)
-                : theme.colorScheme.outline.withOpacity(0.2),
+                ? theme.colorScheme.error.withValues(alpha: 0.3)
+                : theme.colorScheme.outline.withValues(alpha: 0.2),
             width: 1,
           ),
           borderRadius: BorderRadius.circular(12),
           color: isDangerous
-              ? theme.colorScheme.error.withOpacity(0.05)
+              ? theme.colorScheme.error.withValues(alpha: 0.05)
               : theme.colorScheme.surface,
         ),
         child: Row(
@@ -398,7 +398,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: isDangerous
-                    ? theme.colorScheme.error.withOpacity(0.1)
+                    ? theme.colorScheme.error.withValues(alpha: 0.1)
                     : theme.colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -425,7 +425,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                   Text(
                     description,
                     style: AppTypography.bodySmall.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -434,7 +434,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
             const SizedBox(width: AppSpacing.sm),
             Icon(
               Icons.chevron_right,
-              color: theme.colorScheme.onSurface.withOpacity(0.5),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ],
         ),
@@ -525,7 +525,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                               Icon(
                                 Icons.cloud_off,
                                 size: 80,
-                                color: theme.colorScheme.onSurface.withOpacity(
+                                color: theme.colorScheme.onSurface.withValues(alpha: 
                                   0.3,
                                 ),
                               ),
@@ -534,7 +534,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                                 'No backups yet',
                                 style: AppTypography.headlineSmall.copyWith(
                                   color: theme.colorScheme.onSurface
-                                      .withOpacity(0.6),
+                                      .withValues(alpha: 0.6),
                                 ),
                               ),
                               const SizedBox(height: AppSpacing.sm),
@@ -542,7 +542,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                                 'Create your first backup to secure your data',
                                 style: AppTypography.bodyMedium.copyWith(
                                   color: theme.colorScheme.onSurface
-                                      .withOpacity(0.4),
+                                      .withValues(alpha: 0.4),
                                 ),
                               ),
                             ],

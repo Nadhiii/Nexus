@@ -148,10 +148,10 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
           colors: gradient,
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -166,7 +166,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
               Text(
                 'TOTAL PORTFOLIO',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.0,
@@ -203,7 +203,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
             children: [
               Icon(
                 isProfitable ? Icons.trending_up : Icons.trending_down,
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -254,7 +254,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
             border: Border.all(
               color: isSelected
                   ? AppColors.investmentIndigo
-                  : Colors.white.withOpacity(0.1),
+                  : Colors.white.withValues(alpha: 0.1),
             ),
           ),
           child: Text(
@@ -275,7 +275,9 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
     List<Investment> assets,
     InvestmentProvider provider,
   ) {
-    if (assets.isEmpty) return _buildEmptyState();
+    if (assets.isEmpty) {
+      return _buildEmptyState();
+    }
 
     List<Widget> tiles = [];
 
@@ -410,15 +412,15 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                assetColor.withOpacity(0.2),
-                assetColor.withOpacity(0.05),
+                assetColor.withValues(alpha: 0.2),
+                assetColor.withValues(alpha: 0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: assetColor.withOpacity(0.3)),
+            border: Border.all(color: assetColor.withValues(alpha: 0.3)),
             boxShadow: [
               BoxShadow(
-                color: assetColor.withOpacity(0.15),
+                color: assetColor.withValues(alpha: 0.15),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -432,7 +434,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: assetColor.withOpacity(0.2),
+                      color: assetColor.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -448,7 +450,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.15),
+                      color: color.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -522,17 +524,20 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: [assetColor.withOpacity(0.15), AppColors.cardSurface],
+              colors: [
+                assetColor.withValues(alpha: 0.15),
+                AppColors.cardSurface,
+              ],
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: assetColor.withOpacity(0.2)),
+            border: Border.all(color: assetColor.withValues(alpha: 0.2)),
           ),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: assetColor.withOpacity(0.2),
+                  color: assetColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
@@ -616,7 +621,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
           decoration: BoxDecoration(
             color: AppColors.cardSurface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: assetColor.withOpacity(0.15)),
+            border: Border.all(color: assetColor.withValues(alpha: 0.15)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -657,7 +662,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.15),
+                      color: color.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -724,7 +729,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
           Icon(
             Icons.candlestick_chart,
             size: 64,
-            color: AppColors.textTertiary.withOpacity(0.3),
+            color: AppColors.textTertiary.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -735,7 +740,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
           Text(
             "Start building your wealth today",
             style: TextStyle(
-              color: AppColors.textTertiary.withOpacity(0.5),
+              color: AppColors.textTertiary.withValues(alpha: 0.5),
               fontSize: 12,
             ),
           ),

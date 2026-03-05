@@ -6,6 +6,7 @@ import '../../core/utils/transaction_display.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/widgets/translucent_app_bar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
   final String transactionId;
@@ -87,8 +88,22 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       context,
       itemName: widget.title,
     );
+    if (!mounted) { return; }
     if (confirmed == true) {
       Navigator.of(context).pop('deleted');
+    }
+  }
+
+  // ADD THIS EXACTLY HERE
+  Future<void> _openInNexusTasks() async {
+    final linkedId = widget.metadata?['linkedId'];
+    if (linkedId == null) { return; }
+
+    final url = Uri.parse('nexustasks://open/tasks/$linkedId');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      if (mounted) { showTopSnackBar(context, 'Could not open Nexus Tasks'); }
     }
   }
 
@@ -144,8 +159,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        widget.color.withOpacity(0.1),
-                        widget.color.withOpacity(0.05),
+                        widget.color.withValues(alpha: 0.1),
+                        widget.color.withValues(alpha: 0.05),
                       ],
                     ),
                   ),
@@ -153,7 +168,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     children: [
                       CircleAvatar(
                         radius: 35,
-                        backgroundColor: widget.color.withOpacity(0.2),
+                        backgroundColor: widget.color.withValues(alpha: 0.2),
                         child: Icon(widget.icon, color: widget.color, size: 35),
                       ),
                       const SizedBox(height: 20),
@@ -178,7 +193,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.6),
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -188,11 +203,25 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.5),
+                          ).colorScheme.onSurface.withValues(alpha: 0.5),
                           fontWeight: FontWeight.w500,
                         ),
                         textAlign: TextAlign.center,
                       ),
+
+                      if (widget.metadata?['source'] == 'nexus_tasks' &&
+                          widget.metadata?.containsKey('linkedId') == true)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: TextButton.icon(
+                            onPressed: _openInNexusTasks,
+                            icon: const Icon(Icons.open_in_new, size: 16),
+                            label: const Text('View in Nexus Tasks'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.primaryBlueLight,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -253,7 +282,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         ChoiceChip(
                           label: const Text('Expense'),
                           selected: _isExpense,
-                          selectedColor: AppColors.red.withOpacity(0.2),
+                          selectedColor: AppColors.red.withValues(alpha: 0.2),
                           onSelected: (selected) {
                             setState(() {
                               _isExpense = true;
@@ -264,7 +293,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         ChoiceChip(
                           label: const Text('Income'),
                           selected: !_isExpense,
-                          selectedColor: AppColors.green.withOpacity(0.2),
+                          selectedColor: AppColors.green.withValues(alpha: 0.2),
                           onSelected: (selected) {
                             setState(() {
                               _isExpense = false;

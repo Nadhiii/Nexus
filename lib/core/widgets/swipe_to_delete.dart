@@ -158,9 +158,9 @@ class _SwipeToDeleteState<T> extends State<SwipeToDelete<T>>
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.15),
+        color: AppColors.error.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        border: Border.all(color: AppColors.error.withOpacity(0.3), width: 1),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.3), width: 1),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -212,7 +212,7 @@ class _SwipeToDeleteState<T> extends State<SwipeToDelete<T>>
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(true),
                   style: TextButton.styleFrom(
-                    backgroundColor: AppColors.error.withOpacity(0.1),
+                    backgroundColor: AppColors.error.withValues(alpha: 0.1),
                   ),
                   child: Text(
                     'Delete',
@@ -240,22 +240,22 @@ class _SwipeToDeleteState<T> extends State<SwipeToDelete<T>>
     // Store the undo callback BEFORE deletion to capture current state
     if (undoCallback != null) {
       _undoCallbacks[itemId] = undoCallback;
-      print('💾 SwipeToDelete: Stored undo callback for item $itemId');
-      print('📋 Current stored callbacks: ${_undoCallbacks.keys.toList()}');
+      debugPrint('💾 SwipeToDelete: Stored undo callback for item $itemId');
+      debugPrint('📋 Current stored callbacks: ${_undoCallbacks.keys.toList()}');
     }
 
     // Delete the item with a small delay to allow animation to complete
-    print('🗑️ SwipeToDelete: Scheduling deletion for item $itemId');
+    debugPrint('🗑️ SwipeToDelete: Scheduling deletion for item $itemId');
 
     // Schedule deletion after current frame to avoid conflicts with dismiss animation
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('🗑️ SwipeToDelete: Executing deletion for item $itemId');
+      debugPrint('🗑️ SwipeToDelete: Executing deletion for item $itemId');
       deleteCallback();
     });
 
     // Safety check before showing snackbar
     if (!context.mounted) {
-      print('⚠️ SwipeToDelete: Context not mounted, skipping snackbar');
+      debugPrint('⚠️ SwipeToDelete: Context not mounted, skipping snackbar');
       return;
     }
 
@@ -271,15 +271,15 @@ class _SwipeToDeleteState<T> extends State<SwipeToDelete<T>>
             ? TopSnackBarAction(
                 label: 'UNDO',
                 onPressed: () {
-                  print('↩️ SwipeToDelete: UNDO pressed for item $itemId');
-                  print(
+                  debugPrint('↩️ SwipeToDelete: UNDO pressed for item $itemId');
+                  debugPrint(
                     '📋 Available callbacks: ${_undoCallbacks.keys.toList()}',
                   );
 
                   // Retrieve the stored callback
                   final storedCallback = _undoCallbacks[itemId];
                   if (storedCallback == null) {
-                    print(
+                    debugPrint(
                       '❌ SwipeToDelete: No undo callback found for $itemId',
                     );
                     return;
@@ -289,11 +289,11 @@ class _SwipeToDeleteState<T> extends State<SwipeToDelete<T>>
                   _recentlyRestoredItems.add(itemId);
 
                   // Restore the item using the stored callback
-                  print(
+                  debugPrint(
                     '📞 SwipeToDelete: Calling stored onUndoDelete callback',
                   );
                   storedCallback();
-                  print('✅ SwipeToDelete: onUndoDelete callback completed');
+                  debugPrint('✅ SwipeToDelete: onUndoDelete callback completed');
 
                   // Clean up the stored callback
                   _undoCallbacks.remove(itemId);
@@ -304,7 +304,7 @@ class _SwipeToDeleteState<T> extends State<SwipeToDelete<T>>
             : null,
       );
     } catch (e) {
-      print('⚠️ SwipeToDelete: Error showing snackbar: $e');
+      debugPrint('⚠️ SwipeToDelete: Error showing snackbar: $e');
     }
   }
 }

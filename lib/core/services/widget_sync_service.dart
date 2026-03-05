@@ -88,14 +88,14 @@ class WidgetSyncService {
 
   /// Sync all widgets at once
   Future<void> syncAllWidgets() async {
-    if (!_isInitialized) return;
+    if (!_isInitialized) { return; }
 
     await Future.wait([syncQuickTransactionWidget(), syncBalanceWidget()]);
   }
 
   /// Sync Quick Transaction widget with spending data
   Future<void> syncQuickTransactionWidget() async {
-    if (_transactionProvider == null) return;
+    if (_transactionProvider == null) { return; }
 
     try {
       final transactions = _transactionProvider!.transactions;
@@ -168,7 +168,7 @@ class WidgetSyncService {
 
   /// Sync Balance Overview widget with financial summary
   Future<void> syncBalanceWidget() async {
-    if (_accountProvider == null || _transactionProvider == null) return;
+    if (_accountProvider == null || _transactionProvider == null) { return; }
 
     try {
       // Total balance from all accounts
@@ -203,7 +203,7 @@ class WidgetSyncService {
       double savingsRate = 0;
       if (monthIncome > 0) {
         savingsRate = ((monthIncome - monthExpense) / monthIncome) * 100;
-        if (savingsRate < 0) savingsRate = 0;
+        if (savingsRate < 0) { savingsRate = 0; }
       }
 
       // Count pending bills (EMIs + subscriptions due this week)

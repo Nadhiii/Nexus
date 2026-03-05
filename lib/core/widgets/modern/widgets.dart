@@ -43,7 +43,7 @@ class ModernBalanceCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
           boxShadow: [
             BoxShadow(
-              color: gradient.first.withOpacity(0.3),
+              color: gradient.first.withValues(alpha: 0.3),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -58,7 +58,7 @@ class ModernBalanceCard extends StatelessWidget {
                 Text(
                   title,
                   style: AppTypography.bodyMedium.copyWith(
-                    color: colorScheme.onPrimary.withOpacity(0.9),
+                    color: colorScheme.onPrimary.withValues(alpha: 0.9),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -94,7 +94,7 @@ class ModernBalanceCard extends StatelessWidget {
               Text(
                 subtitle!,
                 style: AppTypography.bodySmall.copyWith(
-                  color: colorScheme.onPrimary.withOpacity(0.8),
+                  color: colorScheme.onPrimary.withValues(alpha: 0.8),
                 ),
               ),
             ],
@@ -108,7 +108,9 @@ class ModernBalanceCard extends StatelessWidget {
     if (amount.abs() >= 1000000) {
       return '${(amount / 1000000).toStringAsFixed(2)}M';
     }
-    if (amount.abs() >= 1000) return '${(amount / 1000).toStringAsFixed(2)}K';
+    if (amount.abs() >= 1000) {
+      return '${(amount / 1000).toStringAsFixed(2)}K';
+    }
     return amount.toStringAsFixed(2);
   }
 }
@@ -141,12 +143,12 @@ class GlassCard extends StatelessWidget {
           child: Container(
             padding: padding ?? AppSpacing.cardPaddingMd,
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(
                 borderRadius ?? AppSpacing.radiusLg,
               ),
               border: Border.all(
-                color: colorScheme.onSurface.withOpacity(0.1),
+                color: colorScheme.onSurface.withValues(alpha: 0.1),
                 width: 1,
               ),
             ),
@@ -234,7 +236,9 @@ class ModernAccountTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          border: Border.all(color: colorScheme.onSurface.withOpacity(0.1)),
+          border: Border.all(
+            color: colorScheme.onSurface.withValues(alpha: 0.1),
+          ),
         ),
         child: Row(
           children: [
@@ -242,7 +246,7 @@ class ModernAccountTile extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
               child: Icon(icon, color: iconColor, size: AppSpacing.iconMd),
@@ -263,7 +267,7 @@ class ModernAccountTile extends StatelessWidget {
                     Text(
                       percentage!,
                       style: AppTypography.bodySmall.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.6),
+                        color: colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -280,7 +284,7 @@ class ModernAccountTile extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             Icon(
               Icons.chevron_right,
-              color: colorScheme.onSurface.withOpacity(0.3),
+              color: colorScheme.onSurface.withValues(alpha: 0.3),
               size: 20,
             ),
           ],
@@ -329,7 +333,9 @@ class ModernTransactionTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          border: Border.all(color: colorScheme.onSurface.withOpacity(0.1)),
+          border: Border.all(
+            color: colorScheme.onSurface.withValues(alpha: 0.1),
+          ),
         ),
         child: Row(
           children: [
@@ -337,7 +343,7 @@ class ModernTransactionTile extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: displayIconColor.withOpacity(0.1),
+                color: displayIconColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(displayIcon, color: displayIconColor, size: 20),
@@ -357,7 +363,7 @@ class ModernTransactionTile extends StatelessWidget {
                   Text(
                     subtitle,
                     style: AppTypography.bodySmall.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.6),
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                 ],

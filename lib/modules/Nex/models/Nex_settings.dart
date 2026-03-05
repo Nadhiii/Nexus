@@ -1,3 +1,4 @@
+// ignore_for_file: file_names
 /// AI Settings Model
 /// Stores user's AI preferences and API keys
 library;

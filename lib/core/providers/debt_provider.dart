@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_types_as_parameter_names
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -24,7 +25,7 @@ class DebtProvider with ChangeNotifier {
 
   Future<void> _loadDebts() async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     _isLoading = true;
     notifyListeners();
@@ -36,9 +37,18 @@ class DebtProvider with ChangeNotifier {
           .collection('debts') // Corrected collection name
           .snapshots()
           .listen((snapshot) {
-            _debts = snapshot.docs
-                .map((doc) => Debt.fromFirestore(doc))
-                .toList();
+            final parsedDebts = <Debt>[];
+
+            for (final doc in snapshot.docs) {
+              try {
+                parsedDebts.add(Debt.fromFirestore(doc));
+              } catch (e, stack) {
+                debugPrint('Failed to parse debt doc ${doc.id}: $e');
+                debugPrint(stack.toString());
+              }
+            }
+
+            _debts = parsedDebts;
             _isLoading = false;
             notifyListeners();
           });
@@ -51,7 +61,7 @@ class DebtProvider with ChangeNotifier {
 
   Future<void> addDebt(Debt debt) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     try {
       await _firestore
@@ -67,7 +77,7 @@ class DebtProvider with ChangeNotifier {
 
   Future<void> updateDebt(Debt debt) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     try {
       await _firestore
@@ -84,7 +94,7 @@ class DebtProvider with ChangeNotifier {
 
   Future<void> deleteDebt(String debtId) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     try {
       await _firestore
@@ -101,7 +111,7 @@ class DebtProvider with ChangeNotifier {
 
   Future<void> clearAllData() async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
     final batch = _firestore.batch();
     final snapshot = await _firestore
         .collection('users')
@@ -125,7 +135,7 @@ class DebtProvider with ChangeNotifier {
 
   Future<void> restoreFromBackup(List<dynamic> data) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
     final batch = _firestore.batch();
     for (final item in data) {
       // This assumes the data is already in a Map<String, dynamic> format
@@ -144,12 +154,12 @@ class DebtProvider with ChangeNotifier {
   /// Also triggers UI updates immediately for responsiveness.
   Future<void> payDebt(String debtId, double amount) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) { return; }
 
     try {
       // Find debt in local state
       final debtIndex = _debts.indexWhere((d) => d.id == debtId);
-      if (debtIndex == -1) return;
+      if (debtIndex == -1) { return; }
 
       final currentDebt = _debts[debtIndex];
       final newBalance = (currentDebt.currentBalance - amount).clamp(

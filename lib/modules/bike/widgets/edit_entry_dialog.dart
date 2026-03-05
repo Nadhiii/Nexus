@@ -92,7 +92,9 @@ class _EditEntryDialogState extends State<EditEntryDialog> {
         );
       },
     );
-    if (picked != null) setState(() => _selectedDate = picked);
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+    }
   }
 
   Future<void> _save() async {
@@ -512,7 +514,7 @@ class _EditEntryDialogState extends State<EditEntryDialog> {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           borderSide: isHighlight
-              ? BorderSide(color: themeColor.withOpacity(0.5))
+              ? BorderSide(color: themeColor.withValues(alpha: 0.5))
               : BorderSide.none,
         ),
         prefixIcon: Padding(

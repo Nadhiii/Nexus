@@ -12,7 +12,9 @@ class LocalPDFParser {
     String fullText = PdfTextExtractor(document).extractText();
     document.dispose();
 
-    if (kDebugMode) print("Extracted Text Length: ${fullText.length}");
+    if (kDebugMode) {
+      debugPrint("Extracted Text Length: ${fullText.length}");
+    }
 
     // 2. Run the "Universal Scraper"
     // This ignores bank names and just hunts for transactions
@@ -38,10 +40,18 @@ class LocalPDFParser {
       String cleanLine = line.trim();
 
       // Skip noise
-      if (cleanLine.length < 10) continue;
-      if (cleanLine.toLowerCase().contains("opening balance")) continue;
-      if (cleanLine.toLowerCase().contains("brought forward")) continue;
-      if (cleanLine.toLowerCase().contains("total")) continue;
+      if (cleanLine.length < 10) {
+        continue;
+      }
+      if (cleanLine.toLowerCase().contains("opening balance")) {
+        continue;
+      }
+      if (cleanLine.toLowerCase().contains("brought forward")) {
+        continue;
+      }
+      if (cleanLine.toLowerCase().contains("total")) {
+        continue;
+      }
 
       // --- STEP A: Does this line have a Date? ---
       final dateMatch = datePattern.firstMatch(cleanLine);

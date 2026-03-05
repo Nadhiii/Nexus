@@ -1,3 +1,4 @@
+// ignore_for_file: file_names
 import 'Nex_message.dart';
 
 /// AI Conversation Model

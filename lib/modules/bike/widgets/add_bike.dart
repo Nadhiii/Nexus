@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -89,7 +88,7 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
   }
 
   DateTime? _parseDate(String dateString) {
-    if (dateString.isEmpty) return null;
+    if (dateString.isEmpty) { return null; }
     final formats = [
       DateFormat('dd-MMM-yyyy'),
       DateFormat('dd/MM/yyyy'),
@@ -177,7 +176,7 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
   }
 
   void _saveBike() {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) { return; }
 
     final provider = context.read<BikeProvider>();
     final reg = _registrationController.text.trim();
@@ -187,7 +186,7 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
     final odoStr = _odometerController.text.trim();
 
     int year = DateTime.now().year;
-    if (yearStr.isNotEmpty) year = int.tryParse(yearStr) ?? year;
+    if (yearStr.isNotEmpty) { year = int.tryParse(yearStr) ?? year; }
     double odometer = double.tryParse(odoStr) ?? 0.0;
 
     // Use newly fetched make, OR existing make, OR guess from the model
@@ -240,21 +239,27 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
     }
 
     if (widget.bikeToEdit == null) {
-      provider
-          .addBike(bike)
-          .then((_) => Navigator.pop(context))
-          .catchError(
-            (e) =>
-                showTopSnackBar(context, 'Failed to save: $e', isError: true),
-          );
+      () async {
+        try {
+          await provider.addBike(bike);
+          if (!mounted) { return; }
+          Navigator.pop(context);
+        } catch (e) {
+          if (!mounted) { return; }
+          showTopSnackBar(context, 'Failed to save: $e', isError: true);
+        }
+      }();
     } else {
-      provider
-          .updateBike(bike)
-          .then((_) => Navigator.pop(context))
-          .catchError(
-            (e) =>
-                showTopSnackBar(context, 'Failed to update: $e', isError: true),
-          );
+      () async {
+        try {
+          await provider.updateBike(bike);
+          if (!mounted) { return; }
+          Navigator.pop(context);
+        } catch (e) {
+          if (!mounted) { return; }
+          showTopSnackBar(context, 'Failed to update: $e', isError: true);
+        }
+      }();
     }
   }
 
@@ -381,8 +386,8 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
                           foregroundColor: Colors.white,
                           side: BorderSide(
                             color: _fetchSuccess
-                                ? AppColors.pastelGreen.withOpacity(0.5)
-                                : Colors.white.withOpacity(0.3),
+                                ? AppColors.pastelGreen.withValues(alpha: 0.5)
+                                : Colors.white.withValues(alpha: 0.3),
                           ),
                           padding: const EdgeInsets.symmetric(
                             vertical: AppSpacing.md,
@@ -539,19 +544,19 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
           colors: [
             const Color(0xFF1A1A1A),
             const Color(0xFF111111),
-            Colors.black.withOpacity(0.8),
-            const Color(0xFF0A0A0A).withOpacity(0.9),
+            Colors.black.withValues(alpha: 0.8),
+            const Color(0xFF0A0A0A).withValues(alpha: 0.9),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.2),
+            color: AppColors.primaryBlue.withValues(alpha: 0.2),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
         border: Border.all(
-          color: AppColors.primaryBlue.withOpacity(0.3),
+          color: AppColors.primaryBlue.withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -582,7 +587,7 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
                       position: _logoSlideAnimation,
                       child: Icon(
                         Icons.two_wheeler,
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         size: 24,
                       ),
                     ),
@@ -594,10 +599,10 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryBlue.withOpacity(0.15),
+                    color: AppColors.primaryBlue.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
-                      color: AppColors.primaryBlue.withOpacity(0.3),
+                      color: AppColors.primaryBlue.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Text(
@@ -634,7 +639,7 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
                             Text(
                               "ODOMETER",
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white.withValues(alpha: 0.6),
                                 fontSize: 8,
                               ),
                             ),
@@ -654,7 +659,7 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
                             Text(
                               "YEAR",
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white.withValues(alpha: 0.6),
                                 fontSize: 8,
                               ),
                             ),

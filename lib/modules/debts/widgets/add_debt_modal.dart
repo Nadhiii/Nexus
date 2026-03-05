@@ -6,6 +6,7 @@ import 'dart:ui';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/providers/debt_provider.dart';
 import '../../../core/models/debt.dart';
 import '../../../core/widgets/top_snackbar.dart';
@@ -86,7 +87,7 @@ class _AddDebtModalState extends State<AddDebtModal>
         children: [
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(color: Colors.black.withOpacity(0.6)),
+            child: Container(color: Colors.black.withValues(alpha: 0.6)),
           ),
           Center(
             child: ScaleTransition(
@@ -101,7 +102,9 @@ class _AddDebtModalState extends State<AddDebtModal>
                 decoration: BoxDecoration(
                   color: AppColors.backgroundBlack,
                   borderRadius: BorderRadius.circular(32),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
                   // SHADOW REMOVED HERE
                 ),
                 child: Column(
@@ -109,14 +112,14 @@ class _AddDebtModalState extends State<AddDebtModal>
                   children: [
                     Text(
                       widget.debtToEdit != null
-                          ? "EDIT LIABILITY"
-                          : "NEW LIABILITY",
-                      style: AppTypography.headlineSmall.copyWith(
+                          ? 'Edit Liability'
+                          : 'New Liability',
+                      style: AppTypography.headlineMedium.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xl),
 
                     // Debt Type List
                     SizedBox(
@@ -136,7 +139,7 @@ class _AddDebtModalState extends State<AddDebtModal>
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xl),
 
                     Expanded(
                       child: SingleChildScrollView(
@@ -145,7 +148,7 @@ class _AddDebtModalState extends State<AddDebtModal>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildLabel("DETAILS"),
+                              _buildLabel('Details'),
                               _buildGlassField(
                                 controller: _nameController,
                                 hint: "Debt Name (e.g. HDFC Card)",
@@ -165,8 +168,8 @@ class _AddDebtModalState extends State<AddDebtModal>
                                 isNumber: true,
                               ),
 
-                              const SizedBox(height: 24),
-                              _buildLabel("TERMS (OPTIONAL)"),
+                              const SizedBox(height: AppSpacing.xl),
+                              _buildLabel('Terms (Optional)'),
                               Row(
                                 children: [
                                   Expanded(
@@ -187,8 +190,8 @@ class _AddDebtModalState extends State<AddDebtModal>
                                 ],
                               ),
 
-                              const SizedBox(height: 24),
-                              _buildLabel("TIMELINE"),
+                              const SizedBox(height: AppSpacing.xl),
+                              _buildLabel('Timeline'),
                               Row(
                                 children: [
                                   Expanded(
@@ -209,16 +212,18 @@ class _AddDebtModalState extends State<AddDebtModal>
                                 ],
                               ),
 
-                              const SizedBox(height: 32),
+                              const SizedBox(height: AppSpacing.xl2),
                               SizedBox(
                                 width: double.infinity,
-                                height: 50,
+                                height: 54,
                                 child: ElevatedButton(
                                   onPressed: _isLoading ? null : _saveDebt,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.error,
+                                    backgroundColor: AppColors.primaryBlue,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(25),
+                                      borderRadius: BorderRadius.circular(
+                                        AppSpacing.radiusMd,
+                                      ),
                                     ),
                                     elevation: 0,
                                   ),
@@ -231,13 +236,13 @@ class _AddDebtModalState extends State<AddDebtModal>
                                             strokeWidth: 2,
                                           ),
                                         )
-                                      : const Text(
-                                          "SAVE LIABILITY",
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 1.2,
-                                          ),
+                                      : Text(
+                                          'Save Liability',
+                                          style: AppTypography.titleSmall
+                                              .copyWith(
+                                                color: AppColors.white,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                         ),
                                 ),
                               ),
@@ -246,7 +251,7 @@ class _AddDebtModalState extends State<AddDebtModal>
                                 child: TextButton(
                                   onPressed: () => Navigator.pop(context),
                                   child: Text(
-                                    "CANCEL",
+                                    'Cancel',
                                     style: TextStyle(
                                       color: AppColors.textTertiary,
                                       fontWeight: FontWeight.bold,
@@ -279,10 +284,12 @@ class _AddDebtModalState extends State<AddDebtModal>
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.error : AppColors.cardSurface,
+          color: isSelected ? AppColors.primaryBlue : AppColors.cardSurface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.error : Colors.white.withOpacity(0.1),
+            color: isSelected
+                ? AppColors.primaryBlue
+                : Colors.white.withValues(alpha: 0.1),
           ),
         ),
         child: Center(
@@ -304,11 +311,9 @@ class _AddDebtModalState extends State<AddDebtModal>
       padding: const EdgeInsets.only(bottom: 8, left: 4),
       child: Text(
         text,
-        style: TextStyle(
-          color: AppColors.textTertiary,
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.0,
+        style: AppTypography.titleSmall.copyWith(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -322,9 +327,9 @@ class _AddDebtModalState extends State<AddDebtModal>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        color: AppColors.cardDarkElevated,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: TextFormField(
         controller: controller,
@@ -334,7 +339,9 @@ class _AddDebtModalState extends State<AddDebtModal>
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.5)),
+          hintStyle: TextStyle(
+            color: AppColors.textTertiary.withValues(alpha: 0.7),
+          ),
           prefixIcon: icon != null
               ? Icon(icon, color: AppColors.textSecondary, size: 20)
               : null,
@@ -365,14 +372,14 @@ class _AddDebtModalState extends State<AddDebtModal>
           firstDate: DateTime(2000),
           lastDate: DateTime(2050),
         );
-        if (picked != null) onSelect(picked);
+        if (picked != null) { onSelect(picked); }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
-          color: AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          color: AppColors.cardDarkElevated,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
         ),
         child: Row(
           children: [
@@ -388,7 +395,7 @@ class _AddDebtModalState extends State<AddDebtModal>
                 style: TextStyle(
                   color: date != null
                       ? Colors.white
-                      : AppColors.textTertiary.withOpacity(0.5),
+                      : AppColors.textTertiary.withValues(alpha: 0.5),
                   fontWeight: date != null
                       ? FontWeight.bold
                       : FontWeight.normal,
@@ -403,12 +410,12 @@ class _AddDebtModalState extends State<AddDebtModal>
   }
 
   Future<void> _saveDebt() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) { return; }
     setState(() => _isLoading = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+      if (user == null) { return; }
 
       final balance = double.parse(_balanceController.text);
       final emi = double.tryParse(_emiController.text);
@@ -447,9 +454,9 @@ class _AddDebtModalState extends State<AddDebtModal>
         showTopSnackBar(context, 'Liability saved successfully');
       }
     } catch (e) {
-      if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+      if (mounted) { showTopSnackBar(context, 'Error: $e', isError: true); }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) { setState(() => _isLoading = false); }
     }
   }
 }

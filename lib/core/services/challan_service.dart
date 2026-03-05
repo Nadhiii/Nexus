@@ -1,6 +1,8 @@
+// ignore_for_file: avoid_types_as_parameter_names
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import '../models/challan.dart';
+import 'package:flutter/foundation.dart';
 
 class ChallanService {
   static const String _challansCollection = 'challans';
@@ -43,7 +45,7 @@ class ChallanService {
 
       return challan;
     } catch (e) {
-      print('❌ Challan Creation Error: $e');
+      debugPrint('❌ Challan Creation Error: $e');
       return null;
     }
   }
@@ -61,7 +63,7 @@ class ChallanService {
           .map((doc) => Challan.fromFirestore(doc.data(), doc.id))
           .toList();
     } catch (e) {
-      print('❌ Error fetching challans: $e');
+      debugPrint('❌ Error fetching challans: $e');
       return [];
     }
   }
@@ -80,7 +82,7 @@ class ChallanService {
           .map((doc) => Challan.fromFirestore(doc.data(), doc.id))
           .toList();
     } catch (e) {
-      print('❌ Error fetching unpaid challans: $e');
+      debugPrint('❌ Error fetching unpaid challans: $e');
       return [];
     }
   }
@@ -95,7 +97,7 @@ class ChallanService {
       });
       return true;
     } catch (e) {
-      print('❌ Error marking challan as paid: $e');
+      debugPrint('❌ Error marking challan as paid: $e');
       return false;
     }
   }
@@ -106,7 +108,7 @@ class ChallanService {
       await _firestore.collection(_challansCollection).doc(challanId).delete();
       return true;
     } catch (e) {
-      print('❌ Error deleting challan: $e');
+      debugPrint('❌ Error deleting challan: $e');
       return false;
     }
   }
@@ -115,8 +117,8 @@ class ChallanService {
   List<Challan> getOverdueChallans(List<Challan> challans) {
     final now = DateTime.now();
     return challans.where((challan) {
-      if (challan.isPaid) return false;
-      if (challan.paymentDeadline == null) return false;
+      if (challan.isPaid) { return false; }
+      if (challan.paymentDeadline == null) { return false; }
       return challan.paymentDeadline!.isBefore(now);
     }).toList();
   }
@@ -130,8 +132,8 @@ class ChallanService {
     final warningDate = now.add(Duration(days: daysWarning));
 
     return challans.where((challan) {
-      if (challan.isPaid) return false;
-      if (challan.paymentDeadline == null) return false;
+      if (challan.isPaid) { return false; }
+      if (challan.paymentDeadline == null) { return false; }
       return challan.paymentDeadline!.isBefore(warningDate) &&
           challan.paymentDeadline!.isAfter(now);
     }).toList();

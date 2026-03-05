@@ -1,3 +1,4 @@
+// ignore_for_file: unused_field
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -111,7 +112,9 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
         );
       },
     );
-    if (picked != null) setState(() => _selectedDate = picked);
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+    }
   }
 
   double? _calculateExactMileage(
@@ -119,7 +122,9 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
     double currentOdo,
     double currentFuel,
   ) {
-    if (!_isFullTank) return null;
+    if (!_isFullTank) {
+      return null;
+    }
 
     final sortedHistory = List<BikeEntry>.from(history)
       ..sort((a, b) => b.odometerReading.compareTo(a.odometerReading));
@@ -127,7 +132,9 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
     double fuelConsumedBetween = 0.0;
 
     for (var entry in sortedHistory) {
-      if ((entry.category ?? 'fuel') != 'fuel') continue;
+      if ((entry.category ?? 'fuel') != 'fuel') {
+        continue;
+      }
       if (entry.isFullTank) {
         lastFullTankEntry = entry;
         break;
@@ -136,11 +143,15 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
       }
     }
 
-    if (lastFullTankEntry == null) return null;
+    if (lastFullTankEntry == null) {
+      return null;
+    }
     double distance = currentOdo - lastFullTankEntry.odometerReading;
     double totalFuelUsed = currentFuel + fuelConsumedBetween;
 
-    if (totalFuelUsed <= 0) return 0.0;
+    if (totalFuelUsed <= 0) {
+      return 0.0;
+    }
     return distance / totalFuelUsed;
   }
 
@@ -647,10 +658,13 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
       decoration: BoxDecoration(
         color: AppColors.cardDarkElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-        border: Border.all(color: themeColor.withOpacity(0.3), width: 1.5),
+        border: Border.all(
+          color: themeColor.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: themeColor.withOpacity(0.1),
+            color: themeColor.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 5),
           ),
@@ -688,7 +702,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                   Text(
                     "CURRENT ODOMETER",
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       fontSize: 8,
                     ),
                   ),
@@ -708,7 +722,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                   Text(
                     _isFuelMode ? "VOLUME" : "CATEGORY",
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       fontSize: 8,
                     ),
                   ),
@@ -735,7 +749,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
               Text(
                 "TOTAL COST",
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
+                  color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -789,7 +803,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                       (_isFuelMode
                               ? AppColors.primaryBlue
                               : AppColors.pastelOrange)
-                          .withOpacity(0.5),
+                          .withValues(alpha: 0.5),
                 )
               : BorderSide.none,
         ),
@@ -844,7 +858,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         border: Border.all(
           color: _linkToExpense
-              ? AppColors.success.withOpacity(0.3)
+              ? AppColors.success.withValues(alpha: 0.3)
               : Colors.transparent,
         ),
       ),
@@ -890,7 +904,9 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                 activeThumbColor: AppColors.success,
                 onChanged: (val) => setState(() {
                   _linkToExpense = val;
-                  if (!val) _selectedAccount = null;
+                  if (!val) {
+                    _selectedAccount = null;
+                  }
                 }),
               ),
             ],

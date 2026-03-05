@@ -61,7 +61,7 @@ class _MainScreenState extends State<MainScreen>
     );
 
     _intentSub = IntentNavigationService.tabStream.listen((tabIndex) {
-      if (!mounted) return;
+      if (!mounted) { return; }
       _navigateToScreen(tabIndex);
     });
   }
@@ -80,7 +80,7 @@ class _MainScreenState extends State<MainScreen>
   }
 
   void _navigateToScreen(int index, {int? financeTab}) {
-    if (index == _currentIndex) return;
+    if (index == _currentIndex) { return; }
 
     // Light haptic feedback for a tactile feel
     HapticFeedback.selectionClick();
@@ -94,7 +94,7 @@ class _MainScreenState extends State<MainScreen>
   }
 
   void _initializeAI(BuildContext context) {
-    if (_aiInitialized) return;
+    if (_aiInitialized) { return; }
     _aiInitialized = true;
 
     final aiProvider = context.read<AIAssistantProvider>();
@@ -157,7 +157,7 @@ class _MainScreenState extends State<MainScreen>
         borderRadius: BorderRadius.circular(35),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(alpha: 0.4),
             blurRadius: 25,
             offset: const Offset(0, 12),
           ),
@@ -174,10 +174,10 @@ class _MainScreenState extends State<MainScreen>
                   : ImageFilter.blur(sigmaX: 20, sigmaY: 20), // Stronger blur
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
+                  color: Colors.white.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(35),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.12),
+                    color: Colors.white.withValues(alpha: 0.12),
                     width: 0.5,
                   ),
                 ),
@@ -260,7 +260,7 @@ class _MainScreenState extends State<MainScreen>
                 vertical: 10,
               ),
               decoration: BoxDecoration(
-                color: AppColors.primaryBlue.withOpacity(
+                color: AppColors.primaryBlue.withValues(alpha: 
                   0.15 * selectionProgress,
                 ),
                 borderRadius: BorderRadius.circular(25),

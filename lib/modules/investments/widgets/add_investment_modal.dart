@@ -9,6 +9,7 @@ import '../../../core/models/investment.dart';
 import '../../../core/providers/investment_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/top_snackbar.dart';
 
 class AddInvestmentModal extends StatefulWidget {
@@ -83,7 +84,7 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
 
   // --- MUTUAL FUND API ---
   Future<void> _searchFunds(String query) async {
-    if (query.length < 3) return;
+    if (query.length < 3) { return; }
     setState(() => _isSearching = true);
     try {
       final response = await http.get(
@@ -124,7 +125,7 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
           // Blur Backdrop
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(color: Colors.black.withOpacity(0.6)),
+            child: Container(color: Colors.black.withValues(alpha: 0.6)),
           ),
           Center(
             child: ScaleTransition(
@@ -139,23 +140,33 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
                 decoration: BoxDecoration(
                   color: AppColors.backgroundBlack,
                   borderRadius: BorderRadius.circular(32),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
                   // SHADOW REMOVED HERE
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Header
-                    Text(
-                      widget.investmentToEdit != null
-                          ? "EDIT ASSET"
-                          : "ADD ASSET",
-                      style: AppTypography.headlineSmall.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          widget.investmentToEdit != null
+                              ? 'Edit Investment'
+                              : 'Add Investment',
+                          style: AppTypography.headlineMedium.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close, color: Colors.white54),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xl),
 
                     // Type Pills
                     SizedBox(
@@ -177,7 +188,7 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xl),
 
                     Expanded(
                       child: SingleChildScrollView(
@@ -189,7 +200,7 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
                               // SEARCH (MF ONLY)
                               if (_selectedType == InvestmentType.mutualFund &&
                                   widget.investmentToEdit == null) ...[
-                                _buildLabel("SEARCH FUND"),
+                                _buildLabel('Search Fund'),
                                 _buildGlassField(
                                   controller: _searchController,
                                   hint: "e.g. SBI Small Cap",
@@ -241,11 +252,11 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
                                       ),
                                     ),
                                   ),
-                                const SizedBox(height: 24),
+                                const SizedBox(height: AppSpacing.xl),
                               ],
 
                               // FIELDS
-                              _buildLabel("DETAILS"),
+                              _buildLabel('Details'),
                               _buildGlassField(
                                 controller: _nameController,
                                 hint: "Asset Name",
@@ -267,8 +278,8 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
                                 isNumber: true,
                               ),
 
-                              const SizedBox(height: 24),
-                              _buildLabel("VALUATION (₹)"),
+                              const SizedBox(height: AppSpacing.xl),
+                              _buildLabel('Valuation (₹)'),
                               Row(
                                 children: [
                                   Expanded(
@@ -289,18 +300,20 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
                                 ],
                               ),
 
-                              const SizedBox(height: 32),
+                              const SizedBox(height: AppSpacing.xl2),
 
                               // ACTIONS
                               SizedBox(
                                 width: double.infinity,
-                                height: 50,
+                                height: 54,
                                 child: ElevatedButton(
                                   onPressed: _isLoading ? null : _saveAsset,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.investmentIndigo,
+                                    backgroundColor: AppColors.primaryBlue,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(25),
+                                      borderRadius: BorderRadius.circular(
+                                        AppSpacing.radiusMd,
+                                      ),
                                     ),
                                     elevation: 0,
                                   ),
@@ -313,28 +326,14 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
                                             strokeWidth: 2,
                                           ),
                                         )
-                                      : const Text(
-                                          "SAVE ASSET",
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 1.2,
-                                          ),
+                                      : Text(
+                                          'Save Investment',
+                                          style: AppTypography.titleSmall
+                                              .copyWith(
+                                                color: AppColors.white,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                         ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Center(
-                                child: TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: Text(
-                                    "CANCEL",
-                                    style: TextStyle(
-                                      color: AppColors.textTertiary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
                                 ),
                               ),
                             ],
@@ -368,7 +367,7 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
           border: Border.all(
             color: isSelected
                 ? AppColors.investmentIndigo
-                : Colors.white.withOpacity(0.1),
+                : Colors.white.withValues(alpha: 0.1),
           ),
         ),
         child: Center(
@@ -390,11 +389,9 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
       padding: const EdgeInsets.only(bottom: 8, left: 4),
       child: Text(
         text,
-        style: TextStyle(
-          color: AppColors.textTertiary,
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.0,
+        style: AppTypography.titleSmall.copyWith(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -409,9 +406,9 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        color: AppColors.cardDarkElevated,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: TextFormField(
         controller: controller,
@@ -422,7 +419,9 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.5)),
+          hintStyle: TextStyle(
+            color: AppColors.textTertiary.withValues(alpha: 0.7),
+          ),
           prefixIcon: icon != null
               ? Icon(icon, color: AppColors.textSecondary, size: 20)
               : null,
@@ -443,7 +442,7 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
       setState(() => _isLoading = true);
       try {
         final user = FirebaseAuth.instance.currentUser;
-        if (user == null) return;
+        if (user == null) { return; }
 
         final investment = Investment(
           id:
@@ -480,9 +479,9 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
           showTopSnackBar(context, 'Asset Saved');
         }
       } catch (e) {
-        if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+        if (mounted) { showTopSnackBar(context, 'Error: $e', isError: true); }
       } finally {
-        if (mounted) setState(() => _isLoading = false);
+        if (mounted) { setState(() => _isLoading = false); }
       }
     }
   }

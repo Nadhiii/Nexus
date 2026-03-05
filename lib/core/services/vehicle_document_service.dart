@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import '../models/vehicle_document.dart';
 import 'google_drive_service.dart';
+import 'package:flutter/foundation.dart';
 
 class VehicleDocumentService {
   static const String _vehicleDocumentsCollection = 'vehicle_documents';
@@ -26,7 +27,7 @@ class VehicleDocumentService {
       final fileSize = await file.length();
       final documentId = const Uuid().v4();
 
-      print('📤 Uploading document to Google Drive...');
+      debugPrint('📤 Uploading document to Google Drive...');
       // Upload to Google Drive
       final driveFileId = await _driveService.uploadVehicleDocument(
         file: file,
@@ -35,7 +36,7 @@ class VehicleDocumentService {
       );
 
       if (driveFileId == null) {
-        print('❌ Failed to upload to Google Drive');
+        debugPrint('❌ Failed to upload to Google Drive');
         return null;
       }
 
@@ -63,10 +64,10 @@ class VehicleDocumentService {
           .doc(documentId)
           .set(vehicleDocument.toJson());
 
-      print('✅ Document registered in Firestore');
+      debugPrint('✅ Document registered in Firestore');
       return vehicleDocument;
     } catch (e) {
-      print('❌ Document Upload Error: $e');
+      debugPrint('❌ Document Upload Error: $e');
       return null;
     }
   }
@@ -108,7 +109,7 @@ class VehicleDocumentService {
 
       return vehicleDocument;
     } catch (e) {
-      print('❌ Document Registration Error: $e');
+      debugPrint('❌ Document Registration Error: $e');
       return null;
     }
   }
@@ -122,7 +123,7 @@ class VehicleDocumentService {
           .update({'fileUrl': fileUrl});
       return true;
     } catch (e) {
-      print('❌ Error updating document URL: $e');
+      debugPrint('❌ Error updating document URL: $e');
       return false;
     }
   }
@@ -144,7 +145,7 @@ class VehicleDocumentService {
 
       return documents;
     } catch (e) {
-      print('❌ Error fetching documents: $e');
+      debugPrint('❌ Error fetching documents: $e');
       return [];
     }
   }
@@ -170,7 +171,7 @@ class VehicleDocumentService {
 
       return documents;
     } catch (e) {
-      print('❌ Error fetching documents by type: $e');
+      debugPrint('❌ Error fetching documents by type: $e');
       return [];
     }
   }
@@ -187,7 +188,7 @@ class VehicleDocumentService {
 
       return true;
     } catch (e) {
-      print('❌ Error deleting document: $e');
+      debugPrint('❌ Error deleting document: $e');
       return false;
     }
   }
@@ -201,7 +202,7 @@ class VehicleDocumentService {
     final warningDate = now.add(Duration(days: daysWarning));
 
     return documents.where((doc) {
-      if (doc.expiryDate == null) return false;
+      if (doc.expiryDate == null) { return false; }
       return doc.expiryDate!.isBefore(warningDate) &&
           doc.expiryDate!.isAfter(now);
     }).toList();
@@ -211,7 +212,7 @@ class VehicleDocumentService {
   List<VehicleDocument> getExpiredDocuments(List<VehicleDocument> documents) {
     final now = DateTime.now();
     return documents.where((doc) {
-      if (doc.expiryDate == null) return false;
+      if (doc.expiryDate == null) { return false; }
       return doc.expiryDate!.isBefore(now);
     }).toList();
   }

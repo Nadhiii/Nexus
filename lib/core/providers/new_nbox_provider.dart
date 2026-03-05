@@ -54,7 +54,7 @@ class NewNboxProvider extends ChangeNotifier {
 
   /// Initialize the provider - loads processed IDs and scans for transactions
   Future<void> initialize() async {
-    if (_isInitialized) return;
+    if (_isInitialized) { return; }
     await _loadSettings();
     await _loadProcessedIds();
     _isInitialized = true;
@@ -112,7 +112,7 @@ class NewNboxProvider extends ChangeNotifier {
   }
 
   Future<void> scanEmails() async {
-    if (!isGmailLinked) return;
+    if (!isGmailLinked) { return; }
     _setLoading(true);
     await _gmailProvider!.scanEmails();
     _setLoading(false);
@@ -121,15 +121,17 @@ class NewNboxProvider extends ChangeNotifier {
   // --- FIXED SCAN FUNCTION ---
   Future<void> scanSmsInbox() async {
     if (!smsReadingEnabled) {
-      if (kDebugMode) print('[NewNboxProvider] SMS reading disabled by user.');
+      if (kDebugMode) {
+        debugPrint('[NewNboxProvider] SMS reading disabled by user.');
+      }
       return;
     }
-    if (kDebugMode) print('[NewNboxProvider] Starting SMS scan...');
+    if (kDebugMode) { debugPrint('[NewNboxProvider] Starting SMS scan...'); }
     _setLoading(true);
 
     if (!await _checkSmsPermission()) {
       if (kDebugMode) {
-        print('[NewNboxProvider] SMS permission denied. Aborting scan.');
+        debugPrint('[NewNboxProvider] SMS permission denied. Aborting scan.');
       }
       _setLoading(false);
       return;
@@ -142,7 +144,7 @@ class NewNboxProvider extends ChangeNotifier {
     final DateTime minDate = nowUtc.subtract(const Duration(days: 30));
 
     if (kDebugMode) {
-      print(
+      debugPrint(
         '[NewNboxProvider] Fetching SMS from last 30 days (since $minDate UTC).',
       );
     }
@@ -152,7 +154,7 @@ class NewNboxProvider extends ChangeNotifier {
     if (_categoryProvider != null) {
       aiService = AICategorizationService(categoryProvider: _categoryProvider);
       if (kDebugMode) {
-        print('[NewNboxProvider] AI categorization enabled for SMS');
+        debugPrint('[NewNboxProvider] AI categorization enabled for SMS');
       }
     }
 
@@ -166,20 +168,20 @@ class NewNboxProvider extends ChangeNotifier {
         sortOrder: [OrderBy(SmsColumn.DATE, sort: Sort.DESC)],
       );
     } catch (e) {
-      if (kDebugMode) print('[NewNboxProvider] Error fetching SMS: $e');
+      if (kDebugMode) { debugPrint('[NewNboxProvider] Error fetching SMS: $e'); }
       _setLoading(false);
       return;
     }
 
     if (kDebugMode) {
-      print(
+      debugPrint(
         '[NewNboxProvider] Found ${messages.length} SMS messages in window.',
       );
     }
 
     final allSmsTransactions = <DetectedTransaction>[];
     for (final sms in messages) {
-      if (sms.id == null || sms.date == null) continue;
+      if (sms.id == null || sms.date == null) { continue; }
 
       // FIX 3: Convert the UTC SMS timestamp to Local time so the user sees correct hours
       final localSmsDate = DateTime.fromMillisecondsSinceEpoch(
@@ -203,7 +205,7 @@ class NewNboxProvider extends ChangeNotifier {
     _processTransactions(allSmsTransactions, 'sms');
 
     notifyListeners();
-    if (kDebugMode) print('[NewNboxProvider] SMS scan complete.');
+    if (kDebugMode) { debugPrint('[NewNboxProvider] SMS scan complete.'); }
     _setLoading(false);
   }
 
@@ -337,7 +339,9 @@ class NewNboxProvider extends ChangeNotifier {
 
   Future<bool> _checkSmsPermission() async {
     final status = await Permission.sms.request();
-    if (kDebugMode) print('[NewNboxProvider] SMS permission status: $status');
+    if (kDebugMode) {
+      debugPrint('[NewNboxProvider] SMS permission status: $status');
+    }
     return status.isGranted;
   }
 

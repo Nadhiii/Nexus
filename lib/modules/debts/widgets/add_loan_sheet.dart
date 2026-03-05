@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
@@ -10,7 +11,9 @@ import '../../../core/models/debt.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_animations.dart';
+import '../../../core/utils/logo_utils.dart';
 import '../../../core/widgets/top_snackbar.dart';
+import '../utils/debt_logo_utils.dart';
 
 /// Floating Modal for Add/Edit Loan - Following Subscription Design Pattern
 class AddLoanModal extends StatefulWidget {
@@ -130,6 +133,7 @@ class _AddLoanModalState extends State<AddLoanModal>
 
   @override
   Widget build(BuildContext context) {
+    final loanId = widget.debtToEdit?.id ?? '';
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
@@ -137,7 +141,7 @@ class _AddLoanModalState extends State<AddLoanModal>
           // Backdrop Blur
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(color: Colors.black.withOpacity(0.6)),
+            child: Container(color: Colors.black.withValues(alpha: 0.6)),
           ),
           // Floating Card
           Center(
@@ -155,10 +159,12 @@ class _AddLoanModalState extends State<AddLoanModal>
                   decoration: BoxDecoration(
                     color: AppColors.backgroundBlack,
                     borderRadius: BorderRadius.circular(32),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         blurRadius: 40,
                         offset: const Offset(0, 20),
                       ),
@@ -167,13 +173,24 @@ class _AddLoanModalState extends State<AddLoanModal>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Title
-                      Text(
-                        _isEditMode ? "Edit Loan" : "New Loan",
-                        style: AppTypography.headlineSmall.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _isEditMode ? 'Edit Liability' : 'Add Liability',
+                            style: AppTypography.headlineSmall.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.white54,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 24),
 
@@ -190,7 +207,7 @@ class _AddLoanModalState extends State<AddLoanModal>
                                 const SizedBox(height: 32),
 
                                 // 2. QUICK ADD
-                                _buildLabel("LOAN TYPE"),
+                                _buildLabel('Loan Type'),
                                 SizedBox(
                                   height: 50,
                                   child: ListView.separated(
@@ -210,8 +227,8 @@ class _AddLoanModalState extends State<AddLoanModal>
                                           ),
                                           decoration: BoxDecoration(
                                             color: isSelected
-                                                ? AppColors.info.withOpacity(
-                                                    0.2,
+                                                ? AppColors.info.withValues(
+                                                    alpha: 0.2,
                                                   )
                                                 : AppColors.cardSurface,
                                             borderRadius: BorderRadius.circular(
@@ -220,8 +237,8 @@ class _AddLoanModalState extends State<AddLoanModal>
                                             border: Border.all(
                                               color: isSelected
                                                   ? AppColors.info
-                                                  : Colors.white.withOpacity(
-                                                      0.05,
+                                                  : Colors.white.withValues(
+                                                      alpha: 0.05,
                                                     ),
                                             ),
                                           ),
@@ -253,7 +270,7 @@ class _AddLoanModalState extends State<AddLoanModal>
                                 const SizedBox(height: 24),
 
                                 // 3. LOAN DETAILS
-                                _buildLabel("LOAN DETAILS"),
+                                _buildLabel('Loan Details'),
                                 _buildGlassTextField(
                                   controller: _nameController,
                                   hint: "e.g. HDFC Home Loan",
@@ -268,7 +285,7 @@ class _AddLoanModalState extends State<AddLoanModal>
                                 const SizedBox(height: 24),
 
                                 // 4. AMOUNT SECTION
-                                _buildLabel("AMOUNTS"),
+                                _buildLabel('Amounts'),
                                 Row(
                                   children: [
                                     Expanded(
@@ -303,7 +320,7 @@ class _AddLoanModalState extends State<AddLoanModal>
                                 const SizedBox(height: 24),
 
                                 // 5. INTEREST & TENURE
-                                _buildLabel("TERMS"),
+                                _buildLabel('Terms'),
                                 Row(
                                   children: [
                                     Expanded(
@@ -345,13 +362,19 @@ class _AddLoanModalState extends State<AddLoanModal>
                                     ),
                                     decoration: BoxDecoration(
                                       color: _showEmiCalculator
-                                          ? AppColors.info.withOpacity(0.15)
+                                          ? AppColors.info.withValues(
+                                              alpha: 0.15,
+                                            )
                                           : AppColors.cardSurface,
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
                                         color: _showEmiCalculator
-                                            ? AppColors.info.withOpacity(0.5)
-                                            : Colors.white.withOpacity(0.05),
+                                            ? AppColors.info.withValues(
+                                                alpha: 0.5,
+                                              )
+                                            : Colors.white.withValues(
+                                                alpha: 0.05,
+                                              ),
                                       ),
                                     ),
                                     child: Row(
@@ -391,7 +414,7 @@ class _AddLoanModalState extends State<AddLoanModal>
                                 const SizedBox(height: 24),
 
                                 // 6. PAYMENT DAY
-                                _buildLabel("EMI DUE DATE"),
+                                _buildLabel('EMI Due Date'),
                                 GestureDetector(
                                   onTap: _showPaymentDayPicker,
                                   child: Container(
@@ -403,7 +426,9 @@ class _AddLoanModalState extends State<AddLoanModal>
                                       color: AppColors.cardSurface,
                                       borderRadius: BorderRadius.circular(30),
                                       border: Border.all(
-                                        color: Colors.white.withOpacity(0.05),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.05,
+                                        ),
                                       ),
                                     ),
                                     child: Row(
@@ -440,6 +465,17 @@ class _AddLoanModalState extends State<AddLoanModal>
 
                                 const SizedBox(height: 40),
 
+                                if (loanId.isNotEmpty)
+                                  Center(
+                                    child: _buildOpenInTasksButton(
+                                      context,
+                                      loanId,
+                                    ),
+                                  ),
+
+                                if (loanId.isNotEmpty)
+                                  const SizedBox(height: 8),
+
                                 // 7. SAVE BUTTON
                                 SizedBox(
                                   width: double.infinity,
@@ -447,15 +483,10 @@ class _AddLoanModalState extends State<AddLoanModal>
                                   child: ElevatedButton(
                                     onPressed: _isLoading ? null : _submit,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.cardSurface,
-                                      foregroundColor: AppColors.info,
+                                      backgroundColor: AppColors.primaryBlue,
+                                      foregroundColor: AppColors.white,
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(30),
-                                        side: BorderSide(
-                                          color: AppColors.info.withOpacity(
-                                            0.3,
-                                          ),
-                                        ),
+                                        borderRadius: BorderRadius.circular(14),
                                       ),
                                       elevation: 0,
                                     ),
@@ -465,7 +496,7 @@ class _AddLoanModalState extends State<AddLoanModal>
                                             height: 20,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
-                                              color: AppColors.info,
+                                              color: AppColors.white,
                                             ),
                                           )
                                         : Text(
@@ -473,22 +504,11 @@ class _AddLoanModalState extends State<AddLoanModal>
                                                 ? "Save Changes"
                                                 : "Add Loan",
                                             style: const TextStyle(
+                                              color: AppColors.white,
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Center(
-                                  child: TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: Text(
-                                      "Cancel",
-                                      style: TextStyle(
-                                        color: AppColors.textTertiary,
-                                      ),
-                                    ),
                                   ),
                                 ),
                               ],
@@ -513,16 +533,24 @@ class _AddLoanModalState extends State<AddLoanModal>
         : _nameController.text;
     final balance = double.tryParse(_balanceController.text) ?? 0;
     final emi = double.tryParse(_emiController.text) ?? 0;
+    final bankLogo = DebtLogoUtils.bankLogoForParts(
+      lenderName: _lenderController.text,
+      name: _nameController.text,
+    );
+    final bankLogoScale = DebtLogoUtils.bankLogoScaleForParts(
+      lenderName: _lenderController.text,
+      name: _nameController.text,
+    );
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -534,14 +562,16 @@ class _AddLoanModalState extends State<AddLoanModal>
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.info.withOpacity(0.15),
+              color: AppColors.info.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Center(
-              child: Text(
-                _selectedType.icon,
-                style: const TextStyle(fontSize: 22),
-              ),
+              child: bankLogo != null
+                  ? LogoUtils.buildLogo(bankLogo, size: 22 * bankLogoScale)
+                  : Text(
+                      _selectedType.icon,
+                      style: const TextStyle(fontSize: 22),
+                    ),
             ),
           ),
           const SizedBox(width: 16),
@@ -598,10 +628,9 @@ class _AddLoanModalState extends State<AddLoanModal>
       child: Text(
         text,
         style: TextStyle(
-          color: AppColors.textTertiary,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1.0,
+          color: AppColors.textPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -617,9 +646,9 @@ class _AddLoanModalState extends State<AddLoanModal>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        color: AppColors.cardDarkElevated,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: TextFormField(
         controller: controller,
@@ -632,7 +661,9 @@ class _AddLoanModalState extends State<AddLoanModal>
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: AppColors.textTertiary.withOpacity(0.5)),
+          hintStyle: TextStyle(
+            color: AppColors.textTertiary.withValues(alpha: 0.7),
+          ),
           prefixIcon: Padding(
             padding: const EdgeInsets.only(left: 16, right: 8),
             child: Icon(icon, color: AppColors.textSecondary, size: 20),
@@ -658,9 +689,9 @@ class _AddLoanModalState extends State<AddLoanModal>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.info.withOpacity(0.1),
+        color: AppColors.info.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.info.withOpacity(0.3)),
+        border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -687,7 +718,7 @@ class _AddLoanModalState extends State<AddLoanModal>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.1),
+                color: AppColors.success.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -820,7 +851,9 @@ class _AddLoanModalState extends State<AddLoanModal>
   }
 
   String _getDaySuffix(int day) {
-    if (day >= 11 && day <= 13) return 'th';
+    if (day >= 11 && day <= 13) {
+      return 'th';
+    }
     switch (day % 10) {
       case 1:
         return 'st';
@@ -936,14 +969,44 @@ class _AddLoanModalState extends State<AddLoanModal>
         }
       }
 
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+      }
     } catch (e) {
       if (mounted) {
         showTopSnackBar(context, 'Error: $e', isError: true);
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  Future<void> _launchTasksForItem(String itemId) async {
+    try {
+      final uri = Uri.parse('nexustasks://open/tasks/$itemId');
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      }
+      // If Tasks not installed: silently do nothing
+    } catch (_) {
+      // Swallow all errors silently
+    }
+  }
+
+  Widget _buildOpenInTasksButton(BuildContext context, String itemId) {
+    return TextButton.icon(
+      onPressed: () => _launchTasksForItem(itemId),
+      icon: Icon(Icons.checklist_rounded, size: 14, color: Colors.white38),
+      label: Text(
+        'Open in Tasks →',
+        style: TextStyle(color: Colors.white38, fontSize: 12),
+      ),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+    );
   }
 }
 

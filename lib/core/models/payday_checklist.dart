@@ -66,7 +66,7 @@ class PaydayChecklistItem {
 
   /// Days until due (negative if overdue)
   int? get daysUntilDue {
-    if (dueDate == null) return null;
+    if (dueDate == null) { return null; }
     return dueDate!.difference(DateTime.now()).inDays;
   }
 
@@ -75,11 +75,11 @@ class PaydayChecklistItem {
 
   /// Human-readable due status
   String get dueStatus {
-    if (dueDate == null) return 'Suggested';
+    if (dueDate == null) { return 'Suggested'; }
     final days = daysUntilDue!;
-    if (days < 0) return 'Overdue by ${days.abs()} days';
-    if (days == 0) return 'Due today';
-    if (days == 1) return 'Due tomorrow';
+    if (days < 0) { return 'Overdue by ${days.abs()} days'; }
+    if (days == 0) { return 'Due today'; }
+    if (days == 1) { return 'Due tomorrow'; }
     return 'Due in $days days';
   }
 
