@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/new_nbox_provider.dart';
+import '../../core/providers/subscription_provider.dart';
+import '../../core/providers/debt_provider.dart';
+import '../../core/providers/investment_provider.dart';
+import '../../core/services/transaction_intent_classifier.dart';
 import '../../core/widgets/top_notification.dart';
 import '../../core/models/detected_transaction.dart';
 import '../transactions/add_transaction_screen.dart';
+import '../payday/payday_screen.dart';
+import 'smart_approval_sheet.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_animations.dart';
@@ -1186,12 +1192,48 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
   void _navigateToApproveScreen(DetectedTransaction t) async {
     final nbox = context.read<NewNboxProvider>();
-    final success = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ModernAddTransactionScreen(detectedTransaction: t),
-      ),
+
+    // Classify intent first — if no side effects, go straight to add screen.
+    final subs = context.read<SubscriptionProvider>().subscriptions;
+    final debts = context.read<DebtProvider>().debts;
+    final investments = context.read<InvestmentProvider>().investments;
+
+    final classification = TransactionIntentClassifier.classify(
+      detected: t,
+      subscriptions: subs,
+      debts: debts,
+      investments: investments,
     );
+
+    bool success = false;
+
+    if (classification.intent == TransactionIntent.salary) {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PaydayScreen(
+            incomeAmount: t.amount,
+            incomeSource: t.merchant,
+            incomeDate: t.date,
+          ),
+        ),
+      );
+      success = result == true;
+    } else if (classification.intent.hasSideEffects) {
+      // Show smart bottom sheet.
+      success = await showSmartApprovalSheet(context, t);
+    } else {
+      // Go straight to add_transaction_screen pre-filled (existing behavior).
+      success =
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ModernAddTransactionScreen(detectedTransaction: t),
+            ),
+          ) ??
+          false;
+    }
+
     if (success == true) {
       nbox.markAsApproved(t.id, t.source);
       if (mounted) {

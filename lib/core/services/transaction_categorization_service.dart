@@ -1,3 +1,5 @@
+import 'smart_category_resolver.dart';
+
 /// A service to automatically suggest a category for a transaction based on its description.
 class TransactionCategorizationService {
   TransactionCategorizationService();
@@ -64,18 +66,12 @@ class TransactionCategorizationService {
   };
 
   /// Suggests a category based on the transaction description.
-  ///
-  /// Returns a category ID (e.g., 'Food & Dining') or falls back to 'Miscellaneous'.
+  /// Returns a valid category id.
   String suggestCategory(String description) {
-    // Keyword matching
-    final lowerCaseDescription = description.toLowerCase();
-    for (final keyword in _keywordCategoryMap.keys) {
-      if (lowerCaseDescription.contains(keyword)) {
-        return _keywordCategoryMap[keyword]!;
-      }
-    }
-
-    // If no match, return 'Miscellaneous'
-    return 'Miscellaneous';
+    return SmartCategoryResolver.resolve(
+      merchant: description,
+      body: description,
+      transactionType: 'expense',
+    );
   }
 }

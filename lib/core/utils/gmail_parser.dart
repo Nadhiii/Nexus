@@ -1,5 +1,6 @@
 import '../models/detected_transaction.dart';
 import '../services/ai_categorization_service.dart';
+import '../services/smart_category_resolver.dart';
 
 class BankPattern {
   final String name;
@@ -222,19 +223,12 @@ class GmailParser {
     String body,
     AICategorizationService? aiService,
   ) async {
-    String? category;
-    if (aiService != null) {
-      final suggestion = await aiService.suggestCategory(
-        merchantName: merchant,
-        amount: amount,
-        transactionType: type,
-        fullMessageBody: body.substring(
-          0,
-          body.length > 300 ? 300 : body.length,
-        ),
-      );
-      category = suggestion.category;
-    }
+    final category = SmartCategoryResolver.resolve(
+      merchant: merchant,
+      body: body,
+      amount: amount,
+      transactionType: type,
+    );
 
     return DetectedTransaction(
       id: id,
@@ -244,7 +238,7 @@ class GmailParser {
       type: type,
       source: 'email',
       body: body,
-      detectedCategory: category ?? 'General',
+      detectedCategory: category,
     );
   }
 }

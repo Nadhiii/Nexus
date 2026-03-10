@@ -1,4 +1,7 @@
 /// A universal service to automatically suggest classifications for all app entities
+library;
+import 'smart_category_resolver.dart';
+
 class UniversalCategorizationService {
   UniversalCategorizationService();
 
@@ -282,15 +285,10 @@ class UniversalCategorizationService {
   };
 
   String suggestTransactionCategory(String description) {
-    // Keyword matching
-    final lowerDescription = description.toLowerCase();
-    for (final keyword in _transactionCategoryKeywords.keys) {
-      if (lowerDescription.contains(keyword)) {
-        return _transactionCategoryKeywords[keyword]!;
-      }
-    }
-
-    // 3. Default
-    return 'Miscellaneous';
+    return SmartCategoryResolver.resolve(
+      merchant: description,
+      body: description,
+      transactionType: 'expense',
+    );
   }
 }

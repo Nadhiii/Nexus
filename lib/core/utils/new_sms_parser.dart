@@ -1,5 +1,6 @@
 import '../models/detected_transaction.dart';
 import '../services/ai_categorization_service.dart';
+import '../services/smart_category_resolver.dart';
 
 class NewSmsParser {
   static Future<DetectedTransaction?> parse(
@@ -40,24 +41,13 @@ class NewSmsParser {
     // 5. EXTRACT MERCHANT
     String merchant = _extractMerchant(cleanBody, sender);
 
-    // 6. AI CATEGORIZATION
-    String? detectedCategory;
-    if (aiCategorizationService != null) {
-      try {
-        final categorySuggestion =
-            await aiCategorizationService.suggestCategory(
-          merchantName: merchant,
-          description: null,
-          amount: amount,
-          transactionType: type,
-          fullMessageBody: body,
-        );
-        detectedCategory = categorySuggestion.category;
-      } catch (e) {
-        // Fallback to null if AI fails
-        detectedCategory = null;
-      }
-    }
+    // 6. CATEGORIZATION
+    final detectedCategory = SmartCategoryResolver.resolve(
+      merchant: merchant,
+      body: body,
+      amount: amount,
+      transactionType: type,
+    );
 
     return DetectedTransaction(
       id: id,

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../providers/category_provider.dart';
-import 'transaction_categorization_service.dart';
+import 'smart_category_resolver.dart';
 
 /// Result of AI categorization suggestion
 class CategorySuggestion {
@@ -20,13 +20,11 @@ class CategorySuggestion {
 /// AI-powered transaction categorization service with graceful fallback
 class AICategorizationService {
   final CategoryProvider categoryProvider;
-  final TransactionCategorizationService _fallbackService;
 
   // Cache to avoid repeated lookups for same merchant
   final Map<String, CategorySuggestion> _cache = {};
 
-  AICategorizationService({required this.categoryProvider})
-    : _fallbackService = TransactionCategorizationService();
+  AICategorizationService({required this.categoryProvider});
 
   /// Suggest category for a transaction using keyword matching only
   Future<CategorySuggestion> suggestCategory({
@@ -43,7 +41,12 @@ class AICategorizationService {
       return _cache[cacheKey]!;
     }
 
-    final category = _fallbackService.suggestCategory(merchantName);
+    final category = SmartCategoryResolver.resolve(
+      merchant: merchantName,
+      body: fullMessageBody ?? description,
+      amount: amount,
+      transactionType: transactionType,
+    );
     final suggestion = CategorySuggestion(
       category: category,
       confidence: 0.6,

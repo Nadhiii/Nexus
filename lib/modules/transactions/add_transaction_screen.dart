@@ -13,7 +13,7 @@ import '../../core/providers/category_provider.dart';
 import '../../core/models/detected_transaction.dart';
 import '../../core/providers/new_nbox_provider.dart';
 import '../../core/widgets/top_snackbar.dart';
-import '../../core/services/transaction_categorization_service.dart';
+import '../../core/services/smart_category_resolver.dart';
 import '../../core/utils/logo_utils.dart';
 import '../../core/providers/subscription_provider.dart';
 import '../../core/services/transaction_match_service.dart';
@@ -52,7 +52,6 @@ class _ModernAddTransactionScreenState
   bool _isLoading = false;
   bool get _isEditMode => widget.transaction != null;
 
-  late final TransactionCategorizationService _categorizationService;
   final FocusNode _categoryFocus = FocusNode();
   bool _categoryHasFocus = false;
 
@@ -61,7 +60,6 @@ class _ModernAddTransactionScreenState
   @override
   void initState() {
     super.initState();
-    _categorizationService = TransactionCategorizationService();
 
     _categoryFocus.addListener(() {
       if (mounted) {
@@ -94,7 +92,12 @@ class _ModernAddTransactionScreenState
         // Prefer detectedCategory if present, else fallback to merchant-based suggestion
         _selectedCategory =
             detected.detectedCategory ??
-            _categorizationService.suggestCategory(detected.merchant);
+            SmartCategoryResolver.resolve(
+              merchant: detected.merchant,
+              body: detected.body,
+              amount: detected.amount,
+              transactionType: detected.type,
+            );
       }
     }
   }
