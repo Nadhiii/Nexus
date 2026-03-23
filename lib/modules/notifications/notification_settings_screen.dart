@@ -74,6 +74,30 @@ class NotificationSettingsScreen extends StatelessWidget {
               ]),
 
               const SizedBox(height: 24),
+              _buildSectionHeader('NBox Detection'),
+              _buildCard([
+                _buildSwitch(
+                  'Detected Transaction Prompts',
+                  'Ask to log newly detected high-confidence transactions',
+                  provider.detectedTransactionPromptsEnabled,
+                  (v) => provider.updateNotificationSetting(
+                    'notifications_detected_transaction_prompts',
+                    v,
+                  ),
+                ),
+                _divider(),
+                _buildSwitch(
+                  'Live Scan Status (Android)',
+                  'Show ongoing notification while scanning SMS/Gmail',
+                  provider.liveScanStatusEnabled,
+                  (v) => provider.updateNotificationSetting(
+                    'notifications_live_scan_status',
+                    v,
+                  ),
+                ),
+              ]),
+
+              const SizedBox(height: 24),
               OutlinedButton(
                 onPressed: () {
                   provider.sendTestNotification();

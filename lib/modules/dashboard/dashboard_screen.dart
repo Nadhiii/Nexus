@@ -11,6 +11,7 @@ import '../../core/models/transaction.dart';
 import '../../core/widgets/financial_health_widget.dart';
 import '../../core/widgets/upcoming_week_widget.dart';
 import '../bike/widgets/garage_dashboard_widget.dart';
+import '../family/screens/expense_splitter_screen.dart';
 import '../transactions/add_transaction_screen.dart';
 import '../notifications/notifications_screen.dart';
 
@@ -91,7 +92,6 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
             ),
           ),
 
-          // Bottom padding for nav bar
           const SliverToBoxAdapter(
             child: SizedBox(height: 120),
           ),
@@ -126,13 +126,17 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
                   color: AppColors.cardSurface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.06)),
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
                 ),
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Icon(Icons.notifications_outlined,
-                        color: AppColors.textSecondary, size: 20),
+                    Icon(
+                      Icons.notifications_outlined,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
                     if (unread > 0)
                       Positioned(
                         top: -4,
@@ -148,9 +152,10 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
                             child: Text(
                               unread > 9 ? '9+' : '$unread',
                               style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.bold),
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
@@ -383,88 +388,122 @@ class _MiniStat extends StatelessWidget {
 class _ActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        // Primary: Add Transaction
-        Expanded(
-          flex: 3,
-          child: GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const ModernAddTransactionScreen()),
-            ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+        Row(
+          children: [
+            // Primary: Add Transaction
+            Expanded(
+              flex: 3,
+              child: GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const ModernAddTransactionScreen()),
                 ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color:
-                        AppColors.primaryBlue.withValues(alpha: 0.35),
-                    blurRadius: 14,
-                    offset: const Offset(0, 5),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primaryBlue.withValues(alpha: 0.35),
+                        blurRadius: 14,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
-                ],
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.add_rounded, color: Colors.white, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Add Transaction',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.add_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Add Transaction',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+            ),
+            const SizedBox(width: 10),
+            // Secondary: Transfer
+            Expanded(
+              flex: 2,
+              child: GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ModernAddTransactionScreen(
+                      initialType: TransactionType.transfer,
                     ),
                   ),
-                ],
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardSurface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.08)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.swap_horiz_rounded,
+                          color: AppColors.textSecondary, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Transfer',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ),
-        const SizedBox(width: 10),
-        // Secondary: Transfer (placeholder — navigates to Add with transfer pre-selected)
-        Expanded(
-          flex: 2,
-          child: GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const ModernAddTransactionScreen(
-                  initialType: TransactionType.transfer,
-                ),
-              ),
+        const SizedBox(height: 10),
+        GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ExpenseSplitterScreen()),
+          ),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
+            decoration: BoxDecoration(
+              color: AppColors.cardSurface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
             ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: AppColors.cardSurface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.swap_horiz_rounded,
-                      color: AppColors.textSecondary, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Transfer',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.call_split_rounded, color: AppColors.success, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'Quick Split (No Save)',
+                  style: TextStyle(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

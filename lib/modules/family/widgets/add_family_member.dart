@@ -24,7 +24,10 @@ class ModernAddFamilyMemberScreen extends StatelessWidget {
             foregroundColor: AppColors.white,
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: true,
-              title: Text('Add to Family', style: AppTypography.headlineMedium),
+              title: Text(
+                'Add to Family & Friends',
+                style: AppTypography.headlineMedium,
+              ),
             ),
             leading: IconButton(
               icon: const Icon(Icons.close),
@@ -204,7 +207,7 @@ class ModernAddFamilyMemberScreen extends StatelessWidget {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${member.name} added to your family!'),
+            content: Text('${member.name} added to Family & Friends!'),
             backgroundColor: AppColors.success,
           ),
         );

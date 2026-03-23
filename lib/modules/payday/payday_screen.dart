@@ -393,7 +393,7 @@ class _PaydayScreenState extends State<PaydayScreen>
     );
   }
 
-  SliverPadding _buildItemList() {
+  Widget _buildItemList() {
     if (_checklist == null) return const SliverPadding(padding: EdgeInsets.zero);
 
     // Group by type
@@ -408,6 +408,7 @@ class _PaydayScreenState extends State<PaydayScreen>
       ChecklistItemType.subscription,
       ChecklistItemType.goalContribution,
       ChecklistItemType.budgetAllocation,
+      ChecklistItemType.savingsTransfer,
     ];
 
     final sections = <Widget>[];
@@ -779,6 +780,8 @@ class _PaydayScreenState extends State<PaydayScreen>
         return 'Goal';
       case ChecklistItemType.budgetAllocation:
         return 'Budget';
+      case ChecklistItemType.savingsTransfer:
+        return 'Savings';
     }
   }
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -25,6 +27,7 @@ class _ModernAddSharedExpenseScreenState
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
+  final _quickPersonController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
   String? _selectedPayer;
@@ -33,6 +36,7 @@ class _ModernAddSharedExpenseScreenState
   bool _splitEqually = true;
   final Map<String, TextEditingController> _splitControllers = {};
   bool _isLoading = false;
+  bool _isAddingQuickPerson = false;
 
   final _categories = [
     {'id': 'general', 'name': 'General', 'icon': Icons.receipt_long},
@@ -67,6 +71,7 @@ class _ModernAddSharedExpenseScreenState
     _descriptionController.dispose();
     _amountController.dispose();
     _notesController.dispose();
+    _quickPersonController.dispose();
     for (var controller in _splitControllers.values) {
       controller.dispose();
     }
@@ -140,6 +145,8 @@ class _ModernAddSharedExpenseScreenState
                       decimal: true,
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildEachPersonSummaryCard(),
                   const SizedBox(height: AppSpacing.xl2),
 
                   // DESCRIPTION
@@ -502,6 +509,68 @@ class _ModernAddSharedExpenseScreenState
                 ),
               ],
             ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _quickPersonController,
+                    textCapitalization: TextCapitalization.words,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Add person manually (e.g. Arun)',
+                      hintStyle: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textTertiary,
+                      ),
+                      filled: true,
+                      fillColor: AppColors.cardDarkElevated,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                        borderSide: BorderSide.none,
+                      ),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.md,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                SizedBox(
+                  height: 44,
+                  child: ElevatedButton.icon(
+                    onPressed: _isAddingQuickPerson
+                        ? null
+                        : () => _addQuickParticipant(provider),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryBlue,
+                      foregroundColor: AppColors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    ),
+                    icon: _isAddingQuickPerson
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.white,
+                            ),
+                          )
+                        : const Icon(Icons.person_add_alt_1, size: 16),
+                    label: Text(
+                      _isAddingQuickPerson ? 'Adding' : 'Add',
+                      style: AppTypography.labelMedium.copyWith(
+                        color: AppColors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
             Wrap(
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
@@ -564,6 +633,102 @@ class _ModernAddSharedExpenseScreenState
         );
       },
     );
+  }
+
+  Widget _buildEachPersonSummaryCard() {
+    final totalAmount = double.tryParse(_amountController.text) ?? 0;
+    final participantCount = _selectedParticipants.length;
+    final each =
+        participantCount > 0 ? totalAmount / participantCount : 0.0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.cardDarkElevated,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Each person',
+            style: AppTypography.labelLarge.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            participantCount == 0
+                ? 'Select participants to calculate split'
+                : '₹${each.toStringAsFixed(0)}',
+            style: AppTypography.headlineMedium.copyWith(
+              color: participantCount == 0
+                  ? AppColors.textTertiary
+                  : AppColors.primaryBlue,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            participantCount == 0
+                ? 'Choose members below'
+                : '$participantCount ${participantCount == 1 ? 'person' : 'people'} selected',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textTertiary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addQuickParticipant(SharedExpenseProvider provider) async {
+    final name = _quickPersonController.text.trim();
+    if (name.isEmpty) {
+      showTopSnackBar(context, 'Enter a name to add', isError: true);
+      return;
+    }
+
+    final existing = provider.familyMembers
+        .where((m) => m.name.toLowerCase() == name.toLowerCase())
+        .firstOrNull;
+    if (existing != null) {
+      setState(() {
+        _selectedParticipants.add(existing.id);
+        _selectedPayer ??= existing.id;
+        _splitControllers.putIfAbsent(existing.id, () => TextEditingController());
+        _quickPersonController.clear();
+      });
+      _updateSplits();
+      return;
+    }
+
+    setState(() => _isAddingQuickPerson = true);
+    try {
+      final member = FamilyMember(
+        id: 'manual_${DateTime.now().microsecondsSinceEpoch}',
+        name: name,
+      );
+      await provider.addFamilyMember(member);
+      if (!mounted) return;
+      setState(() {
+        _selectedParticipants.add(member.id);
+        _selectedPayer ??= member.id;
+        _splitControllers[member.id] = TextEditingController();
+        _quickPersonController.clear();
+      });
+      _updateSplits();
+      showTopSnackBar(context, '$name added', isError: false);
+    } catch (e) {
+      if (!mounted) return;
+      showTopSnackBar(context, 'Failed to add person: $e', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _isAddingQuickPerson = false);
+      }
+    }
   }
 
   Widget _buildSplitSection() {
@@ -1009,6 +1174,68 @@ class _ModernAddSharedExpenseScreenState
                   Expanded(
                     child: SizedBox(
                       height: 50,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _openSplitwise(expense, owingSplits, payerName);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: AppColors.primaryBlue.withValues(alpha: 0.4),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                        icon: Icon(
+                          Icons.group,
+                          color: AppColors.primaryBlue,
+                          size: 16,
+                        ),
+                        label: Text(
+                          'Splitwise',
+                          style: TextStyle(color: AppColors.primaryBlue),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: 50,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _openGooglePay(expense, owingSplits, payerName);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: AppColors.success.withValues(alpha: 0.4),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                        icon: Icon(
+                          Icons.account_balance_wallet,
+                          color: AppColors.success,
+                          size: 16,
+                        ),
+                        label: Text(
+                          'Google Pay',
+                          style: TextStyle(color: AppColors.success),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 50,
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(ctx),
                         style: OutlinedButton.styleFrom(
@@ -1070,13 +1297,72 @@ class _ModernAddSharedExpenseScreenState
     List<ExpenseSplit> owingSplits,
     String payerName,
   ) {
+    final message = _buildSplitMessage(expense, owingSplits, payerName);
+    Share.share(message, subject: 'Expense Split: ${expense.description}');
+  }
+
+  String _buildSplitMessage(
+    SharedExpense expense,
+    List<ExpenseSplit> owingSplits,
+    String payerName,
+  ) {
     final dateStr = DateFormat('dd MMM yyyy').format(expense.date);
     final splitDetails = owingSplits
         .map((s) => '• ${s.personName}: ₹${s.amount.toStringAsFixed(0)}')
         .join('\n');
-    final message =
-        '''💰 Expense Split Notification\n\n$payerName paid ₹${expense.totalAmount.toStringAsFixed(0)} for "${expense.description}" on $dateStr.\n\nYour share:\n$splitDetails\n\nPlease settle up when you can! 🙏''';
-    Share.share(message, subject: 'Expense Split: ${expense.description}');
+    return '''💰 Expense Split Notification\n\n$payerName paid ₹${expense.totalAmount.toStringAsFixed(0)} for "${expense.description}" on $dateStr.\n\nYour share:\n$splitDetails\n\nPlease settle up when you can! 🙏''';
+  }
+
+  Future<void> _openSplitwise(
+    SharedExpense expense,
+    List<ExpenseSplit> owingSplits,
+    String payerName,
+  ) async {
+    final message = _buildSplitMessage(expense, owingSplits, payerName);
+    await Clipboard.setData(ClipboardData(text: message));
+
+    final appUri = Uri.parse('splitwise://');
+    final webUri = Uri.parse('https://www.splitwise.com/');
+
+    if (await canLaunchUrl(appUri)) {
+      await launchUrl(appUri, mode: LaunchMode.externalApplication);
+    } else if (await canLaunchUrl(webUri)) {
+      await launchUrl(webUri, mode: LaunchMode.externalApplication);
+    }
+
+    if (mounted) {
+      showTopSnackBar(
+        context,
+        'Split details copied. Paste in Splitwise.',
+        isError: false,
+      );
+    }
+  }
+
+  Future<void> _openGooglePay(
+    SharedExpense expense,
+    List<ExpenseSplit> owingSplits,
+    String payerName,
+  ) async {
+    final message = _buildSplitMessage(expense, owingSplits, payerName);
+    await Clipboard.setData(ClipboardData(text: message));
+
+    final gpayUri = Uri.parse('tez://');
+    final fallbackUri = Uri.parse('https://pay.google.com/');
+
+    if (await canLaunchUrl(gpayUri)) {
+      await launchUrl(gpayUri, mode: LaunchMode.externalApplication);
+    } else if (await canLaunchUrl(fallbackUri)) {
+      await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
+    }
+
+    if (mounted) {
+      showTopSnackBar(
+        context,
+        'Split details copied. Paste in Google Pay note.',
+        isError: false,
+      );
+    }
   }
 }
 

@@ -391,7 +391,9 @@ class TransactionIntentClassifier {
         final diff = (amount - debt.monthlyEMI!).abs() / debt.monthlyEMI!;
         if (diff <= 0.05) {
           score += 0.5;
-        } else if (diff <= 0.15) score += 0.2;
+        } else if (diff <= 0.15) {
+          score += 0.2;
+        }
       }
 
       // Name match
@@ -438,7 +440,9 @@ class TransactionIntentClassifier {
       final tolerance = sub.amount * 0.05;
       if (diff <= tolerance) {
         score += 0.45;
-      } else if (diff <= sub.amount * 0.15) score += 0.2;
+      } else if (diff <= sub.amount * 0.15) {
+        score += 0.2;
+      }
 
       // Name match
       if (merchant.contains(subName) || subName.contains(merchant)) {
@@ -491,7 +495,9 @@ class TransactionIntentClassifier {
       final diff = (amount - inv.sipAmount).abs() / inv.sipAmount;
       if (diff <= 0.05) {
         score += 0.5;
-      } else if (diff <= 0.15) score += 0.2;
+      } else if (diff <= 0.15) {
+        score += 0.2;
+      }
 
       // Name match
       if (merchant.contains(invName) || invName.contains(merchant)) {

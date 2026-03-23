@@ -210,7 +210,7 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
     setState(() => _isSaving = true);
 
     try {
-      final userId = context.read<UserProvider>().currentUser!.uid;
+      final userId = context.read<UserProvider>().user!.uid;
 
       // ── STEP C: resolve current account balance ────────────────────────
       final account =

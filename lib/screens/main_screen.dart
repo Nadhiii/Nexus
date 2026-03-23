@@ -30,6 +30,7 @@ import '../modules/more/more_screen.dart';
 import '../modules/bike/ui/bike_screen.dart';
 import '../modules/nbox/new_nbox_screen.dart';
 import '../core/services/intent_navigation_service.dart';
+import '../core/services/notification_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -47,6 +48,7 @@ class _MainScreenState extends State<MainScreen>
   Animation<double>? _navAnimation;
   int _previousIndex = 0;
   StreamSubscription<int>? _intentSub;
+  StreamSubscription<DetectionApprovalRequest>? _approvalSub;
 
   @override
   void initState() {
@@ -64,6 +66,17 @@ class _MainScreenState extends State<MainScreen>
       if (!mounted) { return; }
       _navigateToScreen(tabIndex);
     });
+
+    _approvalSub = NotificationService().approvalRequestStream.listen((event) {
+      if (!mounted) {
+        return;
+      }
+      context.read<NewNboxProvider>().queueApprovalRequestFromNotification(
+        transactionId: event.transactionId,
+        source: event.source,
+      );
+      _navigateToScreen(4);
+    });
   }
 
   @override
@@ -76,6 +89,7 @@ class _MainScreenState extends State<MainScreen>
   void dispose() {
     _navAnimationController?.dispose();
     _intentSub?.cancel();
+    _approvalSub?.cancel();
     super.dispose();
   }
 

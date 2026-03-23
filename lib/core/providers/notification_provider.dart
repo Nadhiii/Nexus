@@ -13,6 +13,9 @@ class NotificationProvider extends ChangeNotifier {
       'notifications_subscription_reminders';
   static const _largeTransactionAlertsKey = 'notifications_large_transactions';
   static const _fuelNotificationsKey = 'notifications_fuel_logged';
+  static const _detectedTransactionPromptsKey =
+      'notifications_detected_transaction_prompts';
+  static const _liveScanStatusKey = 'notifications_live_scan_status';
 
   List<AppNotification> _notifications = [];
   bool _isLoading = false;
@@ -22,6 +25,8 @@ class NotificationProvider extends ChangeNotifier {
   bool _subscriptionRemindersEnabled = true;
   bool _largeTransactionAlertsEnabled = true;
   bool _fuelNotificationsEnabled = true;
+  bool _detectedTransactionPromptsEnabled = true;
+  bool _liveScanStatusEnabled = true;
 
   // Getters
   List<AppNotification> get notifications => _notifications;
@@ -32,6 +37,9 @@ class NotificationProvider extends ChangeNotifier {
   bool get subscriptionRemindersEnabled => _subscriptionRemindersEnabled;
   bool get largeTransactionAlertsEnabled => _largeTransactionAlertsEnabled;
   bool get fuelNotificationsEnabled => _fuelNotificationsEnabled;
+  bool get detectedTransactionPromptsEnabled =>
+      _detectedTransactionPromptsEnabled;
+  bool get liveScanStatusEnabled => _liveScanStatusEnabled;
 
   NotificationProvider() {
     _initialize();
@@ -51,6 +59,9 @@ class NotificationProvider extends ChangeNotifier {
     _largeTransactionAlertsEnabled =
         prefs.getBool(_largeTransactionAlertsKey) ?? true;
     _fuelNotificationsEnabled = prefs.getBool(_fuelNotificationsKey) ?? true;
+    _detectedTransactionPromptsEnabled =
+      prefs.getBool(_detectedTransactionPromptsKey) ?? true;
+    _liveScanStatusEnabled = prefs.getBool(_liveScanStatusKey) ?? true;
     notifyListeners();
   }
 

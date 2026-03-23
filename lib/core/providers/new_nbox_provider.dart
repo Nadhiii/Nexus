@@ -9,12 +9,18 @@ import 'package:permission_handler/permission_handler.dart';
 import '../models/detected_transaction.dart';
 import '../utils/new_sms_parser.dart';
 import '../services/ai_categorization_service.dart';
+import '../services/notification_service.dart';
 import '../../modules/Nex/providers/Nex_assistant_provider.dart';
 import 'category_provider.dart';
 import 'gmail_provider.dart';
 import '../models/nbox_settings.dart';
 
 class NewNboxProvider extends ChangeNotifier {
+  static const String _processedIdsStorageKey = 'nbox_processed_ids';
+  static const String _notifiedDetectionsStorageKey =
+      'nbox_notified_detection_ids';
+  static const int _maxPromptsPerScan = 3;
+
   GmailProvider? _gmailProvider;
   NboxSettings _settings = const NboxSettings();
   NboxSettings get settings => _settings;
@@ -30,6 +36,9 @@ class NewNboxProvider extends ChangeNotifier {
   final List<DetectedTransaction> _rejected = [];
 
   Set<String> _processedIds = {};
+  Set<String> _notifiedDetectionIds = {};
+  String? _pendingApprovalSource;
+  String? _pendingApprovalId;
 
   bool get isLoading => _isLoading;
   bool get isGmailLinked => _gmailProvider?.isLinked ?? false;
@@ -39,6 +48,9 @@ class NewNboxProvider extends ChangeNotifier {
   List<DetectedTransaction> get pendingEmails =>
       List.unmodifiable(_pendingEmails);
   List<DetectedTransaction> get rejected => List.unmodifiable(_rejected);
+
+  bool get hasPendingApprovalRequest =>
+      _pendingApprovalSource != null && _pendingApprovalId != null;
 
   bool _isInitialized = false;
 
@@ -56,6 +68,7 @@ class NewNboxProvider extends ChangeNotifier {
   Future<void> initialize() async {
     if (_isInitialized) { return; }
     await _loadSettings();
+    await _loadNotifiedDetectionIds();
     await _loadProcessedIds();
     _isInitialized = true;
   }
@@ -107,15 +120,23 @@ class NewNboxProvider extends ChangeNotifier {
 
   Future<void> scanAll() async {
     _setLoading(true);
-    await Future.wait([scanSmsInbox(), if (isGmailLinked) scanEmails()]);
+    await scanSmsInbox();
+    if (isGmailLinked) {
+      await scanEmails();
+    }
     _setLoading(false);
   }
 
   Future<void> scanEmails() async {
     if (!isGmailLinked) { return; }
     _setLoading(true);
-    await _gmailProvider!.scanEmails();
-    _setLoading(false);
+    await NotificationService().showTransactionScanStatus(source: 'email');
+    try {
+      await _gmailProvider!.scanEmails();
+    } finally {
+      await NotificationService().stopTransactionScanStatus();
+      _setLoading(false);
+    }
   }
 
   // --- FIXED SCAN FUNCTION ---
@@ -128,14 +149,15 @@ class NewNboxProvider extends ChangeNotifier {
     }
     if (kDebugMode) { debugPrint('[NewNboxProvider] Starting SMS scan...'); }
     _setLoading(true);
+    await NotificationService().showTransactionScanStatus(source: 'sms');
 
-    if (!await _checkSmsPermission()) {
-      if (kDebugMode) {
-        debugPrint('[NewNboxProvider] SMS permission denied. Aborting scan.');
+    try {
+      if (!await _checkSmsPermission()) {
+        if (kDebugMode) {
+          debugPrint('[NewNboxProvider] SMS permission denied. Aborting scan.');
+        }
+        return;
       }
-      _setLoading(false);
-      return;
-    }
 
     // FIX 1: Always look back 30 days.
     // This ensures the list is repopulated on app restart and doesn't disappear.
@@ -158,20 +180,21 @@ class NewNboxProvider extends ChangeNotifier {
       }
     }
 
-    List<SmsMessage> messages;
-    try {
-      messages = await _telephony.getInboxSms(
-        // FIX 2: Robust native query
-        filter: SmsFilter.where(
-          SmsColumn.DATE,
-        ).greaterThan(minDate.millisecondsSinceEpoch.toString()),
-        sortOrder: [OrderBy(SmsColumn.DATE, sort: Sort.DESC)],
-      );
-    } catch (e) {
-      if (kDebugMode) { debugPrint('[NewNboxProvider] Error fetching SMS: $e'); }
-      _setLoading(false);
-      return;
-    }
+      List<SmsMessage> messages;
+      try {
+        messages = await _telephony.getInboxSms(
+          // FIX 2: Robust native query
+          filter: SmsFilter.where(
+            SmsColumn.DATE,
+          ).greaterThan(minDate.millisecondsSinceEpoch.toString()),
+          sortOrder: [OrderBy(SmsColumn.DATE, sort: Sort.DESC)],
+        );
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[NewNboxProvider] Error fetching SMS: $e');
+        }
+        return;
+      }
 
     if (kDebugMode) {
       debugPrint(
@@ -179,34 +202,37 @@ class NewNboxProvider extends ChangeNotifier {
       );
     }
 
-    final allSmsTransactions = <DetectedTransaction>[];
-    for (final sms in messages) {
-      if (sms.id == null || sms.date == null) { continue; }
+      final allSmsTransactions = <DetectedTransaction>[];
+      for (final sms in messages) {
+        if (sms.id == null || sms.date == null) { continue; }
 
       // FIX 3: Convert the UTC SMS timestamp to Local time so the user sees correct hours
-      final localSmsDate = DateTime.fromMillisecondsSinceEpoch(
-        sms.date!,
-        isUtc: true,
-      ).toLocal();
+        final localSmsDate = DateTime.fromMillisecondsSinceEpoch(
+          sms.date!,
+          isUtc: true,
+        ).toLocal();
 
-      final transaction = await NewSmsParser.parse(
-        sms.id.toString(),
-        sms.body ?? '',
-        sms.address ?? 'Unknown',
-        localSmsDate,
-        aiCategorizationService: aiService,
-      );
-      if (transaction != null) {
-        allSmsTransactions.add(transaction);
+        final transaction = await NewSmsParser.parse(
+          sms.id.toString(),
+          sms.body ?? '',
+          sms.address ?? 'Unknown',
+          localSmsDate,
+          aiCategorizationService: aiService,
+        );
+        if (transaction != null) {
+          allSmsTransactions.add(transaction);
+        }
       }
+
+      // This will completely refresh the list based on the last 30 days
+      _processTransactions(allSmsTransactions, 'sms');
+
+      notifyListeners();
+      if (kDebugMode) { debugPrint('[NewNboxProvider] SMS scan complete.'); }
+    } finally {
+      await NotificationService().stopTransactionScanStatus();
+      _setLoading(false);
     }
-
-    // This will completely refresh the list based on the last 30 days
-    _processTransactions(allSmsTransactions, 'sms');
-
-    notifyListeners();
-    if (kDebugMode) { debugPrint('[NewNboxProvider] SMS scan complete.'); }
-    _setLoading(false);
   }
 
   void _processTransactions(
@@ -239,6 +265,58 @@ class NewNboxProvider extends ChangeNotifier {
     _rejected.addAll(freshRejected);
 
     _sortLists();
+    unawaited(_notifyFreshDetections(freshPending));
+  }
+
+  Future<void> _notifyFreshDetections(
+    List<DetectedTransaction> freshPending,
+  ) async {
+    final candidates = freshPending
+        .where((t) => t.isHighConfidence)
+        .where((t) => !_processedIds.contains('${t.source}:${t.id}'))
+        .where((t) => !_notifiedDetectionIds.contains('${t.source}:${t.id}'))
+        .toList();
+
+    if (candidates.isEmpty) {
+      return;
+    }
+
+    final toNotify = candidates.take(_maxPromptsPerScan).toList();
+    for (final transaction in toNotify) {
+      final detectionKey = '${transaction.source}:${transaction.id}';
+      _notifiedDetectionIds.add(detectionKey);
+      await NotificationService().showDetectedTransactionPrompt(transaction);
+    }
+    await _persistNotifiedDetectionIds();
+  }
+
+  void queueApprovalRequestFromNotification({
+    required String transactionId,
+    required String source,
+  }) {
+    _pendingApprovalSource = source;
+    _pendingApprovalId = transactionId;
+    unawaited(scanAll());
+    notifyListeners();
+  }
+
+  DetectedTransaction? takePendingApprovalRequest() {
+    if (_pendingApprovalSource == null || _pendingApprovalId == null) {
+      return null;
+    }
+
+    final source = _pendingApprovalSource!;
+    final id = _pendingApprovalId!;
+    final pool = source == 'sms' ? _pendingSms : _pendingEmails;
+    final index = pool.indexWhere((t) => t.id == id && t.source == source);
+    if (index == -1) {
+      return null;
+    }
+
+    final transaction = pool[index];
+    _pendingApprovalSource = null;
+    _pendingApprovalId = null;
+    return transaction;
   }
 
   Future<void> markAsApproved(String id, String source) async {
@@ -248,10 +326,12 @@ class NewNboxProvider extends ChangeNotifier {
 
     final approvedId = '$source:$id';
     _processedIds.add(approvedId);
+    _notifiedDetectionIds.remove(approvedId);
     _processedIds.remove('$source:$id:rejected');
 
     notifyListeners();
     await _persistIds();
+    await _persistNotifiedDetectionIds();
   }
 
   Future<void> rejectTransaction(
@@ -284,11 +364,13 @@ class NewNboxProvider extends ChangeNotifier {
 
       final rejectedId = '$source:$id:rejected';
       _processedIds.add(rejectedId);
+      _notifiedDetectionIds.remove('$source:$id');
       _processedIds.remove('$source:$id');
 
       _sortLists();
       notifyListeners();
       await _persistIds();
+      await _persistNotifiedDetectionIds();
     }
   }
 
@@ -326,15 +408,29 @@ class NewNboxProvider extends ChangeNotifier {
 
   Future<void> _persistIds() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('nbox_processed_ids', _processedIds.toList());
+    await prefs.setStringList(_processedIdsStorageKey, _processedIds.toList());
   }
 
   Future<void> _loadProcessedIds() async {
     _setLoading(true);
     final prefs = await SharedPreferences.getInstance();
-    _processedIds = (prefs.getStringList('nbox_processed_ids') ?? []).toSet();
+    _processedIds = (prefs.getStringList(_processedIdsStorageKey) ?? []).toSet();
     await scanAll();
     _setLoading(false);
+  }
+
+  Future<void> _persistNotifiedDetectionIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _notifiedDetectionsStorageKey,
+      _notifiedDetectionIds.toList(),
+    );
+  }
+
+  Future<void> _loadNotifiedDetectionIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    _notifiedDetectionIds =
+        (prefs.getStringList(_notifiedDetectionsStorageKey) ?? []).toSet();
   }
 
   Future<bool> _checkSmsPermission() async {

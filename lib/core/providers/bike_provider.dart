@@ -34,6 +34,14 @@ class BikeProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   FirebaseAuth get auth => _auth;
+
+  List<BikeEntry> getEntriesForBike(String bikeId) {
+    if (_selectedBikeId != bikeId) {
+      return const <BikeEntry>[];
+    }
+    return List<BikeEntry>.unmodifiable(_currentBikeEntries);
+  }
+
   Bike? get selectedBike {
     if (_selectedBikeId == null) { return _bikes.isNotEmpty ? _bikes.first : null; }
     try {

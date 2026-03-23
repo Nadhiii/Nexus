@@ -257,13 +257,13 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Family',
+                'Family & Friends',
                 style: AppTypography.headlineSmall.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                'Split expenses & track balances',
+                'Shared expenses, splits & balances',
                 style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
               ),
             ],
@@ -320,7 +320,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
               if (settlements.isEmpty)
                 _buildEmptyState(
                   'All settled up!',
-                  'No pending payments between family members.',
+                  'No pending payments between members.',
                   Icons.check_circle_outline,
                 )
               else
@@ -680,7 +680,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Add Family Member',
+                      'Add Member',
                       style: TextStyle(
                         color: AppColors.primaryBlue,
                         fontWeight: FontWeight.bold,

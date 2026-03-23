@@ -340,14 +340,14 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             _expandedTool(
               Icons.family_restroom_rounded,
               AppColors.accentPink,
-              "Family",
+              "Family & Friends",
               () => _navigate(const FamilyDashboardScreen()),
             ),
             const SizedBox(width: 12),
             _expandedTool(
               Icons.call_split_rounded,
               AppColors.success,
-              "Split Bill",
+              "Quick Split",
               () => _navigate(const ExpenseSplitterScreen()),
             ),
           ],

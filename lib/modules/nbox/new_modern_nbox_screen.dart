@@ -31,6 +31,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   bool _isSelectionMode = false;
   bool _isSmsLoading = false;
   bool _isGmailLoading = false;
+  bool _isHandlingQueuedApproval = false;
 
   Future<void> _refreshSms() async {
     if (!mounted) {
@@ -178,6 +179,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         builder: (context, nbox, child) {
           final allPending = [...nbox.pendingSms, ...nbox.pendingEmails]
             ..sort((a, b) => b.date.compareTo(a.date));
+
+          _attemptQueuedApproval(nbox);
 
           List<DetectedTransaction> displayList;
           switch (_currentFilter) {
@@ -1190,7 +1193,30 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     showTopNotification(context, "Moved to Trash", isError: true);
   }
 
-  void _navigateToApproveScreen(DetectedTransaction t) async {
+  void _attemptQueuedApproval(NewNboxProvider nbox) {
+    if (_isHandlingQueuedApproval || !nbox.hasPendingApprovalRequest) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || _isHandlingQueuedApproval) {
+        return;
+      }
+      final pending = nbox.takePendingApprovalRequest();
+      if (pending == null) {
+        return;
+      }
+
+      _isHandlingQueuedApproval = true;
+      try {
+        await _navigateToApproveScreen(pending);
+      } finally {
+        _isHandlingQueuedApproval = false;
+      }
+    });
+  }
+
+  Future<void> _navigateToApproveScreen(DetectedTransaction t) async {
     final nbox = context.read<NewNboxProvider>();
 
     // Classify intent first — if no side effects, go straight to add screen.

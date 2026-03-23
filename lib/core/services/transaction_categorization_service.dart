@@ -4,67 +4,6 @@ import 'smart_category_resolver.dart';
 class TransactionCategorizationService {
   TransactionCategorizationService();
 
-  // A map of keywords to their corresponding category ID.
-  // Keywords are checked in a case-insensitive manner.
-  static final Map<String, String> _keywordCategoryMap = {
-    // Food & Dining
-    'zomato': 'Food & Dining',
-    'swiggy': 'Food & Dining',
-    'ubereats': 'Food & Dining',
-    'restaurant': 'Food & Dining',
-    'foodpanda': 'Food & Dining',
-    'cafe': 'Food & Dining',
-    'dining': 'Food & Dining',
-
-    // Shopping
-    'amazon': 'Shopping',
-    'flipkart': 'Shopping',
-    'myntra': 'Shopping',
-    'e-com': 'Shopping',
-    'marketplace': 'Shopping',
-
-    // Transportation
-    'uber': 'Transportation',
-    'ola': 'Transportation',
-    'rapido': 'Transportation',
-    'metro': 'Transportation',
-    'cab': 'Transportation',
-    'taxi': 'Transportation',
-
-    // Bills & Utilities
-    'bill': 'Bills',
-    'recharge': 'Bills',
-    'utility': 'Bills',
-    'electricity': 'Bills',
-    'broadband': 'Bills',
-
-    // Entertainment
-    'bookmyshow': 'Entertainment',
-    'netflix': 'Entertainment',
-    'spotify': 'Entertainment',
-    'prime video': 'Entertainment',
-    'hotstar': 'Entertainment',
-    'youtube': 'Entertainment',
-
-    // Healthcare
-    'pharmacy': 'Healthcare',
-    'apollo': 'Healthcare',
-    'medplus': 'Healthcare',
-    'hospital': 'Healthcare',
-    'clinic': 'Healthcare',
-
-    // Salary
-    'salary': 'Salary',
-    'stipend': 'Salary',
-
-    // Investment
-    'groww': 'Investment',
-    'zerodha': 'Investment',
-    'upstox': 'Investment',
-    'sip': 'Investment',
-    'mutual fund': 'Investment',
-  };
-
   /// Suggests a category based on the transaction description.
   /// Returns a valid category id.
   String suggestCategory(String description) {
