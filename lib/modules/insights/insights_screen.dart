@@ -63,8 +63,12 @@ class ModernInsightsScreen extends StatelessWidget {
                   .where((s) => s.isActive)
                   .toList();
               final subCost = activeSubs.fold(0.0, (sum, s) {
-                if (s.frequency == 'monthly') { return sum + s.amount; }
-                if (s.frequency == 'yearly') { return sum + (s.amount / 12); }
+                if (s.frequency == 'monthly') {
+                  return sum + s.amount;
+                }
+                if (s.frequency == 'yearly') {
+                  return sum + (s.amount / 12);
+                }
                 return sum + s.amount; // Simplify
               });
 
