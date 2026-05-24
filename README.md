@@ -150,16 +150,6 @@ Nexus helps you manage your financial life with features ranging from daily tran
 
 ### Analytics & Insights
 
-**Financial Health Score**:
-- Comprehensive score (0-100) based on:
-  - Savings rate (25 points)
-  - Debt-to-income ratio (25 points)
-  - Budget adherence (25 points)
-  - Emergency fund (15 points)
-  - Penalties for debts and overdue payments
-- Letter grades: A+, A, B, C, D, F
-- Personalized improvement tips
-
 **Reports & Analytics**:
 - Spending trends by category
 - Income vs expense comparison
@@ -432,7 +422,6 @@ IOU management
 
 ## Smart Features Highlights
 
-**Financial Health Score** - Comprehensive assessment with personalized tips
 **Smart Notifications** - Contextual alerts for budgets, goals, and payments
 **Trend Analysis** - Spending patterns and forecasts
 **Quick Actions** - Payday checklist for post-income tasks

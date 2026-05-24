@@ -991,7 +991,7 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
         hintStyle:
             TextStyle(color: AppColors.textTertiary, fontSize: 13),
         filled: true,
-        fillColor: AppColors.backgroundBlack,
+        fillColor: AppColors.cardElevated,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide:

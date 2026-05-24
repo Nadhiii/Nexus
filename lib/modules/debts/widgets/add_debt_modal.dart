@@ -308,7 +308,7 @@ class _AddDebtModalState extends State<AddDebtModal>
 
   Widget _buildLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8, left: 4),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Text(
         text,
         style: AppTypography.titleSmall.copyWith(
@@ -325,37 +325,39 @@ class _AddDebtModalState extends State<AddDebtModal>
     IconData? icon,
     bool isNumber = false,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardDarkElevated,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: isNumber
-            ? const TextInputType.numberWithOptions(decimal: true)
-            : TextInputType.text,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(
-            color: AppColors.textTertiary.withValues(alpha: 0.7),
-          ),
-          prefixIcon: icon != null
-              ? Icon(icon, color: AppColors.textSecondary, size: 20)
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 16,
-          ),
+    return TextFormField(
+      controller: controller,
+      keyboardType: isNumber
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: AppColors.textTertiary),
+        filled: true,
+        fillColor: AppColors.cardElevated,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          borderSide: BorderSide.none,
         ),
-        validator: (value) =>
-            (value == null || value.isEmpty) && hint.contains("Name")
-            ? "Required"
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        prefixIcon: icon != null
+            ? Padding(
+                padding: const EdgeInsets.only(
+                  left: AppSpacing.md,
+                  right: AppSpacing.sm,
+                ),
+                child: Icon(icon, color: AppColors.textSecondary, size: 20),
+              )
             : null,
       ),
+      validator: (value) =>
+          (value == null || value.isEmpty) && hint.contains("Name")
+          ? "Required"
+          : null,
     );
   }
 
@@ -375,9 +377,12 @@ class _AddDebtModalState extends State<AddDebtModal>
         if (picked != null) { onSelect(picked); }
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         decoration: BoxDecoration(
-          color: AppColors.cardDarkElevated,
+          color: AppColors.cardElevated,
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
         ),

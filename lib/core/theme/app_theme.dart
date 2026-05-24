@@ -6,6 +6,11 @@ import 'app_spacing.dart';
 import 'app_animations.dart';
 
 class AppTheme {
+  static const OutlineInputBorder _roundedInputBorder = OutlineInputBorder(
+    borderRadius: BorderRadius.all(Radius.circular(32.0)),
+    borderSide: BorderSide.none,
+  );
+
   static ThemeData get theme {
     return ThemeData(
       useMaterial3: true,
@@ -35,13 +40,44 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.cardElevated,
-        border: OutlineInputBorder(
-          borderRadius: AppSpacing.borderRadiusLg,
-          borderSide: BorderSide.none,
-        ),
+        border: _roundedInputBorder,
+        enabledBorder: _roundedInputBorder,
+        focusedBorder: _roundedInputBorder,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.xl,
           vertical: AppSpacing.lg,
+        ),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: AppColors.cardElevated,
+        modalBackgroundColor: AppColors.cardElevated,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppSpacing.radiusLg),
+          ),
+        ),
+      ),
+      dropdownMenuTheme: DropdownMenuThemeData(
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: AppColors.cardElevated,
+          border: OutlineInputBorder(
+            borderRadius: AppSpacing.borderRadiusLg,
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xl,
+            vertical: AppSpacing.lg,
+          ),
+        ),
+        menuStyle: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(AppColors.cardElevated),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusLg),
+          ),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          ),
         ),
       ),
 

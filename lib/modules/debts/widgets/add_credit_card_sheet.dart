@@ -7,6 +7,7 @@ import 'dart:ui';
 import '../../../core/providers/debt_provider.dart';
 import '../../../core/models/debt.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_animations.dart';
 import '../../../core/utils/logo_utils.dart';
@@ -551,13 +552,12 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
 
   Widget _buildLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8, left: 4),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Text(
         text,
-        style: TextStyle(
+        style: AppTypography.titleSmall.copyWith(
           color: AppColors.textPrimary,
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -570,40 +570,36 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
     bool isNumber = false,
     String? prefix,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardDarkElevated,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: isNumber
-            ? const TextInputType.numberWithOptions(decimal: true)
-            : TextInputType.text,
-        inputFormatters: isNumber
-            ? [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))]
-            : null,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(
-            color: AppColors.textTertiary.withValues(alpha: 0.7),
-          ),
-          prefixIcon: Padding(
-            padding: const EdgeInsets.only(left: 16, right: 8),
-            child: Icon(icon, color: AppColors.textSecondary, size: 20),
-          ),
-          prefixText: prefix,
-          prefixStyle: TextStyle(
-            color: AppColors.warning,
-            fontWeight: FontWeight.bold,
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 16,
-          ),
+    return TextFormField(
+      controller: controller,
+      keyboardType: isNumber
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      inputFormatters: isNumber
+          ? [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))]
+          : null,
+      style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: AppColors.textTertiary),
+        filled: true,
+        fillColor: AppColors.cardElevated,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.md, right: AppSpacing.sm),
+          child: Icon(icon, color: AppColors.textSecondary, size: 20),
+        ),
+        prefixText: prefix,
+        prefixStyle: TextStyle(
+          color: AppColors.warning,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -687,9 +683,11 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
   void _showDueDayPicker() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.backgroundBlack,
+      backgroundColor: AppColors.cardElevated,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.radiusLg),
+        ),
       ),
       builder: (context) {
         return Container(

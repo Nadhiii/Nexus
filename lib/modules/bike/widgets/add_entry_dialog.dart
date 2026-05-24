@@ -370,7 +370,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                             ),
                             hintStyle: TextStyle(color: AppColors.textTertiary),
                             filled: true,
-                            fillColor: AppColors.cardDarkElevated,
+                            fillColor: AppColors.cardElevated,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(
                                 AppSpacing.radiusLg,
@@ -386,7 +386,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                       const SizedBox(width: AppSpacing.md),
                       Container(
                         decoration: BoxDecoration(
-                          color: AppColors.cardDarkElevated,
+                          color: AppColors.cardElevated,
                           borderRadius: BorderRadius.circular(
                             AppSpacing.radiusMd,
                           ),
@@ -474,7 +474,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                         horizontal: AppSpacing.md,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.cardDarkElevated,
+                        color: AppColors.cardElevated,
                         borderRadius: BorderRadius.circular(
                           AppSpacing.radiusMd,
                         ),
@@ -483,7 +483,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                         child: DropdownButton<String>(
                           value: _selectedCategory,
                           isExpanded: true,
-                          dropdownColor: AppColors.cardSurface,
+                          dropdownColor: AppColors.cardElevated,
                           icon: const Icon(
                             Icons.keyboard_arrow_down,
                             color: AppColors.textSecondary,
@@ -555,7 +555,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                                   horizontal: AppSpacing.md,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.cardDarkElevated,
+                                  color: AppColors.cardElevated,
                                   borderRadius: BorderRadius.circular(
                                     AppSpacing.radiusMd,
                                   ),
@@ -656,7 +656,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.cardDarkElevated,
+        color: AppColors.cardElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
         border: Border.all(
           color: themeColor.withValues(alpha: 0.3),
@@ -794,7 +794,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
           fontWeight: FontWeight.bold,
         ),
         filled: true,
-        fillColor: AppColors.cardDarkElevated,
+        fillColor: AppColors.cardElevated,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           borderSide: isHighlight
@@ -854,7 +854,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.cardDarkElevated,
+        color: AppColors.cardElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         border: Border.all(
           color: _linkToExpense
@@ -923,7 +923,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                 child: DropdownButton<Account>(
                   value: _selectedAccount,
                   isExpanded: true,
-                  dropdownColor: AppColors.cardSurface,
+                  dropdownColor: AppColors.cardElevated,
                   hint: Text(
                     "Select Account to Debit",
                     style: TextStyle(color: AppColors.textTertiary),

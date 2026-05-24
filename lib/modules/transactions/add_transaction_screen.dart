@@ -173,7 +173,7 @@ class _ModernAddTransactionScreenState
                         ),
                         hintStyle: TextStyle(color: AppColors.textTertiary),
                         filled: true,
-                        fillColor: AppColors.cardDarkElevated,
+                        fillColor: AppColors.cardElevated,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(
                             AppSpacing.radiusLg,
@@ -210,14 +210,14 @@ class _ModernAddTransactionScreenState
                             const SizedBox(height: AppSpacing.sm),
                             Container(
                               decoration: BoxDecoration(
-                                color: AppColors.cardDarkElevated,
+                                color: AppColors.cardElevated,
                                 borderRadius: BorderRadius.circular(
                                   AppSpacing.radiusLg,
                                 ),
                               ),
                               child: DropdownButtonFormField<String>(
                                 initialValue: _selectedAccountId,
-                                dropdownColor: AppColors.cardDarkElevated,
+                                dropdownColor: AppColors.cardElevated,
                                 style: AppTypography.bodyLarge.copyWith(
                                   color: AppColors.textPrimary,
                                 ),
@@ -302,14 +302,14 @@ class _ModernAddTransactionScreenState
                               const SizedBox(height: AppSpacing.sm),
                               Container(
                                 decoration: BoxDecoration(
-                                  color: AppColors.cardDarkElevated,
+                                  color: AppColors.cardElevated,
                                   borderRadius: BorderRadius.circular(
                                     AppSpacing.radiusLg,
                                   ),
                                 ),
                                 child: DropdownButtonFormField<String>(
                                   initialValue: _toAccountId,
-                                  dropdownColor: AppColors.cardDarkElevated,
+                                  dropdownColor: AppColors.cardElevated,
                                   style: AppTypography.bodyLarge.copyWith(
                                     color: AppColors.textPrimary,
                                   ),
@@ -454,13 +454,13 @@ class _ModernAddTransactionScreenState
                                 duration: AppAnimations.standard,
                                 curve: AppAnimations.fadeOutCurve,
                                 decoration: BoxDecoration(
-                                  color: AppColors.cardDarkElevated,
+                                  color: AppColors.cardElevated,
                                   borderRadius: BorderRadius.circular(
                                     AppSpacing.radiusLg,
                                   ),
                                   border: Border.all(
                                     color: _selectedCategory == null
-                                        ? AppColors.cardDarkElevated
+                                        ? AppColors.cardElevated
                                         : selectedColor,
                                     width: 1.5,
                                   ),
@@ -502,7 +502,7 @@ class _ModernAddTransactionScreenState
                                             position.dx + box.size.width,
                                             position.dy,
                                           ),
-                                          color: AppColors.cardDarkElevated,
+                                          color: AppColors.cardElevated,
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
                                               AppSpacing.radiusLg,
@@ -566,7 +566,7 @@ class _ModernAddTransactionScreenState
                                           vertical: AppSpacing.md,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: AppColors.cardDarkElevated,
+                                          color: AppColors.cardElevated,
                                           borderRadius: BorderRadius.circular(
                                             AppSpacing.radiusLg,
                                           ),
@@ -668,7 +668,7 @@ class _ModernAddTransactionScreenState
                         hintText: 'Add a note...',
                         hintStyle: TextStyle(color: AppColors.textTertiary),
                         filled: true,
-                        fillColor: AppColors.cardDarkElevated,
+                        fillColor: AppColors.cardElevated,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(
                             AppSpacing.radiusMd,
@@ -695,7 +695,7 @@ class _ModernAddTransactionScreenState
                           vertical: AppSpacing.md,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.cardDarkElevated,
+                          color: AppColors.cardElevated,
                           borderRadius: BorderRadius.circular(
                             AppSpacing.radiusMd,
                           ),
@@ -777,7 +777,7 @@ class _ModernAddTransactionScreenState
   Widget _buildTypeToggle() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardDarkElevated,
+        color: AppColors.cardElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       ),
       child: Row(

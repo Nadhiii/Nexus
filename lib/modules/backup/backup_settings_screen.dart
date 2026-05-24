@@ -311,6 +311,12 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
     final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
+      backgroundColor: AppColors.cardElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.radiusLg),
+        ),
+      ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(

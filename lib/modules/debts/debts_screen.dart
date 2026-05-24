@@ -404,9 +404,9 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (debt.lenderName != null)
+                        if ((debt.lenderName ?? '').isNotEmpty)
                           Text(
-                            debt.lenderName!,
+                            debt.lenderName ?? '',
                             style: AppTypography.bodySmall.copyWith(
                               color: AppColors.textTertiary,
                             ),

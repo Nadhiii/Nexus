@@ -889,7 +889,7 @@ class _PDFImportScreenState extends State<PDFImportScreen> {
                         child: DropdownButton<AccountType>(
                           value: selectedAccountType,
                           isExpanded: true,
-                          dropdownColor: AppColors.cardSurface,
+                          dropdownColor: AppColors.cardElevated,
                           style: const TextStyle(color: Colors.white),
                           items: AccountType.values
                               .map(

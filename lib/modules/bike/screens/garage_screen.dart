@@ -110,7 +110,7 @@ class _GarageManagementScreenState extends State<GarageManagementScreen> {
         color: Colors.transparent, // Ensures dragged item looks correct
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.cardDarkElevated,
+            color: AppColors.cardElevated,
             borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
             border: Border.all(
               color: bike.isDashboardBike

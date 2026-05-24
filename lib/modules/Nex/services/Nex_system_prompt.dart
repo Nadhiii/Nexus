@@ -145,7 +145,7 @@ Use this data to give personalized, specific advice. Reference actual numbers. B
         'What bills and payments do I have coming up in the next 2 weeks? Anything I should prepare for?',
     'debt_strategy':
         'What\'s the smartest way to tackle my debts? Which should I prioritize?',
-    'health_check':
-        'Give me a financial health checkup. Am I in good shape or should I be worried?',
+    'cash_flow_check':
+        'Give me a cash-flow checkup. Am I in good shape this month or should I be worried?',
   };
 }

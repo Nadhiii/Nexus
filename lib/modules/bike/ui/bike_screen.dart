@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/models/bike.dart';
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/collapsible_fab.dart';
 
@@ -414,9 +415,11 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
   void _showSortSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.cardSurface,
+      backgroundColor: AppColors.cardElevated,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.radiusLg),
+        ),
       ),
       builder: (ctx) {
         return Padding(
@@ -495,9 +498,11 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.cardSurface,
+      backgroundColor: AppColors.cardElevated,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.radiusLg),
+        ),
       ),
       builder: (ctx) {
         return StatefulBuilder(
@@ -1096,7 +1101,12 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
   void _showFuelPriceSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.cardElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.radiusLg),
+        ),
+      ),
       builder: (_) => FuelPriceWidget(
         onPriceSelected: (price) => setState(() => _currentFuelPrice = price),
       ),

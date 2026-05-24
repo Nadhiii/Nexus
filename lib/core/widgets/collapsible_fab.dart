@@ -40,7 +40,9 @@ class _CollapsibleFabState extends State<CollapsibleFab> {
     setState(() => _expanded = true);
     _collapseTimer?.cancel();
     _collapseTimer = Timer(widget.expandedDuration, () {
-      if (!mounted) { return; }
+      if (!mounted) {
+        return;
+      }
       setState(() => _expanded = false);
     });
   }
@@ -69,7 +71,7 @@ class _CollapsibleFabState extends State<CollapsibleFab> {
           child: widget.icon,
         ),
         secondChild: FloatingActionButton.extended(
-          heroTag: widget.heroTag,
+          heroTag: widget.heroTag == null ? null : '${widget.heroTag}_expanded',
           onPressed: _handlePressed,
           backgroundColor: widget.backgroundColor,
           foregroundColor: widget.foregroundColor,

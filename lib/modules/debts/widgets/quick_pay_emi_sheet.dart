@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/providers/debt_provider.dart';
 import '../../../core/models/debt.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_animations.dart';
 import '../../../core/widgets/top_snackbar.dart';
@@ -29,8 +30,9 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
   void initState() {
     super.initState();
     // Pre-fill with EMI amount
-    if (widget.debt.monthlyEMI != null) {
-      _amountController.text = widget.debt.monthlyEMI!.round().toString();
+    final monthlyEmi = widget.debt.monthlyEMI;
+    if (monthlyEmi != null) {
+      _amountController.text = monthlyEmi.round().toString();
     }
   }
 
@@ -261,30 +263,14 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
                       color: Colors.white.withValues(alpha: 0.2),
                     ),
                     filled: true,
-                    fillColor: AppColors.cardSurface,
+                    fillColor: AppColors.cardElevated,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                       borderSide: BorderSide.none,
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.08),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: AppColors.success),
-                    ),
-                    disabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: AppColors.success.withValues(alpha: 0.3),
-                      ),
-                    ),
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 20,
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
                     ),
                   ),
                 ),
@@ -461,8 +447,9 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
 
       // Calculate new paid months (if EMI exists)
       int? newPaidMonths = debt.paidMonths;
-      if (debt.monthlyEMI != null && debt.monthlyEMI! > 0) {
-        final emiPayments = (paymentAmount / debt.monthlyEMI!).floor();
+      final monthlyEmi = debt.monthlyEMI ?? 0;
+      if (monthlyEmi > 0) {
+        final emiPayments = (paymentAmount / monthlyEmi).floor();
         newPaidMonths = (debt.paidMonths ?? 0) + emiPayments;
       }
 

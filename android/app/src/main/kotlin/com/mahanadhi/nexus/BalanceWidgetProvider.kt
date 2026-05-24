@@ -11,7 +11,7 @@ import java.util.Locale
 
 /**
  * Android Home Screen Widget for Balance Overview.
- * Shows total balance, income/expense summary, and financial health.
+ * Shows total balance, income/expense summary, and pending bills.
  */
 class BalanceWidgetProvider : AppWidgetProvider() {
 

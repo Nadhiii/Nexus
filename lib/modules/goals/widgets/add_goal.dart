@@ -147,7 +147,7 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
                         ),
                         hintStyle: TextStyle(color: AppColors.textTertiary),
                         filled: true,
-                        fillColor: AppColors.cardDarkElevated,
+                        fillColor: AppColors.cardElevated,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(
                             AppSpacing.radiusLg,
@@ -185,7 +185,7 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
                       validator: (val) =>
                           val == null || val.isEmpty ? "Required" : null,
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: AppSpacing.xl2),
 
                     Text(
                       'Already Saved (Optional)',
@@ -213,14 +213,14 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
                     const SizedBox(height: AppSpacing.sm),
                     Container(
                       decoration: BoxDecoration(
-                        color: AppColors.cardDarkElevated,
+                        color: AppColors.cardElevated,
                         borderRadius: BorderRadius.circular(
                           AppSpacing.radiusMd,
                         ),
                       ),
                       child: DropdownButtonFormField<String>(
                         initialValue: _selectedCategory,
-                        dropdownColor: AppColors.cardDarkElevated,
+                        dropdownColor: AppColors.cardElevated,
                         style: AppTypography.bodyLarge.copyWith(
                           color: AppColors.textPrimary,
                         ),
@@ -263,7 +263,7 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
                           vertical: AppSpacing.md,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.cardDarkElevated,
+                          color: AppColors.cardElevated,
                           borderRadius: BorderRadius.circular(
                             AppSpacing.radiusMd,
                           ),
@@ -419,10 +419,14 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
         hintText: hint,
         hintStyle: TextStyle(color: AppColors.textTertiary),
         filled: true,
-        fillColor: AppColors.cardDarkElevated,
+        fillColor: AppColors.cardElevated,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
         ),
         prefixIcon: Padding(
           padding: const EdgeInsets.only(
@@ -450,7 +454,7 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        color: AppColors.cardDarkElevated,
+        color: AppColors.cardElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
         border: Border.all(
           color: _selectedColor.withValues(alpha: 0.3),

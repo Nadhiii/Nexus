@@ -133,7 +133,7 @@ class _ModernAddSharedExpenseScreenState
                       ),
                       hintStyle: TextStyle(color: AppColors.textTertiary),
                       filled: true,
-                      fillColor: AppColors.cardDarkElevated,
+                      fillColor: AppColors.cardElevated,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(
                           AppSpacing.radiusLg,
@@ -188,7 +188,7 @@ class _ModernAddSharedExpenseScreenState
                                   horizontal: AppSpacing.md,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.cardDarkElevated,
+                                  color: AppColors.cardElevated,
                                   borderRadius: BorderRadius.circular(
                                     AppSpacing.radiusMd,
                                   ),
@@ -235,7 +235,7 @@ class _ModernAddSharedExpenseScreenState
                                 horizontal: AppSpacing.md,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.cardDarkElevated,
+                                color: AppColors.cardElevated,
                                 borderRadius: BorderRadius.circular(
                                   AppSpacing.radiusMd,
                                 ),
@@ -244,7 +244,7 @@ class _ModernAddSharedExpenseScreenState
                                 child: DropdownButton<String>(
                                   value: _selectedCategory,
                                   isExpanded: true,
-                                  dropdownColor: AppColors.cardDarkElevated,
+                                  dropdownColor: AppColors.cardElevated,
                                   icon: Icon(
                                     Icons.keyboard_arrow_down,
                                     color: AppColors.textSecondary,
@@ -368,7 +368,7 @@ class _ModernAddSharedExpenseScreenState
         hintText: hint,
         hintStyle: TextStyle(color: AppColors.textTertiary),
         filled: true,
-        fillColor: AppColors.cardDarkElevated,
+        fillColor: AppColors.cardElevated,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           borderSide: BorderSide.none,
@@ -414,7 +414,7 @@ class _ModernAddSharedExpenseScreenState
                     decoration: BoxDecoration(
                       color: isSelected
                           ? AppColors.primaryBlue.withValues(alpha: 0.2)
-                          : AppColors.cardDarkElevated,
+                          : AppColors.cardElevated,
                       borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       border: Border.all(
                         color: isSelected
@@ -525,7 +525,7 @@ class _ModernAddSharedExpenseScreenState
                         color: AppColors.textTertiary,
                       ),
                       filled: true,
-                      fillColor: AppColors.cardDarkElevated,
+                      fillColor: AppColors.cardElevated,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                         borderSide: BorderSide.none,
@@ -594,7 +594,7 @@ class _ModernAddSharedExpenseScreenState
                     decoration: BoxDecoration(
                       color: isSelected
                           ? AppColors.success.withValues(alpha: 0.2)
-                          : AppColors.cardDarkElevated,
+                          : AppColors.cardElevated,
                       borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       border: Border.all(
                         color: isSelected
@@ -645,7 +645,7 @@ class _ModernAddSharedExpenseScreenState
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.cardDarkElevated,
+        color: AppColors.cardElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.2)),
       ),
@@ -749,7 +749,7 @@ class _ModernAddSharedExpenseScreenState
             ),
             Container(
               decoration: BoxDecoration(
-                color: AppColors.cardDarkElevated,
+                color: AppColors.cardElevated,
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
               child: Row(
@@ -829,7 +829,7 @@ class _ModernAddSharedExpenseScreenState
               return Container(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: AppColors.cardDarkElevated,
+                  color: AppColors.cardElevated,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                 ),
                 child: Column(
@@ -928,7 +928,7 @@ class _ModernAddSharedExpenseScreenState
                                     horizontal: 8,
                                   ),
                                   filled: true,
-                                  fillColor: AppColors.backgroundBlack,
+                                  fillColor: AppColors.cardElevated,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
                                     borderSide: BorderSide.none,

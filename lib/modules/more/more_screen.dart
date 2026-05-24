@@ -14,7 +14,6 @@ import '../gmail/gmail_settings_enhanced_screen.dart';
 import '../family/screens/family_dashboard_screen.dart';
 import '../family/screens/expense_splitter_screen.dart';
 import 'package:nexus/modules/Nex/screens/Nex_chat_screen.dart';
-import 'about_screen.dart';
 import '../../core/services/ota_update_service.dart';
 import 'reports_and_analytics_screen.dart';
 import 'manage_categories_screen.dart';
@@ -466,7 +465,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             icon: Icons.info_outline_rounded,
             color: Colors.blueGrey,
             title: "About Nexus",
-            onTap: () => _navigate(const AboutScreen()),
+            onTap: _showAboutNexusDialog,
           ),
         ],
       ),
@@ -526,6 +525,36 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
 
   void _navigate(Widget screen) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  }
+
+  void _showAboutNexusDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.cardElevated,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'About Nexus',
+          style: AppTypography.titleMedium.copyWith(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          'Nexus is your privacy-first personal finance companion. '
+          'Track accounts, expenses, goals, debts, and investments in one place.',
+          style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              'Close',
+              style: AppTypography.labelLarge.copyWith(
+                color: AppColors.primaryBlue,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _launchEmail() async {

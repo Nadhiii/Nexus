@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/providers/debt_provider.dart';
 import '../../../core/models/debt.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_animations.dart';
 import '../../../core/utils/logo_utils.dart';
@@ -472,9 +473,10 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
     // Find next due date
     DateTime? nextDue;
     for (final debt in activeDebts) {
-      if (debt.nextPaymentDate != null) {
-        if (nextDue == null || debt.nextPaymentDate!.isBefore(nextDue)) {
-          nextDue = debt.nextPaymentDate;
+      final paymentDate = debt.nextPaymentDate;
+      if (paymentDate != null) {
+        if (nextDue == null || paymentDate.isBefore(nextDue)) {
+          nextDue = paymentDate;
         }
       }
     }
@@ -1058,9 +1060,9 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (debt.lenderName != null && debt.lenderName!.isNotEmpty)
+                  if ((debt.lenderName ?? '').isNotEmpty)
                     Text(
-                      debt.lenderName!,
+                      debt.lenderName ?? '',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.4),
                         fontSize: 10,
@@ -1099,10 +1101,10 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        if (debt.monthlyEMI != null && debt.monthlyEMI! > 0) ...[
+        if ((debt.monthlyEMI ?? 0) > 0) ...[
           const SizedBox(height: 2),
           Text(
-            'EMI ₹${_formatCompact(debt.monthlyEMI!)} /mo',
+            'EMI ₹${_formatCompact(debt.monthlyEMI ?? 0)} /mo',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.5),
               fontSize: 10,
@@ -1157,7 +1159,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                     Text(
                       isOverdue
                           ? 'Overdue'
-                          : 'Due ${DateFormat('d MMM').format(debt.nextPaymentDate!)}',
+                          : 'Due ${DateFormat('d MMM').format(debt.nextPaymentDate ?? DateTime.now())}',
                       style: TextStyle(
                         color: isOverdue
                             ? AppColors.error
@@ -1432,7 +1434,12 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.cardElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.radiusLg),
+        ),
+      ),
       builder: (context) => QuickPayEmiSheet(debt: debt),
     );
   }

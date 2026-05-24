@@ -318,7 +318,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                     fontSize: 13,
                   ),
                   filled: true,
-                  fillColor: AppColors.cardSurface,
+                  fillColor: AppColors.cardElevated,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,

@@ -275,7 +275,7 @@ class _VehicleDocumentsExampleScreenState
             width: double.infinity,
             padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
-              color: AppColors.cardDarkElevated,
+              color: AppColors.cardElevated,
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
             ),
@@ -304,7 +304,7 @@ class _VehicleDocumentsExampleScreenState
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: AppColors.cardDarkElevated,
+        color: AppColors.cardElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         border: Border.all(
           color: isExpired

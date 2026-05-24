@@ -320,7 +320,7 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
                         ),
                         hintStyle: TextStyle(color: AppColors.textTertiary),
                         filled: true,
-                        fillColor: AppColors.cardDarkElevated,
+                        fillColor: AppColors.cardElevated,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(
                             AppSpacing.radiusLg,
@@ -499,7 +499,7 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
         hintText: hint,
         hintStyle: TextStyle(color: AppColors.textTertiary),
         filled: true,
-        fillColor: AppColors.cardDarkElevated,
+        fillColor: AppColors.cardElevated,
         counterText: "",
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),

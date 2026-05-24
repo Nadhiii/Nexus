@@ -265,7 +265,7 @@ class _SwipeToDeleteState<T> extends State<SwipeToDelete<T>>
         context,
         '$itemName deleted',
         icon: Icons.delete_outline_rounded,
-        backgroundColor: AppColors.cardDarkElevated,
+        backgroundColor: AppColors.cardElevated,
         duration: undoDuration,
         action: undoCallback != null
             ? TopSnackBarAction(

@@ -373,7 +373,7 @@ class _GmailSettingsEnhancedScreenState
                 subtitle: '${_settings.daysToScan} days',
                 trailing: DropdownButton<int>(
                   value: _settings.daysToScan,
-                  dropdownColor: AppColors.cardDark,
+                  dropdownColor: AppColors.cardElevated,
                   items: [7, 14, 30, 90]
                       .map(
                         (days) => DropdownMenuItem(

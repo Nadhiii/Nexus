@@ -115,7 +115,7 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
                               )
                               ? selectedCity
                               : priceProvider.supportedCities.first,
-                          dropdownColor: AppColors.cardSurface,
+                          dropdownColor: AppColors.cardElevated,
                           underline: const SizedBox(),
                           isDense: true,
                           style: AppTypography.bodyLarge.copyWith(

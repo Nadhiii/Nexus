@@ -208,10 +208,10 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
     if (mounted) {
       showModalBottomSheet(
         context: context,
-        backgroundColor: AppColors.cardSurface,
+        backgroundColor: AppColors.cardElevated,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppSpacing.radiusXl),
+            top: Radius.circular(AppSpacing.radiusLg),
           ),
         ),
         builder: (ctx) => Container(
@@ -446,7 +446,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                 ),
                 hintStyle: TextStyle(color: AppColors.textTertiary),
                 filled: true,
-                fillColor: AppColors.cardDarkElevated,
+                fillColor: AppColors.cardElevated,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                   borderSide: BorderSide.none,
@@ -498,7 +498,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                         }
                       },
                       selectedColor: _selectedColor.withValues(alpha: 0.2),
-                      backgroundColor: AppColors.cardDarkElevated,
+                      backgroundColor: AppColors.cardElevated,
                       labelStyle: TextStyle(
                         color: isSelected
                             ? _selectedColor
@@ -767,7 +767,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                       decoration: BoxDecoration(
                         color: isSelected
                             ? _selectedColor
-                            : AppColors.cardDarkElevated,
+                            : AppColors.cardElevated,
                         borderRadius: BorderRadius.circular(
                           AppSpacing.radiusMd,
                         ),
@@ -883,7 +883,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
         hintText: hint,
         hintStyle: TextStyle(color: AppColors.textTertiary),
         filled: true,
-        fillColor: AppColors.cardDarkElevated,
+        fillColor: AppColors.cardElevated,
         counterText: "",
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),

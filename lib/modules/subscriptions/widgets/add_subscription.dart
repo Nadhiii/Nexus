@@ -133,7 +133,7 @@ class _ModernAddSubscriptionScreenState
                         ),
                         hintStyle: TextStyle(color: AppColors.textTertiary),
                         filled: true,
-                        fillColor: AppColors.cardDarkElevated,
+                        fillColor: AppColors.cardElevated,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(
                             AppSpacing.radiusLg,
@@ -229,7 +229,7 @@ class _ModernAddSubscriptionScreenState
                         hintText: 'e.g. Netflix Premium',
                         hintStyle: TextStyle(color: AppColors.textTertiary),
                         filled: true,
-                        fillColor: AppColors.cardDarkElevated,
+                        fillColor: AppColors.cardElevated,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(
                             AppSpacing.radiusMd,
@@ -251,14 +251,14 @@ class _ModernAddSubscriptionScreenState
                     const SizedBox(height: AppSpacing.sm),
                     Container(
                       decoration: BoxDecoration(
-                        color: AppColors.cardDarkElevated,
+                        color: AppColors.cardElevated,
                         borderRadius: BorderRadius.circular(
                           AppSpacing.radiusMd,
                         ),
                       ),
                       child: DropdownButtonFormField<String>(
                         initialValue: _selectedFrequency,
-                        dropdownColor: AppColors.cardDarkElevated,
+                        dropdownColor: AppColors.cardElevated,
                         style: AppTypography.bodyLarge.copyWith(
                           color: AppColors.textPrimary,
                         ),
@@ -310,7 +310,7 @@ class _ModernAddSubscriptionScreenState
                           vertical: AppSpacing.md,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.cardDarkElevated,
+                          color: AppColors.cardElevated,
                           borderRadius: BorderRadius.circular(
                             AppSpacing.radiusMd,
                           ),
@@ -405,7 +405,7 @@ class _ModernAddSubscriptionScreenState
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.cardDarkElevated,
+        color: AppColors.cardElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         border: Border.all(
           color: _brandColor.withValues(alpha: 0.3),

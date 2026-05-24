@@ -182,23 +182,50 @@ class TransactionProvider with ChangeNotifier {
       );
       debugPrint('📊 Current transactions count: ${_transactions.length}');
 
-      // Restore to Firestore
-      await _transactionService.restoreTransaction(transaction);
-      debugPrint('✅ Transaction restored to Firestore');
+      // Use the same logic as addTransaction to restore atomically
+      if (transaction.type == TransactionType.transfer &&
+          transaction.toAccountId != null) {
+        debugPrint('💸 Restoring TRANSFER');
+        final sourceAccount = _accountProvider!.getAccountById(
+          transaction.accountId,
+        );
+        final destAccount = _accountProvider!.getAccountById(
+          transaction.toAccountId!,
+        );
+        if (sourceAccount == null || destAccount == null) {
+          _setError('Source or destination account not found');
+          return false;
+        }
+        final sourceNewBalance = sourceAccount.balance - transaction.amount;
+        final destNewBalance = destAccount.balance + transaction.amount;
+        await _ledgerService.addTransferAndUpdateBalances(
+          transaction: transaction,
+          sourceNewBalance: sourceNewBalance,
+          destNewBalance: destNewBalance,
+        );
+        debugPrint('✅ Transfer restore committed atomically');
+      } else {
+        debugPrint('💰 Restoring regular ${transaction.type}');
+        final account = _accountProvider!.getAccountById(transaction.accountId);
+        if (account == null) {
+          _setError('Account not found');
+          return false;
+        }
+        final newBalance = transaction.type == TransactionType.income
+            ? account.balance + transaction.amount
+            : account.balance - transaction.amount;
+        await _ledgerService.addTransactionAndUpdateBalance(
+          transaction: transaction,
+          newBalance: newBalance,
+        );
+        debugPrint('✅ Transaction restore committed atomically');
+      }
 
       // Manually add to local list if not already present (stream may be delayed)
-      // Check by ID to prevent duplicates
       final alreadyExists = _transactions.any((t) => t.id == transaction.id);
-      debugPrint('🔍 Transaction already in list: $alreadyExists');
-
       if (!alreadyExists) {
         _transactions = [..._transactions, transaction];
         _transactions.sort((a, b) => b.date.compareTo(a.date));
-        debugPrint('📋 Added to local list. New count: ${_transactions.length}');
-      } else {
-        debugPrint(
-          '⚠️ Transaction already exists in list (stream updated), forcing UI refresh',
-        );
       }
 
       // Always notify listeners to ensure UI updates
@@ -206,39 +233,6 @@ class TransactionProvider with ChangeNotifier {
         '🔔 Calling notifyListeners() - transaction count: ${_transactions.length}',
       );
       notifyListeners();
-      debugPrint('✅ notifyListeners() called');
-
-      // Handle transfers between accounts
-      if (transaction.type == TransactionType.transfer &&
-          transaction.toAccountId != null) {
-        debugPrint('💸 Restoring TRANSFER balances');
-
-        // Deduct from source account
-        await _updateAccountBalance(
-          transaction.accountId,
-          transaction.amount,
-          TransactionType.expense,
-          isReversal: false,
-        );
-
-        // Add to destination account
-        await _updateAccountBalance(
-          transaction.toAccountId!,
-          transaction.amount,
-          TransactionType.income,
-          isReversal: false,
-        );
-      } else {
-        // Regular transaction - update account balance
-        await _updateAccountBalance(
-          transaction.accountId,
-          transaction.amount,
-          transaction.type,
-          isReversal: false,
-        );
-      }
-
-      debugPrint('✅ Restore complete');
       return true;
     } catch (e) {
       debugPrint('❌ Restore failed: $e');
@@ -260,87 +254,43 @@ class TransactionProvider with ChangeNotifier {
     try {
       _setLoading(true);
 
-      await _transactionService.updateTransaction(transaction);
+      final accountBalances = <String, double>{};
 
-      // Check what changed
-      final bool amountChanged =
-          transaction.amount != originalTransaction.amount;
-      final bool typeChanged = transaction.type != originalTransaction.type;
-      final bool accountChanged =
-          transaction.accountId != originalTransaction.accountId;
-      final bool toAccountChanged =
-          transaction.toAccountId != originalTransaction.toAccountId;
-      final bool wasTransfer =
-          originalTransaction.type == TransactionType.transfer;
-      final bool isTransfer = transaction.type == TransactionType.transfer;
-
-      // Handle the complex case of transfers
-      if (wasTransfer ||
-          isTransfer ||
-          amountChanged ||
-          typeChanged ||
-          accountChanged ||
-          toAccountChanged) {
-        // Step 1: Reverse the original transaction completely
-        if (wasTransfer && originalTransaction.toAccountId != null) {
-          // Original was a transfer - reverse both accounts
-          await _updateAccountBalance(
-            originalTransaction.accountId,
-            originalTransaction.amount,
-            TransactionType.expense,
-            isReversal: true, // Add back to source
-          );
-          await _updateAccountBalance(
-            originalTransaction.toAccountId!,
-            originalTransaction.amount,
-            TransactionType.income,
-            isReversal: true, // Remove from destination
-          );
-          debugPrint(
-            '✅ Reversed original transfer: ${originalTransaction.accountId} <- ${originalTransaction.toAccountId}',
-          );
-        } else if (!wasTransfer) {
-          // Original was income/expense - reverse it
-          await _updateAccountBalance(
-            originalTransaction.accountId,
-            originalTransaction.amount,
-            originalTransaction.type,
-            isReversal: true,
-          );
-          debugPrint(
-            '✅ Reversed original ${originalTransaction.type}: ${originalTransaction.accountId}',
-          );
+      double calcNewBalance(String acctId, double amt, bool isIncome, bool isReversal) {
+        final acct = _accountProvider!.getAccountById(acctId);
+        if (acct == null) return 0;
+        double bal = accountBalances[acctId] ?? acct.balance;
+        if (isReversal) {
+          bal = isIncome ? bal - amt : bal + amt;
+        } else {
+          bal = isIncome ? bal + amt : bal - amt;
         }
-
-        // Step 2: Apply the new transaction
-        if (isTransfer && transaction.toAccountId != null) {
-          // New is a transfer - apply to both accounts
-          await _updateAccountBalance(
-            transaction.accountId,
-            transaction.amount,
-            TransactionType.expense,
-            isReversal: false, // Deduct from source
-          );
-          await _updateAccountBalance(
-            transaction.toAccountId!,
-            transaction.amount,
-            TransactionType.income,
-            isReversal: false, // Add to destination
-          );
-          debugPrint(
-            '✅ Applied new transfer: ${transaction.accountId} -> ${transaction.toAccountId}',
-          );
-        } else if (!isTransfer) {
-          // New is income/expense - apply it
-          await _updateAccountBalance(
-            transaction.accountId,
-            transaction.amount,
-            transaction.type,
-            isReversal: false,
-          );
-          debugPrint('✅ Applied new ${transaction.type}: ${transaction.accountId}');
-        }
+        return bal;
       }
+
+      // 1. Reverse original
+      if (originalTransaction.type == TransactionType.transfer && originalTransaction.toAccountId != null) {
+        accountBalances[originalTransaction.accountId] = calcNewBalance(originalTransaction.accountId, originalTransaction.amount, false, true);
+        accountBalances[originalTransaction.toAccountId!] = calcNewBalance(originalTransaction.toAccountId!, originalTransaction.amount, true, true);
+      } else {
+        final isIncome = originalTransaction.type == TransactionType.income;
+        accountBalances[originalTransaction.accountId] = calcNewBalance(originalTransaction.accountId, originalTransaction.amount, isIncome, true);
+      }
+
+      // 2. Apply new
+      if (transaction.type == TransactionType.transfer && transaction.toAccountId != null) {
+        accountBalances[transaction.accountId] = calcNewBalance(transaction.accountId, transaction.amount, false, false);
+        accountBalances[transaction.toAccountId!] = calcNewBalance(transaction.toAccountId!, transaction.amount, true, false);
+      } else {
+        final isIncome = transaction.type == TransactionType.income;
+        accountBalances[transaction.accountId] = calcNewBalance(transaction.accountId, transaction.amount, isIncome, false);
+      }
+
+      await _ledgerService.updateTransactionAndUpdateBalances(
+        oldTransaction: originalTransaction,
+        newTransaction: transaction,
+        accountBalances: accountBalances,
+      );
 
       _setLoading(false);
       return true;
@@ -359,83 +309,39 @@ class TransactionProvider with ChangeNotifier {
     }
 
     try {
-      // Find the transaction before deleting it
-      final transaction = _transactions.firstWhere(
-        (t) => t.id == transactionId,
-      );
+      final transaction = _transactions.firstWhere((t) => t.id == transactionId);
+      final accountBalances = <String, double>{};
 
-      // Delete from Firestore - the stream subscription will auto-update _transactions
-      await _transactionService.deleteTransaction(transactionId);
-
-      // Handle transfer deletion - reverse both accounts
-      if (transaction.type == TransactionType.transfer &&
-          transaction.toAccountId != null) {
-        await _updateAccountBalance(
-          transaction.accountId,
-          transaction.amount,
-          TransactionType.expense,
-          isReversal: true, // Add back to source
-        );
-        await _updateAccountBalance(
-          transaction.toAccountId!,
-          transaction.amount,
-          TransactionType.income,
-          isReversal: true, // Remove from destination
-        );
-        debugPrint('✅ Deleted transfer: reversed both accounts');
-      } else {
-        await _updateAccountBalance(
-          transaction.accountId,
-          transaction.amount,
-          transaction.type,
-          isReversal: true,
-        );
+      double calcNewBalance(String acctId, double amt, bool isIncome, bool isReversal) {
+        final acct = _accountProvider!.getAccountById(acctId);
+        if (acct == null) return 0;
+        double bal = accountBalances[acctId] ?? acct.balance;
+        if (isReversal) {
+          bal = isIncome ? bal - amt : bal + amt;
+        } else {
+          bal = isIncome ? bal + amt : bal - amt;
+        }
+        return bal;
       }
+
+      if (transaction.type == TransactionType.transfer && transaction.toAccountId != null) {
+        accountBalances[transaction.accountId] = calcNewBalance(transaction.accountId, transaction.amount, false, true);
+        accountBalances[transaction.toAccountId!] = calcNewBalance(transaction.toAccountId!, transaction.amount, true, true);
+      } else {
+        final isIncome = transaction.type == TransactionType.income;
+        accountBalances[transaction.accountId] = calcNewBalance(transaction.accountId, transaction.amount, isIncome, true);
+      }
+
+      await _ledgerService.deleteTransactionAndUpdateBalances(
+        transaction: transaction,
+        accountBalances: accountBalances,
+      );
 
       return true;
     } catch (e) {
       _setError('Failed to delete transaction: $e');
       return false;
     }
-  }
-
-  Future<void> _updateAccountBalance(
-    String accountId,
-    double amount,
-    TransactionType type, {
-    required bool isReversal,
-  }) async {
-    debugPrint(
-      '🔄 _updateAccountBalance called: accountId=$accountId, amount=$amount, type=$type, isReversal=$isReversal',
-    );
-
-    final account = _accountProvider!.getAccountById(accountId);
-    if (account == null) {
-      debugPrint('❌ Account not found for id: $accountId');
-      debugPrint(
-        '📋 Available accounts: ${_accountProvider!.accounts.map((a) => '${a.id}:${a.name}').toList()}',
-      );
-      return;
-    }
-
-    debugPrint(
-      '✅ Found account: ${account.name}, current balance: ${account.balance}',
-    );
-
-    double newBalance;
-    if (isReversal) {
-      newBalance = type == TransactionType.income
-          ? account.balance - amount
-          : account.balance + amount;
-    } else {
-      newBalance = type == TransactionType.income
-          ? account.balance + amount
-          : account.balance - amount;
-    }
-
-    debugPrint('💰 Updating balance: ${account.balance} -> $newBalance');
-    await _accountProvider!.updateAccountBalance(accountId, newBalance);
-    debugPrint('✅ Balance update complete for ${account.name}');
   }
 
   Future<void> clearAllData() async {

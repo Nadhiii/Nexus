@@ -253,7 +253,7 @@ class _EditEntryDialogState extends State<EditEntryDialog> {
                       ),
                       hintStyle: TextStyle(color: AppColors.textTertiary),
                       filled: true,
-                      fillColor: AppColors.cardDarkElevated,
+                      fillColor: AppColors.cardElevated,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(
                           AppSpacing.radiusLg,
@@ -315,7 +315,7 @@ class _EditEntryDialogState extends State<EditEntryDialog> {
                         horizontal: AppSpacing.md,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.cardDarkElevated,
+                        color: AppColors.cardElevated,
                         borderRadius: BorderRadius.circular(
                           AppSpacing.radiusMd,
                         ),
@@ -324,7 +324,7 @@ class _EditEntryDialogState extends State<EditEntryDialog> {
                         child: DropdownButton<String>(
                           value: _selectedCategory,
                           isExpanded: true,
-                          dropdownColor: AppColors.cardSurface,
+                          dropdownColor: AppColors.cardElevated,
                           icon: const Icon(
                             Icons.keyboard_arrow_down,
                             color: AppColors.textSecondary,
@@ -386,7 +386,7 @@ class _EditEntryDialogState extends State<EditEntryDialog> {
                                   horizontal: AppSpacing.md,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.cardDarkElevated,
+                                  color: AppColors.cardElevated,
                                   borderRadius: BorderRadius.circular(
                                     AppSpacing.radiusMd,
                                   ),
@@ -510,7 +510,7 @@ class _EditEntryDialogState extends State<EditEntryDialog> {
           fontWeight: FontWeight.bold,
         ),
         filled: true,
-        fillColor: AppColors.cardDarkElevated,
+        fillColor: AppColors.cardElevated,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           borderSide: isHighlight

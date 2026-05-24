@@ -3,9 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
-import '../services/financial_health_service.dart';
 import '../providers/debt_provider.dart';
 import '../providers/subscription_provider.dart';
+import '../models/debt.dart';
+import '../models/subscription.dart';
 
 /// A compact dashboard widget showing all upcoming financial obligations
 /// for the next 7 days across subscriptions, EMIs, goals, and SIPs.
@@ -19,7 +20,7 @@ class UpcomingWeekWidget extends StatefulWidget {
 }
 
 class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
-  UpcomingObligations? _obligations;
+  _UpcomingObligations? _obligations;
 
   @override
   void initState() {
@@ -33,7 +34,7 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
     final debtProvider = context.read<DebtProvider>();
     final subscriptionProvider = context.read<SubscriptionProvider>();
 
-    final obligations = UpcomingObligations.calculate(
+    final obligations = _UpcomingObligations.calculate(
       debts: debtProvider.debts,
       subscriptions: subscriptionProvider.subscriptions,
       daysAhead: 7,
@@ -268,7 +269,7 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
     );
   }
 
-  Widget _buildDaySection(String dayLabel, List<UpcomingPayment> payments) {
+  Widget _buildDaySection(String dayLabel, List<_UpcomingPayment> payments) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -290,7 +291,7 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
     );
   }
 
-  Widget _buildPaymentTile(UpcomingPayment payment) {
+  Widget _buildPaymentTile(_UpcomingPayment payment) {
     final typeColor = _getPaymentTypeColor(payment.type);
 
     return Container(
@@ -348,20 +349,20 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
     );
   }
 
-  Color _getPaymentTypeColor(PaymentType type) {
+  Color _getPaymentTypeColor(_PaymentType type) {
     switch (type) {
-      case PaymentType.emi:
+      case _PaymentType.emi:
         return AppColors.pastelPurple;
-      case PaymentType.subscription:
+      case _PaymentType.subscription:
         return AppColors.primaryBlue;
-      case PaymentType.bill:
+      case _PaymentType.bill:
         return AppColors.pastelOrange;
-      case PaymentType.goal:
+      case _PaymentType.goal:
         return AppColors.pastelGreen;
     }
   }
 
-  String _getPaymentSubtitle(UpcomingPayment payment) {
+  String _getPaymentSubtitle(_UpcomingPayment payment) {
     final typeLabel = payment.type.name.toUpperCase();
     if (payment.isDueToday) {
       return '$typeLabel • Due today';
@@ -372,10 +373,10 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
     }
   }
 
-  Map<String, List<UpcomingPayment>> _groupByDay(
-    List<UpcomingPayment> payments,
+  Map<String, List<_UpcomingPayment>> _groupByDay(
+    List<_UpcomingPayment> payments,
   ) {
-    final grouped = <String, List<UpcomingPayment>>{};
+    final grouped = <String, List<_UpcomingPayment>>{};
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
@@ -410,4 +411,87 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
     }
     return NumberFormat('#,##0').format(amount);
   }
+}
+
+class _UpcomingObligations {
+  final List<_UpcomingPayment> payments;
+  final double totalAmount;
+  final int daysAhead;
+
+  _UpcomingObligations({
+    required this.payments,
+    required this.totalAmount,
+    required this.daysAhead,
+  });
+
+  static _UpcomingObligations calculate({
+    required List<Debt> debts,
+    required List<Subscription> subscriptions,
+    required int daysAhead,
+  }) {
+    final payments = <_UpcomingPayment>[];
+    final now = DateTime.now();
+    final cutoff = now.add(Duration(days: daysAhead));
+
+    for (final debt in debts) {
+      if (debt.nextPaymentDate != null &&
+          debt.nextPaymentDate!.isAfter(now) &&
+          debt.nextPaymentDate!.isBefore(cutoff)) {
+        payments.add(
+          _UpcomingPayment(
+            name: debt.name,
+            amount: debt.monthlyEMI ?? 0,
+            dueDate: debt.nextPaymentDate!,
+            type: _PaymentType.emi,
+            icon: debt.type.icon,
+          ),
+        );
+      }
+    }
+
+    for (final sub in subscriptions.where((s) => s.isActive)) {
+      if (sub.nextDueDate.isAfter(now) && sub.nextDueDate.isBefore(cutoff)) {
+        payments.add(
+          _UpcomingPayment(
+            name: sub.name,
+            amount: sub.amount,
+            dueDate: sub.nextDueDate,
+            type: _PaymentType.subscription,
+            icon: '🔄',
+          ),
+        );
+      }
+    }
+
+    payments.sort((a, b) => a.dueDate.compareTo(b.dueDate));
+    final total = payments.fold(0.0, (sum, p) => sum + p.amount);
+
+    return _UpcomingObligations(
+      payments: payments,
+      totalAmount: total,
+      daysAhead: daysAhead,
+    );
+  }
+}
+
+enum _PaymentType { emi, subscription, bill, goal }
+
+class _UpcomingPayment {
+  final String name;
+  final double amount;
+  final DateTime dueDate;
+  final _PaymentType type;
+  final String icon;
+
+  _UpcomingPayment({
+    required this.name,
+    required this.amount,
+    required this.dueDate,
+    required this.type,
+    required this.icon,
+  });
+
+  int get daysUntilDue => dueDate.difference(DateTime.now()).inDays;
+  bool get isDueToday => daysUntilDue == 0;
+  bool get isDueTomorrow => daysUntilDue == 1;
 }

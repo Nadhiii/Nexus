@@ -98,7 +98,7 @@ class ModernAddFamilyMemberScreen extends StatelessWidget {
 
                       return Container(
                         decoration: BoxDecoration(
-                          color: AppColors.cardDarkElevated,
+                          color: AppColors.cardElevated,
                           borderRadius: BorderRadius.circular(
                             AppSpacing.radiusLg,
                           ),

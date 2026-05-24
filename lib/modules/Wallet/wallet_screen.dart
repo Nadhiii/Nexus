@@ -12,6 +12,7 @@ import '../../core/models/transaction.dart';
 import '../../core/providers/account_provider.dart';
 import '../../core/providers/category_provider.dart';
 import '../../core/providers/transaction_provider.dart';
+import '../../core/widgets/total_balance_card.dart';
 import '../accounts/add_account_screen.dart';
 import '../accounts/account_detail_screen.dart';
 import '../transactions/add_transaction_screen.dart';
@@ -335,13 +336,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
   }
 
   Widget _buildTotalCashCard(double total, int count, double monthExpense) {
-    return _WalletFlipCard(
-      total: total,
-      count: count,
-      monthExpense: monthExpense,
-      resolveStatus: _resolveBalanceStatus,
-      formatCurrency: _formatSignedCurrency,
-    );
+    return const TotalBalanceCard();
   }
 
   Widget _buildEmptyStateWithAction(

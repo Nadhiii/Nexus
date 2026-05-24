@@ -444,7 +444,7 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
 
   Widget _buildLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 4),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Text(
         text,
         style: AppTypography.titleSmall.copyWith(
@@ -461,38 +461,29 @@ class _AddBudgetFormState extends State<AddBudgetForm> {
     required IconData icon,
     bool isNumber = false,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardDarkElevated,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(color: AppColors.textTertiary),
-          prefixIcon: Padding(
-            padding: const EdgeInsets.only(left: 16, right: 8),
-            child: Icon(icon, color: AppColors.textSecondary),
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 16,
-          ),
+    return TextFormField(
+      controller: controller,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+      decoration: InputDecoration(
+        hintText: label,
+        hintStyle: TextStyle(color: AppColors.textTertiary),
+        filled: true,
+        fillColor: AppColors.cardElevated,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          borderSide: BorderSide.none,
         ),
-        validator: (value) => value!.isEmpty ? 'Required' : null,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.md, right: AppSpacing.sm),
+          child: Icon(icon, color: AppColors.textSecondary),
+        ),
       ),
+      validator: (value) => value!.isEmpty ? 'Required' : null,
     );
   }
 
@@ -1050,7 +1041,7 @@ class _SmartQuickSetupModalState extends State<SmartQuickSetupModal> {
 
               const SizedBox(height: 20),
               Padding(
-                padding: const EdgeInsets.only(bottom: 8, left: 4),
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: Text(
                   'Monthly Income',
                   style: TextStyle(
@@ -1062,25 +1053,27 @@ class _SmartQuickSetupModalState extends State<SmartQuickSetupModal> {
               ),
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.cardDarkElevated,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.06),
-                  ),
+                  color: AppColors.cardElevated,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
                 child: TextField(
                   controller: _incomeController,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  style: AppTypography.bodyLarge.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Enter amount',
-                    hintStyle: TextStyle(
-                      color: AppColors.textTertiary.withValues(alpha: 0.5),
+                    hintStyle: TextStyle(color: AppColors.textTertiary),
+                    filled: true,
+                    fillColor: AppColors.cardElevated,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      borderSide: BorderSide.none,
                     ),
-                    border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
                     ),
                     prefixIcon: Icon(
                       Icons.currency_rupee,

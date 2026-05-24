@@ -213,6 +213,16 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
         overdueSubs.isNotEmpty ||
         dueSoonSubs.isNotEmpty ||
         zombieSubs.isNotEmpty;
+    final rankedSubs = List<Subscription>.from(subs)
+      ..sort(
+        (a, b) =>
+            _subscriptionPriorityScore(b).compareTo(_subscriptionPriorityScore(a)),
+      );
+    final bentoRows = _buildDynamicSubscriptionRows(
+      context,
+      rankedSubs,
+      totalMonthly,
+    );
 
     return [
       // 0. TOTAL SUMMARY CARD (At Top) - Dark Theme
@@ -232,117 +242,178 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
           ),
         ),
 
-      // 2. TOP BENTO ROW (Items 0 & 1 - Large Squares)
+      // 2. DYNAMIC BENTO ROWS
       SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildBentoTile(
-                      context,
-                      subs.elementAtOrNull(0),
-                      totalMonthly,
-                      isLarge: true,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildBentoTile(
-                      context,
-                      subs.elementAtOrNull(1),
-                      totalMonthly,
-                      isLarge: true,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
+          child: Column(children: bentoRows),
+        ),
+      ),
+    ];
+  }
 
-              // 2. MIDDLE BENTO ROW (Item 2 Wide, Items 3 & 4 Stacked)
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: _buildBentoTile(
-                        context,
-                        subs.elementAtOrNull(2),
-                        totalMonthly,
-                        isWide: true,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: _buildBentoTile(
-                              context,
-                              subs.elementAtOrNull(3),
-                              totalMonthly,
-                              isCompact: true,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Expanded(
-                            child: _buildBentoTile(
-                              context,
-                              subs.elementAtOrNull(4),
-                              totalMonthly,
-                              isCompact: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+  List<Widget> _buildDynamicSubscriptionRows(
+    BuildContext context,
+    List<Subscription> subs,
+    double totalMonthly,
+  ) {
+    final rows = <Widget>[];
+    int index = 0;
+
+    while (index < subs.length) {
+      final remaining = subs.length - index;
+      final first = subs[index];
+      final firstPriority = _isPrioritySubscription(first);
+
+      if (remaining == 1) {
+        rows.add(
+          _buildBentoTile(
+            context,
+            first,
+            totalMonthly,
+            isWide: true,
+          ),
+        );
+        index++;
+      } else if (remaining == 2) {
+        final second = subs[index + 1];
+        final useLarge = firstPriority || _isPrioritySubscription(second);
+        rows.add(
+          Row(
+            children: [
+              Expanded(
+                child: _buildBentoTile(
+                  context,
+                  first,
+                  totalMonthly,
+                  isLarge: useLarge,
+                  isCompact: !useLarge,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildBentoTile(
+                  context,
+                  second,
+                  totalMonthly,
+                  isLarge: useLarge,
+                  isCompact: !useLarge,
                 ),
               ),
             ],
           ),
-        ),
-      ),
+        );
+        index += 2;
+      } else if (firstPriority) {
+        rows.add(
+          SizedBox(
+            height: 200,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _buildBentoTile(
+                    context,
+                    first,
+                    totalMonthly,
+                    isLarge: true,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: _buildBentoTile(
+                          context,
+                          subs[index + 1],
+                          totalMonthly,
+                          isCompact: true,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: _buildBentoTile(
+                          context,
+                          subs[index + 2],
+                          totalMonthly,
+                          isCompact: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        index += 3;
+      } else {
+        rows.add(
+          SizedBox(
+            height: 168,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: _buildBentoTile(
+                    context,
+                    first,
+                    totalMonthly,
+                    isWide: true,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: _buildBentoTile(
+                          context,
+                          subs[index + 1],
+                          totalMonthly,
+                          isCompact: true,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: _buildBentoTile(
+                          context,
+                          subs[index + 2],
+                          totalMonthly,
+                          isCompact: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        index += 3;
+      }
 
-      // 3. GRID FOR REMAINING ITEMS (Index 5+)
-      if (subs.length > 5) ...[
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-          sliver: SliverToBoxAdapter(
-            child: Text(
-              "Other Subscriptions",
-              style: AppTypography.labelLarge.copyWith(
-                color: AppColors.textTertiary,
-              ),
-            ),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.5,
-            ),
-            delegate: SliverChildBuilderDelegate((context, index) {
-              return _buildBentoTile(
-                context,
-                subs[index + 5],
-                totalMonthly,
-                isCompact: true,
-              );
-            }, childCount: subs.length - 5),
-          ),
-        ),
-      ],
-    ];
+      if (index < subs.length) {
+        rows.add(const SizedBox(height: 12));
+      }
+    }
+    return rows;
   }
+
+  double _subscriptionPriorityScore(Subscription sub) {
+    final daysUntilDue = _daysUntilDue(sub.nextDueDate);
+    final overdueWeight = sub.isOverdue ? 100.0 : 0.0;
+    final dueSoonWeight = (!sub.isOverdue && daysUntilDue <= 3) ? 55.0 : 0.0;
+    final zombieWeight = _zombieSubIds.contains(sub.id) ? 40.0 : 0.0;
+    final amountWeight = sub.amount / 2500;
+    return overdueWeight + dueSoonWeight + zombieWeight + amountWeight;
+  }
+
+  bool _isPrioritySubscription(Subscription sub) =>
+      _subscriptionPriorityScore(sub) >= 55;
 
   // ================= HISTORY VIEW (LIST) =================
 

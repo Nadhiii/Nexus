@@ -200,7 +200,7 @@ class _LogSubscriptionPaymentModalState
                 child: DropdownButton<Account>(
                   value: _selectedAccount,
                   isExpanded: true,
-                  dropdownColor: AppColors.cardSurface,
+                  dropdownColor: AppColors.cardElevated,
                   icon: const Icon(
                     Icons.keyboard_arrow_down,
                     color: AppColors.textSecondary,

@@ -159,7 +159,7 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
                         ),
                         hintStyle: TextStyle(color: AppColors.textTertiary),
                         filled: true,
-                        fillColor: AppColors.cardDarkElevated,
+                        fillColor: AppColors.cardElevated,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(
                             AppSpacing.radiusLg,
@@ -242,7 +242,7 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
                           height: 180,
                           margin: const EdgeInsets.only(top: AppSpacing.md),
                           decoration: BoxDecoration(
-                            color: AppColors.cardDarkElevated,
+                            color: AppColors.cardElevated,
                             borderRadius: BorderRadius.circular(
                               AppSpacing.radiusMd,
                             ),
@@ -298,14 +298,14 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
                       hint: "Asset Name",
                       icon: Icons.description_outlined,
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: AppSpacing.xl2),
                     if (_selectedType != InvestmentType.mutualFund) ...[
                       _buildStandardField(
                         controller: _symbolController,
                         hint: "Symbol (BTC, AAPL)",
                         icon: Icons.short_text,
                       ),
-                      const SizedBox(height: AppSpacing.md),
+                      const SizedBox(height: AppSpacing.xl2),
                     ],
                     _buildStandardField(
                       controller: _quantityController,
@@ -395,7 +395,7 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.investmentIndigo
-              : AppColors.cardDarkElevated,
+              : AppColors.cardElevated,
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           border: Border.all(
             color: isSelected ? AppColors.investmentIndigo : Colors.transparent,
@@ -434,10 +434,14 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
         hintText: hint,
         hintStyle: TextStyle(color: AppColors.textTertiary),
         filled: true,
-        fillColor: AppColors.cardDarkElevated,
+        fillColor: AppColors.cardElevated,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
         ),
         prefixIcon: icon != null
             ? Padding(

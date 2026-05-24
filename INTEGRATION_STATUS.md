@@ -19,7 +19,6 @@
 - **1065 issues total** (925 errors · 82 warnings · 58 infos)
 - Affected files (23 files with issues), including:
   - `lib/modules/payday/payday_checklist_sheet.dart` — `_completedItems` / `setState` undefined (method likely outside class scope)
-  - `lib/core/models/financial_health.dart` — multiple undefined name / type errors
   - `lib/modules/transactions/add_transaction_screen.dart` — spread syntax / parse errors
   - `lib/modules/Wallet/wallet_screen.dart`, `lib/modules/debts/`, `lib/modules/subscriptions/`, `lib/modules/nbox/`, `lib/modules/bike/`, `lib/modules/budgets/`, `lib/modules/dashboard/`, `lib/modules/accounts/`, `lib/modules/Nex/`, `lib/core/services/`, `lib/core/utils/`
 - Many errors cascade from single structural/scope issues; total error count is likely inflated by parser cascades

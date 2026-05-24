@@ -298,7 +298,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.cardDarkElevated,
+          color: AppColors.cardElevated,
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           border: Border.all(
             color: category.isCustom

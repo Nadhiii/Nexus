@@ -318,7 +318,7 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
                 margin: const EdgeInsets.only(right: AppSpacing.md),
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppColors.cardDarkElevated,
+                  color: AppColors.cardElevated,
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Row(
@@ -375,7 +375,7 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
                       ),
                       hintStyle: TextStyle(color: AppColors.textTertiary),
                       filled: true,
-                      fillColor: AppColors.cardDarkElevated,
+                      fillColor: AppColors.cardElevated,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(
                           AppSpacing.radiusLg,
@@ -497,7 +497,7 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
                               horizontal: AppSpacing.md,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.cardDarkElevated,
+                              color: AppColors.cardElevated,
                               borderRadius: BorderRadius.circular(
                                 AppSpacing.radiusMd,
                               ),
@@ -614,7 +614,7 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
         hintText: hint,
         hintStyle: TextStyle(color: AppColors.textTertiary),
         filled: true,
-        fillColor: AppColors.cardDarkElevated,
+        fillColor: AppColors.cardElevated,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           borderSide: BorderSide.none,
@@ -639,7 +639,7 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.cardDarkElevated,
+        color: AppColors.cardElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         border: Border.all(
           color: _linkToExpense
@@ -712,7 +712,7 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
                 child: DropdownButton<Account>(
                   value: _selectedAccount,
                   isExpanded: true,
-                  dropdownColor: AppColors.cardDarkElevated,
+                  dropdownColor: AppColors.cardElevated,
                   hint: Text(
                     "Select Account to Debit",
                     style: TextStyle(color: AppColors.textTertiary),

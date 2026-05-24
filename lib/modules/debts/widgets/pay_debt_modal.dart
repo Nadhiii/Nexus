@@ -12,6 +12,7 @@ import '../../../core/providers/account_provider.dart';
 import '../../../core/providers/transaction_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/top_snackbar.dart';
 import '../../../core/utils/logo_utils.dart';
 import '../utils/debt_logo_utils.dart';
@@ -161,37 +162,35 @@ class _PayDebtModalState extends State<PayDebtModal>
       children: [
         // 1. Amount Input
         Text("AMOUNT", style: _labelStyle()),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.cardSurface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        const SizedBox(height: AppSpacing.sm),
+        TextFormField(
+          controller: _amountController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
           ),
-          child: TextFormField(
-            controller: _amountController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+          decoration: InputDecoration(
+            prefixIcon: const Icon(
+              Icons.currency_rupee,
+              color: AppColors.textTertiary,
             ),
-            decoration: InputDecoration(
-              prefixIcon: const Icon(
-                Icons.currency_rupee,
-                color: AppColors.textTertiary,
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 16,
-              ),
-              suffixText:
-                  "Outstanding: ₹${widget.debt.currentBalance.toStringAsFixed(0)}",
-              suffixStyle: const TextStyle(
-                fontSize: 10,
-                color: AppColors.textTertiary,
-              ),
+            filled: true,
+            fillColor: AppColors.cardElevated,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
+            suffixText:
+                "Outstanding: ₹${widget.debt.currentBalance.toStringAsFixed(0)}",
+            suffixStyle: const TextStyle(
+              fontSize: 10,
+              color: AppColors.textTertiary,
             ),
           ),
         ),
@@ -200,7 +199,7 @@ class _PayDebtModalState extends State<PayDebtModal>
 
         // 2. Source Account Selector
         Text("PAY FROM", style: _labelStyle()),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Consumer<AccountProvider>(
           builder: (context, provider, _) {
             // Auto-select first account if none selected
@@ -219,7 +218,7 @@ class _PayDebtModalState extends State<PayDebtModal>
                 child: DropdownButton<Account>(
                   value: _selectedAccount,
                   isExpanded: true,
-                  dropdownColor: AppColors.cardSurface,
+                  dropdownColor: AppColors.cardElevated,
                   icon: const Icon(
                     Icons.keyboard_arrow_down,
                     color: AppColors.textSecondary,

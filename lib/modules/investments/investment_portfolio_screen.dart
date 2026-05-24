@@ -279,47 +279,63 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
       return _buildEmptyState();
     }
 
-    List<Widget> tiles = [];
+    final rankedAssets = List<Investment>.from(assets)
+      ..sort((a, b) => _assetPriorityScore(b).compareTo(_assetPriorityScore(a)));
 
-    for (int i = 0; i < assets.length; i++) {
-      final asset = assets[i];
-      // Pattern: Large, Small, Small, Wide, Small, Small, repeat
-      final patternIndex = i % 6;
-      final isLarge = patternIndex == 0;
-      final isWide = patternIndex == 3;
-
-      tiles.add(
-        _buildPremiumAssetTile(
-          context,
-          asset,
-          provider,
-          isLarge: isLarge,
-          isWide: isWide,
-        ),
-      );
-    }
-
-    // Build grid layout
     List<Widget> rows = [];
     int index = 0;
 
-    while (index < tiles.length) {
-      final patternIndex = index % 6;
+    while (index < rankedAssets.length) {
+      final remaining = rankedAssets.length - index;
+      final first = rankedAssets[index];
+      final firstCritical = _isPriorityAsset(first);
 
-      if (patternIndex == 0 && index < tiles.length) {
-        // Large tile (full width) + 2 small tiles stacked
-        final large = tiles[index];
-        final smallTiles = <Widget>[];
-        if (index + 1 < tiles.length) {
-          smallTiles.add(Expanded(child: tiles[index + 1]));
-        }
-        if (index + 2 < tiles.length) {
-          smallTiles.add(const SizedBox(height: 12));
-        }
-        if (index + 2 < tiles.length) {
-          smallTiles.add(Expanded(child: tiles[index + 2]));
-        }
-
+      if (remaining == 1) {
+        rows.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildPremiumAssetTile(
+              context,
+              first,
+              provider,
+              isWide: true,
+            ),
+          ),
+        );
+        index++;
+      } else if (remaining == 2) {
+        final second = rankedAssets[index + 1];
+        final useLarge = firstCritical || _isPriorityAsset(second);
+        rows.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildPremiumAssetTile(
+                    context,
+                    first,
+                    provider,
+                    isLarge: useLarge,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildPremiumAssetTile(
+                    context,
+                    second,
+                    provider,
+                    isLarge: useLarge,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        index += 2;
+      } else if (firstCritical) {
+        final second = rankedAssets[index + 1];
+        final third = rankedAssets[index + 2];
         rows.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -328,65 +344,109 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(child: large),
-                  if (smallTiles.isNotEmpty) ...[
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        children: smallTiles.isEmpty
-                            ? [const Spacer()]
-                            : smallTiles,
-                      ),
+                  Expanded(
+                    child: _buildPremiumAssetTile(
+                      context,
+                      first,
+                      provider,
+                      isLarge: true,
                     ),
-                  ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: _buildPremiumAssetTile(
+                            context,
+                            second,
+                            provider,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Expanded(
+                          child: _buildPremiumAssetTile(
+                            context,
+                            third,
+                            provider,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         );
         index += 3;
-      } else if (patternIndex == 3 && index < tiles.length) {
-        // Wide tile (full width)
-        rows.add(
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: tiles[index],
-          ),
-        );
-        index += 1;
       } else {
-        // Two small tiles side by side
-        final tile1 = tiles[index];
-        Widget? tile2;
-        if (index + 1 < tiles.length &&
-            (index + 1) % 6 != 0 &&
-            (index + 1) % 6 != 3) {
-          tile2 = tiles[index + 1];
-        }
-
+        final second = rankedAssets[index + 1];
+        final third = rankedAssets[index + 2];
         rows.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: SizedBox(
-              height: 94,
+              height: 168,
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(child: tile1),
-                  if (tile2 != null) ...[
-                    const SizedBox(width: 12),
-                    Expanded(child: tile2),
-                  ],
+                  Expanded(
+                    flex: 3,
+                    child: _buildPremiumAssetTile(
+                      context,
+                      first,
+                      provider,
+                      isWide: true,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: _buildPremiumAssetTile(
+                            context,
+                            second,
+                            provider,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Expanded(
+                          child: _buildPremiumAssetTile(
+                            context,
+                            third,
+                            provider,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         );
-        index += tile2 != null ? 2 : 1;
+        index += 3;
       }
     }
 
     return Column(children: rows);
   }
+
+  double _assetPriorityScore(Investment asset) {
+    final currentValueWeight = asset.currentAmount / 100000;
+    final lossWeight = asset.totalProfit < 0 ? 5 + asset.profitPercent.abs() : 0;
+    final typeRiskWeight = switch (asset.type) {
+      InvestmentType.crypto => 2.5,
+      InvestmentType.stock => 1.5,
+      _ => 0.5,
+    };
+    return currentValueWeight + lossWeight + typeRiskWeight;
+  }
+
+  bool _isPriorityAsset(Investment asset) => _assetPriorityScore(asset) >= 6;
 
   Widget _buildPremiumAssetTile(
     BuildContext context,
@@ -752,15 +812,15 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
   Color _getAssetColor(InvestmentType type) {
     switch (type) {
       case InvestmentType.crypto:
-        return Colors.orange;
+        return AppColors.orange;
       case InvestmentType.gold:
-        return Colors.amber;
+        return AppColors.yellow;
       case InvestmentType.stock:
-        return Colors.blue;
+        return AppColors.info;
       case InvestmentType.mutualFund:
-        return Colors.purple;
+        return AppColors.pastelPurple;
       default:
-        return Colors.grey;
+        return AppColors.textSecondary;
     }
   }
 

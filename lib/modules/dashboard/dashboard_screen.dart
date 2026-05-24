@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/providers/account_provider.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../../core/providers/notification_provider.dart';
 import '../../core/models/transaction.dart';
-import '../../core/widgets/financial_health_widget.dart';
+import '../../core/widgets/total_balance_card.dart';
 import '../../core/widgets/upcoming_week_widget.dart';
+import '../../core/providers/user_provider.dart';
 import '../bike/widgets/garage_dashboard_widget.dart';
 import '../family/screens/expense_splitter_screen.dart';
 import '../transactions/add_transaction_screen.dart';
@@ -43,15 +45,25 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
           // ── 2. BALANCE CARD ────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-              child: _BalanceCard(),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.sm,
+                AppSpacing.xl,
+                0,
+              ),
+              child: const TotalBalanceCard(),
             ),
           ),
 
           // ── 3. ACTION BAR ──────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.lg,
+                AppSpacing.xl,
+                0,
+              ),
               child: _ActionBar(),
             ),
           ),
@@ -59,7 +71,12 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
           // ── 4. UPCOMING WEEK ───────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.lg,
+                AppSpacing.xl,
+                0,
+              ),
               child: UpcomingWeekWidget(
                 onViewAll: () {
                   // TODO: navigate to full bills/obligations screen
@@ -68,26 +85,28 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
             ),
           ),
 
-          // ── 5. FINANCIAL HEALTH ────────────────────────────────────────
+          // ── 5. GARAGE WIDGET ───────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: const FinancialHealthWidget(),
-            ),
-          ),
-
-          // ── 6. GARAGE WIDGET ───────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.md,
+                AppSpacing.xl,
+                0,
+              ),
               child: const GarageDashboardWidget(),
             ),
           ),
 
-          // ── 7. RECENT ACTIVITY ─────────────────────────────────────────
+          // ── 6. RECENT ACTIVITY ─────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.lg,
+                AppSpacing.xl,
+                0,
+              ),
               child: _RecentActivitySection(),
             ),
           ),
@@ -126,7 +145,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
                   color: AppColors.cardSurface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: AppColors.white12,
                   ),
                 ),
                 child: Stack(
@@ -151,8 +170,8 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
                           child: Center(
                             child: Text(
                               unread > 9 ? '9+' : '$unread',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: AppTypography.labelSmall.copyWith(
+                                color: AppColors.textPrimary,
                                 fontSize: 8,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -176,207 +195,41 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _GreetingTitle extends StatelessWidget {
-  String _greeting() {
+  String _greetingByTime() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    return hour < 12 ? 'Good morning,' : 'Good evening,';
+  }
+
+  String _resolveUserName(BuildContext context) {
+    final providerName = context.watch<UserProvider>().user?.displayName ?? '';
+    final authName = FirebaseAuth.instance.currentUser?.displayName ?? '';
+    final candidate = providerName.trim().isNotEmpty
+        ? providerName.trim()
+        : authName.trim();
+    return candidate.isNotEmpty ? candidate : 'User';
   }
 
   @override
   Widget build(BuildContext context) {
+    final userName = _resolveUserName(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _greeting(),
-          style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
+          _greetingByTime(),
+          style: AppTypography.bodySmall.copyWith(
+            color: AppColors.textTertiary,
+          ),
         ),
         Text(
-          'Dashboard',
-          style: AppTypography.titleLarge.copyWith(
+          userName,
+          style: AppTypography.displayMedium.copyWith(
             color: AppColors.textPrimary,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w900,
+            height: 1.05,
           ),
         ),
       ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Balance Card
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _BalanceCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Consumer2<AccountProvider, TransactionProvider>(
-      builder: (context, accounts, transactions, _) {
-        final totalBalance = accounts.accounts
-            .where((a) => a.isActive)
-            .fold(0.0, (sum, a) => sum + a.balance);
-
-        final now = DateTime.now();
-        final monthStart = DateTime(now.year, now.month, 1);
-        final monthTxns = transactions.transactions
-            .where((t) => t.date.isAfter(monthStart))
-            .toList();
-
-        final monthIncome = monthTxns
-            .where((t) => t.type == TransactionType.income)
-            .fold(0.0, (sum, t) => sum + t.amount);
-        final monthExpense = monthTxns
-            .where((t) => t.type == TransactionType.expense)
-            .fold(0.0, (sum, t) => sum + t.amount);
-
-        final runway = monthExpense > 0
-            ? (totalBalance / (monthExpense / now.day * 30)).floor()
-            : null;
-
-        String runwayMsg;
-        Color runwayColor;
-        if (runway == null) {
-          runwayMsg = 'No expenses this month';
-          runwayColor = AppColors.textTertiary;
-        } else if (runway >= 90) {
-          runwayMsg = 'Runway: 3+ months 🟢';
-          runwayColor = AppColors.pastelGreen;
-        } else if (runway >= 30) {
-          runwayMsg = 'Runway: ~$runway days';
-          runwayColor = AppColors.pastelOrange;
-        } else {
-          runwayMsg = 'Runway: $runway days ⚠';
-          runwayColor = AppColors.error;
-        }
-
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF1A2744), Color(0xFF0F1523)],
-            ),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-                color: Colors.white.withValues(alpha: 0.06)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Label
-              Text(
-                'TOTAL BALANCE',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Big number
-              Text(
-                '₹${NumberFormat('#,##,###').format(totalBalance)}',
-                style: AppTypography.currencyLarge,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                runwayMsg,
-                style:
-                    TextStyle(color: runwayColor, fontSize: 12),
-              ),
-              const SizedBox(height: 20),
-              // Income / Expense row
-              Row(
-                children: [
-                  Expanded(
-                    child: _MiniStat(
-                      label: 'Income',
-                      value: monthIncome,
-                      color: AppColors.pastelGreen,
-                      icon: Icons.arrow_downward_rounded,
-                    ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 36,
-                    color: Colors.white.withValues(alpha: 0.08),
-                  ),
-                  Expanded(
-                    child: _MiniStat(
-                      label: 'Spent',
-                      value: monthExpense,
-                      color: AppColors.error,
-                      icon: Icons.arrow_upward_rounded,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
-  final String label;
-  final double value;
-  final Color color;
-  final IconData icon;
-
-  const _MiniStat({
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 14),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                    color: AppColors.textTertiary, fontSize: 10),
-              ),
-              Text(
-                '₹${NumberFormat.compact().format(value)}',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

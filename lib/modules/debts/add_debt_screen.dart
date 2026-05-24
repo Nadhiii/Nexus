@@ -121,7 +121,7 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
                         ),
                         hintStyle: TextStyle(color: AppColors.textTertiary),
                         filled: true,
-                        fillColor: AppColors.cardDarkElevated,
+                        fillColor: AppColors.cardElevated,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(
                             AppSpacing.radiusLg,
@@ -186,7 +186,7 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
                       hint: "Debt Name (e.g. HDFC Card)",
                       icon: Icons.description_outlined,
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: AppSpacing.xl2),
                     _buildStandardField(
                       controller: _lenderController,
                       hint: "Lender / Bank Name",
@@ -319,7 +319,7 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.error : AppColors.cardDarkElevated,
+          color: isSelected ? AppColors.error : AppColors.cardElevated,
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           border: Border.all(
             color: isSelected ? AppColors.error : Colors.transparent,
@@ -356,10 +356,14 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
         hintText: hint,
         hintStyle: TextStyle(color: AppColors.textTertiary),
         filled: true,
-        fillColor: AppColors.cardDarkElevated,
+        fillColor: AppColors.cardElevated,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
         ),
         prefixIcon: icon != null
             ? Padding(
@@ -396,10 +400,10 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
-          vertical: 16,
+          vertical: AppSpacing.md,
         ),
         decoration: BoxDecoration(
-          color: AppColors.cardDarkElevated,
+          color: AppColors.cardElevated,
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         ),
         child: Row(

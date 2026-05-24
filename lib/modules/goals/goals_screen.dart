@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/models/goal.dart';
 import '../../core/widgets/app_dialog.dart';
@@ -79,7 +80,12 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.cardElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.radiusLg),
+        ),
+      ),
       builder: (context) =>
           ModernAddGoalScreen(onGoalAdded: _updateGoal, goalToEdit: goal),
     );
@@ -89,7 +95,12 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.cardElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.radiusLg),
+        ),
+      ),
       builder: (context) => ModernAddGoalScreen(onGoalAdded: onGoalAdded),
     );
   }

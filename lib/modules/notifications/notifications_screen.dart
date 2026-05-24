@@ -5,6 +5,7 @@ import '../../core/providers/notification_provider.dart';
 import '../../core/models/notification.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
 
 class ModernNotificationsScreen extends StatefulWidget {
   const ModernNotificationsScreen({super.key});
@@ -31,16 +32,14 @@ class _ModernNotificationsScreenState extends State<ModernNotificationsScreen> {
           // 1. STANDARD HEADER
           SliverAppBar(
             pinned: true,
-            expandedHeight: 110, // Standard Height
+            expandedHeight: AppSpacing.appBarExpandedHeight,
             backgroundColor: AppColors.backgroundBlack,
             surfaceTintColor: AppColors.backgroundBlack,
             elevation: 0,
+            automaticallyImplyLeading: false,
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: false,
-              titlePadding: const EdgeInsets.only(
-                left: 20,
-                bottom: 24,
-              ), // Standard Padding
+              titlePadding: AppSpacing.appBarTitlePadding,
               title: Text(
                 'Notifications',
                 style: AppTypography.headlineMedium.copyWith(
@@ -51,7 +50,10 @@ class _ModernNotificationsScreenState extends State<ModernNotificationsScreen> {
             ),
             actions: [
               Padding(
-                padding: const EdgeInsets.only(right: 8.0, top: 10.0),
+                padding: const EdgeInsets.only(
+                  right: AppSpacing.md,
+                  top: AppSpacing.md,
+                ),
                 child: TextButton(
                   onPressed: () => context
                       .read<NotificationProvider>()

@@ -148,7 +148,7 @@ class _EditCategoryModalState extends State<EditCategoryModal> {
                     Container(
                       padding: const EdgeInsets.all(AppSpacing.xl),
                       decoration: BoxDecoration(
-                        color: AppColors.cardDarkElevated,
+                        color: AppColors.cardElevated,
                         borderRadius: BorderRadius.circular(
                           AppSpacing.radiusXl,
                         ),
@@ -335,7 +335,7 @@ class _EditCategoryModalState extends State<EditCategoryModal> {
           color: AppColors.textTertiary.withValues(alpha: 0.5),
         ),
         filled: true,
-        fillColor: AppColors.cardDarkElevated,
+        fillColor: AppColors.cardElevated,
         counterText: "",
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),

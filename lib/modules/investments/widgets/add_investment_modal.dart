@@ -136,13 +136,13 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
                   maxWidth: 450,
                   maxHeight: 800,
                 ),
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(AppSpacing.xl),
                 decoration: BoxDecoration(
                   color: AppColors.backgroundBlack,
                   borderRadius: BorderRadius.circular(32),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
+                   border: Border.all(
+                     color: AppColors.white12,
+                   ),
                   // SHADOW REMOVED HERE
                 ),
                 child: Column(
@@ -162,7 +162,7 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
                         ),
                         IconButton(
                           onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.close, color: Colors.white54),
+                          icon: const Icon(Icons.close, color: AppColors.white54),
                         ),
                       ],
                     ),
@@ -262,7 +262,7 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
                                 hint: "Asset Name",
                                 icon: Icons.description_outlined,
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: AppSpacing.xl2),
                               if (_selectedType != InvestmentType.mutualFund)
                                 _buildGlassField(
                                   controller: _symbolController,
@@ -270,7 +270,7 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
                                   icon: Icons.short_text,
                                 ),
 
-                              const SizedBox(height: 12),
+                              const SizedBox(height: AppSpacing.xl2),
                               _buildGlassField(
                                 controller: _quantityController,
                                 hint: "Quantity",
@@ -364,11 +364,11 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
               ? AppColors.investmentIndigo
               : AppColors.cardSurface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.investmentIndigo
-                : Colors.white.withValues(alpha: 0.1),
-          ),
+             border: Border.all(
+               color: isSelected
+                   ? AppColors.investmentIndigo
+                   : AppColors.white12,
+             ),
         ),
         child: Center(
           child: Text(
@@ -386,7 +386,7 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
 
   Widget _buildLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8, left: 4),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Text(
         text,
         style: AppTypography.titleSmall.copyWith(
@@ -404,36 +404,37 @@ class _AddInvestmentModalState extends State<AddInvestmentModal>
     bool isNumber = false,
     Function(String)? onChanged,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardDarkElevated,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: isNumber
-            ? const TextInputType.numberWithOptions(decimal: true)
-            : TextInputType.text,
-        onChanged: onChanged,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(
-            color: AppColors.textTertiary.withValues(alpha: 0.7),
-          ),
-          prefixIcon: icon != null
-              ? Icon(icon, color: AppColors.textSecondary, size: 20)
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 16,
-          ),
+    return TextFormField(
+      controller: controller,
+      keyboardType: isNumber
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      onChanged: onChanged,
+      style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: AppColors.textTertiary),
+        filled: true,
+        fillColor: AppColors.cardElevated,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          borderSide: BorderSide.none,
         ),
-        validator: (value) =>
-            (value == null || value.isEmpty) ? "Required" : null,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        prefixIcon: icon != null
+            ? Padding(
+                padding: const EdgeInsets.only(
+                  left: AppSpacing.md,
+                  right: AppSpacing.sm,
+                ),
+                child: Icon(icon, color: AppColors.textSecondary, size: 20),
+              )
+            : null,
       ),
+      validator: (value) => (value == null || value.isEmpty) ? "Required" : null,
     );
   }
 

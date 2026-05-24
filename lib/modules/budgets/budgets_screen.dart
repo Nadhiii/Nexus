@@ -20,7 +20,9 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _didInitProvider) { return; }
+      if (!mounted || _didInitProvider) {
+        return;
+      }
       _didInitProvider = true;
       context.read<BudgetProvider>().initialize();
     });
@@ -411,96 +413,94 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
 
   // ========== BENTO GRID LAYOUT ==========
   Widget _buildBentoBudgetGrid(BuildContext context, List<Budget> budgets) {
-    // Sort by amount allocated (highest first) for bento importance
     final sorted = List<Budget>.from(budgets)
-      ..sort((a, b) => b.allocatedAmount.compareTo(a.allocatedAmount));
+      ..sort(
+        (a, b) => _budgetPriorityScore(b).compareTo(_budgetPriorityScore(a)),
+      );
 
     final List<Widget> rows = [];
     int index = 0;
 
     while (index < sorted.length) {
       final remaining = sorted.length - index;
+      final first = sorted[index];
+      final firstPriority = _isPriorityBudget(first);
 
       if (remaining == 1) {
-        // Single item: wide tile
-        rows.add(_buildBentoTile(context, sorted[index], isWide: true));
+        rows.add(_buildBentoTile(context, first, isWide: true));
         index++;
       } else if (remaining == 2) {
-        // Two items: two large squares OR wide + compact
-        if (index == 0) {
-          // First two: two large squares side by side
-          rows.add(
-            Row(
-              children: [
-                Expanded(
-                  child: _buildBentoTile(context, sorted[index], isLarge: true),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildBentoTile(
-                    context,
-                    sorted[index + 1],
-                    isLarge: true,
-                  ),
-                ),
-              ],
-            ),
-          );
-        } else {
-          // Later: row of 2 compact
-          rows.add(
-            Row(
-              children: [
-                Expanded(
-                  child: _buildBentoTile(
-                    context,
-                    sorted[index],
-                    isCompact: true,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildBentoTile(
-                    context,
-                    sorted[index + 1],
-                    isCompact: true,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        index += 2;
-      } else if (remaining >= 3 && index == 0) {
-        // First row: 2 large squares
+        final second = sorted[index + 1];
+        final useLarge = firstPriority || _isPriorityBudget(second);
         rows.add(
           Row(
             children: [
               Expanded(
-                child: _buildBentoTile(context, sorted[index], isLarge: true),
+                child: _buildBentoTile(
+                  context,
+                  first,
+                  isLarge: useLarge,
+                  isCompact: !useLarge,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildBentoTile(
                   context,
-                  sorted[index + 1],
-                  isLarge: true,
+                  second,
+                  isLarge: useLarge,
+                  isCompact: !useLarge,
                 ),
               ),
             ],
           ),
         );
         index += 2;
-      } else if (remaining >= 3) {
-        // Pattern: 1 wide + 2 stacked compact
+      } else if (firstPriority) {
         rows.add(
-          IntrinsicHeight(
+          SizedBox(
+            height: 200,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: _buildBentoTile(context, first, isLarge: true)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: _buildBentoTile(
+                          context,
+                          sorted[index + 1],
+                          isCompact: true,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: _buildBentoTile(
+                          context,
+                          sorted[index + 2],
+                          isCompact: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        index += 3;
+      } else {
+        rows.add(
+          SizedBox(
+            height: 168,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
                   flex: 3,
-                  child: _buildBentoTile(context, sorted[index], isWide: true),
+                  child: _buildBentoTile(context, first, isWide: true),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -537,6 +537,21 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
 
     return Column(children: rows);
   }
+
+  double _budgetPriorityScore(Budget budget) {
+    final overspentWeight = budget.isOverspent ? 100.0 : 0.0;
+    final nearLimitWeight =
+        (!budget.isOverspent && budget.spentPercentage >= 0.85) ? 45.0 : 0.0;
+    final projectedOverWeight =
+        budget.projectedSpending > budget.allocatedAmount ? 20.0 : 0.0;
+    final amountWeight = budget.allocatedAmount / 15000;
+    return overspentWeight +
+        nearLimitWeight +
+        projectedOverWeight +
+        amountWeight;
+  }
+
+  bool _isPriorityBudget(Budget budget) => _budgetPriorityScore(budget) >= 45;
 
   Widget _buildBentoTile(
     BuildContext context,
@@ -822,7 +837,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
         onTap: () => showAddBudgetModal(context, budget: budget),
         onLongPress: () => _showDeleteConfirmation(context, budget),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: AppColors.cardSurface,
             borderRadius: BorderRadius.circular(20),
@@ -830,7 +845,8 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Row(
                 children: [
@@ -854,7 +870,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               // Progress bar
               Stack(
                 children: [
@@ -878,7 +894,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

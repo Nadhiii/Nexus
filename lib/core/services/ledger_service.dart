@@ -24,7 +24,9 @@ class LedgerService {
   }) async {
     final userId = transaction.userId;
 
-    final transactionRef = _userCol(userId, 'transactions').doc();
+    final transactionRef = transaction.id.isNotEmpty 
+        ? _userCol(userId, 'transactions').doc(transaction.id)
+        : _userCol(userId, 'transactions').doc();
     final accountRef = _userDoc(userId, 'accounts', transaction.accountId);
 
     final batch = _firestore.batch();
@@ -66,7 +68,9 @@ class LedgerService {
   }) async {
     final userId = transaction.userId;
 
-    final transactionRef = _userCol(userId, 'transactions').doc();
+    final transactionRef = transaction.id.isNotEmpty 
+        ? _userCol(userId, 'transactions').doc(transaction.id)
+        : _userCol(userId, 'transactions').doc();
     final sourceAccountRef =
         _userDoc(userId, 'accounts', transaction.accountId);
     final destAccountRef =
@@ -83,6 +87,88 @@ class LedgerService {
 
     await batch.commit();
     debugPrint('LedgerService: committed transfer+both balances');
+  }
+
+  /// Atomically update a transaction, update account balances, and adjust budgets.
+  /// [accountBalances] should contain the fully computed new balances for any account
+  /// affected by this edit (e.g. source, dest, or if the account was changed).
+  Future<void> updateTransactionAndUpdateBalances({
+    required Transaction oldTransaction,
+    required Transaction newTransaction,
+    required Map<String, double> accountBalances,
+  }) async {
+    final userId = newTransaction.userId;
+    final transactionRef = _userDoc(userId, 'transactions', newTransaction.id);
+    
+    final batch = _firestore.batch();
+    batch.update(transactionRef, newTransaction.toMap());
+
+    for (final entry in accountBalances.entries) {
+      final accountRef = _userDoc(userId, 'accounts', entry.key);
+      batch.update(accountRef, {'balance': entry.value});
+    }
+
+    // Budget revert old amount (if expense)
+    if (oldTransaction.type == TransactionType.expense &&
+        oldTransaction.categoryId != null &&
+        oldTransaction.categoryId!.isNotEmpty) {
+      await _applyBudgetUpdate(
+        batch: batch,
+        userId: userId,
+        categoryId: oldTransaction.categoryId!,
+        amount: -oldTransaction.amount, // negative to revert
+        transactionDate: oldTransaction.date,
+      );
+    }
+
+    // Budget apply new amount (if expense)
+    if (newTransaction.type == TransactionType.expense &&
+        newTransaction.categoryId != null &&
+        newTransaction.categoryId!.isNotEmpty) {
+      await _applyBudgetUpdate(
+        batch: batch,
+        userId: userId,
+        categoryId: newTransaction.categoryId!,
+        amount: newTransaction.amount,
+        transactionDate: newTransaction.date,
+      );
+    }
+
+    await batch.commit();
+    debugPrint('LedgerService: committed transaction update + balances + budget adjustments');
+  }
+
+  /// Atomically delete a transaction, update affected account balances, and adjust budgets.
+  Future<void> deleteTransactionAndUpdateBalances({
+    required Transaction transaction,
+    required Map<String, double> accountBalances,
+  }) async {
+    final userId = transaction.userId;
+    final transactionRef = _userDoc(userId, 'transactions', transaction.id);
+    
+    final batch = _firestore.batch();
+    batch.delete(transactionRef);
+
+    for (final entry in accountBalances.entries) {
+      final accountRef = _userDoc(userId, 'accounts', entry.key);
+      batch.update(accountRef, {'balance': entry.value});
+    }
+
+    // Budget revert amount (if expense)
+    if (transaction.type == TransactionType.expense &&
+        transaction.categoryId != null &&
+        transaction.categoryId!.isNotEmpty) {
+      await _applyBudgetUpdate(
+        batch: batch,
+        userId: userId,
+        categoryId: transaction.categoryId!,
+        amount: -transaction.amount, // negative to revert
+        transactionDate: transaction.date,
+      );
+    }
+
+    await batch.commit();
+    debugPrint('LedgerService: committed transaction delete + balances + budget revert');
   }
 
   // ---------------------------------------------------------------------------

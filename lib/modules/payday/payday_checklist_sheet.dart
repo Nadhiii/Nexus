@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/models/payday_checklist.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_animations.dart';
 
@@ -28,7 +29,12 @@ class PaydayChecklistSheet extends StatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.cardElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.radiusLg),
+        ),
+      ),
       builder: (context) => PaydayChecklistSheet(
         checklist: checklist,
         onItemTap: onItemTap,
@@ -55,8 +61,10 @@ class _PaydayChecklistSheetState extends State<PaydayChecklistSheet> {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: AppColors.backgroundBlack,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            color: AppColors.cardElevated,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppSpacing.radiusLg),
+            ),
           ),
           child: Column(
             children: [

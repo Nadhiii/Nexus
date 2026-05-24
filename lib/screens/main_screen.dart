@@ -188,10 +188,10 @@ class _MainScreenState extends State<MainScreen>
                   : ImageFilter.blur(sigmaX: 20, sigmaY: 20), // Stronger blur
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: AppColors.white12,
                   borderRadius: BorderRadius.circular(35),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.12),
+                    color: AppColors.white12,
                     width: 0.5,
                   ),
                 ),
