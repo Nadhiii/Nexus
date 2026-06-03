@@ -1,38 +1,19 @@
 import 'package:flutter/material.dart';
-import '../models/vehicle_document.dart';
 import '../models/challan.dart';
-import '../services/vehicle_document_service.dart';
 import '../services/challan_service.dart';
 
 class VehicleManagementProvider extends ChangeNotifier {
-  final VehicleDocumentService _documentService = VehicleDocumentService();
   final ChallanService _challanService = ChallanService();
 
   // State variables
-  List<VehicleDocument> _documents = [];
   List<Challan> _challans = [];
   bool _isLoading = false;
   String _error = '';
 
   // Getters
-  List<VehicleDocument> get documents => _documents;
   List<Challan> get challans => _challans;
   bool get isLoading => _isLoading;
   String get error => _error;
-
-  // Document-specific getters
-  List<VehicleDocument> get rcDocuments =>
-      _documents.where((d) => d.documentType == 'rc').toList();
-  List<VehicleDocument> get insuranceDocuments =>
-      _documents.where((d) => d.documentType == 'insurance').toList();
-  List<VehicleDocument> get pollutionDocuments =>
-      _documents.where((d) => d.documentType == 'pollution').toList();
-  List<VehicleDocument> get pucDocuments =>
-      _documents.where((d) => d.documentType == 'puc').toList();
-  List<VehicleDocument> get expiringDocuments =>
-      _documentService.getExpiringDocuments(_documents);
-  List<VehicleDocument> get expiredDocuments =>
-      _documentService.getExpiredDocuments(_documents);
 
   // Challan-specific getters
   List<Challan> get paidChallans => _challans.where((c) => c.isPaid).toList();
@@ -44,88 +25,6 @@ class VehicleManagementProvider extends ChangeNotifier {
       _challanService.getExpiringChallans(_challans);
   double get totalPendingFines =>
       _challanService.getTotalPendingFines(_challans);
-
-  /// Fetch all documents for a vehicle
-  Future<void> fetchVehicleDocuments(String bikeId) async {
-    _setLoading(true);
-    try {
-      _documents = await _documentService.getVehicleDocuments(bikeId);
-      _error = '';
-    } catch (e) {
-      _error = 'Failed to load documents: $e';
-    }
-    _setLoading(false);
-  }
-
-  /// Fetch documents by type
-  Future<void> fetchDocumentsByType(String bikeId, String docType) async {
-    _setLoading(true);
-    try {
-      _documents = await _documentService.getVehicleDocumentsByType(
-        bikeId,
-        docType,
-      );
-      _error = '';
-    } catch (e) {
-      _error = 'Failed to load documents: $e';
-    }
-    _setLoading(false);
-  }
-
-  /// Register a new document
-  Future<VehicleDocument?> registerDocument({
-    required String bikeId,
-    required String userId,
-    required String documentType,
-    required String fileName,
-    String? fileUrl,
-    DateTime? expiryDate,
-    String? description,
-    int fileSizeBytes = 0,
-  }) async {
-    _setLoading(true);
-    try {
-      final doc = await _documentService.registerDocument(
-        bikeId: bikeId,
-        userId: userId,
-        documentType: documentType,
-        fileName: fileName,
-        fileUrl: fileUrl,
-        expiryDate: expiryDate,
-        description: description,
-        fileSizeBytes: fileSizeBytes,
-      );
-
-      if (doc != null) {
-        _documents.add(doc);
-        _error = '';
-      }
-      return doc;
-    } catch (e) {
-      _error = 'Failed to register document: $e';
-      return null;
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  /// Delete a document
-  Future<bool> deleteDocument(VehicleDocument document) async {
-    _setLoading(true);
-    try {
-      final success = await _documentService.deleteDocument(document);
-      if (success) {
-        _documents.removeWhere((d) => d.id == document.id);
-        _error = '';
-      }
-      return success;
-    } catch (e) {
-      _error = 'Failed to delete document: $e';
-      return false;
-    } finally {
-      _setLoading(false);
-    }
-  }
 
   /// Fetch all challans for a vehicle
   Future<void> fetchVehicleChallans(String bikeId) async {

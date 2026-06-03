@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // AIConfig and cloud providers removed — using local Gemma only
-import '../../../core/models/pdf_parsing_provider.dart';
 import '../models/Nex_message.dart';
 import '../models/Nex_conversation.dart';
 import '../models/Nex_settings.dart';
@@ -23,7 +22,6 @@ import '../../../core/providers/budget_provider.dart';
 import '../../../core/providers/goal_provider.dart';
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/providers/new_nbox_provider.dart';
-import '../../../core/providers/pdf_import_provider.dart';
 import '../../../core/providers/shared_expense_provider.dart';
 import '../../../core/providers/category_provider.dart';
 
@@ -50,7 +48,6 @@ class AIAssistantProvider with ChangeNotifier {
   GoalProvider? _goalProvider;
   BikeProvider? _bikeProvider;
   NewNboxProvider? _nboxProvider;
-  PDFImportProvider? _pdfImportProvider;
   SharedExpenseProvider? _sharedExpenseProvider;
   CategoryProvider? _categoryProvider;
 
@@ -75,11 +72,6 @@ class AIAssistantProvider with ChangeNotifier {
     await _loadConversations();
     await _initService();
 
-    // Propagate PDF parsing provider setting
-    if (_pdfImportProvider != null) {
-      _pdfImportProvider!.setPDFParsingProvider(_settings.pdfParsingProvider);
-    }
-
     _isInitialized = true;
     notifyListeners();
   }
@@ -101,16 +93,6 @@ class AIAssistantProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setPDFParsingProvider(PDFParsingProvider provider) async {
-    _settings = _settings.copyWith(pdfParsingProvider: provider);
-    await _saveSettings();
-
-    if (_pdfImportProvider != null) {
-      _pdfImportProvider!.setPDFParsingProvider(provider);
-    }
-    notifyListeners();
-  }
-
   // --- CONTEXT INJECTION ---
 
   void setContextProviders({
@@ -123,7 +105,6 @@ class AIAssistantProvider with ChangeNotifier {
     GoalProvider? goalProvider,
     BikeProvider? bikeProvider,
     NewNboxProvider? nboxProvider,
-    PDFImportProvider? pdfImportProvider,
     SharedExpenseProvider? sharedExpenseProvider,
     CategoryProvider? categoryProvider,
   }) {
@@ -136,28 +117,23 @@ class AIAssistantProvider with ChangeNotifier {
     _goalProvider = goalProvider;
     _bikeProvider = bikeProvider;
     _nboxProvider = nboxProvider;
-    _pdfImportProvider = pdfImportProvider;
     _sharedExpenseProvider = sharedExpenseProvider;
     _categoryProvider = categoryProvider;
   }
 
-  // --- API KEY MANAGEMENT (Kept for PDF backups) ---
+  // --- API KEY MANAGEMENT ---
 
   Future<void> setGeminiApiKey(String apiKey) async {
     _isLoading = true;
     notifyListeners();
     try {
-      // Store the key locally (kept for backward compatibility with PDF import).
+      // Store the key locally.
       _settings = _settings.copyWith(
         geminiApiKey: apiKey,
         activeModel: AIModel.gemma,
       );
       await _saveSettings();
       await _initService();
-
-      if (_pdfImportProvider != null) {
-        _pdfImportProvider!.setGeminiApiKeyForPDF(apiKey);
-      }
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -170,15 +146,10 @@ class AIAssistantProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      // Store the key locally for PDF-import compatibility only.
+      // Store the key locally.
       _settings = _settings.copyWith(claudeApiKey: apiKey);
       await _saveSettings();
       await _initService();
-
-      // Claude API key support has been removed - using Gemini only
-      // if (_pdfImportProvider != null) {
-      //   _pdfImportProvider!.setClaudeApiKeyForPDF(apiKey);
-      // }
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -269,21 +240,6 @@ class AIAssistantProvider with ChangeNotifier {
     }
   }
 
-  // --- PDF PARSING (Using Cloud for precision if needed) ---
-  Future<String> parseBankStatement(String pdfText) async {
-    if (_aiService == null) { throw Exception('AI not initialized'); }
-
-    const systemPrompt =
-        "You are a specialized data extraction AI. Extract the transaction data from this bank statement text into strict JSON format with fields: date, description, amount, type. Return ONLY JSON.";
-
-    return await _aiService!.sendMessage(
-      pdfText,
-      systemPrompt,
-      [],
-      task: AITask.precision,
-    );
-  }
-
   // --- HELPERS ---
 
   void startNewConversation() {
@@ -309,7 +265,6 @@ class AIAssistantProvider with ChangeNotifier {
       goalProvider: _goalProvider,
       bikeProvider: _bikeProvider,
       nboxProvider: _nboxProvider,
-      pdfImportProvider: _pdfImportProvider,
       sharedExpenseProvider: _sharedExpenseProvider,
       categoryProvider: _categoryProvider,
     ).buildSmartContext(query);

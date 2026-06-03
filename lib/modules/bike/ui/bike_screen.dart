@@ -15,7 +15,6 @@ import '../widgets/edit_entry_dialog.dart';
 import '../widgets/fuel_price_widget.dart';
 import '../widgets/vehicle_rc_card.dart';
 import '../screens/garage_screen.dart';
-import '../screens/documents_screen.dart';
 
 class ModernBikeScreen extends StatefulWidget {
   const ModernBikeScreen({super.key});
@@ -168,100 +167,6 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                           VehicleRCWidget(bike: selectedBike),
                           const SizedBox(height: 16),
                           BikeStatsWidget(provider: provider),
-                          const SizedBox(height: 16),
-                          GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    VehicleDocumentsExampleScreen(
-                                      bike: selectedBike,
-                                    ),
-                              ),
-                            ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    AppColors.primaryBlue.withValues(
-                                      alpha: 0.15,
-                                    ),
-                                    AppColors.primaryBlue.withValues(
-                                      alpha: 0.05,
-                                    ),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: AppColors.primaryBlue.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                  width: 1,
-                                ),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 16,
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primaryBlue
-                                              .withValues(alpha: 0.2),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: const Icon(
-                                          Icons.description_outlined,
-                                          color: AppColors.primaryBlue,
-                                          size: 24,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Vehicle Documents',
-                                            style: AppTypography.titleMedium
-                                                .copyWith(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            'RC, Insurance, PUC',
-                                            style: AppTypography.bodySmall
-                                                .copyWith(
-                                                  color: AppColors.textTertiary,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  Icon(
-                                    Icons.arrow_forward_ios,
-                                    color: AppColors.primaryBlue.withValues(
-                                      alpha: 0.6,
-                                    ),
-                                    size: 16,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ),

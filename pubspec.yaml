@@ -59,9 +59,7 @@ dependencies:
   permission_handler: ^11.3.1
   url_launcher: ^6.3.0
   flutter_sms_inbox: ^1.0.4
-  file_picker: ^10.3.8
   pdf: ^3.10.8
-  pdfx: ^2.4.2
   path_provider: ^2.1.2 # To handle temp files for unlocked PDFs
   share_plus: ^10.0.0
   flutter_markdown_plus: ^1.0.7

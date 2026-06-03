@@ -8,7 +8,6 @@ import '../../../core/providers/budget_provider.dart';
 import '../../../core/providers/goal_provider.dart';
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/providers/new_nbox_provider.dart';
-import '../../../core/providers/pdf_import_provider.dart';
 import '../../../core/providers/shared_expense_provider.dart';
 import '../../../core/providers/category_provider.dart';
 import '../../../core/models/investment.dart';
@@ -33,7 +32,6 @@ class ContextBuilderService {
   final GoalProvider? goalProvider;
   final BikeProvider? bikeProvider;
   final NewNboxProvider? nboxProvider;
-  final PDFImportProvider? pdfImportProvider;
   final SharedExpenseProvider? sharedExpenseProvider;
   final CategoryProvider? categoryProvider;
 
@@ -47,7 +45,6 @@ class ContextBuilderService {
     this.goalProvider,
     this.bikeProvider,
     this.nboxProvider,
-    this.pdfImportProvider,
     this.sharedExpenseProvider,
     this.categoryProvider,
   });
@@ -103,17 +100,12 @@ class ContextBuilderService {
       buffer.writeln(_buildNboxSummary());
     }
 
-    // 11. PDF STATEMENTS (last imported)
-    if (pdfImportProvider != null) {
-      buffer.writeln(_buildPdfSummary());
-    }
-
-    // 12. SHARED EXPENSES
+    // 11. SHARED EXPENSES
     if (sharedExpenseProvider != null) {
       buffer.writeln(_buildSharedExpensesSummary());
     }
 
-    // 13. UPCOMING ALERTS
+    // 12. UPCOMING ALERTS
     buffer.writeln(_buildUpcomingAlerts());
 
     return buffer.toString();
@@ -222,16 +214,6 @@ class ContextBuilderService {
       'nbox',
     ])) {
       if (nboxProvider != null) { buffer.writeln(_buildNboxSummary()); }
-    }
-
-    if (_matchesAny(lowerQuery, [
-      'pdf',
-      'statement',
-      'bank statement',
-      'import',
-      'parse',
-    ])) {
-      if (pdfImportProvider != null) { buffer.writeln(_buildPdfSummary()); }
     }
 
     if (_matchesAny(lowerQuery, [
@@ -703,34 +685,6 @@ Monthly Fixed Burn: ₹${_currencyFormat.format(monthlyBurn)}
       buffer.writeln();
     }
 
-    return buffer.toString();
-  }
-
-  String _buildPdfSummary() {
-    if (pdfImportProvider == null) { return ''; }
-
-    final statement = pdfImportProvider!.currentStatement;
-    if (statement == null) {
-      return '--- PDF IMPORT ---\nNo bank statement currently loaded.\n';
-    }
-
-    final buffer = StringBuffer('--- PDF IMPORT (Last Loaded) ---\n');
-    buffer.writeln('Bank: ${statement.metadata.bankName ?? 'Unknown'}');
-    if (statement.metadata.accountNumber != null) {
-      buffer.writeln('Account: ${statement.metadata.accountNumber}');
-    }
-    buffer.writeln('Transactions: ${statement.transactionCount}');
-    buffer.writeln('Income entries: ${statement.incomeCount}');
-    buffer.writeln('Expense entries: ${statement.expenseCount}');
-
-    final importable = pdfImportProvider!.importableCount;
-    final duplicates = pdfImportProvider!.duplicateCount;
-    if (duplicates > 0) {
-      buffer.writeln(
-        'Importable: $importable ($duplicates duplicates detected)',
-      );
-    }
-    buffer.writeln();
     return buffer.toString();
   }
 

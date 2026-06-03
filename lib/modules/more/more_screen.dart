@@ -382,15 +382,6 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             subtitle: "Intelligent financial assistant",
             onTap: () => _navigate(const AIChatScreen()),
           ),
-          _divider(),
-          _buildTile(
-            icon: Icons.file_present_rounded,
-            color: AppColors.accentTeal,
-            title: "PDF Import",
-            subtitle: "Extract data from bank statements",
-            onTap: () =>
-                showTopSnackBar(context, "PDF extraction is in development"),
-          ),
         ],
       ),
     );

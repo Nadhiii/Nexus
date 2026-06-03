@@ -22,7 +22,6 @@ import 'core/providers/category_provider.dart';
 import 'core/providers/bike_provider.dart';
 import 'core/providers/vehicle_management_provider.dart';
 import 'core/providers/fuel_price_provider.dart';
-import 'core/providers/pdf_import_provider.dart';
 import 'core/providers/shared_expense_provider.dart';
 import 'core/providers/family_debt_provider.dart';
 import 'modules/Nex/providers/Nex_assistant_provider.dart';
@@ -86,7 +85,6 @@ class NexusApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BikeProvider()),
         ChangeNotifierProvider(create: (_) => VehicleManagementProvider()),
         ChangeNotifierProvider(create: (_) => FuelPriceProvider()),
-        ChangeNotifierProvider(create: (_) => PDFImportProvider()),
         ChangeNotifierProvider(create: (_) => SharedExpenseProvider()),
         ChangeNotifierProvider(create: (_) => FamilyDebtProvider()),
         ChangeNotifierProvider(create: (_) => AIAssistantProvider()),
@@ -276,10 +274,6 @@ class _AIInitializerState extends State<_AIInitializer> {
         goalProvider: Provider.of<GoalProvider>(context, listen: false),
         bikeProvider: Provider.of<BikeProvider>(context, listen: false),
         nboxProvider: Provider.of<NewNboxProvider>(context, listen: false),
-        pdfImportProvider: Provider.of<PDFImportProvider>(
-          context,
-          listen: false,
-        ),
         sharedExpenseProvider: Provider.of<SharedExpenseProvider>(
           context,
           listen: false,

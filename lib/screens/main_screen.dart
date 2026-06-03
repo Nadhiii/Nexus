@@ -15,7 +15,6 @@ import '../core/providers/transaction_provider.dart';
 import '../core/providers/budget_provider.dart';
 import '../core/providers/goal_provider.dart';
 import '../core/providers/bike_provider.dart';
-import '../core/providers/pdf_import_provider.dart';
 import '../core/providers/shared_expense_provider.dart';
 import '../core/providers/category_provider.dart';
 import '../core/theme/app_colors.dart';
@@ -123,12 +122,10 @@ class _MainScreenState extends State<MainScreen>
       goalProvider: context.read<GoalProvider>(),
       bikeProvider: context.read<BikeProvider>(),
       nboxProvider: context.read<NewNboxProvider>(),
-      pdfImportProvider: context.read<PDFImportProvider>(),
       sharedExpenseProvider: context.read<SharedExpenseProvider>(),
       categoryProvider: context.read<CategoryProvider>(),
     );
 
-    // PDF import provider no longer requires a Gemini-specific API key.
   }
 
   @override

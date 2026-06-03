@@ -69,14 +69,14 @@ String? _resolveSourceLabel(Map<String, dynamic>? metadata) {
       case 'nbox':
         return 'Inbox Auto';
       case 'pdf':
-        return 'PDF Import';
+        return 'Imported Transaction';
       default:
         return _titleCase(source);
     }
   }
 
   if (metadata['importedFromPDF'] == true) {
-    return 'PDF Import';
+    return 'Imported Transaction';
   }
 
   if (metadata['fromTemplate'] == true) {
