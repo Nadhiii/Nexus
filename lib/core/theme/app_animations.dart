@@ -35,6 +35,13 @@ class AppAnimations {
   static const Curve staggeredCurve = Interval(0.0, 0.8, curve: Curves.easeOut);
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // SPRING PHYSICS CONSTANTS
+  // ═══════════════════════════════════════════════════════════════════════════
+  static const double springStiffness = 380.0;
+  static const double springDamping = 26.0;
+  static const double springMass = 1.0;
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // PAGE TRANSITIONS
   // ═══════════════════════════════════════════════════════════════════════════
   static PageTransitionsTheme get pageTransitionsTheme =>

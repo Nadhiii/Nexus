@@ -9,6 +9,8 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../../core/providers/notification_provider.dart';
 import '../../core/models/transaction.dart';
+import '../../core/widgets/animated_list_item.dart';
+import '../../core/widgets/spring_tap.dart';
 import '../../core/widgets/total_balance_card.dart';
 import '../../core/widgets/upcoming_week_widget.dart';
 import '../../core/providers/user_provider.dart';
@@ -248,7 +250,7 @@ class _ActionBar extends StatelessWidget {
             // Primary: Add Transaction
             Expanded(
               flex: 3,
-              child: GestureDetector(
+              child: SpringTap(
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -291,7 +293,7 @@ class _ActionBar extends StatelessWidget {
             // Secondary: Transfer
             Expanded(
               flex: 2,
-              child: GestureDetector(
+              child: SpringTap(
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -330,7 +332,7 @@ class _ActionBar extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        GestureDetector(
+        SpringTap(
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const ExpenseSplitterScreen()),
@@ -424,7 +426,10 @@ class _RecentActivitySection extends StatelessWidget {
                     final tx = entry.value;
                     return Column(
                       children: [
-                        _TransactionTile(transaction: tx),
+                        AnimatedListItem(
+                          delay: Duration(milliseconds: 60 * i),
+                          child: _TransactionTile(transaction: tx),
+                        ),
                         if (i < recent.length - 1)
                           Divider(
                             height: 1,

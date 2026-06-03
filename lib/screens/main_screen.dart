@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Added for Haptics
+import 'package:flutter/physics.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
 import 'dart:ui';
@@ -53,8 +54,9 @@ class _MainScreenState extends State<MainScreen>
   void initState() {
     super.initState();
     _navAnimationController = AnimationController(
-      duration: AppAnimations.navDuration,
       vsync: this,
+      lowerBound: -0.1,
+      upperBound: 1.1,
     );
     _navAnimation = CurvedAnimation(
       parent: _navAnimationController!,
@@ -103,7 +105,13 @@ class _MainScreenState extends State<MainScreen>
       _financeScreenInitialTab = financeTab ?? 0;
       _currentIndex = index;
     });
-    _navAnimationController?.forward(from: 0);
+    final spring = SpringDescription(
+      mass: AppAnimations.springMass,
+      stiffness: AppAnimations.springStiffness,
+      damping: AppAnimations.springDamping,
+    );
+    final simulation = SpringSimulation(spring, 0.0, 1.0, 8.0);
+    _navAnimationController?.animateWith(simulation);
   }
 
   void _initializeAI(BuildContext context) {

@@ -7,6 +7,8 @@ import '../../core/providers/biometric_provider.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/nexus_switch.dart';
+import '../../core/widgets/spring_tap.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../backup/backup_settings_screen.dart';
 import '../notifications/notification_settings_screen.dart';
@@ -401,12 +403,11 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
               icon: Icons.fingerprint_rounded,
               color: AppColors.accentTeal,
               title: "Biometric Lock",
-              trailing: Switch(
+              trailing: NexusSwitch(
                 value: bio.isBiometricEnabled,
                 onChanged: bio.isBiometricAvailable
                     ? (v) => bio.setAllBiometricFeatures(v)
                     : null,
-                activeThumbColor: AppColors.primaryBlue,
               ),
             ),
           ),
@@ -580,7 +581,7 @@ class _ToolCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return SpringTap(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 24),
