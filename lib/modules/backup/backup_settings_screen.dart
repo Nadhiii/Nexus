@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/nexus_switch.dart';
 import '../../core/services/backup_service.dart';
 
 class BackupSettingsScreen extends StatefulWidget {
@@ -643,12 +644,14 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    return SwitchListTile.adaptive(
+    return ListTile(
       contentPadding: EdgeInsets.zero,
       title: Text(title, style: AppTypography.titleMedium),
       subtitle: Text(subtitle, style: AppTypography.bodySmall),
-      value: value,
-      onChanged: onChanged,
+      trailing: NexusSwitch(
+        value: value,
+        onChanged: onChanged,
+      ),
     );
   }
 }

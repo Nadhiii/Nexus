@@ -12,6 +12,7 @@ class NexusSwitch extends StatefulWidget {
   final ValueChanged<bool>? onChanged;
   final Color? activeColor;
   final Color? inactiveTrackColor;
+  final Color? activeThumbColor;
 
   const NexusSwitch({
     super.key,
@@ -19,6 +20,7 @@ class NexusSwitch extends StatefulWidget {
     required this.onChanged,
     this.activeColor,
     this.inactiveTrackColor,
+    this.activeThumbColor,
   });
 
   @override
@@ -116,7 +118,7 @@ class _NexusSwitchState extends State<NexusSwitch>
                     height: _thumbSize,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white,
+                      color: widget.activeThumbColor ?? Colors.white,
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.25),

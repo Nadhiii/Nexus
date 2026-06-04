@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/nexus_switch.dart';
 import '../../../core/widgets/top_snackbar.dart';
 
 /// Expense Splitter Screen - For quick expense splitting calculations
@@ -200,7 +201,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              Switch(
+              NexusSwitch(
                 value: _includesTip,
                 activeThumbColor: AppColors.primaryBlue,
                 onChanged: (val) => setState(() {

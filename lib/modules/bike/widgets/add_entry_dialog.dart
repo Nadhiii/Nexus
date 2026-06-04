@@ -14,6 +14,7 @@ import '../../../core/providers/notification_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/nexus_switch.dart';
 import '../../../core/utils/logo_utils.dart';
 
 // Note: Keeping the name AddEntryDialog so your imports don't break,
@@ -416,7 +417,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Switch(
+                        NexusSwitch(
                           value: _isFullTank,
                           activeThumbColor: AppColors.primaryBlue,
                           onChanged: (val) => setState(() => _isFullTank = val),
@@ -899,7 +900,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                   ],
                 ),
               ),
-              Switch(
+              NexusSwitch(
                 value: _linkToExpense,
                 activeThumbColor: AppColors.success,
                 onChanged: (val) => setState(() {

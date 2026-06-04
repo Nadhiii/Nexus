@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/notification_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/nexus_switch.dart';
 import '../../core/widgets/top_snackbar.dart';
 
 class NotificationSettingsScreen extends StatelessWidget {
@@ -149,15 +150,17 @@ class NotificationSettingsScreen extends StatelessWidget {
     bool value,
     Function(bool) onChanged,
   ) {
-    return SwitchListTile(
+    return ListTile(
       title: Text(title, style: const TextStyle(color: Colors.white)),
       subtitle: Text(
         subtitle,
         style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
       ),
-      value: value,
-      onChanged: onChanged,
-      activeThumbColor: AppColors.primaryBlue,
+      trailing: NexusSwitch(
+        value: value,
+        onChanged: onChanged,
+        activeColor: AppColors.primaryBlue,
+      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
   }

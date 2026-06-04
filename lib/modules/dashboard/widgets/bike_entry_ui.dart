@@ -14,6 +14,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/logo_utils.dart';
+import '../../../core/widgets/nexus_switch.dart';
 import '../../../core/widgets/top_snackbar.dart';
 
 class ModernAddEntryScreen extends StatefulWidget {
@@ -422,7 +423,7 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            Switch(
+                            NexusSwitch(
                               value: _isFullTank,
                               activeThumbColor: activeColor,
                               onChanged: (val) =>
@@ -683,7 +684,7 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
                   ],
                 ),
               ),
-              Switch(
+              NexusSwitch(
                 value: _linkToExpense,
                 activeThumbColor: AppColors.success,
                 onChanged: (val) => setState(() {

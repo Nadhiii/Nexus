@@ -4,14 +4,12 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'dart:ui';
 import 'dart:math' as math;
 import '../../../core/providers/debt_provider.dart';
 import '../../../core/models/debt.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/theme/app_animations.dart';
 import '../../../core/utils/logo_utils.dart';
 import '../../../core/widgets/top_snackbar.dart';
 import '../utils/debt_logo_utils.dart';
@@ -26,12 +24,7 @@ class AddLoanModal extends StatefulWidget {
   State<AddLoanModal> createState() => _AddLoanModalState();
 }
 
-class _AddLoanModalState extends State<AddLoanModal>
-    with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _opacityAnimation;
-
+class _AddLoanModalState extends State<AddLoanModal> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -41,11 +34,13 @@ class _AddLoanModalState extends State<AddLoanModal>
   final _emiController = TextEditingController();
   final _rateController = TextEditingController();
   final _tenureController = TextEditingController();
+  final _paidMonthsController = TextEditingController();
   final _lenderController = TextEditingController();
 
   // State
   DebtType _selectedType = DebtType.personalLoan;
   int _paymentDay = 5;
+  DateTime _loanStartDate = DateTime(DateTime.now().year, DateTime.now().month);
   bool _isLoading = false;
   bool _showEmiCalculator = false;
 
@@ -70,25 +65,6 @@ class _AddLoanModalState extends State<AddLoanModal>
   void initState() {
     super.initState();
 
-    // Animation
-    _animationController = AnimationController(
-      duration: AppAnimations.slowest,
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: AppAnimations.standardCurve,
-      ),
-    );
-    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: AppAnimations.fadeOutCurve,
-      ),
-    );
-    _animationController.forward();
-
     if (_isEditMode) {
       _populateFromDebt(widget.debtToEdit!);
     }
@@ -107,20 +83,23 @@ class _AddLoanModalState extends State<AddLoanModal>
     _emiController.text = debt.monthlyEMI?.toStringAsFixed(0) ?? '';
     _rateController.text = debt.interestRate?.toString() ?? '';
     _tenureController.text = debt.totalMonths?.toString() ?? '';
+    _paidMonthsController.text = debt.paidMonths?.toString() ?? '';
     _lenderController.text = debt.lenderName ?? '';
     _selectedType = debt.type;
     _paymentDay = debt.paymentDay ?? 5;
+    final start = debt.startDate ?? DateTime.now();
+    _loanStartDate = DateTime(start.year, start.month);
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
     _nameController.dispose();
     _amountController.dispose();
     _balanceController.dispose();
     _emiController.dispose();
     _rateController.dispose();
     _tenureController.dispose();
+    _paidMonthsController.dispose();
     _lenderController.dispose();
     super.dispose();
   }
@@ -136,73 +115,34 @@ class _AddLoanModalState extends State<AddLoanModal>
   Widget build(BuildContext context) {
     final loanId = widget.debtToEdit?.id ?? '';
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          // Backdrop Blur
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(color: Colors.black.withValues(alpha: 0.6)),
+      backgroundColor: AppColors.darkGradient.first,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            expandedHeight: 120.0,
+            backgroundColor: AppColors.darkGradient.first,
+            foregroundColor: AppColors.white,
+            flexibleSpace: FlexibleSpaceBar(
+              centerTitle: true,
+              title: Text(
+                _isEditMode ? 'Edit Liability' : 'Add Liability',
+                style: AppTypography.headlineMedium,
+              ),
+            ),
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
           ),
-          // Floating Card
-          Center(
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              child: FadeTransition(
-                opacity: _opacityAnimation,
-                child: Container(
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  constraints: const BoxConstraints(
-                    maxWidth: 400,
-                    maxHeight: 750,
-                  ),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: AppColors.backgroundBlack,
-                    borderRadius: BorderRadius.circular(32),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        blurRadius: 40,
-                        offset: const Offset(0, 20),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _isEditMode ? 'Edit Liability' : 'Add Liability',
-                            style: AppTypography.headlineSmall.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(
-                              Icons.close,
-                              color: Colors.white54,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Scrollable Content
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                                 // 1. LIVE PREVIEW
                                 _buildLivePreview(),
                                 const SizedBox(height: 32),
@@ -344,6 +284,58 @@ class _AddLoanModalState extends State<AddLoanModal>
                                       ),
                                     ),
                                   ],
+                                ),
+                                const SizedBox(height: 12),
+                                _buildGlassTextField(
+                                  controller: _paidMonthsController,
+                                  hint: "Paid Months (Manual)",
+                                  icon: Icons.check_circle_outline,
+                                  isNumber: true,
+                                  suffix: "mo",
+                                ),
+                                const SizedBox(height: 12),
+                                _buildLabel('Loan Start Month'),
+                                GestureDetector(
+                                  onTap: _pickLoanStartMonthYear,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 16,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.cardSurface,
+                                      borderRadius: BorderRadius.circular(30),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.05,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_month,
+                                          color: AppColors.info,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          DateFormat(
+                                            'MMM yyyy',
+                                          ).format(_loanStartDate),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        Icon(
+                                          Icons.chevron_right,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
 
                                 // EMI Calculator Toggle
@@ -512,13 +504,8 @@ class _AddLoanModalState extends State<AddLoanModal>
                                           ),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                                const SizedBox(height: 100),
+                  ],
                 ),
               ),
             ),
@@ -904,6 +891,22 @@ class _AddLoanModalState extends State<AddLoanModal>
     return nextDate;
   }
 
+  Future<void> _pickLoanStartMonthYear() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _loanStartDate,
+      firstDate: DateTime(now.year - 30, 1, 1),
+      lastDate: DateTime(now.year + 1, 12, 31),
+      initialDatePickerMode: DatePickerMode.year,
+    );
+    if (picked != null) {
+      setState(() {
+        _loanStartDate = DateTime(picked.year, picked.month);
+      });
+    }
+  }
+
   Future<void> _submit() async {
     if (_nameController.text.isEmpty || _balanceController.text.isEmpty) {
       showTopSnackBar(context, 'Please fill required fields', isError: true);
@@ -929,9 +932,19 @@ class _AddLoanModalState extends State<AddLoanModal>
       final tenure = int.tryParse(_tenureController.text);
 
       int? paidMonths;
-      if (emi != null && emi > 0) {
-        final paid = originalAmount - currentBalance;
-        paidMonths = (paid / emi).floor();
+      final manualPaidMonths = int.tryParse(_paidMonthsController.text);
+      if (manualPaidMonths != null && manualPaidMonths >= 0) {
+        paidMonths = manualPaidMonths;
+      }
+      if (emi != null && emi > 0 && paidMonths == null) {
+        final nowDate = DateTime.now();
+        final monthsElapsed =
+            (nowDate.year - _loanStartDate.year) * 12 +
+            (nowDate.month - _loanStartDate.month);
+        paidMonths = monthsElapsed < 0 ? 0 : monthsElapsed;
+      }
+      if (tenure != null && paidMonths != null) {
+        paidMonths = paidMonths.clamp(0, tenure);
       }
 
       final debt = Debt(
@@ -950,7 +963,7 @@ class _AddLoanModalState extends State<AddLoanModal>
         lenderName: _lenderController.text.trim().isNotEmpty
             ? _lenderController.text.trim()
             : null,
-        startDate: widget.debtToEdit?.startDate ?? now,
+        startDate: _loanStartDate,
         createdAt: widget.debtToEdit?.createdAt ?? now,
         updatedAt: now,
       );
@@ -1010,12 +1023,9 @@ class _AddLoanModalState extends State<AddLoanModal>
 
 /// Show the floating loan modal
 Future<void> showAddLoanModal(BuildContext context, {Debt? debtToEdit}) {
-  return Navigator.of(context).push(
-    PageRouteBuilder(
-      opaque: false,
-      pageBuilder: (_, __, ___) => AddLoanModal(debtToEdit: debtToEdit),
-    ),
-  );
+  return Navigator.of(
+    context,
+  ).push(MaterialPageRoute(builder: (_) => AddLoanModal(debtToEdit: debtToEdit)));
 }
 
 // Keep backward compatibility alias

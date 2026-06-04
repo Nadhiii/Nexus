@@ -3,13 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'dart:ui';
 import '../../../core/providers/debt_provider.dart';
 import '../../../core/models/debt.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/theme/app_animations.dart';
 import '../../../core/utils/logo_utils.dart';
 import '../../../core/widgets/top_snackbar.dart';
 import '../utils/debt_logo_utils.dart';
@@ -24,12 +22,7 @@ class AddCreditCardModal extends StatefulWidget {
   State<AddCreditCardModal> createState() => _AddCreditCardModalState();
 }
 
-class _AddCreditCardModalState extends State<AddCreditCardModal>
-    with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _opacityAnimation;
-
+class _AddCreditCardModalState extends State<AddCreditCardModal> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -59,25 +52,6 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
   void initState() {
     super.initState();
 
-    // Animation
-    _animationController = AnimationController(
-      duration: AppAnimations.slowest,
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: AppAnimations.standardCurve,
-      ),
-    );
-    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: AppAnimations.fadeOutCurve,
-      ),
-    );
-    _animationController.forward();
-
     if (_isEditMode) {
       _populateFromDebt(widget.debtToEdit!);
     }
@@ -100,7 +74,6 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
 
   @override
   void dispose() {
-    _animationController.dispose();
     _nameController.dispose();
     _balanceController.dispose();
     _limitController.dispose();
@@ -122,75 +95,34 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          // Backdrop Blur
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(color: Colors.black.withValues(alpha: 0.6)),
+      backgroundColor: AppColors.darkGradient.first,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            expandedHeight: 120.0,
+            backgroundColor: AppColors.darkGradient.first,
+            foregroundColor: AppColors.white,
+            flexibleSpace: FlexibleSpaceBar(
+              centerTitle: true,
+              title: Text(
+                _isEditMode ? 'Edit Credit Card' : 'Add Credit Card',
+                style: AppTypography.headlineMedium,
+              ),
+            ),
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
           ),
-          // Floating Card
-          Center(
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              child: FadeTransition(
-                opacity: _opacityAnimation,
-                child: Container(
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  constraints: const BoxConstraints(
-                    maxWidth: 400,
-                    maxHeight: 700,
-                  ),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: AppColors.backgroundBlack,
-                    borderRadius: BorderRadius.circular(32),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        blurRadius: 40,
-                        offset: const Offset(0, 20),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _isEditMode
-                                ? 'Edit Credit Card'
-                                : 'Add Credit Card',
-                            style: AppTypography.headlineSmall.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(
-                              Icons.close,
-                              color: Colors.white54,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Scrollable Content
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                                 // 1. LIVE PREVIEW
                                 _buildLivePreview(),
                                 const SizedBox(height: 32),
@@ -385,13 +317,8 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
                                           ),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                                const SizedBox(height: 100),
+                  ],
                 ),
               ),
             ),
@@ -850,10 +777,7 @@ class _AddCreditCardModalState extends State<AddCreditCardModal>
 /// Show the floating credit card modal
 Future<void> showAddCreditCardModal(BuildContext context, {Debt? debtToEdit}) {
   return Navigator.of(context).push(
-    PageRouteBuilder(
-      opaque: false,
-      pageBuilder: (_, __, ___) => AddCreditCardModal(debtToEdit: debtToEdit),
-    ),
+    MaterialPageRoute(builder: (_) => AddCreditCardModal(debtToEdit: debtToEdit)),
   );
 }
 

@@ -11,6 +11,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/providers/account_provider.dart';
 import '../../core/models/account.dart';
+import '../../core/widgets/nexus_switch.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/services/secure_card_service.dart';
 import '../../core/utils/logo_utils.dart';
@@ -615,7 +616,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Switch(
+                NexusSwitch(
                   value: _hasCardDetails,
                   activeThumbColor: _selectedColor,
                   onChanged: (val) => setState(() => _hasCardDetails = val),

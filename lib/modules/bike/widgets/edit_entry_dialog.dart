@@ -6,6 +6,7 @@ import '../../../core/providers/bike_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/nexus_switch.dart';
 
 // Note: Keeping the name EditEntryDialog so your imports don't break,
 // but this is now a full screen Scaffold!
@@ -278,7 +279,7 @@ class _EditEntryDialogState extends State<EditEntryDialog> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Switch(
+                        NexusSwitch(
                           value: _isFullTank,
                           activeThumbColor: themeColor,
                           onChanged: (val) => setState(() => _isFullTank = val),

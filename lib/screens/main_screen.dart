@@ -105,12 +105,13 @@ class _MainScreenState extends State<MainScreen>
       _financeScreenInitialTab = financeTab ?? 0;
       _currentIndex = index;
     });
+    _navAnimationController?.duration = const Duration(milliseconds: 400);
     final spring = SpringDescription(
-      mass: AppAnimations.springMass,
-      stiffness: AppAnimations.springStiffness,
-      damping: AppAnimations.springDamping,
+      mass: 1.0,
+      stiffness: 200.0,
+      damping: 22.0,
     );
-    final simulation = SpringSimulation(spring, 0.0, 1.0, 8.0);
+    final simulation = SpringSimulation(spring, 0.0, 1.0, 4.0);
     _navAnimationController?.animateWith(simulation);
   }
 

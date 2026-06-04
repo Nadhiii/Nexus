@@ -11,10 +11,12 @@ import '../../../core/theme/app_animations.dart';
 import '../../../core/utils/logo_utils.dart';
 import '../../../core/widgets/swipe_to_delete.dart';
 import '../../../core/widgets/collapsible_fab.dart';
+import '../../../core/widgets/top_snackbar.dart';
 import '../utils/debt_logo_utils.dart';
 import '../widgets/add_loan_sheet.dart';
 import '../widgets/add_credit_card_sheet.dart';
 import '../widgets/quick_pay_emi_sheet.dart';
+import '../widgets/emi_dot_calendar.dart';
 
 /// Bento tile types for dynamic sizing
 enum _BentoTileType { featured, large, wide, compact }
@@ -159,7 +161,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                 else
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
                       child: _filter == _LiabilityFilter.settled
                           ? _buildSettledBentoGridWidget(settled)
                           : _buildDynamicBentoGrid(
@@ -180,8 +182,13 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
           }
         },
       ),
-      floatingActionButton: _buildFAB(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: _buildFAB(),
+        ),
+      ),
     );
   }
 
@@ -759,8 +766,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
       } else if (remaining == 3) {
         // Three items - one wide + two stacked
         rows.add(
-          SizedBox(
-            height: 168,
+          IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -830,8 +836,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
         if (debts.length - index >= 3) {
           rows.add(const SizedBox(height: 12));
           rows.add(
-            SizedBox(
-              height: 168,
+            IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -910,9 +915,11 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
         itemKey: ValueKey(debt.id),
         itemId: debt.id,
         itemName: debt.name,
-        onDelete: () => context.read<DebtProvider>().deleteDebt(debt.id),
+        onDelete: () => _confirmAndDelete(debt),
         child: Container(
-          height: isLarge ? 178 : (isFeatured ? 148 : null),
+          constraints: BoxConstraints(
+            minHeight: isLarge ? 178 : (isFeatured ? 148 : 0),
+          ),
           padding: EdgeInsets.all(isCompact ? 12 : 16),
           decoration: BoxDecoration(
             color: AppColors.cardSurface,
@@ -1090,7 +1097,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
             ),
           ],
         ),
-        if (isLarge || isFeatured) const Spacer(),
+        if (isLarge || isFeatured) const SizedBox(height: 8),
         if (isWide) const SizedBox(height: 8),
         // Balance
         Text(
@@ -1112,31 +1119,42 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
           ),
         ],
         const SizedBox(height: 8),
-        // Progress Bar
-        Row(
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(3),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: Colors.white.withValues(alpha: 0.1),
-                  valueColor: AlwaysStoppedAnimation(AppColors.success),
-                  minHeight: 4,
+        // EMI Dot Calendar (loans) or Progress Bar (credit cards)
+        if (debt.totalMonths != null && debt.type.isLoan)
+          EmiDotCalendar(
+            totalMonths: debt.totalMonths!,
+            paidMonths: debt.paidMonths ?? 0,
+            startDate: debt.startDate,
+            typeColor: typeColor,
+            onMarkPaid: debt.currentBalance >= 1.0
+                ? () => _markEmiPaid(debt)
+                : null,
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: Colors.white.withValues(alpha: 0.1),
+                    valueColor: AlwaysStoppedAnimation(AppColors.success),
+                    minHeight: 4,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '${(progress * 100).toInt()}%',
-              style: TextStyle(
-                color: AppColors.success,
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
+              const SizedBox(width: 8),
+              Text(
+                '${(progress * 100).toInt()}%',
+                style: TextStyle(
+                  color: AppColors.success,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         // Due + Pay action for large tiles
         if (isLarge) ...[
           const SizedBox(height: 8),
@@ -1333,7 +1351,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Add Loan
         CollapsibleFab(
           heroTag: 'add_loan',
           onPressed: () => _showAddLoanSheet(context),
@@ -1346,7 +1363,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
           label: 'Loan',
         ),
         const SizedBox(width: 12),
-        // Add Credit Card
         CollapsibleFab(
           heroTag: 'add_card',
           onPressed: () => _showAddCreditCardSheet(context),
@@ -1415,6 +1431,86 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
     return Text(
       debt.type.icon,
       style: TextStyle(fontSize: size, color: fallbackColor),
+    );
+  }
+
+  Future<void> _markEmiPaid(Debt debt) async {
+    final emi = debt.monthlyEMI ?? 0;
+    if (emi <= 0 || debt.currentBalance < 1.0) return;
+
+    final newBalance = (debt.currentBalance - emi).clamp(0.0, double.infinity);
+    final newPaidMonths = (debt.paidMonths ?? 0) + 1;
+
+    DateTime? nextPaymentDate;
+    if (newBalance > 0 && debt.paymentDay != null) {
+      final now = DateTime.now();
+      nextPaymentDate = DateTime(now.year, now.month + 1, debt.paymentDay!);
+    }
+
+    final updatedDebt = debt.copyWith(
+      currentBalance: newBalance,
+      paidMonths: newPaidMonths,
+      nextPaymentDate: nextPaymentDate,
+      updatedAt: DateTime.now(),
+    );
+
+    await context.read<DebtProvider>().updateDebt(updatedDebt);
+
+    if (mounted) {
+      HapticFeedback.heavyImpact();
+      if (newBalance <= 0) {
+        showTopSnackBar(
+          context,
+          '🎉 ${debt.name} is fully paid off!',
+        );
+      } else {
+        showTopSnackBar(
+          context,
+          'EMI ₹${_formatCompact(emi)} marked as paid',
+        );
+      }
+    }
+  }
+
+  void _confirmAndDelete(Debt debt) {
+    HapticFeedback.mediumImpact();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardElevated,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Delete liability?',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'This will permanently delete "${debt.name}". This cannot be undone.',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<DebtProvider>().deleteDebt(debt.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${debt.name} deleted'),
+                  backgroundColor: AppColors.cardElevated,
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            },
+            child: const Text('Delete', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
     );
   }
 

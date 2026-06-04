@@ -23,6 +23,7 @@ class QuickPayEmiSheet extends StatefulWidget {
 
 class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
   final _amountController = TextEditingController();
+  final _paidMonthsController = TextEditingController();
   bool _isLoading = false;
   bool _useCustomAmount = false;
 
@@ -34,11 +35,13 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
     if (monthlyEmi != null) {
       _amountController.text = monthlyEmi.round().toString();
     }
+    _paidMonthsController.text = (widget.debt.paidMonths ?? 0).toString();
   }
 
   @override
   void dispose() {
     _amountController.dispose();
+    _paidMonthsController.dispose();
     super.dispose();
   }
 
@@ -288,6 +291,49 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
                     ),
                   ),
                 ],
+                if (debt.totalMonths != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'COMPLETED EMIS',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.4),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _paidMonthsController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Paid months',
+                      hintStyle: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.25),
+                      ),
+                      suffixText: '/ ${debt.totalMonths}',
+                      suffixStyle: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                      ),
+                      filled: true,
+                      fillColor: AppColors.cardElevated,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.md,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
 
                 // Pay Button
@@ -451,6 +497,14 @@ class _QuickPayEmiSheetState extends State<QuickPayEmiSheet> {
       if (monthlyEmi > 0) {
         final emiPayments = (paymentAmount / monthlyEmi).floor();
         newPaidMonths = (debt.paidMonths ?? 0) + emiPayments;
+      }
+      final manualPaidMonths = int.tryParse(_paidMonthsController.text);
+      if (manualPaidMonths != null && manualPaidMonths >= 0) {
+        if (debt.totalMonths != null) {
+          newPaidMonths = manualPaidMonths.clamp(0, debt.totalMonths!);
+        } else {
+          newPaidMonths = manualPaidMonths;
+        }
       }
 
       // Calculate next payment date
