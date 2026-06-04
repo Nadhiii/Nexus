@@ -209,7 +209,9 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
           color: color,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? _infoColor : Colors.white.withOpacity(0.1),
+            color: isSelected
+                ? _infoColor
+                : Colors.white.withValues(alpha: 0.1),
           ),
         ),
         child: Row(
@@ -229,8 +231,8 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.white.withOpacity(0.2)
-                      : Colors.white.withOpacity(0.1),
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -261,7 +263,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
           decoration: BoxDecoration(
             color: AppColors.cardSurface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
           child: Row(
             children: [
@@ -269,7 +271,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.12),
+                  color: AppColors.success.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -286,7 +288,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                     Text(
                       'Total Cleared',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 11,
                       ),
                     ),
@@ -308,13 +310,13 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.06),
+                  color: Colors.white.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '${settled.length} ${settled.length == 1 ? 'debt' : 'debts'}',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -354,7 +356,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.success.withOpacity(0.2)),
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,7 +368,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: typeColor.withOpacity(0.15),
+                    color: typeColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Center(child: _buildDebtAvatar(debt, typeColor, 16)),
@@ -377,7 +379,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.15),
+                    color: AppColors.success.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Row(
@@ -422,7 +424,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
             Text(
               '$percentage% of total',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.4),
+                color: Colors.white.withValues(alpha: 0.4),
                 fontSize: 10,
               ),
             ),
@@ -471,7 +473,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Stack(
         children: [
@@ -486,8 +488,8 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [
-                    AppColors.success.withOpacity(0.12),
-                    AppColors.success.withOpacity(0.03),
+                    AppColors.success.withValues(alpha: 0.12),
+                    AppColors.success.withValues(alpha: 0.03),
                   ],
                 ),
               ),
@@ -499,7 +501,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
             child: Text(
               '${(progress * 100).toInt()}%',
               style: TextStyle(
-                color: AppColors.success.withOpacity(0.08),
+                color: AppColors.success.withValues(alpha: 0.08),
                 fontSize: 72,
                 fontWeight: FontWeight.w900,
               ),
@@ -520,7 +522,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                           Text(
                             'OUTSTANDING',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.2,
@@ -540,7 +542,9 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.success.withOpacity(0.15),
+                                  color: AppColors.success.withValues(
+                                    alpha: 0.15,
+                                  ),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Row(
@@ -575,10 +579,10 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.06),
+                          color: Colors.white.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.08),
+                            color: Colors.white.withValues(alpha: 0.08),
                           ),
                         ),
                         child: Column(
@@ -594,7 +598,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                             Text(
                               'EMIs',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.5),
+                                color: Colors.white.withValues(alpha: 0.5),
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -641,13 +645,13 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isWarning
-            ? AppColors.warning.withOpacity(0.15)
-            : Colors.white.withOpacity(0.05),
+            ? AppColors.warning.withValues(alpha: 0.15)
+            : Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isWarning
-              ? AppColors.warning.withOpacity(0.3)
-              : Colors.white.withOpacity(0.1),
+              ? AppColors.warning.withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.1),
         ),
       ),
       child: Row(
@@ -665,7 +669,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
               Text(
                 label,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.white.withValues(alpha: 0.5),
                   fontSize: 9,
                   fontWeight: FontWeight.w500,
                 ),
@@ -787,15 +791,15 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isOverdue
-                  ? AppColors.error.withOpacity(0.5)
+                  ? AppColors.error.withValues(alpha: 0.5)
                   : isDueSoon
-                  ? AppColors.warning.withOpacity(0.5)
-                  : Colors.white.withOpacity(0.05),
+                  ? AppColors.warning.withValues(alpha: 0.5)
+                  : Colors.white.withValues(alpha: 0.05),
               width: (isOverdue || isDueSoon) ? 2 : 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: typeColor.withOpacity(0.08),
+                color: typeColor.withValues(alpha: 0.08),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -837,7 +841,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: typeColor.withOpacity(0.15),
+                color: typeColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(child: _buildDebtAvatar(debt, typeColor, 16)),
@@ -861,7 +865,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                     Text(
                       debt.lenderName ?? '',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.4),
+                        color: Colors.white.withValues(alpha: 0.4),
                         fontSize: 10,
                       ),
                       maxLines: 1,
@@ -901,7 +905,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
           Text(
             'EMI ₹${_formatCompact(debt.monthlyEMI ?? 0)} /mo',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               fontSize: 10,
             ),
           ),
@@ -914,7 +918,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                 borderRadius: BorderRadius.circular(3),
                 child: LinearProgressIndicator(
                   value: progress,
-                  backgroundColor: Colors.white.withOpacity(0.1),
+                  backgroundColor: Colors.white.withValues(alpha: 0.1),
                   valueColor: const AlwaysStoppedAnimation(AppColors.success),
                   minHeight: 4,
                 ),
@@ -976,7 +980,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.15),
+                      color: AppColors.success.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Row(
@@ -1015,7 +1019,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.15),
+                  color: AppColors.success.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Row(
@@ -1056,7 +1060,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Icon(icon, size: 36, color: Colors.white30),
@@ -1065,7 +1069,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
             Text(
               message,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
                 fontSize: 16,
               ),
             ),
@@ -1147,7 +1151,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
         decoration: BoxDecoration(
           color: AppColors.backgroundBlack,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         child: SafeArea(
           child: Column(
@@ -1159,7 +1163,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1170,7 +1174,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: _infoColor.withOpacity(0.15),
+                    color: _infoColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(Icons.account_balance, color: _infoColor),
@@ -1186,7 +1190,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                 subtitle: Text(
                   'Personal, Home, Car, etc.',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 12,
                   ),
                 ),
@@ -1202,7 +1206,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.warning.withOpacity(0.15),
+                    color: AppColors.warning.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -1221,7 +1225,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                 subtitle: Text(
                   'Manage card dues and EMIs',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 12,
                   ),
                 ),
@@ -1262,8 +1266,9 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
   }
 
   String _formatAmount(double amount) {
-    if (amount >= 10000000)
+    if (amount >= 10000000) {
       return '${(amount / 10000000).toStringAsFixed(2)} Cr';
+    }
     if (amount >= 100000) return '${(amount / 100000).toStringAsFixed(2)} L';
     return NumberFormat('#,##,###').format(amount.round());
   }
@@ -1299,7 +1304,10 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
         ),
         content: Text(
           'This will permanently delete "${debt.name}".',
-          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 14,
+          ),
         ),
         actions: [
           TextButton(

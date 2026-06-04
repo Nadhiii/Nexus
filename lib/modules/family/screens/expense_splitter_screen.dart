@@ -149,7 +149,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         children: [
@@ -210,7 +210,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,13 +257,13 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppColors.primaryBlue.withOpacity(0.2)
+                            ? AppColors.primaryBlue.withValues(alpha: 0.2)
                             : AppColors.backgroundBlack,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isSelected
                               ? AppColors.primaryBlue
-                              : Colors.white.withOpacity(0.1),
+                              : Colors.white.withValues(alpha: 0.1),
                         ),
                       ),
                       child: Text(
@@ -289,13 +289,13 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
                       color: _isCustomTip
-                          ? AppColors.primaryBlue.withOpacity(0.2)
+                          ? AppColors.primaryBlue.withValues(alpha: 0.2)
                           : AppColors.backgroundBlack,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: _isCustomTip
                             ? AppColors.primaryBlue
-                            : Colors.white.withOpacity(0.1),
+                            : Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
                     child: Text(
@@ -325,13 +325,13 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
                           color: !_customTipIsAmount
-                              ? AppColors.primaryBlue.withOpacity(0.15)
+                              ? AppColors.primaryBlue.withValues(alpha: 0.15)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: !_customTipIsAmount
                                 ? AppColors.primaryBlue
-                                : Colors.white.withOpacity(0.1),
+                                : Colors.white.withValues(alpha: 0.1),
                           ),
                         ),
                         child: Text(
@@ -356,13 +356,13 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
                           color: _customTipIsAmount
-                              ? AppColors.primaryBlue.withOpacity(0.15)
+                              ? AppColors.primaryBlue.withValues(alpha: 0.15)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: _customTipIsAmount
                                 ? AppColors.primaryBlue
-                                : Colors.white.withOpacity(0.1),
+                                : Colors.white.withValues(alpha: 0.1),
                           ),
                         ),
                         child: Text(
@@ -404,7 +404,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
@@ -473,7 +473,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide(
-                      color: AppColors.primaryBlue.withOpacity(0.5),
+                      color: AppColors.primaryBlue.withValues(alpha: 0.5),
                     ),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
@@ -518,13 +518,15 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
               decoration: BoxDecoration(
                 color: AppColors.cardSurface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
               ),
               child: Row(
                 children: [
                   CircleAvatar(
                     radius: 14,
-                    backgroundColor: AppColors.primaryBlue.withOpacity(0.2),
+                    backgroundColor: AppColors.primaryBlue.withValues(
+                      alpha: 0.2,
+                    ),
                     child: Text(
                       '${index + 1}',
                       style: const TextStyle(
@@ -585,7 +587,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: Colors.white.withOpacity(0.12)),
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
           ),
         ),
         icon: const Icon(Icons.share, size: 18),
@@ -606,7 +608,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
     return OutlinedButton.icon(
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
-        side: BorderSide(color: color.withOpacity(0.35)),
+        side: BorderSide(color: color.withValues(alpha: 0.35)),
         padding: const EdgeInsets.symmetric(vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
@@ -687,14 +689,14 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primaryBlue.withOpacity(0.3),
-            AppColors.primaryBlue.withOpacity(0.1),
+            AppColors.primaryBlue.withValues(alpha: 0.3),
+            AppColors.primaryBlue.withValues(alpha: 0.1),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -720,7 +722,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.backgroundBlack.withOpacity(0.5),
+                color: AppColors.backgroundBlack.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -757,7 +759,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
               Container(
                 width: 1,
                 height: 30,
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 margin: const EdgeInsets.symmetric(horizontal: 20),
               ),
               _buildSummaryItem(
@@ -767,7 +769,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
               Container(
                 width: 1,
                 height: 30,
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 margin: const EdgeInsets.symmetric(horizontal: 20),
               ),
               _buildSummaryItem('Total', '₹${_totalAmount.toStringAsFixed(0)}'),

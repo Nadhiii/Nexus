@@ -159,8 +159,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
 
     final availability = await NfcManager.instance.checkAvailability();
     if (availability != NfcAvailability.enabled) {
-      if (mounted)
+      if (mounted) {
         showTopSnackBar(context, "NFC is not available", isError: true);
+      }
       return;
     }
 
@@ -518,8 +519,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       validator: (value) {
         if (value == null || value.trim().isEmpty) return 'Balance is required';
-        if (double.tryParse(value.trim()) == null)
+        if (double.tryParse(value.trim()) == null) {
           return 'Please enter a valid number';
+        }
         return null;
       },
     );
