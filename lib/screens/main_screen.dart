@@ -55,8 +55,8 @@ class _MainScreenState extends State<MainScreen>
     super.initState();
     _navAnimationController = AnimationController(
       vsync: this,
-      lowerBound: -0.1,
-      upperBound: 1.1,
+      lowerBound: 0.0,
+      upperBound: 1.0,
     );
     _navAnimation = CurvedAnimation(
       parent: _navAnimationController!,
@@ -268,6 +268,8 @@ class _MainScreenState extends State<MainScreen>
             double selectionProgress = isSelected
                 ? (_navAnimation?.value ?? 1.0)
                 : (wasSelected ? 1.0 - (_navAnimation?.value ?? 0.0) : 0.0);
+
+            selectionProgress = selectionProgress.clamp(0.0, 1.0);
 
             if (!(_navAnimationController?.isAnimating ?? false)) {
               selectionProgress = isSelected ? 1.0 : 0.0;
