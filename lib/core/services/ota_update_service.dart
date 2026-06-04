@@ -63,12 +63,18 @@ class OTAUpdateService {
             .toString()
             .trim();
 
+        // FIX 1: Strip build metadata (e.g. "1.0.0+4" -> "1.0.0") before
+        // comparing so PackageInfo build numbers don't cause false positives.
+        final String normalizedLatest = latestVersion.split('+').first.trim();
+        final String normalizedCurrent = currentVersion.split('+').first.trim();
+
         debugPrint(
-          'OTA: Parsed Server Version: "$latestVersion" | Local Version: "$currentVersion"',
+          'OTA: Parsed Server Version: "$normalizedLatest" | Local Version: "$normalizedCurrent"',
         );
 
-        if (latestVersion.isNotEmpty && latestVersion != currentVersion) {
-          return {'latest_version': latestVersion, 'apk_url': apkUrl};
+        if (normalizedLatest.isNotEmpty &&
+            normalizedLatest != normalizedCurrent) {
+          return {'latest_version': normalizedLatest, 'apk_url': apkUrl};
         }
       } else {
         debugPrint('OTA: Server Error ${response.statusCode}');
@@ -89,17 +95,25 @@ class OTAUpdateService {
       _showingNotification = showNotification;
       _cancelToken = CancelToken();
 
-      // 1. Get a safe place to store the APK temporarily
-      final dir = await getTemporaryDirectory();
+      // FIX 2: Use external storage instead of getTemporaryDirectory().
+      // Android's package installer cannot access internal app cache paths,
+      // which caused the install to silently fail after a successful download.
+      final dir = await getExternalStorageDirectory();
+      if (dir == null) {
+        debugPrint('OTA: External storage unavailable.');
+        _progressController.add(-1);
+        showSimpleNotification('Update failed', 'Storage unavailable.');
+        return;
+      }
       final savePath = '${dir.path}/Nexus_Update.apk';
 
-      // 2. Clean up any old partial downloads
+      // Clean up any old partial downloads
       final file = File(savePath);
       if (await file.exists()) {
         await file.delete();
       }
 
-      // 3. Start the download manually with Dio
+      // Start the download with Dio
       await _dio.download(
         apkUrl,
         savePath,
@@ -117,7 +131,7 @@ class OTAUpdateService {
         },
       );
 
-      // 4. Download finished successfully
+      // Download finished successfully
       debugPrint('OTA: Download complete. Triggering install...');
       _progressController.add(100);
       showSimpleNotification(
@@ -125,11 +139,10 @@ class OTAUpdateService {
         'Tap to install the Nexus update.',
       );
 
-      // 5. Open the APK to trigger Android's package installer
+      // Open the APK to trigger Android's package installer
       final result = await OpenFile.open(savePath);
       debugPrint('OTA Install Result: ${result.message}');
     } catch (e) {
-      // THE FIX: Check if 'e' is a DioException before passing it
       if (e is DioException && CancelToken.isCancel(e)) {
         debugPrint('OTA: Download securely destroyed by user.');
       } else {
@@ -141,7 +154,6 @@ class OTAUpdateService {
   }
 
   void cancelOTA() {
-    // This physically severs the download connection
     _cancelToken?.cancel('Cancelled by user');
     _progressController.add(-1);
     debugPrint('OTA: Cancellation signal sent');

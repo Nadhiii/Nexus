@@ -60,7 +60,7 @@ dependencies:
   url_launcher: ^6.3.0
   flutter_sms_inbox: ^1.0.4
   pdf: ^3.10.8
-  path_provider: ^2.1.2 # To handle temp files for unlocked PDFs
+  path_provider: ^2.1.2
   share_plus: ^10.0.0
   flutter_markdown_plus: ^1.0.7
   google_generative_ai: ^0.4.0
@@ -84,7 +84,7 @@ dependencies:
   flutter_dotenv: ^6.0.0
   syncfusion_flutter_pdf: ^26.2.14
   flutter_gemma: ^0.11.16
-  ota_update: ^7.1.0
+  # FIX: Removed ota_update — not used, conflicts with custom OTA service
 
   # App Info
   package_info_plus: ^9.0.0
@@ -93,9 +93,6 @@ dependencies:
   dio: ^5.4.0
   open_file: ^3.3.2
 
-  # Android Auto - Package not available on pub.dev
-  # car_app: ^0.6.0 # Commented out - not available
-  
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -110,15 +107,12 @@ flutter_launcher_icons:
   adaptive_icon_background: "#0F172A"
   adaptive_icon_foreground: "assets/icons/Nexus_adaptive_foreground.png"
   min_sdk_android: 21
-  # Add padding to prevent cropping
   remove_alpha_ios: true
 
 flutter:
   uses-material-design: true
 
-  # Asset declaration to include the font directories
   assets:
-    # Environment file for flutter_dotenv (required for dotenv.load)
     - .env
     - assets/fonts/Rammetto_One/
     - assets/fonts/Inter/static/
@@ -138,15 +132,12 @@ flutter:
       fonts:
         - asset: assets/fonts/Rammetto_One/RammettoOne-Regular.ttf
 
-
-
 flutter_native_splash:
   color: "#0F172A"
   image: "assets/icons/Nexus_splash_logo.png"
   android: true
   ios: true
   web: false
-  # Add padding to prevent logo from being cropped
   fullscreen: true
   android_12:
     image: "assets/icons/Nexus_splash_logo.png"
