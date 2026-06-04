@@ -25,9 +25,7 @@ class NewNboxProvider extends ChangeNotifier {
   NboxSettings _settings = const NboxSettings();
   NboxSettings get settings => _settings;
 
-  // Optional AI dependencies for smart categorization
   final CategoryProvider? _categoryProvider;
-
   final Telephony _telephony = Telephony.instance;
 
   bool _isLoading = false;
@@ -60,13 +58,13 @@ class NewNboxProvider extends ChangeNotifier {
     CategoryProvider? categoryProvider,
   }) : _categoryProvider = categoryProvider {
     update(gmailProvider);
-    // Initialize asynchronously - don't block constructor
     initialize();
   }
 
-  /// Initialize the provider - loads processed IDs and scans for transactions
   Future<void> initialize() async {
-    if (_isInitialized) { return; }
+    if (_isInitialized) {
+      return;
+    }
     await _loadSettings();
     await _loadNotifiedDetectionIds();
     await _loadProcessedIds();
@@ -128,7 +126,9 @@ class NewNboxProvider extends ChangeNotifier {
   }
 
   Future<void> scanEmails() async {
-    if (!isGmailLinked) { return; }
+    if (!isGmailLinked) {
+      return;
+    }
     _setLoading(true);
     await NotificationService().showTransactionScanStatus(source: 'email');
     try {
@@ -139,74 +139,50 @@ class NewNboxProvider extends ChangeNotifier {
     }
   }
 
-  // --- FIXED SCAN FUNCTION ---
   Future<void> scanSmsInbox() async {
     if (!smsReadingEnabled) {
-      if (kDebugMode) {
-        debugPrint('[NewNboxProvider] SMS reading disabled by user.');
-      }
+      if (kDebugMode) debugPrint('[NewNboxProvider] SMS reading disabled.');
       return;
     }
-    if (kDebugMode) { debugPrint('[NewNboxProvider] Starting SMS scan...'); }
+    if (kDebugMode) debugPrint('[NewNboxProvider] Starting SMS scan...');
     _setLoading(true);
     await NotificationService().showTransactionScanStatus(source: 'sms');
 
     try {
       if (!await _checkSmsPermission()) {
-        if (kDebugMode) {
-          debugPrint('[NewNboxProvider] SMS permission denied. Aborting scan.');
-        }
+        if (kDebugMode) debugPrint('[NewNboxProvider] SMS permission denied.');
         return;
       }
 
-    // FIX 1: Always look back 30 days.
-    // This ensures the list is repopulated on app restart and doesn't disappear.
-    // We use UTC for the query because Android stores SMS in UTC.
-    final DateTime nowUtc = DateTime.now().toUtc();
-    final DateTime minDate = nowUtc.subtract(const Duration(days: 30));
+      final DateTime nowUtc = DateTime.now().toUtc();
+      final DateTime minDate = nowUtc.subtract(const Duration(days: 30));
 
-    if (kDebugMode) {
-      debugPrint(
-        '[NewNboxProvider] Fetching SMS from last 30 days (since $minDate UTC).',
-      );
-    }
-
-    // Create AI categorization service if dependencies available
-    AICategorizationService? aiService;
-    if (_categoryProvider != null) {
-      aiService = AICategorizationService(categoryProvider: _categoryProvider);
-      if (kDebugMode) {
-        debugPrint('[NewNboxProvider] AI categorization enabled for SMS');
+      AICategorizationService? aiService;
+      if (_categoryProvider != null) {
+        aiService = AICategorizationService(
+          categoryProvider: _categoryProvider,
+        );
       }
-    }
 
       List<SmsMessage> messages;
       try {
         messages = await _telephony.getInboxSms(
-          // FIX 2: Robust native query
           filter: SmsFilter.where(
             SmsColumn.DATE,
           ).greaterThan(minDate.millisecondsSinceEpoch.toString()),
           sortOrder: [OrderBy(SmsColumn.DATE, sort: Sort.DESC)],
         );
       } catch (e) {
-        if (kDebugMode) {
-          debugPrint('[NewNboxProvider] Error fetching SMS: $e');
-        }
+        if (kDebugMode) debugPrint('[NewNboxProvider] Error fetching SMS: $e');
         return;
       }
 
-    if (kDebugMode) {
-      debugPrint(
-        '[NewNboxProvider] Found ${messages.length} SMS messages in window.',
-      );
-    }
-
       final allSmsTransactions = <DetectedTransaction>[];
       for (final sms in messages) {
-        if (sms.id == null || sms.date == null) { continue; }
+        if (sms.id == null || sms.date == null) {
+          continue;
+        }
 
-      // FIX 3: Convert the UTC SMS timestamp to Local time so the user sees correct hours
         final localSmsDate = DateTime.fromMillisecondsSinceEpoch(
           sms.date!,
           isUtc: true,
@@ -224,11 +200,9 @@ class NewNboxProvider extends ChangeNotifier {
         }
       }
 
-      // This will completely refresh the list based on the last 30 days
       _processTransactions(allSmsTransactions, 'sms');
-
       notifyListeners();
-      if (kDebugMode) { debugPrint('[NewNboxProvider] SMS scan complete.'); }
+      if (kDebugMode) debugPrint('[NewNboxProvider] SMS scan complete.');
     } finally {
       await NotificationService().stopTransactionScanStatus();
       _setLoading(false);
@@ -243,12 +217,14 @@ class NewNboxProvider extends ChangeNotifier {
     final freshRejected = <DetectedTransaction>[];
 
     for (final transaction in transactions) {
-      final approvedId = '${transaction.source}:${transaction.id}';
-      final rejectedId = '${transaction.source}:${transaction.id}:rejected';
+      // Use fingerprint as the stable key for persistence checks
+      final approvedKey = '${transaction.source}:${transaction.fingerprint}';
+      final rejectedKey =
+          '${transaction.source}:${transaction.fingerprint}:rejected';
 
-      if (_processedIds.contains(approvedId)) {
-        continue; // Already approved, so skip.
-      } else if (_processedIds.contains(rejectedId)) {
+      if (_processedIds.contains(approvedKey)) {
+        continue; // Already approved, skip.
+      } else if (_processedIds.contains(rejectedKey)) {
         freshRejected.add(transaction);
       } else {
         freshPending.add(transaction);
@@ -273,8 +249,11 @@ class NewNboxProvider extends ChangeNotifier {
   ) async {
     final candidates = freshPending
         .where((t) => t.isHighConfidence)
-        .where((t) => !_processedIds.contains('${t.source}:${t.id}'))
-        .where((t) => !_notifiedDetectionIds.contains('${t.source}:${t.id}'))
+        .where((t) => !_processedIds.contains('${t.source}:${t.fingerprint}'))
+        .where(
+          (t) =>
+              !_notifiedDetectionIds.contains('${t.source}:${t.fingerprint}'),
+        )
         .toList();
 
     if (candidates.isEmpty) {
@@ -283,7 +262,7 @@ class NewNboxProvider extends ChangeNotifier {
 
     final toNotify = candidates.take(_maxPromptsPerScan).toList();
     for (final transaction in toNotify) {
-      final detectionKey = '${transaction.source}:${transaction.id}';
+      final detectionKey = '${transaction.source}:${transaction.fingerprint}';
       _notifiedDetectionIds.add(detectionKey);
       await NotificationService().showDetectedTransactionPrompt(transaction);
     }
@@ -320,14 +299,20 @@ class NewNboxProvider extends ChangeNotifier {
   }
 
   Future<void> markAsApproved(String id, String source) async {
+    final transaction = [..._pendingSms, ..._pendingEmails, ..._rejected]
+        .firstWhere(
+          (t) => t.id == id && t.source == source,
+          orElse: () => throw StateError('Transaction not found'),
+        );
+
     _pendingSms.removeWhere((t) => t.id == id && t.source == source);
     _pendingEmails.removeWhere((t) => t.id == id && t.source == source);
     _rejected.removeWhere((t) => t.id == id && t.source == source);
 
-    final approvedId = '$source:$id';
-    _processedIds.add(approvedId);
-    _notifiedDetectionIds.remove(approvedId);
-    _processedIds.remove('$source:$id:rejected');
+    final approvedKey = '$source:${transaction.fingerprint}';
+    _processedIds.add(approvedKey);
+    _processedIds.remove('$source:${transaction.fingerprint}:rejected');
+    _notifiedDetectionIds.remove(approvedKey);
 
     notifyListeners();
     await _persistIds();
@@ -362,10 +347,11 @@ class NewNboxProvider extends ChangeNotifier {
         _rejected.add(transactionToMove!);
       }
 
-      final rejectedId = '$source:$id:rejected';
-      _processedIds.add(rejectedId);
-      _notifiedDetectionIds.remove('$source:$id');
-      _processedIds.remove('$source:$id');
+      final rejectedKey = '$source:${transactionToMove!.fingerprint}:rejected';
+      final approvedKey = '$source:${transactionToMove!.fingerprint}';
+      _processedIds.add(rejectedKey);
+      _processedIds.remove(approvedKey);
+      _notifiedDetectionIds.remove(approvedKey);
 
       _sortLists();
       notifyListeners();
@@ -391,8 +377,9 @@ class NewNboxProvider extends ChangeNotifier {
         _pendingEmails.add(transactionToMove!);
       }
 
-      final rejectedId = '$source:$id:rejected';
-      _processedIds.remove(rejectedId);
+      _processedIds.remove(
+        '$source:${transactionToMove!.fingerprint}:rejected',
+      );
 
       _sortLists();
       notifyListeners();
@@ -414,7 +401,8 @@ class NewNboxProvider extends ChangeNotifier {
   Future<void> _loadProcessedIds() async {
     _setLoading(true);
     final prefs = await SharedPreferences.getInstance();
-    _processedIds = (prefs.getStringList(_processedIdsStorageKey) ?? []).toSet();
+    _processedIds = (prefs.getStringList(_processedIdsStorageKey) ?? [])
+        .toSet();
     await scanAll();
     _setLoading(false);
   }
@@ -435,9 +423,7 @@ class NewNboxProvider extends ChangeNotifier {
 
   Future<bool> _checkSmsPermission() async {
     final status = await Permission.sms.request();
-    if (kDebugMode) {
-      debugPrint('[NewNboxProvider] SMS permission status: $status');
-    }
+    if (kDebugMode) debugPrint('[NewNboxProvider] SMS permission: $status');
     return status.isGranted;
   }
 

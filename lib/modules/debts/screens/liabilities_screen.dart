@@ -13,10 +13,8 @@ import '../../../core/widgets/swipe_to_delete.dart';
 import '../../../core/widgets/collapsible_fab.dart';
 import '../../../core/widgets/top_snackbar.dart';
 import '../utils/debt_logo_utils.dart';
-import '../widgets/add_loan_sheet.dart';
-import '../widgets/add_credit_card_sheet.dart';
-import '../widgets/quick_pay_emi_sheet.dart';
-import '../widgets/emi_dot_calendar.dart';
+import '../add_debt_screen.dart';
+import '../widgets/pay_debt_modal.dart';
 
 /// Bento tile types for dynamic sizing
 enum _BentoTileType { featured, large, wide, compact }
@@ -24,8 +22,6 @@ enum _BentoTileType { featured, large, wide, compact }
 /// Filter types for liabilities
 enum _LiabilityFilter { loans, creditCards, settled }
 
-/// Redesigned Liabilities Screen
-/// Clean, focused on Loans and Credit Cards (IOUs moved to Family)
 class LiabilitiesScreen extends StatefulWidget {
   const LiabilitiesScreen({super.key});
 
@@ -36,9 +32,17 @@ class LiabilitiesScreen extends StatefulWidget {
 class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
   _LiabilityFilter _filter = _LiabilityFilter.loans;
 
-  // Filter out legacy IOUs (they should use Family module)
   bool _isValidDebt(Debt debt) => !debt.type.isLegacyIOU;
   bool _isSettled(Debt debt) => debt.currentBalance < 1.0;
+
+  // Safe fallback for info color
+  Color get _infoColor {
+    try {
+      return AppColors.info;
+    } catch (_) {
+      return Colors.blue;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +57,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
           }
 
           try {
-            // Filter and categorize debts
             final validDebts = provider.debts
                 .where((d) => _isValidDebt(d))
                 .toList();
@@ -66,14 +69,12 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                 .toList();
             final settled = validDebts.where((d) => _isSettled(d)).toList();
 
-            // Sort by balance (highest first)
             loans.sort((a, b) => b.currentBalance.compareTo(a.currentBalance));
             creditCards.sort(
               (a, b) => b.currentBalance.compareTo(a.currentBalance),
             );
             settled.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
-            // Get current filtered list
             List<Debt> displayedDebts;
             switch (_filter) {
               case _LiabilityFilter.loans:
@@ -89,7 +90,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
 
             return CustomScrollView(
               slivers: [
-                // 1. APP BAR with FlexibleSpaceBar animation
                 SliverAppBar(
                   pinned: true,
                   expandedHeight: 110,
@@ -102,7 +102,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                     titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
                     title: Text(
                       'Liabilities',
-                      style: AppTypography.headlineMedium.copyWith(
+                      style: (AppTypography.headlineMedium).copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w800,
                       ),
@@ -110,7 +110,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                   ),
                 ),
 
-                // 2. SUMMARY CARD
                 if (activeDebts.isNotEmpty)
                   SliverToBoxAdapter(
                     child: Padding(
@@ -122,7 +121,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                     ),
                   ),
 
-                // 3. FILTER PILLS
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -137,7 +135,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                   ),
                 ),
 
-                // 4. BENTO GRID OR EMPTY STATE
                 if (displayedDebts.isEmpty)
                   SliverFillRemaining(
                     child: _buildEmptyState(
@@ -153,15 +150,13 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                           : Icons.check_circle_outline,
                       _filter == _LiabilityFilter.settled
                           ? null
-                          : () => _filter == _LiabilityFilter.loans
-                                ? _showAddLoanSheet(context)
-                                : _showAddCreditCardSheet(context),
+                          : () => navToAddDebtScreen(context),
                     ),
                   )
                 else
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
                       child: _filter == _LiabilityFilter.settled
                           ? _buildSettledBentoGridWidget(settled)
                           : _buildDynamicBentoGrid(
@@ -175,20 +170,14 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                   ),
               ],
             );
-          } catch (e, stackTrace) {
+          } catch (e) {
             debugPrint('Liabilities screen render failed: $e');
-            debugPrint(stackTrace.toString());
-            return _buildRenderErrorState();
+            return _buildRenderErrorState(e);
           }
         },
       ),
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-        child: Align(
-          alignment: Alignment.centerRight,
-          child: _buildFAB(),
-        ),
-      ),
+      floatingActionButton: _buildFAB(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -206,7 +195,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
 
   Widget _buildPill(String label, _LiabilityFilter value, int count) {
     final isSelected = _filter == value;
-    final color = isSelected ? AppColors.info : AppColors.cardSurface;
+    final color = isSelected ? _infoColor : AppColors.cardSurface;
 
     return GestureDetector(
       onTap: () {
@@ -220,9 +209,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
           color: color,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected
-                ? AppColors.info
-                : Colors.white.withValues(alpha: 0.1),
+            color: isSelected ? _infoColor : Colors.white.withOpacity(0.1),
           ),
         ),
         child: Row(
@@ -242,8 +229,8 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.white.withValues(alpha: 0.2)
-                      : Colors.white.withValues(alpha: 0.1),
+                      ? Colors.white.withOpacity(0.2)
+                      : Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -263,21 +250,18 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
   }
 
   Widget _buildSettledBentoGridWidget(List<Debt> settled) {
-    if (settled.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (settled.isEmpty) return const SizedBox.shrink();
 
     final totalPaid = settled.fold(0.0, (sum, d) => sum + d.originalAmount);
 
     return Column(
       children: [
-        // Summary card for settled debts
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.cardSurface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
           ),
           child: Row(
             children: [
@@ -285,7 +269,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.12),
+                  color: AppColors.success.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -302,7 +286,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                     Text(
                       'Total Cleared',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: Colors.white.withOpacity(0.5),
                         fontSize: 11,
                       ),
                     ),
@@ -324,13 +308,13 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.06),
+                  color: Colors.white.withOpacity(0.06),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '${settled.length} ${settled.length == 1 ? 'debt' : 'debts'}',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: Colors.white.withOpacity(0.6),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -340,7 +324,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        // Grid of settled debts
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -365,18 +348,17 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
         : '0';
 
     return GestureDetector(
-      onTap: () => _showDebtDetails(debt),
+      onTap: () => navToAddDebtScreen(context, debtToEdit: debt),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
+          border: Border.all(color: AppColors.success.withOpacity(0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top Row - Icon & Badge
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -384,7 +366,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: typeColor.withValues(alpha: 0.15),
+                    color: typeColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Center(child: _buildDebtAvatar(debt, typeColor, 16)),
@@ -395,14 +377,14 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.15),
+                    color: AppColors.success.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.check, size: 12, color: AppColors.success),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       Text(
                         'Cleared',
                         style: TextStyle(
@@ -417,7 +399,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
               ],
             ),
             const Spacer(),
-            // Name
             Text(
               debt.name,
               style: const TextStyle(
@@ -429,10 +410,9 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
-            // Amount
             Text(
               '₹${_formatCompact(debt.originalAmount)}',
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.success,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -442,7 +422,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
             Text(
               '$percentage% of total',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4),
+                color: Colors.white.withOpacity(0.4),
                 fontSize: 10,
               ),
             ),
@@ -467,7 +447,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
         ? ((totalOriginal - totalDebt) / totalOriginal).clamp(0.0, 1.0)
         : 0.0;
 
-    // Count total EMIs
     int totalEmiCount = 0;
     int paidEmiCount = 0;
     for (final debt in activeDebts) {
@@ -477,7 +456,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
       }
     }
 
-    // Find next due date
     DateTime? nextDue;
     for (final debt in activeDebts) {
       final paymentDate = debt.nextPaymentDate;
@@ -493,11 +471,10 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
       child: Stack(
         children: [
-          // Horizontal progress fill from left
           Positioned(
             left: 0,
             top: 0,
@@ -509,33 +486,30 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [
-                    AppColors.success.withValues(alpha: 0.12),
-                    AppColors.success.withValues(alpha: 0.03),
+                    AppColors.success.withOpacity(0.12),
+                    AppColors.success.withOpacity(0.03),
                   ],
                 ),
               ),
             ),
           ),
-          // Subtle percentage watermark
           Positioned(
             right: 16,
             bottom: 8,
             child: Text(
               '${(progress * 100).toInt()}%',
               style: TextStyle(
-                color: AppColors.success.withValues(alpha: 0.08),
+                color: AppColors.success.withOpacity(0.08),
                 fontSize: 72,
                 fontWeight: FontWeight.w900,
               ),
             ),
           ),
-          // Content
           Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header Row
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -546,7 +520,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                           Text(
                             'OUTSTANDING',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
+                              color: Colors.white.withOpacity(0.5),
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.2,
@@ -566,15 +540,13 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.success.withValues(
-                                    alpha: 0.15,
-                                  ),
+                                  color: AppColors.success.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(
+                                    const Icon(
                                       Icons.check_circle_outline,
                                       size: 12,
                                       color: AppColors.success,
@@ -582,7 +554,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                                     const SizedBox(width: 4),
                                     Text(
                                       '₹${_formatCompact(totalPaid)} paid',
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: AppColors.success,
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
@@ -596,7 +568,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                         ],
                       ),
                     ),
-                    // EMI Counter Badge
                     if (totalEmiCount > 0)
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -604,10 +575,10 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.06),
+                          color: Colors.white.withOpacity(0.06),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.08),
+                            color: Colors.white.withOpacity(0.08),
                           ),
                         ),
                         child: Column(
@@ -623,7 +594,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                             Text(
                               'EMIs',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.5),
+                                color: Colors.white.withOpacity(0.5),
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -634,8 +605,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-
-                // Stats Row
                 Row(
                   children: [
                     _buildStatChip(
@@ -672,13 +641,13 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isWarning
-            ? AppColors.warning.withValues(alpha: 0.15)
-            : Colors.white.withValues(alpha: 0.05),
+            ? AppColors.warning.withOpacity(0.15)
+            : Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isWarning
-              ? AppColors.warning.withValues(alpha: 0.3)
-              : Colors.white.withValues(alpha: 0.1),
+              ? AppColors.warning.withOpacity(0.3)
+              : Colors.white.withOpacity(0.1),
         ),
       ),
       child: Row(
@@ -696,7 +665,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
               Text(
                 label,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: Colors.white.withOpacity(0.5),
                   fontSize: 9,
                   fontWeight: FontWeight.w500,
                 ),
@@ -716,12 +685,8 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
     );
   }
 
-  // ================= BENTO GRID VIEW =================
-
   Widget _buildDynamicBentoGrid(List<Debt> debts, double totalDebt) {
-    if (debts.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (debts.isEmpty) return const SizedBox.shrink();
 
     final List<Widget> rows = [];
     int index = 0;
@@ -730,7 +695,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
       final remaining = debts.length - index;
 
       if (remaining == 1) {
-        // Single item - full width featured
         rows.add(
           _buildBentoTile(
             debts[index],
@@ -740,7 +704,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
         );
         index++;
       } else if (remaining == 2) {
-        // Two items - side by side large
         rows.add(
           Row(
             children: [
@@ -763,52 +726,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
           ),
         );
         index += 2;
-      } else if (remaining == 3) {
-        // Three items - one wide + two stacked
-        rows.add(
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: _buildBentoTile(
-                    debts[index],
-                    totalDebt,
-                    tileType: _BentoTileType.wide,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: _buildBentoTile(
-                          debts[index + 1],
-                          totalDebt,
-                          tileType: _BentoTileType.compact,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: _buildBentoTile(
-                          debts[index + 2],
-                          totalDebt,
-                          tileType: _BentoTileType.compact,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-        index += 3;
       } else {
-        // 4+ items - two large + wide with stacked
-        // First: 2 large tiles
         rows.add(
           Row(
             children: [
@@ -831,59 +749,9 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
           ),
         );
         index += 2;
-
-        // Then: wide + 2 stacked (if we have at least 3 more)
-        if (debts.length - index >= 3) {
-          rows.add(const SizedBox(height: 12));
-          rows.add(
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: _buildBentoTile(
-                      debts[index],
-                      totalDebt,
-                      tileType: _BentoTileType.wide,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: _buildBentoTile(
-                            debts[index + 1],
-                            totalDebt,
-                            tileType: _BentoTileType.compact,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Expanded(
-                          child: _buildBentoTile(
-                            debts[index + 2],
-                            totalDebt,
-                            tileType: _BentoTileType.compact,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-          index += 3;
-        }
       }
-
-      if (index < debts.length) {
-        rows.add(const SizedBox(height: 12));
-      }
+      if (index < debts.length) rows.add(const SizedBox(height: 12));
     }
-
     return Column(children: rows);
   }
 
@@ -900,125 +768,50 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
     final percentage = totalDebt > 0
         ? (debt.currentBalance / totalDebt * 100).toStringAsFixed(0)
         : '0';
-
     final isDueSoon = debt.isPaymentDueSoon;
     final isOverdue = debt.isPaymentOverdue;
-
-    final isCompact = tileType == _BentoTileType.compact;
     final isLarge = tileType == _BentoTileType.large;
-    final isFeatured = tileType == _BentoTileType.featured;
-    final isWide = tileType == _BentoTileType.wide;
 
     return GestureDetector(
-      onTap: () => _showDebtDetails(debt),
+      onTap: () => navToAddDebtScreen(context, debtToEdit: debt),
       child: SwipeToDelete(
         itemKey: ValueKey(debt.id),
         itemId: debt.id,
         itemName: debt.name,
         onDelete: () => _confirmAndDelete(debt),
         child: Container(
-          constraints: BoxConstraints(
-            minHeight: isLarge ? 178 : (isFeatured ? 148 : 0),
-          ),
-          padding: EdgeInsets.all(isCompact ? 12 : 16),
+          constraints: BoxConstraints(minHeight: isLarge ? 178 : 148),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.cardSurface,
-            borderRadius: BorderRadius.circular(isCompact ? 16 : 20),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isOverdue
-                  ? AppColors.error.withValues(alpha: 0.5)
+                  ? AppColors.error.withOpacity(0.5)
                   : isDueSoon
-                  ? AppColors.warning.withValues(alpha: 0.5)
-                  : Colors.white.withValues(alpha: 0.05),
+                  ? AppColors.warning.withOpacity(0.5)
+                  : Colors.white.withOpacity(0.05),
               width: (isOverdue || isDueSoon) ? 2 : 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: typeColor.withValues(alpha: 0.08),
+                color: typeColor.withOpacity(0.08),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
             ],
           ),
-          child: isCompact
-              ? _buildCompactTileContent(debt, typeColor)
-              : _buildFullTileContent(
-                  debt,
-                  typeColor,
-                  progress,
-                  percentage,
-                  isLarge,
-                  isFeatured,
-                  isWide,
-                  isDueSoon,
-                  isOverdue,
-                ),
+          child: _buildFullTileContent(
+            debt,
+            typeColor,
+            progress,
+            percentage,
+            isLarge,
+            isDueSoon,
+            isOverdue,
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildCompactTileContent(Debt debt, Color typeColor) {
-    final canPay = debt.currentBalance >= 1.0;
-
-    return Row(
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: typeColor.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Center(child: _buildDebtAvatar(debt, typeColor, 14)),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                debt.name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '₹${_formatCompact(debt.currentBalance)}',
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (canPay) ...[
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () => _showQuickPaySheet(debt),
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.payments_outlined,
-                size: 14,
-                color: AppColors.success,
-              ),
-            ),
-          ),
-        ],
-      ],
     );
   }
 
@@ -1028,8 +821,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
     double progress,
     String percentage,
     bool isLarge,
-    bool isFeatured,
-    bool isWide,
     bool isDueSoon,
     bool isOverdue,
   ) {
@@ -1039,7 +830,6 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Top Row - Icon, Name & Percentage
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1047,7 +837,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: typeColor.withValues(alpha: 0.15),
+                color: typeColor.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(child: _buildDebtAvatar(debt, typeColor, 16)),
@@ -1071,7 +861,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                     Text(
                       debt.lenderName ?? '',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
+                        color: Colors.white.withOpacity(0.4),
                         fontSize: 10,
                       ),
                       maxLines: 1,
@@ -1097,9 +887,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
             ),
           ],
         ),
-        if (isLarge || isFeatured) const SizedBox(height: 8),
-        if (isWide) const SizedBox(height: 8),
-        // Balance
+        const SizedBox(height: 8),
         Text(
           '₹${_formatAmount(debt.currentBalance)}',
           style: TextStyle(
@@ -1113,49 +901,36 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
           Text(
             'EMI ₹${_formatCompact(debt.monthlyEMI ?? 0)} /mo',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
+              color: Colors.white.withOpacity(0.5),
               fontSize: 10,
             ),
           ),
         ],
         const SizedBox(height: 8),
-        // EMI Dot Calendar (loans) or Progress Bar (credit cards)
-        if (debt.totalMonths != null && debt.type.isLoan)
-          EmiDotCalendar(
-            totalMonths: debt.totalMonths!,
-            paidMonths: debt.paidMonths ?? 0,
-            startDate: debt.startDate,
-            typeColor: typeColor,
-            onMarkPaid: debt.currentBalance >= 1.0
-                ? () => _markEmiPaid(debt)
-                : null,
-          )
-        else
-          Row(
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(3),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: Colors.white.withValues(alpha: 0.1),
-                    valueColor: AlwaysStoppedAnimation(AppColors.success),
-                    minHeight: 4,
-                  ),
+        Row(
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: Colors.white.withOpacity(0.1),
+                  valueColor: const AlwaysStoppedAnimation(AppColors.success),
+                  minHeight: 4,
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                '${(progress * 100).toInt()}%',
-                style: TextStyle(
-                  color: AppColors.success,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${(progress * 100).toInt()}%',
+              style: const TextStyle(
+                color: AppColors.success,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
               ),
-            ],
-          ),
-        // Due + Pay action for large tiles
+            ),
+          ],
+        ),
         if (isLarge) ...[
           const SizedBox(height: 8),
           Row(
@@ -1194,17 +969,17 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                 const SizedBox.shrink(),
               if (canPay)
                 GestureDetector(
-                  onTap: () => _showQuickPaySheet(debt),
+                  onTap: () => showPayDebtModal(context, debt),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.15),
+                      color: AppColors.success.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
@@ -1212,7 +987,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                           size: 11,
                           color: AppColors.success,
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: 4),
                         Text(
                           'Pay',
                           style: TextStyle(
@@ -1228,23 +1003,22 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
             ],
           ),
         ],
-        // Pay action for featured/wide tiles too
         if (!isLarge && canPay) ...[
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
-              onTap: () => _showQuickPaySheet(debt),
+              onTap: () => showPayDebtModal(context, debt),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.15),
+                  color: AppColors.success.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
@@ -1252,7 +1026,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                       size: 11,
                       color: AppColors.success,
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4),
                     Text(
                       'Pay',
                       style: TextStyle(
@@ -1282,7 +1056,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: Colors.white.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Icon(icon, size: 36, color: Colors.white30),
@@ -1291,7 +1065,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
             Text(
               message,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: Colors.white.withOpacity(0.5),
                 fontSize: 16,
               ),
             ),
@@ -1301,7 +1075,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                 onPressed: onAdd,
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Add Now'),
-                style: TextButton.styleFrom(foregroundColor: AppColors.info),
+                style: TextButton.styleFrom(foregroundColor: _infoColor),
               ),
             ],
           ],
@@ -1310,21 +1084,18 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
     );
   }
 
-  Widget _buildRenderErrorState() {
+  // Purely fail-proof rendering so we don't accidentally get a blank screen
+  Widget _buildRenderErrorState(Object error) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 40,
-              color: AppColors.error.withValues(alpha: 0.9),
-            ),
+            const Icon(Icons.error_outline, size: 40, color: Colors.redAccent),
             const SizedBox(height: 12),
             const Text(
-              'Could not load liabilities right now',
+              'UI Error encountered',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 16,
@@ -1332,13 +1103,10 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
-              'Please reopen this screen. If it persists, one liability entry may have invalid data.',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
-                fontSize: 12,
-              ),
+              error.toString(),
+              style: const TextStyle(color: Colors.white54, fontSize: 12),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1348,37 +1116,128 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
   }
 
   Widget _buildFAB() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        CollapsibleFab(
-          heroTag: 'add_loan',
-          onPressed: () => _showAddLoanSheet(context),
-          backgroundColor: AppColors.cardSurface,
-          icon: const Icon(
-            Icons.account_balance,
-            color: AppColors.info,
-            size: 20,
-          ),
-          label: 'Loan',
+    return Padding(
+      // Lowers the FAB slightly. Increase this value if you want it even lower.
+      padding: const EdgeInsets.only(bottom: 4.0),
+      child: FloatingActionButton.extended(
+        onPressed: () => _showActionOptions(context),
+        backgroundColor: AppColors.cardSurface,
+        icon: const Icon(Icons.add, color: AppColors.error),
+        label: const Text(
+          'Add Liability',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(width: 12),
-        CollapsibleFab(
-          heroTag: 'add_card',
-          onPressed: () => _showAddCreditCardSheet(context),
-          backgroundColor: AppColors.cardSurface,
-          icon: const Icon(
-            Icons.credit_card,
-            color: AppColors.warning,
-            size: 20,
-          ),
-          label: 'Card',
-        ),
-      ],
+      ),
     );
   }
 
-  // Helper Methods
+  // New method to show the bottom sheet menu
+  void _showActionOptions(BuildContext context) {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      // 1. Swapped the background to perfectly match your app's base canvas
+      backgroundColor: AppColors.backgroundBlack,
+      elevation: 0,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      builder: (context) => Container(
+        // 2. Added a very subtle top border outline to define the pop-up edge
+        decoration: BoxDecoration(
+          color: AppColors.backgroundBlack,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              // Drag handle pill
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Loan Option
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                leading: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _infoColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.account_balance, color: _infoColor),
+                ),
+                title: const Text(
+                  'Add Loan',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                subtitle: Text(
+                  'Personal, Home, Car, etc.',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.5),
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  navToAddDebtScreen(context);
+                },
+              ),
+              const SizedBox(height: 8),
+              // Card Option
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                leading: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.credit_card,
+                    color: AppColors.warning,
+                  ),
+                ),
+                title: const Text(
+                  'Add Credit Card',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                subtitle: Text(
+                  'Manage card dues and EMIs',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.5),
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  navToAddDebtScreen(context);
+                },
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Color _getTypeColor(DebtType type) {
     switch (type) {
       case DebtType.creditCard:
@@ -1390,7 +1249,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
       case DebtType.educationLoan:
         return Colors.teal;
       case DebtType.personalLoan:
-        return AppColors.info;
+        return _infoColor;
       case DebtType.businessLoan:
         return Colors.orange;
       case DebtType.goldLoan:
@@ -1403,73 +1262,28 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
   }
 
   String _formatAmount(double amount) {
-    if (amount >= 10000000) {
+    if (amount >= 10000000)
       return '${(amount / 10000000).toStringAsFixed(2)} Cr';
-    } else if (amount >= 100000) {
-      return '${(amount / 100000).toStringAsFixed(2)} L';
-    }
+    if (amount >= 100000) return '${(amount / 100000).toStringAsFixed(2)} L';
     return NumberFormat('#,##,###').format(amount.round());
   }
 
   String _formatCompact(double amount) {
-    if (amount >= 100000) {
-      return '${(amount / 100000).toStringAsFixed(1)}L';
-    } else if (amount >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(1)}K';
-    }
+    if (amount >= 100000) return '${(amount / 100000).toStringAsFixed(1)}L';
+    if (amount >= 1000) return '${(amount / 1000).toStringAsFixed(1)}K';
     return amount.toStringAsFixed(0);
   }
 
   Widget _buildDebtAvatar(Debt debt, Color fallbackColor, double size) {
     final bankLogo = DebtLogoUtils.bankLogoForDebt(debt);
-
     if (bankLogo != null) {
       final logoScale = DebtLogoUtils.bankLogoScaleForDebt(debt);
       return LogoUtils.buildLogo(bankLogo, size: size * logoScale);
     }
-
     return Text(
       debt.type.icon,
       style: TextStyle(fontSize: size, color: fallbackColor),
     );
-  }
-
-  Future<void> _markEmiPaid(Debt debt) async {
-    final emi = debt.monthlyEMI ?? 0;
-    if (emi <= 0 || debt.currentBalance < 1.0) return;
-
-    final newBalance = (debt.currentBalance - emi).clamp(0.0, double.infinity);
-    final newPaidMonths = (debt.paidMonths ?? 0) + 1;
-
-    DateTime? nextPaymentDate;
-    if (newBalance > 0 && debt.paymentDay != null) {
-      final now = DateTime.now();
-      nextPaymentDate = DateTime(now.year, now.month + 1, debt.paymentDay!);
-    }
-
-    final updatedDebt = debt.copyWith(
-      currentBalance: newBalance,
-      paidMonths: newPaidMonths,
-      nextPaymentDate: nextPaymentDate,
-      updatedAt: DateTime.now(),
-    );
-
-    await context.read<DebtProvider>().updateDebt(updatedDebt);
-
-    if (mounted) {
-      HapticFeedback.heavyImpact();
-      if (newBalance <= 0) {
-        showTopSnackBar(
-          context,
-          '🎉 ${debt.name} is fully paid off!',
-        );
-      } else {
-        showTopSnackBar(
-          context,
-          'EMI ₹${_formatCompact(emi)} marked as paid',
-        );
-      }
-    }
   }
 
   void _confirmAndDelete(Debt debt) {
@@ -1484,69 +1298,32 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
         ),
         content: Text(
-          'This will permanently delete "${debt.name}". This cannot be undone.',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
+          'This will permanently delete "${debt.name}".',
+          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white54),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               context.read<DebtProvider>().deleteDebt(debt.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${debt.name} deleted'),
-                  backgroundColor: AppColors.cardElevated,
-                  behavior: SnackBarBehavior.floating,
-                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  duration: const Duration(seconds: 4),
-                ),
-              );
             },
-            child: const Text('Delete', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w700)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: AppColors.error,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
     );
-  }
-
-  // Navigation Methods
-  void _showAddLoanSheet(BuildContext context) {
-    HapticFeedback.lightImpact();
-    showAddLoanModal(context);
-  }
-
-  void _showAddCreditCardSheet(BuildContext context) {
-    HapticFeedback.lightImpact();
-    showAddCreditCardModal(context);
-  }
-
-  void _showQuickPaySheet(Debt debt) {
-    HapticFeedback.lightImpact();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.cardElevated,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppSpacing.radiusLg),
-        ),
-      ),
-      builder: (context) => QuickPayEmiSheet(debt: debt),
-    );
-  }
-
-  void _showDebtDetails(Debt debt) {
-    // For now, open edit - later can add details screen
-    HapticFeedback.lightImpact();
-    if (debt.type.isCreditCard) {
-      showAddCreditCardModal(context, debtToEdit: debt);
-    } else {
-      showAddLoanModal(context, debtToEdit: debt);
-    }
   }
 }

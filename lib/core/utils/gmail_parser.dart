@@ -68,7 +68,9 @@ class GmailParser {
     final lower = cleanBody.toLowerCase();
 
     // 2. BALANCED GUARD LAYER
-    if (_isIgnorable(lower)) { return null; }
+    if (_isIgnorable(lower)) {
+      return null;
+    }
 
     String type = 'expense';
     if (_isCredit(lower)) {
@@ -105,7 +107,9 @@ class GmailParser {
 
   static bool _isCredit(String lower) {
     // Ignore "refund policy" mentions, but catch real credits
-    if (lower.contains('refund policy')) { return false; }
+    if (lower.contains('refund policy')) {
+      return false;
+    }
     return lower.contains('received from') ||
         lower.contains('credited') ||
         lower.contains('refunded') ||
@@ -141,10 +145,14 @@ class GmailParser {
       caseSensitive: false,
     );
     final match = amountPattern.firstMatch(text);
-    if (match == null) { return null; }
+    if (match == null) {
+      return null;
+    }
 
     double amount = double.parse(match.group(1)!.replaceAll(',', ''));
-    if (amount == 0) { return null; }
+    if (amount == 0) {
+      return null;
+    }
 
     // AI or Keyword Merchant detection
     String merchant = _scanForBrands(lower) ?? "General Transaction";
@@ -178,7 +186,9 @@ class GmailParser {
       'axis': 'Axis Bank',
     };
     for (var entry in brands.entries) {
-      if (lower.contains(entry.key)) { return entry.value; }
+      if (lower.contains(entry.key)) {
+        return entry.value;
+      }
     }
     return null;
   }
@@ -230,8 +240,13 @@ class GmailParser {
       transactionType: type,
     );
 
+    final fingerprint = '${amount}_${merchant}_${date.toIso8601String()}_$type'
+        .hashCode
+        .toRadixString(16);
+
     return DetectedTransaction(
       id: id,
+      fingerprint: fingerprint,
       amount: amount,
       merchant: merchant,
       date: date,

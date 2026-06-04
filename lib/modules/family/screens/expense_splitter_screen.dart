@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/nexus_switch.dart';
@@ -19,28 +18,53 @@ class ExpenseSplitterScreen extends StatefulWidget {
 class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
   final _amountController = TextEditingController();
   final _personNameController = TextEditingController();
-  final List<String> _participants = ['Person 1', 'Person 2'];
+  final _customTipController = TextEditingController();
+  final List<TextEditingController> _participantControllers = [
+    TextEditingController(text: 'Person 1'),
+    TextEditingController(text: 'Person 2'),
+  ];
   bool _includesTip = false;
   double _tipPercentage = 0;
+  bool _isCustomTip = false;
+  bool _customTipIsAmount = false;
 
   @override
   void dispose() {
     _amountController.dispose();
     _personNameController.dispose();
+    _customTipController.dispose();
+    for (final c in _participantControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   double get _totalAmount {
     final base = double.tryParse(_amountController.text) ?? 0;
-    return base + (base * _tipPercentage / 100);
+    if (!_includesTip) return base;
+    if (_isCustomTip && _customTipIsAmount) {
+      return base + (double.tryParse(_customTipController.text) ?? 0);
+    }
+    return base + (base * _effectiveTip / 100);
   }
 
   double get _perPersonAmount {
-    if (_participants.isEmpty) {
-      return 0;
-    }
-    return _totalAmount / _participants.length;
+    if (_participantControllers.isEmpty) return 0;
+    return _totalAmount / _participantControllers.length;
   }
+
+  double get _effectiveTip {
+    if (!_isCustomTip) return _tipPercentage;
+    final val = double.tryParse(_customTipController.text) ?? 0;
+    if (_customTipIsAmount) {
+      final base = double.tryParse(_amountController.text) ?? 0;
+      return base == 0 ? 0 : (val / base) * 100;
+    }
+    return val;
+  }
+
+  List<String> get _participants =>
+      _participantControllers.map((c) => c.text.trim()).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +149,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         children: [
@@ -142,7 +166,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 '₹',
                 style: TextStyle(
                   color: AppColors.primaryBlue,
@@ -186,7 +210,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,9 +218,9 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Add Tip',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
@@ -208,6 +232,8 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                   _includesTip = val;
                   if (!val) {
                     _tipPercentage = 0;
+                    _isCustomTip = false;
+                    _customTipController.clear();
                   }
                 }),
               ),
@@ -217,39 +243,181 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [10, 15, 20, 25].map((percent) {
-                final isSelected = _tipPercentage == percent;
-                return GestureDetector(
-                  onTap: () =>
-                      setState(() => _tipPercentage = percent.toDouble()),
+              children: [
+                ...[5, 10, 15, 20].map((percent) {
+                  final isSelected = !_isCustomTip && _tipPercentage == percent;
+                  return GestureDetector(
+                    onTap: () => setState(() {
+                      _tipPercentage = percent.toDouble();
+                      _isCustomTip = false;
+                      _customTipController.clear();
+                    }),
+                    child: Container(
+                      width: 56,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.primaryBlue.withOpacity(0.2)
+                            : AppColors.backgroundBlack,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primaryBlue
+                              : Colors.white.withOpacity(0.1),
+                        ),
+                      ),
+                      child: Text(
+                        '$percent%',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: isSelected
+                              ? AppColors.primaryBlue
+                              : AppColors.textSecondary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+                GestureDetector(
+                  onTap: () => setState(() {
+                    _isCustomTip = true;
+                    _tipPercentage = 0;
+                  }),
                   child: Container(
-                    width: 60,
+                    width: 56,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primaryBlue.withValues(alpha: 0.2)
+                      color: _isCustomTip
+                          ? AppColors.primaryBlue.withOpacity(0.2)
                           : AppColors.backgroundBlack,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isSelected
+                        color: _isCustomTip
                             ? AppColors.primaryBlue
-                            : Colors.white.withValues(alpha: 0.1),
+                            : Colors.white.withOpacity(0.1),
                       ),
                     ),
                     child: Text(
-                      '$percent%',
+                      'Custom',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: isSelected
+                        color: _isCustomTip
                             ? AppColors.primaryBlue
                             : AppColors.textSecondary,
                         fontWeight: FontWeight.bold,
+                        fontSize: 11,
                       ),
                     ),
                   ),
-                );
-              }).toList(),
+                ),
+              ],
             ),
+            if (_isCustomTip) ...[
+              const SizedBox(height: 12),
+              // Mode toggle: % vs ₹
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _customTipIsAmount = false),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: !_customTipIsAmount
+                              ? AppColors.primaryBlue.withOpacity(0.15)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: !_customTipIsAmount
+                                ? AppColors.primaryBlue
+                                : Colors.white.withOpacity(0.1),
+                          ),
+                        ),
+                        child: Text(
+                          '% Percentage',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: !_customTipIsAmount
+                                ? AppColors.primaryBlue
+                                : AppColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _customTipIsAmount = true),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: _customTipIsAmount
+                              ? AppColors.primaryBlue.withOpacity(0.15)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: _customTipIsAmount
+                                ? AppColors.primaryBlue
+                                : Colors.white.withOpacity(0.1),
+                          ),
+                        ),
+                        child: Text(
+                          '₹ Amount',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: _customTipIsAmount
+                                ? AppColors.primaryBlue
+                                : AppColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _customTipController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                style: const TextStyle(color: Colors.white),
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: _customTipIsAmount
+                      ? 'Enter tip amount'
+                      : 'Enter percentage',
+                  hintStyle: TextStyle(
+                    color: AppColors.textTertiary,
+                    fontSize: 13,
+                  ),
+                  suffixText: _customTipIsAmount ? '₹' : '%',
+                  suffixStyle: const TextStyle(color: AppColors.primaryBlue),
+                  filled: true,
+                  fillColor: AppColors.backgroundBlack,
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: AppColors.primaryBlue),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ],
           ],
         ],
       ),
@@ -271,35 +439,9 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                 letterSpacing: 1,
               ),
             ),
-            Row(
-              children: [
-                IconButton(
-                  onPressed: _participants.length > 2
-                      ? () => setState(() => _participants.removeLast())
-                      : null,
-                  icon: Icon(
-                    Icons.remove_circle_outline,
-                    color: _participants.length > 2
-                        ? AppColors.error
-                        : AppColors.textTertiary.withValues(alpha: 0.3),
-                  ),
-                ),
-                Text(
-                  '${_participants.length}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => _addParticipantFromInput(),
-                  icon: Icon(
-                    Icons.add_circle_outline,
-                    color: AppColors.success,
-                  ),
-                ),
-              ],
+            Text(
+              '${_participantControllers.length} people',
+              style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
             ),
           ],
         ),
@@ -324,6 +466,16 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
                   ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: AppColors.primaryBlue.withOpacity(0.5),
+                    ),
+                  ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 12,
@@ -337,6 +489,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
               child: ElevatedButton.icon(
                 onPressed: _addParticipantFromInput,
                 style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(80, 44),
                   backgroundColor: AppColors.primaryBlue,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -354,105 +507,93 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: List.generate(_participants.length, (index) {
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _participantControllers.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
             return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: AppColors.cardSurface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.05)),
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   CircleAvatar(
                     radius: 14,
-                    backgroundColor: AppColors.primaryBlue.withValues(
-                      alpha: 0.2,
-                    ),
+                    backgroundColor: AppColors.primaryBlue.withOpacity(0.2),
                     child: Text(
                       '${index + 1}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.primaryBlue,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _participants[index],
-                    style: const TextStyle(color: Colors.white),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _participantControllers[index],
+                      style: const TextStyle(color: Colors.white),
+                      textCapitalization: TextCapitalization.words,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        hintText: 'Person ${index + 1}',
+                        hintStyle: TextStyle(color: AppColors.textTertiary),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                        filled: false,
+                      ),
+                    ),
                   ),
+                  if (_participantControllers.length > 2)
+                    GestureDetector(
+                      onTap: () => setState(() {
+                        _participantControllers[index].dispose();
+                        _participantControllers.removeAt(index);
+                      }),
+                      child: const Icon(
+                        Icons.remove_circle_outline,
+                        color: AppColors.error,
+                        size: 20,
+                      ),
+                    ),
                 ],
               ),
             );
-          }),
+          },
         ),
       ],
     );
   }
 
   Widget _buildShareActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'SEND SPLIT',
-          style: AppTypography.labelSmall.copyWith(
-            color: AppColors.textTertiary,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1,
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: _shareSplitMessage,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.cardElevated,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.white.withOpacity(0.12)),
           ),
         ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionButton(
-                icon: Icons.group,
-                label: 'Splitwise',
-                color: AppColors.primaryBlue,
-                onTap: _openSplitwise,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildActionButton(
-                icon: Icons.account_balance_wallet,
-                label: 'Google Pay',
-                color: AppColors.success,
-                onTap: _openGooglePay,
-              ),
-            ),
-          ],
+        icon: const Icon(Icons.share, size: 18),
+        label: const Text(
+          'Share via WhatsApp / Message',
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 10),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _shareSplit,
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            icon: Icon(Icons.share, color: AppColors.textSecondary),
-            label: Text(
-              'Share Message',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -465,7 +606,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
     return OutlinedButton.icon(
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
-        side: BorderSide(color: color.withValues(alpha: 0.35)),
+        side: BorderSide(color: color.withOpacity(0.35)),
         padding: const EdgeInsets.symmetric(vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
@@ -480,33 +621,27 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
   Widget _buildHelperText() {
     return Text(
       'Quick Split is calculation-only and does not save to your accounts.',
-      style: TextStyle(
-        color: AppColors.textTertiary,
-        fontSize: 12,
-      ),
+      style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
       textAlign: TextAlign.center,
     );
   }
 
   void _addParticipantFromInput() {
     final name = _personNameController.text.trim();
-    if (name.isEmpty) {
-      setState(() {
-        _participants.add('Person ${_participants.length + 1}');
-      });
-      return;
-    }
+    final newName = name.isEmpty
+        ? 'Person ${_participantControllers.length + 1}'
+        : name;
 
-    final exists = _participants.any(
-      (p) => p.toLowerCase() == name.toLowerCase(),
+    final exists = _participantControllers.any(
+      (c) => c.text.trim().toLowerCase() == newName.toLowerCase(),
     );
     if (exists) {
-      showTopSnackBar(context, '$name is already added', isError: true);
+      showTopSnackBar(context, '$newName is already added', isError: true);
       return;
     }
 
     setState(() {
-      _participants.add(name);
+      _participantControllers.add(TextEditingController(text: newName));
       _personNameController.clear();
     });
   }
@@ -519,56 +654,31 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
 
     return 'Split summary\n\n'
         'Bill: ₹${baseAmount.toStringAsFixed(2)}\n'
-        'Tip: ${_tipPercentage.toStringAsFixed(0)}%\n'
+        'Tip: ${_effectiveTip.toStringAsFixed(_effectiveTip % 1 == 0 ? 0 : 1)}%\n'
         'Total: ₹${_totalAmount.toStringAsFixed(2)}\n'
         'Each person pays: ₹${_perPersonAmount.toStringAsFixed(2)}\n\n'
         '$participants';
   }
 
-  Future<void> _openSplitwise() async {
-    final message = _buildSplitMessage();
-    await Clipboard.setData(ClipboardData(text: message));
+  void _shareSplitMessage() {
+    if (_amountController.text.isEmpty || _participants.isEmpty) return;
 
-    final appUri = Uri.parse('splitwise://');
-    final webUri = Uri.parse('https://www.splitwise.com/');
+    final StringBuffer buffer = StringBuffer();
+    buffer.writeln("=== 🧾 Quick Split Bill Breakdown ===");
+    buffer.writeln("Total Bill: ₹${_totalAmount.toStringAsFixed(2)}");
+    buffer.writeln(
+      "Per Person Share: ₹${_perPersonAmount.toStringAsFixed(2)}\n",
+    );
+    buffer.writeln("👤 Split Details:");
 
-    if (await canLaunchUrl(appUri)) {
-      await launchUrl(appUri, mode: LaunchMode.externalApplication);
-    } else if (await canLaunchUrl(webUri)) {
-      await launchUrl(webUri, mode: LaunchMode.externalApplication);
+    for (var participant in _participants) {
+      buffer.writeln(
+        "• $participant owes: ₹${_perPersonAmount.toStringAsFixed(2)}",
+      );
     }
 
-    if (!mounted) { return; }
-    showTopSnackBar(
-      context,
-      'Split copied. Paste in Splitwise.',
-      isError: false,
-    );
-  }
-
-  Future<void> _openGooglePay() async {
-    final message = _buildSplitMessage();
-    await Clipboard.setData(ClipboardData(text: message));
-
-    final gpayUri = Uri.parse('tez://');
-    final fallbackUri = Uri.parse('https://pay.google.com/');
-
-    if (await canLaunchUrl(gpayUri)) {
-      await launchUrl(gpayUri, mode: LaunchMode.externalApplication);
-    } else if (await canLaunchUrl(fallbackUri)) {
-      await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
-    }
-
-    if (!mounted) { return; }
-    showTopSnackBar(
-      context,
-      'Split copied. Paste in Google Pay note.',
-      isError: false,
-    );
-  }
-
-  void _shareSplit() {
-    Share.share(_buildSplitMessage(), subject: 'Quick Split');
+    buffer.writeln("\nSent via Nexus Quick Split");
+    Share.share(buffer.toString());
   }
 
   Widget _buildResultCard() {
@@ -577,14 +687,14 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primaryBlue.withValues(alpha: 0.3),
-            AppColors.primaryBlue.withValues(alpha: 0.1),
+            AppColors.primaryBlue.withOpacity(0.3),
+            AppColors.primaryBlue.withOpacity(0.1),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
       ),
       child: Column(
         children: [
@@ -599,25 +709,25 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
           const SizedBox(height: 8),
           Text(
             '₹${_perPersonAmount.toStringAsFixed(2)}',
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.primaryBlue,
               fontSize: 40,
               fontWeight: FontWeight.bold,
             ),
           ),
-          if (_includesTip && _tipPercentage > 0) ...[
+          if (_includesTip && _effectiveTip > 0) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.backgroundBlack.withValues(alpha: 0.5),
+                color: AppColors.backgroundBlack.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Includes ${_tipPercentage.toInt()}% tip',
+                    'Includes ${_effectiveTip.toStringAsFixed(_effectiveTip % 1 == 0 ? 0 : 1)}% tip',
                     style: TextStyle(
                       color: AppColors.textTertiary,
                       fontSize: 12,
@@ -625,8 +735,8 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '(₹${(double.tryParse(_amountController.text) ?? 0) * _tipPercentage / 100 / _participants.length})',
-                    style: TextStyle(
+                    '(₹${((double.tryParse(_amountController.text) ?? 0) * _effectiveTip / 100 / _participantControllers.length).toStringAsFixed(2)})',
+                    style: const TextStyle(
                       color: AppColors.success,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -647,17 +757,17 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
               Container(
                 width: 1,
                 height: 30,
-                color: Colors.white.withValues(alpha: 0.1),
+                color: Colors.white.withOpacity(0.1),
                 margin: const EdgeInsets.symmetric(horizontal: 20),
               ),
               _buildSummaryItem(
                 'Tip',
-                '₹${((double.tryParse(_amountController.text) ?? 0) * _tipPercentage / 100).toStringAsFixed(0)}',
+                '₹${((double.tryParse(_amountController.text) ?? 0) * _effectiveTip / 100).toStringAsFixed(0)}',
               ),
               Container(
                 width: 1,
                 height: 30,
-                color: Colors.white.withValues(alpha: 0.1),
+                color: Colors.white.withOpacity(0.1),
                 margin: const EdgeInsets.symmetric(horizontal: 20),
               ),
               _buildSummaryItem('Total', '₹${_totalAmount.toStringAsFixed(0)}'),

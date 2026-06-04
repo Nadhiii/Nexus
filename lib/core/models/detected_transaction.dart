@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 @immutable
 class DetectedTransaction {
   final String id; // Unique ID (SMS ID or Email ID)
+  final String fingerprint; // Content-based hash, survives reinstall
   final double amount;
   final String merchant;
   final DateTime date;
@@ -16,6 +17,7 @@ class DetectedTransaction {
 
   const DetectedTransaction({
     required this.id,
+    required this.fingerprint,
     required this.amount,
     required this.merchant,
     required this.date,
@@ -37,14 +39,15 @@ class DetectedTransaction {
       identical(this, other) ||
       other is DetectedTransaction &&
           runtimeType == other.runtimeType &&
-          id == other.id &&
+          fingerprint == other.fingerprint &&
           source == other.source;
 
   @override
-  int get hashCode => id.hashCode ^ source.hashCode;
+  int get hashCode => fingerprint.hashCode ^ source.hashCode;
 
   DetectedTransaction copyWith({
     String? id,
+    String? fingerprint,
     double? amount,
     String? merchant,
     DateTime? date,
@@ -57,6 +60,7 @@ class DetectedTransaction {
   }) {
     return DetectedTransaction(
       id: id ?? this.id,
+      fingerprint: fingerprint ?? this.fingerprint,
       amount: amount ?? this.amount,
       merchant: merchant ?? this.merchant,
       date: date ?? this.date,
