@@ -4,125 +4,114 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  GoogleSignIn? _googleSignIn;
 
-  // Get current user
+  // --- REPLACE THIS WITH YOUR WEB CLIENT ID ---
+  // Source: Google Cloud Console → APIs & Services → Credentials
+  // → "Web client (auto created by Google Service)" → copy the Client ID
+  // Looks like: 1234567890-xxxxxxxxxxxxxxxx.apps.googleusercontent.com
+  static const String _webClientId = 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com';
+  // --------------------------------------------
+
+  bool _googleSignInInitialized = false;
+
   User? get currentUser => _auth.currentUser;
-
-  // Auth state changes stream
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // Initialize Google Sign-In
-  GoogleSignIn _initializeGoogleSignIn() {
-    if (_googleSignIn != null) { return _googleSignIn!; }
-    
+  Future<void> _ensureGoogleSignInInitialized() async {
+    if (_googleSignInInitialized) return;
+    await GoogleSignIn.instance.initialize(serverClientId: _webClientId);
+    _googleSignInInitialized = true;
+  }
+
+  Future<User?> signInWithGoogle() async {
     try {
-      _googleSignIn = GoogleSignIn(
-        scopes: ['email', 'profile'],
-      );
-      return _googleSignIn!;
+      if (kIsWeb) {
+        final provider = GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+        final userCredential = await _auth.signInWithPopup(provider);
+        return userCredential.user;
+      }
+
+      try {
+        debugPrint('Starting Google Sign-In (v7)...');
+
+        await _ensureGoogleSignInInitialized();
+
+        // v7: authenticate() replaces signIn()
+        final GoogleSignInAccount googleUser =
+            await GoogleSignIn.instance.authenticate();
+
+        debugPrint('Google account selected: ${googleUser.email}');
+
+        // Get authorization with scopes to retrieve access token
+        final authorization = await googleUser.authorizationClient
+            .authorizeScopes(['email', 'profile']);
+
+        debugPrint(
+          'Access token available: ${authorization.accessToken.isNotEmpty}',
+        );
+
+        // idToken is still available via the authentication getter in v7
+        final idToken = googleUser.authentication.idToken;
+
+        if (authorization.accessToken.isEmpty || idToken == null) {
+          throw Exception(
+            'Failed to get authentication tokens from Google',
+          );
+        }
+
+        debugPrint('Creating Firebase credential...');
+        final credential = GoogleAuthProvider.credential(
+          accessToken: authorization.accessToken,
+          idToken: idToken,
+        );
+
+        debugPrint('Signing in to Firebase...');
+        final UserCredential userCredential =
+            await _auth.signInWithCredential(credential);
+
+        debugPrint(
+          'Firebase sign-in successful: ${userCredential.user?.email}',
+        );
+        return userCredential.user;
+      } catch (e) {
+        debugPrint('Google Sign-In v7 error: $e');
+
+        if (e is GoogleSignInException) {
+          if (e.code == GoogleSignInExceptionCode.canceled) {
+            throw Exception('Sign-in was cancelled');
+          } else if (e.code == GoogleSignInExceptionCode.uiUnavailable) {
+            throw Exception(
+              'Google Sign-In UI is not available. Please try again.',
+            );
+          } else if (e.code ==
+              GoogleSignInExceptionCode.clientConfigurationError) {
+            throw Exception(
+              'Google Sign-In is not configured correctly. '
+              'Please ensure the Web Client ID is set and SHA fingerprints '
+              'are registered in Firebase Console.',
+            );
+          }
+        }
+
+        if (e.toString().contains('network') ||
+            e.toString().contains('timeout')) {
+          throw Exception(
+            'Network error. Please check your connection and try again.',
+          );
+        }
+
+        // Rethrow — do not silently fall through to Firebase provider
+        // since that path also fails when cert hash is invalid.
+        rethrow;
+      }
     } catch (e) {
-      debugPrint('Failed to initialize Google Sign-In: $e');
+      debugPrint('Error signing in with Google: $e');
       rethrow;
     }
   }
 
-  // SIGN IN WITH GOOGLE
-  Future<User?> signInWithGoogle() async {
-    try {
-      if (kIsWeb) {
-        // Web: Use Firebase Auth provider
-        final provider = GoogleAuthProvider();
-        provider.addScope('email');
-        provider.addScope('profile');
-        
-        final userCredential = await _auth.signInWithPopup(provider);
-        return userCredential.user;
-      } else {
-        // Mobile: Try google_sign_in package first, then fallback to Firebase provider
-        try {
-          final googleSignIn = _initializeGoogleSignIn();
-          
-          debugPrint('Starting Google Sign-In...');
-          final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-          
-          if (googleUser == null) {
-            debugPrint('User cancelled Google Sign-In');
-            throw Exception('Sign-in was cancelled');
-          }
-
-          debugPrint('Google account selected: ${googleUser.email}');
-          debugPrint('Getting authentication tokens...');
-          
-          final GoogleSignInAuthentication googleAuth = googleUser.authentication;
-
-          debugPrint('Access token available: ${googleAuth.accessToken != null}');
-          debugPrint('ID token available: ${googleAuth.idToken != null}');
-
-          if (googleAuth.accessToken == null || googleAuth.idToken == null) {
-            debugPrint('Missing authentication tokens');
-            throw Exception('Failed to get authentication tokens from Google');
-          }
-
-          debugPrint('Creating Firebase credential...');
-          final credential = GoogleAuthProvider.credential(
-            accessToken: googleAuth.accessToken,
-            idToken: googleAuth.idToken,
-          );
-
-          debugPrint('Signing in to Firebase...');
-          final UserCredential userCredential = await _auth.signInWithCredential(credential);
-          
-          debugPrint('Firebase sign-in successful: ${userCredential.user?.email}');
-          return userCredential.user;
-          
-        } catch (e) {
-          debugPrint('Google Sign-In package error: $e');
-          
-          // More specific error handling based on the error type
-          if (e.toString().contains('cancelled')) {
-            throw Exception('Sign-in was cancelled');
-          } else if (e.toString().contains('network') || e.toString().contains('timeout')) {
-            throw Exception('Network error. Please check your internet connection and try again');
-          } else if (e.toString().contains('invalid_request') || e.toString().contains('invalid_client')) {
-            throw Exception('Configuration error. The app needs to be properly configured for Google Sign-In');
-          } else if (e.toString().contains('account-exists-with-different-credential')) {
-            throw Exception('An account already exists with this email. Please sign in using a different method');
-          }
-          
-          // Fallback: Try Firebase Auth's signInWithProvider
-          try {
-            debugPrint('Attempting fallback with Firebase signInWithProvider');
-            final provider = GoogleAuthProvider();
-            provider.addScope('email');
-            provider.addScope('profile');
-            
-            final userCredential = await _auth.signInWithProvider(provider);
-            debugPrint('Firebase fallback successful: ${userCredential.user?.email}');
-            return userCredential.user;
-          } catch (fallbackError) {
-            debugPrint('Firebase signInWithProvider also failed: $fallbackError');
-            
-            // Check if it's a Google Play Services issue
-            if (e.toString().contains('SIGN_IN_REQUIRED') || 
-                e.toString().contains('GoogleSignInApi') ||
-                e.toString().contains('Google Play Services') ||
-                e.toString().contains('Null is not a subtype')) {
-              throw Exception('Google Play Services is not available or needs to be updated. Please try "Use without account" option.');
-            }
-            
-            // If both methods fail, provide a generic but helpful error
-            throw Exception('Google Sign-In failed. This might be due to app configuration or temporary Google services issues. Please try "Use without account" option.');
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Error signing in with Google: $e');
-      rethrow; // Rethrow to show the error to the user
-    }
-  }
-
-  // SIGN IN ANONYMOUSLY
   Future<User?> signInAnonymously() async {
     try {
       final UserCredential userCredential = await _auth.signInAnonymously();
@@ -133,15 +122,9 @@ class AuthService {
     }
   }
 
-  // SIGN OUT
   Future<void> signOut() async {
     try {
-      // Sign out from Google Sign-In if user was signed in with Google
-      if (_googleSignIn != null && await _googleSignIn!.isSignedIn()) {
-        await _googleSignIn!.signOut();
-      }
-      
-      // Sign out from Firebase
+      await GoogleSignIn.instance.signOut();
       await _auth.signOut();
     } catch (e) {
       debugPrint('Error signing out: $e');

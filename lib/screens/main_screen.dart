@@ -20,7 +20,6 @@ import '../core/providers/shared_expense_provider.dart';
 import '../core/providers/category_provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_animations.dart';
-import '../modules/Nex/providers/Nex_assistant_provider.dart';
 
 // Screens
 import '../modules/dashboard/dashboard_screen.dart';
@@ -28,9 +27,9 @@ import '../modules/Wallet/wallet_screen.dart';
 import '../modules/insights/insights_screen.dart';
 import '../modules/more/more_screen.dart';
 import '../modules/bike/ui/bike_screen.dart';
-import '../modules/nbox/new_nbox_screen.dart';
 import '../core/services/intent_navigation_service.dart';
 import '../core/services/notification_service.dart';
+import '../modules/nbox/new_modern_nbox_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -81,12 +80,6 @@ class _MainScreenState extends State<MainScreen>
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _initializeAI(context);
-  }
-
-  @override
   void dispose() {
     _navAnimationController?.dispose();
     _intentSub?.cancel();
@@ -113,28 +106,6 @@ class _MainScreenState extends State<MainScreen>
     );
     final simulation = SpringSimulation(spring, 0.0, 1.0, 4.0);
     _navAnimationController?.animateWith(simulation);
-  }
-
-  void _initializeAI(BuildContext context) {
-    if (_aiInitialized) { return; }
-    _aiInitialized = true;
-
-    final aiProvider = context.read<AIAssistantProvider>();
-    aiProvider.initialize();
-    aiProvider.setContextProviders(
-      accountProvider: context.read<AccountProvider>(),
-      debtProvider: context.read<DebtProvider>(),
-      investmentProvider: context.read<InvestmentProvider>(),
-      subscriptionProvider: context.read<SubscriptionProvider>(),
-      transactionProvider: context.read<TransactionProvider>(),
-      budgetProvider: context.read<BudgetProvider>(),
-      goalProvider: context.read<GoalProvider>(),
-      bikeProvider: context.read<BikeProvider>(),
-      nboxProvider: context.read<NewNboxProvider>(),
-      sharedExpenseProvider: context.read<SharedExpenseProvider>(),
-      categoryProvider: context.read<CategoryProvider>(),
-    );
-
   }
 
   @override

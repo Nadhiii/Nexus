@@ -1,5 +1,5 @@
 import '../models/detected_transaction.dart';
-import '../services/ai_categorization_service.dart';
+import '../services/categorization_service.dart';
 import '../services/smart_category_resolver.dart';
 
 class BankPattern {

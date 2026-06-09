@@ -38,7 +38,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
     try {
       bool didAuthenticate = await localAuth.authenticate(
         localizedReason: 'Please authenticate to access your financial data',
-        options: const AuthenticationOptions(biometricOnly: true),
+        biometricOnly: true, // Passed directly here
       );
       setState(() {
         _isUnlocked = didAuthenticate;

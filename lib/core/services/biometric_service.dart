@@ -116,65 +116,53 @@ class BiometricService {
 
   /// Authenticate using biometrics
   Future<bool> authenticate({
-    String reason = 'Please authenticate to access this feature',
-    bool biometricOnly = false,
-  }) async {
-    try {
-      // For desktop testing in debug mode, simulate authentication
-      if (kDebugMode &&
-          (kIsWeb ||
-              defaultTargetPlatform == TargetPlatform.windows ||
-              defaultTargetPlatform == TargetPlatform.linux ||
-              defaultTargetPlatform == TargetPlatform.macOS)) {
-        // Simulate a short delay and return success
-        await Future.delayed(const Duration(seconds: 1));
-        return true;
-      }
-
-      // For Android devices, try authentication even if availability check failed
-      // due to channel errors
-      if (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS) {
-        debugPrint('Attempting biometric authentication with reason: $reason');
-        final bool didAuthenticate = await _localAuth.authenticate(
-          localizedReason: reason,
-          options: AuthenticationOptions(
-            biometricOnly: biometricOnly,
-            stickyAuth: true,
-          ),
-        );
-
-        debugPrint('Authentication result: $didAuthenticate');
-        return didAuthenticate;
-      }
-
-      return false;
-    } on PlatformException catch (e) {
-      debugPrint('PlatformException during authentication: $e');
-      // Handle specific error codes
-      if (e.code == 'NotAvailable') {
-        debugPrint('Biometric authentication is not available on this device');
-      } else if (e.code == 'NotEnrolled') {
-        debugPrint('No biometric credentials are enrolled');
-      } else if (e.code == 'LockedOut') {
-        debugPrint('Biometric authentication is temporarily locked out');
-      } else if (e.code == 'channel-error') {
-        debugPrint(
-          'Channel communication error - the local_auth plugin may need to be reinitialized',
-        );
-      } else if (e.code == 'no_fragment_activity') {
-        debugPrint(
-          'MainActivity needs to extend FlutterFragmentActivity for biometric authentication',
-        );
-        // This should be fixed by updating MainActivity.kt
-      }
-      return false;
-    } catch (e) {
-      debugPrint('Unexpected error during authentication: $e');
-      return false;
+  String reason = 'Please authenticate to access this feature',
+  bool biometricOnly = false, // kept for API compatibility, no longer passed to local_auth
+}) async {
+  try {
+    // Desktop debug simulation — unchanged
+    if (kDebugMode &&
+        (kIsWeb ||
+            defaultTargetPlatform == TargetPlatform.windows ||
+            defaultTargetPlatform == TargetPlatform.linux ||
+            defaultTargetPlatform == TargetPlatform.macOS)) {
+      await Future.delayed(const Duration(seconds: 1));
+      return true;
     }
-  }
 
+    if (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS) {
+      debugPrint('Attempting biometric authentication with reason: $reason');
+
+      // v3: options parameter removed, no AuthenticationOptions
+      final bool didAuthenticate = await _localAuth.authenticate(
+        localizedReason: reason,
+      );
+
+      debugPrint('Authentication result: $didAuthenticate');
+      return didAuthenticate;
+    }
+
+    return false;
+  } on PlatformException catch (e) {
+    debugPrint('PlatformException during authentication: $e');
+    if (e.code == 'NotAvailable') {
+      debugPrint('Biometric authentication is not available on this device');
+    } else if (e.code == 'NotEnrolled') {
+      debugPrint('No biometric credentials are enrolled');
+    } else if (e.code == 'LockedOut') {
+      debugPrint('Biometric authentication is temporarily locked out');
+    } else if (e.code == 'channel-error') {
+      debugPrint('Channel communication error');
+    } else if (e.code == 'no_fragment_activity') {
+      debugPrint('MainActivity needs to extend FlutterFragmentActivity');
+    }
+    return false;
+  } catch (e) {
+    debugPrint('Unexpected error during authentication: $e');
+    return false;
+  }
+}
   /// Check if biometric authentication is enabled for the app
   Future<bool> isBiometricEnabled() async {
     final prefs = await SharedPreferences.getInstance();

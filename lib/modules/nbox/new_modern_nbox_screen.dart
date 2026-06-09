@@ -147,6 +147,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     final nbox = context.read<NewNboxProvider>();
     for (var uid in _selectedIds) {
       final parts = uid.split(':');
+      // uid format: '${t.source}:${t.id}' → parts[0] = source, parts[1] = id
       nbox.rejectTransaction(parts[1], parts[0], silent: true);
     }
     showTopNotification(
@@ -292,8 +293,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       actions: [
         // SMS Refresh Button
         _isSmsLoading
-            ? Padding(
-                padding: const EdgeInsets.all(8.0),
+            ? const Padding(
+                padding: EdgeInsets.all(8.0),
                 child: SizedBox(
                   width: 24,
                   height: 24,
@@ -322,8 +323,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
               ),
         // Gmail Refresh Button
         _isGmailLoading
-            ? Padding(
-                padding: const EdgeInsets.all(8.0),
+            ? const Padding(
+                padding: EdgeInsets.all(8.0),
                 child: SizedBox(
                   width: 24,
                   height: 24,
@@ -406,6 +407,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         : (isExpanded
               ? highlightColor.withValues(alpha: 0.3)
               : Colors.white.withValues(alpha: 0.05));
+    
+    // FIX: Fallback safely to a single solid background if card is not expanded
     final bgGradient = isExpanded
         ? LinearGradient(
             begin: Alignment.topLeft,
@@ -415,11 +418,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
               AppColors.cardSurface,
             ],
           )
-        : LinearGradient(
-            colors: [AppColors.cardSurface, AppColors.cardSurface],
-          );
+        : null;
 
-    // FIX: Replaced IntrinsicHeight with Stack
     return Stack(
       children: [
         // 1. TIMELINE LINE (Background Layer)
@@ -502,6 +502,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                       duration: AppAnimations.standard,
                       decoration: BoxDecoration(
                         gradient: bgGradient,
+                        color: bgGradient == null ? AppColors.cardSurface : null, // Added solid color fallback
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: borderColor),
                         boxShadow: isExpanded
@@ -514,7 +515,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                               ]
                             : [],
                       ),
-                      // FIX: Clip content to prevent overflow during shrink
                       clipBehavior: Clip.antiAlias,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -538,7 +538,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                               Expanded(
                                                 child: Text(
                                                   t.merchant,
-                                                  style: TextStyle(
+                                                  style: const TextStyle(
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.bold,
                                                     color:
@@ -560,7 +560,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                             const SizedBox(height: 4),
                                             Text(
                                               'Category: ${t.detectedCategory}',
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 fontSize: 11,
                                                 color: AppColors.accentTeal,
                                               ),
@@ -592,7 +592,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                     const SizedBox(width: 8),
                                     Text(
                                       DateFormat('hh:mm a').format(t.date),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: AppColors.textTertiary,
                                         fontSize: 11,
                                       ),
@@ -600,7 +600,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                     // Show warnings if any
                                     if (t.warnings.isNotEmpty) ...[
                                       const SizedBox(width: 8),
-                                      Icon(
+                                      const Icon(
                                         Icons.warning_amber_rounded,
                                         size: 14,
                                         color: AppColors.pastelOrange,
@@ -630,8 +630,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                       ),
 
                                       // 1. ANALYSIS
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(
+                                      const Padding(
+                                        padding: EdgeInsets.fromLTRB(
                                           16,
                                           12,
                                           16,
@@ -676,8 +676,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                       const SizedBox(height: 16),
 
                                       // 2. RAW SOURCE
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(
+                                      const Padding(
+                                        padding: EdgeInsets.fromLTRB(
                                           16,
                                           0,
                                           16,
@@ -714,7 +714,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                         ),
                                         child: Text(
                                           t.body ?? "No content",
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontFamily: 'monospace',
                                             fontSize: 11,
                                             color: AppColors.textSecondary,
@@ -841,7 +841,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           const SizedBox(width: 6),
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 11,
               fontWeight: FontWeight.w500,
@@ -884,7 +884,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       child: ElevatedButton.icon(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
-          backgroundColor: isPrimary ? Colors.transparent : bg,
+          backgroundColor: Colors.transparent,
           foregroundColor: fg,
           elevation: 0,
           shadowColor: Colors.transparent,
@@ -952,7 +952,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.inbox_rounded, color: Colors.white70, size: 12),
+                    const Icon(Icons.inbox_rounded, color: Colors.white70, size: 12),
                     const SizedBox(width: 4),
                     Text(
                       '$count NBox Items',
@@ -1123,7 +1123,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
       child: Text(
         label.toUpperCase(),
-        style: TextStyle(
+        style: const TextStyle(
           color: AppColors.textTertiary,
           fontSize: 11,
           fontWeight: FontWeight.w800,
@@ -1170,7 +1170,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
             ),
           ),
           const SizedBox(height: 20),
-          Text(
+          const Text(
             "All Caught Up",
             style: TextStyle(
               color: AppColors.textPrimary,
@@ -1179,7 +1179,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             "No pending transactions to review",
             style: TextStyle(color: AppColors.textTertiary, fontSize: 14),
           ),
@@ -1249,7 +1249,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       // Show smart bottom sheet.
       success = await showSmartApprovalSheet(context, t);
     } else {
-      // Go straight to add_transaction_screen pre-filled (existing behavior).
+      // Go straight to add_transaction_screen pre-filled
       success =
           await Navigator.push(
             context,

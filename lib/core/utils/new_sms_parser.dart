@@ -1,43 +1,33 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import '../models/detected_transaction.dart';
-import '../services/ai_categorization_service.dart';
+import '../services/categorization_service.dart';
 import '../services/smart_category_resolver.dart';
 
 class NewSmsParser {
-  static Future<DetectedTransaction?> parse(
+  /// Synchronous version — safe to call inside a [compute()] isolate.
+  static DetectedTransaction? parseSync(
     String id,
     String body,
     String sender,
-    DateTime date, {
-    AICategorizationService? aiCategorizationService,
-  }) async {
-    // 1. CLEAN
+    DateTime date,
+  ) {
     final cleanBody = body.replaceAll(RegExp(r'[\n\r]'), ' ').trim();
     final lower = cleanBody.toLowerCase();
 
-    // 2. GUARD: Explicit Non-Transactions
-    if (_isIgnorable(lower)) {
-      return null;
-    }
+    if (_isIgnorable(lower)) return null;
 
-    // 3. EXTRACT AMOUNT
     final amountPattern = RegExp(
       r'(?:Rs\.?|INR|₹)\s?\.?\s*([0-9,]+(?:\.[0-9]{1,2})?)',
       caseSensitive: false,
     );
     final match = amountPattern.firstMatch(cleanBody);
-    if (match == null) {
-      return null;
-    }
+    if (match == null) return null;
 
-    String rawAmount = match.group(1)!.replaceAll(',', '');
-    double? amount = double.tryParse(rawAmount);
-    if (amount == null || amount == 0) {
-      return null;
-    }
+    final rawAmount = match.group(1)!.replaceAll(',', '');
+    final amount = double.tryParse(rawAmount);
+    if (amount == null || amount == 0) return null;
 
-    // 4. DETERMINE TYPE
     String type = 'expense';
     if (lower.contains(
       RegExp(r'(credit|credited|received|deposit|added to|refund)'),
@@ -45,18 +35,13 @@ class NewSmsParser {
       type = 'income';
     }
 
-    // 5. EXTRACT MERCHANT
-    String merchant = _extractMerchant(cleanBody, sender);
-
-    // 6. CATEGORIZATION
+    final merchant = _extractMerchant(cleanBody, sender);
     final detectedCategory = SmartCategoryResolver.resolve(
       merchant: merchant,
       body: body,
       amount: amount,
       transactionType: type,
     );
-
-    // 7. FINGERPRINT — content-based, survives reinstall
     final fingerprint = _generateFingerprint(sender, date, body);
 
     return DetectedTransaction(
@@ -70,6 +55,19 @@ class NewSmsParser {
       body: body,
       detectedCategory: detectedCategory,
     );
+  }
+
+  /// Async wrapper kept for call-sites that pass an [AICategorizationService].
+  /// Category resolution now happens inside [parseSync]; the AI service param
+  /// is accepted but ignored (the service only does keyword matching anyway).
+  static Future<DetectedTransaction?> parse(
+    String id,
+    String body,
+    String sender,
+    DateTime date, {
+    AICategorizationService? aiCategorizationService,
+  }) async {
+    return parseSync(id, body, sender, date);
   }
 
   /// Generates a stable MD5 hash from sender + date + body snippet.

@@ -9,7 +9,6 @@ import 'core/providers/account_provider.dart';
 import 'core/providers/transaction_provider.dart';
 import 'core/providers/new_nbox_provider.dart';
 import 'core/providers/debt_provider.dart';
-
 import 'core/providers/investment_provider.dart';
 import 'core/providers/biometric_provider.dart';
 import 'core/providers/notification_provider.dart';
@@ -24,44 +23,26 @@ import 'core/providers/vehicle_management_provider.dart';
 import 'core/providers/fuel_price_provider.dart';
 import 'core/providers/shared_expense_provider.dart';
 import 'core/providers/family_debt_provider.dart';
-import 'modules/Nex/providers/Nex_assistant_provider.dart';
 import 'core/auth/auth_gate.dart';
 import 'core/services/crash_reporting_service.dart';
 import 'core/services/widget_sync_service.dart';
 import 'core/services/intent_navigation_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_gemma/flutter_gemma.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Initialize Crashlytics for error reporting
   await CrashReportingService().initialize();
 
-  await dotenv.load(fileName: ".env");
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint('dotenv load skipped: $e');
+  }
 
   IntentNavigationService.initialize();
-
-  // --- LOCAL GEMMA INITIALIZATION (local-only AI) ---
-  try {
-    await FlutterGemma.initialize();
-
-    // Try to install model from device path if present. If not present, initialization still succeeds.
-    try {
-      await FlutterGemma.installModel(
-        modelType: ModelType.gemmaIt,
-        fileType: ModelFileType.binary,
-      ).fromFile('/data/local/tmp/gemma.bin').install();
-      debugPrint('Local Gemma Model loaded successfully!');
-    } catch (e) {
-      debugPrint('No local Gemma model installed or failed to install: $e');
-    }
-  } catch (e) {
-    debugPrint('Error initializing FlutterGemma plugin: $e');
-  }
-  // ------------------------------------
 
   runApp(const NexusApp());
 }
@@ -87,53 +68,27 @@ class NexusApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FuelPriceProvider()),
         ChangeNotifierProvider(create: (_) => SharedExpenseProvider()),
         ChangeNotifierProvider(create: (_) => FamilyDebtProvider()),
-        ChangeNotifierProvider(create: (_) => AIAssistantProvider()),
-        // GmailProvider with AI dependencies
-        ChangeNotifierProxyProvider2<
-          AIAssistantProvider,
-          CategoryProvider,
-          GmailProvider
-        >(
+        ChangeNotifierProxyProvider<CategoryProvider, GmailProvider>(
           create: (context) => GmailProvider(
-            aiAssistantProvider: context.read<AIAssistantProvider>(),
             categoryProvider: context.read<CategoryProvider>(),
           ),
-          update: (context, aiProvider, categoryProvider, gmailProvider) {
+          update: (context, categoryProvider, gmailProvider) {
             return gmailProvider ??
-                GmailProvider(
-                  aiAssistantProvider: aiProvider,
-                  categoryProvider: categoryProvider,
-                );
+                GmailProvider(categoryProvider: categoryProvider);
           },
         ),
-        // NewNboxProvider with Gmail and AI dependencies
-        ChangeNotifierProxyProvider3<
-          GmailProvider,
-          AIAssistantProvider,
-          CategoryProvider,
-          NewNboxProvider
-        >(
+        ChangeNotifierProxyProvider2<GmailProvider, CategoryProvider, NewNboxProvider>(
           create: (context) => NewNboxProvider(
             gmailProvider: context.read<GmailProvider>(),
-            aiAssistantProvider: context.read<AIAssistantProvider>(),
             categoryProvider: context.read<CategoryProvider>(),
           ),
-          update:
-              (
-                context,
-                gmailProvider,
-                aiProvider,
-                categoryProvider,
-                nboxProvider,
-              ) {
-                nboxProvider?.update(gmailProvider);
-                return nboxProvider ??
-                    NewNboxProvider(
-                      gmailProvider: gmailProvider,
-                      aiAssistantProvider: aiProvider,
-                      categoryProvider: categoryProvider,
-                    );
-              },
+          // update must ALWAYS return the existing instance — never create a
+          // second one. Creating a second NewNboxProvider triggers a parallel
+          // initialize()/scanSmsInbox() which causes a permission deadlock/ANR.
+          update: (context, gmailProvider, categoryProvider, nboxProvider) {
+            nboxProvider!.update(gmailProvider);
+            return nboxProvider;
+          },
         ),
         ChangeNotifierProxyProvider<NotificationProvider, SubscriptionProvider>(
           create: (context) => SubscriptionProvider(),
@@ -156,78 +111,51 @@ class NexusApp extends StatelessWidget {
           TransactionProvider
         >(
           create: (context) => TransactionProvider(),
-          update:
-              (
-                context,
-                accountProvider,
-                budgetProvider,
-                notificationProvider,
-                transactionProvider,
-              ) {
-                transactionProvider?.update(
-                  accountProvider,
-                  budgetProvider,
-                  notificationProvider,
-                );
-                return transactionProvider!;
-              },
+          update: (context, accountProvider, budgetProvider, notificationProvider, transactionProvider) {
+            transactionProvider?.update(
+              accountProvider,
+              budgetProvider,
+              notificationProvider,
+            );
+            return transactionProvider!;
+          },
         ),
       ],
-      child: _AIInitializer(
-        child:
-            Consumer4<
-              ThemeProvider,
-              TransactionProvider,
-              AccountProvider,
-              SubscriptionProvider
-            >(
-              builder:
-                  (
-                    context,
-                    themeProvider,
-                    transactionProvider,
-                    accountProvider,
-                    subscriptionProvider,
-                    child,
-                  ) {
-                    // Initialize WidgetSyncService with providers
-                    final debtProvider = Provider.of<DebtProvider>(
-                      context,
-                      listen: false,
-                    );
-                    WidgetSyncService.instance.initialize(
-                      transactionProvider: transactionProvider,
-                      accountProvider: accountProvider,
-                      subscriptionProvider: subscriptionProvider,
-                      debtProvider: debtProvider,
-                    );
+      child: _AppInitializer(
+        child: Consumer4<ThemeProvider, TransactionProvider, AccountProvider, SubscriptionProvider>(
+          builder: (context, themeProvider, transactionProvider, accountProvider, subscriptionProvider, child) {
+            WidgetSyncService.instance.initialize(
+              transactionProvider: transactionProvider,
+              accountProvider: accountProvider,
+              subscriptionProvider: subscriptionProvider,
+              debtProvider: Provider.of<DebtProvider>(context, listen: false),
+            );
 
-                    return MaterialApp(
-                      title: 'Nexus',
-                      debugShowCheckedModeBanner: false,
-                      theme: AppTheme.darkTheme,
-                      themeMode: ThemeMode.dark,
-                      home: const AuthGate(),
-                    );
-                  },
-            ),
+            return MaterialApp(
+              title: 'Nexus',
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.darkTheme,
+              themeMode: ThemeMode.dark,
+              home: const AuthGate(),
+            );
+          },
+        ),
       ),
     );
   }
 }
 
-/// Stateful widget that initializes the AI provider once, without wrapping
-/// MaterialApp in a Consumer (which would rebuild the entire app on every
-/// AI provider notification).
-class _AIInitializer extends StatefulWidget {
+/// Initializes OTA notifications once after the first frame,
+/// without causing unnecessary rebuilds of the widget tree.
+class _AppInitializer extends StatefulWidget {
   final Widget child;
-  const _AIInitializer({required this.child});
+  const _AppInitializer({required this.child});
 
   @override
-  State<_AIInitializer> createState() => _AIInitializerState();
+  State<_AppInitializer> createState() => _AppInitializerState();
 }
 
-class _AIInitializerState extends State<_AIInitializer> {
+class _AppInitializerState extends State<_AppInitializer> {
   bool _initialized = false;
   final OTAUpdateService _otaService = OTAUpdateService();
 
@@ -237,54 +165,11 @@ class _AIInitializerState extends State<_AIInitializer> {
     if (!_initialized) {
       _initialized = true;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted) { return; }
-        _initializeAIProvider(context);
-        // ONLY initialize notifications here, do NOT check for update yet
+        if (!mounted) return;
+        // ONLY initialize notifications here — version check lives in More Screen
+        // to avoid the "Reply already submitted" crash during login/SMS scan.
         await _otaService.initNotifications();
-        // We moved the version check to the More Screen to avoid the
-        // "Reply already submitted" crash during login/SMS scan.
       });
-    }
-  }
-
-  void _initializeAIProvider(BuildContext context) {
-    try {
-      final aiProvider = Provider.of<AIAssistantProvider>(
-        context,
-        listen: false,
-      );
-
-      // Set all context providers
-      aiProvider.setContextProviders(
-        accountProvider: Provider.of<AccountProvider>(context, listen: false),
-        debtProvider: Provider.of<DebtProvider>(context, listen: false),
-        investmentProvider: Provider.of<InvestmentProvider>(
-          context,
-          listen: false,
-        ),
-        subscriptionProvider: Provider.of<SubscriptionProvider>(
-          context,
-          listen: false,
-        ),
-        transactionProvider: Provider.of<TransactionProvider>(
-          context,
-          listen: false,
-        ),
-        budgetProvider: Provider.of<BudgetProvider>(context, listen: false),
-        goalProvider: Provider.of<GoalProvider>(context, listen: false),
-        bikeProvider: Provider.of<BikeProvider>(context, listen: false),
-        nboxProvider: Provider.of<NewNboxProvider>(context, listen: false),
-        sharedExpenseProvider: Provider.of<SharedExpenseProvider>(
-          context,
-          listen: false,
-        ),
-        categoryProvider: Provider.of<CategoryProvider>(context, listen: false),
-      );
-
-      // Initialize (safe to call multiple times — uses internal lock)
-      aiProvider.initialize();
-    } catch (e) {
-      debugPrint('Error initializing AI provider: $e');
     }
   }
 

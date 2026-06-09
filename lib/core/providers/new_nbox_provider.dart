@@ -8,12 +8,52 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../models/detected_transaction.dart';
 import '../utils/new_sms_parser.dart';
-import '../services/ai_categorization_service.dart';
+import '../services/categorization_service.dart';
 import '../services/notification_service.dart';
-import '../../modules/Nex/providers/Nex_assistant_provider.dart';
 import 'category_provider.dart';
 import 'gmail_provider.dart';
 import '../models/nbox_settings.dart';
+
+// ---------------------------------------------------------------------------
+// Isolate helpers — must be top-level (not inside a class) for compute()
+// ---------------------------------------------------------------------------
+
+class _SmsBatchPayload {
+  final List<Map<String, dynamic>> messages; // serialisable SMS data
+  _SmsBatchPayload(this.messages);
+}
+
+/// Runs in a background isolate. Returns a list of serialised
+/// [DetectedTransaction] maps (nulls excluded).
+List<Map<String, dynamic>> _parseSmsInIsolate(_SmsBatchPayload payload) {
+  final results = <Map<String, dynamic>>[];
+  for (final msg in payload.messages) {
+    final parsed = NewSmsParser.parseSync(
+      msg['id'] as String,
+      msg['body'] as String,
+      msg['address'] as String,
+      DateTime.parse(msg['date'] as String),
+    );
+    if (parsed != null) {
+      results.add({
+        'id': parsed.id,
+        'fingerprint': parsed.fingerprint,
+        'amount': parsed.amount,
+        'merchant': parsed.merchant,
+        'date': parsed.date.toIso8601String(),
+        'type': parsed.type,
+        'source': parsed.source,
+        'body': parsed.body,
+        'confidence': parsed.confidence,
+        'warnings': parsed.warnings,
+        'detectedCategory': parsed.detectedCategory,
+      });
+    }
+  }
+  return results;
+}
+
+// ---------------------------------------------------------------------------
 
 class NewNboxProvider extends ChangeNotifier {
   static const String _processedIdsStorageKey = 'nbox_processed_ids';
@@ -29,6 +69,7 @@ class NewNboxProvider extends ChangeNotifier {
   final Telephony _telephony = Telephony.instance;
 
   bool _isLoading = false;
+  bool _isScanning = false; // prevents concurrent scanSmsInbox() calls
   List<DetectedTransaction> _pendingSms = [];
   List<DetectedTransaction> _pendingEmails = [];
   final List<DetectedTransaction> _rejected = [];
@@ -54,7 +95,6 @@ class NewNboxProvider extends ChangeNotifier {
 
   NewNboxProvider({
     GmailProvider? gmailProvider,
-    AIAssistantProvider? aiAssistantProvider,
     CategoryProvider? categoryProvider,
   }) : _categoryProvider = categoryProvider {
     update(gmailProvider);
@@ -144,7 +184,18 @@ class NewNboxProvider extends ChangeNotifier {
       if (kDebugMode) debugPrint('[NewNboxProvider] SMS reading disabled.');
       return;
     }
+    if (_isScanning) {
+      if (kDebugMode) debugPrint('[NewNboxProvider] Scan already in progress, skipping.');
+      return;
+    }
+    _isScanning = true;
     if (kDebugMode) debugPrint('[NewNboxProvider] Starting SMS scan...');
+
+    // Yield to the event loop so any in-progress page transition animation
+    // fully completes before we hit the platform channel. Without this,
+    // getInboxSms() can deadlock against the platform thread during navigation.
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+
     _setLoading(true);
     await NotificationService().showTransactionScanStatus(source: 'sms');
 
@@ -157,19 +208,11 @@ class NewNboxProvider extends ChangeNotifier {
       final DateTime nowUtc = DateTime.now().toUtc();
       final DateTime minDate = nowUtc.subtract(const Duration(days: 30));
 
-      AICategorizationService? aiService;
-      if (_categoryProvider != null) {
-        aiService = AICategorizationService(
-          categoryProvider: _categoryProvider,
-        );
-      }
-
       List<SmsMessage> messages;
       try {
         messages = await _telephony.getInboxSms(
-          filter: SmsFilter.where(
-            SmsColumn.DATE,
-          ).greaterThan(minDate.millisecondsSinceEpoch.toString()),
+          filter: SmsFilter.where(SmsColumn.DATE)
+              .greaterThan(minDate.millisecondsSinceEpoch.toString()),
           sortOrder: [OrderBy(SmsColumn.DATE, sort: Sort.DESC)],
         );
       } catch (e) {
@@ -177,33 +220,47 @@ class NewNboxProvider extends ChangeNotifier {
         return;
       }
 
-      final allSmsTransactions = <DetectedTransaction>[];
-      for (final sms in messages) {
-        if (sms.id == null || sms.date == null) {
-          continue;
-        }
+      // Serialise to plain maps so they can cross the isolate boundary.
+      final rawMessages = messages
+          .where((s) => s.id != null && s.date != null)
+          .map((s) => {
+                'id': s.id.toString(),
+                'body': s.body ?? '',
+                'address': s.address ?? 'Unknown',
+                'date': DateTime.fromMillisecondsSinceEpoch(
+                  s.date!,
+                  isUtc: true,
+                ).toLocal().toIso8601String(),
+              })
+          .toList();
 
-        final localSmsDate = DateTime.fromMillisecondsSinceEpoch(
-          sms.date!,
-          isUtc: true,
-        ).toLocal();
+      // Parse entirely in a background isolate — keeps UI thread free.
+      final parsed = await compute(
+        _parseSmsInIsolate,
+        _SmsBatchPayload(rawMessages),
+      );
 
-        final transaction = await NewSmsParser.parse(
-          sms.id.toString(),
-          sms.body ?? '',
-          sms.address ?? 'Unknown',
-          localSmsDate,
-          aiCategorizationService: aiService,
-        );
-        if (transaction != null) {
-          allSmsTransactions.add(transaction);
-        }
-      }
+      final allSmsTransactions = parsed
+          .map((m) => DetectedTransaction(
+                id: m['id'] as String,
+                fingerprint: m['fingerprint'] as String,
+                amount: (m['amount'] as num).toDouble(),
+                merchant: m['merchant'] as String,
+                date: DateTime.parse(m['date'] as String),
+                type: m['type'] as String,
+                source: m['source'] as String,
+                body: m['body'] as String?,
+                confidence: (m['confidence'] as num).toDouble(),
+                warnings: List<String>.from(m['warnings'] as List),
+                detectedCategory: m['detectedCategory'] as String?,
+              ))
+          .toList();
 
       _processTransactions(allSmsTransactions, 'sms');
       notifyListeners();
       if (kDebugMode) debugPrint('[NewNboxProvider] SMS scan complete.');
     } finally {
+      _isScanning = false;
       await NotificationService().stopTransactionScanStatus();
       _setLoading(false);
     }
@@ -399,12 +456,11 @@ class NewNboxProvider extends ChangeNotifier {
   }
 
   Future<void> _loadProcessedIds() async {
-    _setLoading(true);
     final prefs = await SharedPreferences.getInstance();
-    _processedIds = (prefs.getStringList(_processedIdsStorageKey) ?? [])
-        .toSet();
-    await scanAll();
-    _setLoading(false);
+    _processedIds = (prefs.getStringList(_processedIdsStorageKey) ?? []).toSet();
+    // Do NOT call scanAll() here — scanning is triggered by the screen via
+    // scanSmsInbox() / scanEmails(). Calling it during provider construction
+    // blocks the main isolate before the widget tree is ready.
   }
 
   Future<void> _persistNotifiedDetectionIds() async {
@@ -428,14 +484,11 @@ class NewNboxProvider extends ChangeNotifier {
   }
 
   void _setLoading(bool loading) {
-    if (_isLoading != loading) {
-      _isLoading = loading;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (hasListeners) {
-          _isLoading = loading;
-          notifyListeners();
-        }
-      });
-    }
+    if (_isLoading == loading) return;
+    _isLoading = loading;
+    // Schedule after the current frame to avoid setState-during-build errors.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (hasListeners) notifyListeners();
+    });
   }
 }

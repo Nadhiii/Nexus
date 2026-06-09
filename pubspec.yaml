@@ -1,7 +1,7 @@
 name: nexus
 description: "Nexus"
 publish_to: 'none'
-version: 1.2.0+4
+version: 1.1.0+3
 
 environment:
   sdk: ^3.8.1
@@ -83,7 +83,6 @@ dependencies:
   extension_google_sign_in_as_googleapis_auth: ^3.0.0
   flutter_dotenv: ^6.0.0
   syncfusion_flutter_pdf: ^33.2.10
-  flutter_gemma: ^0.13.6
   # FIX: Removed ota_update — not used, conflicts with custom OTA service
 
   # App Info

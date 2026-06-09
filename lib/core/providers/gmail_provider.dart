@@ -1,24 +1,24 @@
 // ignore_for_file: empty_catches
 import 'dart:async';
 import 'dart:convert';
+import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/gmail/v1.dart' as gmail;
+import 'package:googleapis_auth/googleapis_auth.dart' as gapis;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/detected_transaction.dart';
 import '../models/gmail_sync_settings.dart';
 import '../utils/gmail_parser.dart';
-import '../services/ai_categorization_service.dart';
-import '../../modules/Nex/providers/Nex_assistant_provider.dart';
+import '../services/categorization_service.dart';
 import 'category_provider.dart';
 
 class GmailProvider extends ChangeNotifier {
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: [gmail.GmailApi.gmailReadonlyScope],
-  );
+  static const List<String> _gmailScopes = [
+    gmail.GmailApi.gmailReadonlyScope,
+  ];
 
-  // Optional AI dependencies for smart categorization
   final CategoryProvider? _categoryProvider;
 
   GoogleSignInAccount? _currentUser;
@@ -28,6 +28,7 @@ class GmailProvider extends ChangeNotifier {
   DateTime? _lastSyncTime;
   GmailSyncSettings _settings = const GmailSyncSettings();
   Timer? _syncTimer;
+  StreamSubscription<GoogleSignInAuthenticationEvent>? _authSubscription;
 
   GoogleSignInAccount? get currentUser => _currentUser;
   bool get isLinked => _currentUser != null;
@@ -41,33 +42,39 @@ class GmailProvider extends ChangeNotifier {
   bool _isInitialized = false;
 
   GmailProvider({
-    AIAssistantProvider? aiAssistantProvider,
     CategoryProvider? categoryProvider,
   }) : _categoryProvider = categoryProvider {
-    // Initialize asynchronously - don't block constructor
     initialize();
-    _googleSignIn.onCurrentUserChanged.listen((account) {
-      _currentUser = account;
-      if (_currentUser == null) {
-        _detectedTransactions.clear();
-        _lastSyncTime = null;
-        _stopAutoSync();
-      } else {
-        Future.microtask(() {
-          scanEmails();
-          _startAutoSync();
-        });
-      }
-      notifyListeners();
-    });
-    _googleSignIn.signInSilently();
+
+    // v7: listen to authenticationEvents stream
+    _authSubscription =
+        GoogleSignIn.instance.authenticationEvents.listen(
+      (event) {
+        if (event is GoogleSignInAuthenticationEventSignIn) {
+          _currentUser = event.user;
+          Future.microtask(() {
+            scanEmails();
+            _startAutoSync();
+          });
+        } else if (event is GoogleSignInAuthenticationEventSignOut) {
+          _currentUser = null;
+          _detectedTransactions.clear();
+          _lastSyncTime = null;
+          _stopAutoSync();
+        }
+        notifyListeners();
+      },
+      onError: (e) {
+        if (kDebugMode) debugPrint('[GmailProvider] Auth stream error: $e');
+      },
+    );
+
+    // v7: replaces signInSilently()
+    GoogleSignIn.instance.attemptLightweightAuthentication();
   }
 
-  /// Initialize the provider - loads settings
   Future<void> initialize() async {
-    if (_isInitialized) {
-      return;
-    }
+    if (_isInitialized) return;
     await _initializeSettings();
     _isInitialized = true;
   }
@@ -80,9 +87,7 @@ class GmailProvider extends ChangeNotifier {
         _settings = GmailSyncSettings.fromJson(jsonDecode(settingsJson));
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('[GmailProvider] Failed to load settings: $e');
-      }
+      if (kDebugMode) debugPrint('[GmailProvider] Failed to load settings: $e');
     }
   }
 
@@ -94,13 +99,8 @@ class GmailProvider extends ChangeNotifier {
         'gmail_sync_settings',
         jsonEncode(_settings.toJson()),
       );
-
-      // Restart sync timer if auto-sync is enabled
       _stopAutoSync();
-      if (_settings.autoSyncEnabled && isLinked) {
-        _startAutoSync();
-      }
-
+      if (_settings.autoSyncEnabled && isLinked) _startAutoSync();
       notifyListeners();
     } catch (e) {
       _error = 'Failed to save settings: $e';
@@ -109,32 +109,28 @@ class GmailProvider extends ChangeNotifier {
   }
 
   void _startAutoSync() {
-    if (!_settings.autoSyncEnabled || _syncTimer != null) {
-      return;
-    }
-
+    if (!_settings.autoSyncEnabled || _syncTimer != null) return;
     if (kDebugMode) {
       debugPrint(
-        '[GmailProvider] Starting auto-sync with interval: ${_settings.syncFrequency.displayName}',
+        '[GmailProvider] Starting auto-sync: ${_settings.syncFrequency.displayName}',
       );
     }
-
-    _syncTimer = Timer.periodic(_settings.syncFrequency.interval, (_) {
-      scanEmails();
-    });
+    _syncTimer = Timer.periodic(
+      _settings.syncFrequency.interval,
+      (_) => scanEmails(),
+    );
   }
 
   void _stopAutoSync() {
     _syncTimer?.cancel();
     _syncTimer = null;
-    if (kDebugMode) {
-      debugPrint('[GmailProvider] Auto-sync stopped');
-    }
+    if (kDebugMode) debugPrint('[GmailProvider] Auto-sync stopped');
   }
 
   Future<void> linkAccount() async {
     try {
-      await _googleSignIn.signIn();
+      // v7: authenticate() replaces signIn()
+      await GoogleSignIn.instance.authenticate();
     } catch (e) {
       _error = 'Failed to link Gmail account: $e';
       notifyListeners();
@@ -144,80 +140,72 @@ class GmailProvider extends ChangeNotifier {
   Future<void> unlinkAccount() async {
     try {
       _stopAutoSync();
-      await _googleSignIn.disconnect();
+      await GoogleSignIn.instance.disconnect();
     } catch (e) {
       _error = 'Failed to unlink Gmail account: $e';
       notifyListeners();
     }
   }
 
-  Future<void> scanEmails() async {
-    if (_currentUser == null) {
-      return;
+  /// Gets an authenticated HTTP client for the Gmail API.
+  /// Uses the extension package: GoogleSignInClientAuthorization.authClient()
+  Future<gapis.AuthClient?> _getAuthenticatedClient() async {
+    if (_currentUser == null) return null;
+    try {
+      final authorization = await _currentUser!.authorizationClient
+          .authorizeScopes(_gmailScopes);
+      return authorization.authClient(scopes: _gmailScopes);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[GmailProvider] Failed to get authenticated client: $e');
+      }
+      return null;
     }
+  }
 
-    if (kDebugMode) {
-      debugPrint('[GmailProvider] Starting email scan...');
-    }
+  Future<void> scanEmails() async {
+    if (_currentUser == null) return;
+
+    if (kDebugMode) debugPrint('[GmailProvider] Starting email scan...');
     _isLoading = true;
     _error = null;
     notifyListeners();
 
+    gapis.AuthClient? client;
     try {
-      // Create AI categorization service if dependencies available
       AICategorizationService? aiService;
       if (_categoryProvider != null) {
-        aiService = AICategorizationService(
-          categoryProvider: _categoryProvider,
-        );
-        if (kDebugMode) {
-          debugPrint('[GmailProvider] AI categorization enabled');
-        }
+        aiService = AICategorizationService(categoryProvider: _categoryProvider);
+        if (kDebugMode) debugPrint('[GmailProvider] AI categorization enabled');
       } else {
         if (kDebugMode) {
-          debugPrint(
-            '[GmailProvider] Using fallback categorization (no CategoryProvider)',
-          );
+          debugPrint('[GmailProvider] Using fallback categorization (no CategoryProvider)');
         }
       }
 
-      final client = await _googleSignIn.authenticatedClient();
+      client = await _getAuthenticatedClient();
       if (client == null) {
         throw Exception('Authenticated client not available.');
       }
 
       final gmailApi = gmail.GmailApi(client);
 
-      // Incremental sync: Only fetch emails since last sync
-      final startDate =
-          _lastSyncTime ??
+      final startDate = _lastSyncTime ??
           DateTime.now().subtract(Duration(days: _settings.daysToScan));
-
       final formattedDate = startDate.toIso8601String().split('T').first;
 
-      // Build query with filters - made less restrictive to catch more transaction emails
-      // Look for common transaction indicators in subject OR body
       final baseQuery =
           '(subject:(receipt OR transaction OR payment OR spent OR debited OR credited OR "sent you" OR "paid" OR alert OR notification) OR body:(debited OR credited OR "account balance" OR "available balance")) -subject:("OTP" OR "One Time Password" OR "statement" OR "bill due" OR "payment due" OR "reminder" OR verification OR "verify your")';
 
       String finalQuery = '$baseQuery after:$formattedDate';
 
-      // Add category filters if enabled
-      if (!_settings.scanPromotions) {
-        finalQuery += ' -category:promotions';
-      }
-      if (!_settings.scanSocial) {
-        finalQuery += ' -category:social';
-      }
-
-      // Add excluded senders
+      if (!_settings.scanPromotions) finalQuery += ' -category:promotions';
+      if (!_settings.scanSocial) finalQuery += ' -category:social';
       for (var sender in _settings.excludedSenders) {
         finalQuery += ' -from:$sender';
       }
 
-      if (kDebugMode) {
-        debugPrint('[GmailProvider] Query: $finalQuery');
-      }
+      if (kDebugMode) debugPrint('[GmailProvider] Query: $finalQuery');
 
       final listResponse = await gmailApi.users.messages.list(
         'me',
@@ -236,9 +224,7 @@ class GmailProvider extends ChangeNotifier {
 
         for (var message in listResponse.messages!) {
           try {
-            if (message.id == null) {
-              continue;
-            }
+            if (message.id == null) continue;
 
             final msg = await gmailApi.users.messages.get(
               'me',
@@ -247,7 +233,6 @@ class GmailProvider extends ChangeNotifier {
             );
             final body = _extractBody(msg);
 
-            // Get actual email date
             DateTime emailDate = DateTime.now();
             if (msg.internalDate != null) {
               emailDate = DateTime.fromMillisecondsSinceEpoch(
@@ -263,29 +248,22 @@ class GmailProvider extends ChangeNotifier {
                 emailDate,
                 aiCategorizationService: aiService,
               );
-
-              if (transaction != null) {
-                freshTransactions.add(transaction);
-              }
+              if (transaction != null) freshTransactions.add(transaction);
             }
           } catch (e) {
             if (kDebugMode) {
-              debugPrint(
-                "[GmailProvider] Error processing email ${message.id}: $e",
-              );
+              debugPrint('[GmailProvider] Error processing email ${message.id}: $e');
             }
           }
         }
       }
 
-      // --- DEDUPLICATION & FILTERING ---
       final Set<String> uniqueSignatures = {};
       final List<DetectedTransaction> finalTransactions = [];
 
       for (final tx in freshTransactions) {
         final signature =
             "${tx.merchant.toLowerCase()}:${tx.amount}:${tx.date.year}-${tx.date.month}-${tx.date.day}";
-
         if (!uniqueSignatures.contains(signature)) {
           finalTransactions.add(tx);
           uniqueSignatures.add(signature);
@@ -297,15 +275,14 @@ class GmailProvider extends ChangeNotifier {
 
       if (kDebugMode) {
         debugPrint(
-          '[GmailProvider] Scan complete. Found ${_detectedTransactions.length} unique transactions.',
+          '[GmailProvider] Scan complete. ${_detectedTransactions.length} unique transactions.',
         );
       }
     } catch (e) {
       _error = 'Failed to scan emails: $e';
-      if (kDebugMode) {
-        debugPrint('[GmailProvider] Error: $e');
-      }
+      if (kDebugMode) debugPrint('[GmailProvider] Error: $e');
     } finally {
+      client?.close();
       _isLoading = false;
       notifyListeners();
     }
@@ -313,9 +290,7 @@ class GmailProvider extends ChangeNotifier {
 
   String? _extractBody(gmail.Message message) {
     final payload = message.payload;
-    if (payload == null) {
-      return message.snippet;
-    }
+    if (payload == null) return message.snippet;
 
     String? body = _getPartBody(payload.parts ?? []);
 
@@ -326,9 +301,7 @@ class GmailProvider extends ChangeNotifier {
           allowMalformed: true,
         );
       } catch (e) {
-        if (kDebugMode) {
-          debugPrint('[GmailProvider] Error decoding body: $e');
-        }
+        if (kDebugMode) debugPrint('[GmailProvider] Error decoding body: $e');
       }
     }
 
@@ -338,7 +311,6 @@ class GmailProvider extends ChangeNotifier {
   String? _getPartBody(List<gmail.MessagePart> parts) {
     String? plainTextBody;
     String? htmlBody;
-
     List<gmail.MessagePart> partsToSearch = List.from(parts);
 
     while (partsToSearch.isNotEmpty) {
@@ -365,11 +337,16 @@ class GmailProvider extends ChangeNotifier {
         } catch (e) {}
       }
 
-      if (part.parts != null) {
-        partsToSearch.addAll(part.parts!);
-      }
+      if (part.parts != null) partsToSearch.addAll(part.parts!);
     }
 
     return htmlBody;
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    _stopAutoSync();
+    super.dispose();
   }
 }

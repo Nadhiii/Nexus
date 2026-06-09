@@ -15,7 +15,6 @@ import '../notifications/notification_settings_screen.dart';
 import '../gmail/gmail_settings_enhanced_screen.dart';
 import '../family/screens/family_dashboard_screen.dart';
 import '../family/screens/expense_splitter_screen.dart';
-import 'package:nexus/modules/Nex/screens/Nex_chat_screen.dart';
 import '../../core/services/ota_update_service.dart';
 import 'reports_and_analytics_screen.dart';
 import 'manage_categories_screen.dart';
@@ -143,13 +142,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                 _buildSectionHeader("PREFERENCES"),
                 const SizedBox(height: 12),
                 _buildSettingsSection(),
-
-                const SizedBox(height: 32),
-
-                _buildSectionHeader("LABS"),
-                const SizedBox(height: 12),
-                _buildLabsSection(),
-
+                
                 const SizedBox(height: 32),
 
                 _buildSectionHeader("SUPPORT"),
@@ -365,27 +358,6 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
   ) {
     return Expanded(
       child: _ToolCard(icon: icon, color: color, label: label, onTap: onTap),
-    );
-  }
-
-  Widget _buildLabsSection() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Column(
-        children: [
-          _buildTile(
-            icon: Icons.auto_awesome_rounded,
-            color: AppColors.primaryBlue,
-            title: "Nex AI Chat",
-            subtitle: "Intelligent financial assistant",
-            onTap: () => _navigate(const AIChatScreen()),
-          ),
-        ],
-      ),
     );
   }
 

@@ -22,6 +22,66 @@
           }
         },
         {
+          "client_id": "217588531616-i58torrt647s6pttse1adfeerkgpamkh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mahanadhi.nexus",
+            "certificate_hash": "59e2e08224bed267020c88a45991fbc2df44b1d4"
+          }
+        },
+        {
+          "client_id": "217588531616-vt5leo02qlt9e40nck0l47imn35bj7gc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mahanadhi.nexus",
+            "certificate_hash": "5792f395a6cde7e697e56ae23cedcdf5c80f17d3"
+          }
+        },
+        {
+          "client_id": "217588531616-vac0sturbdi7ojbqj12jvdcf040dm730.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCSrv4g36SqfbiXaovxkIyBHf6SUNhSH5A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "217588531616-vac0sturbdi7ojbqj12jvdcf040dm730.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "217588531616-3kl1rr4gvt6avgdl66g2nakurnvimatc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mahanadhi.nexusTemp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:217588531616:android:374e3f53c3ce0c167364c5",
+        "android_client_info": {
+          "package_name": "com.mahanadhi.nexustasks"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "217588531616-rmhofptsqq2av9r5h97kppstrasg8j8u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mahanadhi.nexustasks",
+            "certificate_hash": "5792f395a6cde7e697e56ae23cedcdf5c80f17d3"
+          }
+        },
+        {
           "client_id": "217588531616-vac0sturbdi7ojbqj12jvdcf040dm730.apps.googleusercontent.com",
           "client_type": 3
         }
