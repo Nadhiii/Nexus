@@ -409,7 +409,7 @@ Future<void> showLogSubscriptionPaymentModal(
   return Navigator.of(context).push(
     PageRouteBuilder(
       opaque: false,
-      pageBuilder: (_, __, ___) =>
+      pageBuilder: (_, _, _) =>
           LogSubscriptionPaymentModal(subscription: sub),
     ),
   );

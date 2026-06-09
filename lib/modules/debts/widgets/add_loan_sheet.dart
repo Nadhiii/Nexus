@@ -154,7 +154,7 @@ class _AddLoanModalState extends State<AddLoanModal> {
                                   child: ListView.separated(
                                     scrollDirection: Axis.horizontal,
                                     itemCount: _loanQuickAdd.length,
-                                    separatorBuilder: (_, __) =>
+                                    separatorBuilder: (_, _) =>
                                         const SizedBox(width: 12),
                                     itemBuilder: (context, index) {
                                       final item = _loanQuickAdd[index];

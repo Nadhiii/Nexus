@@ -442,7 +442,7 @@ Future<void> showPayDebtModal(BuildContext context, Debt debt) {
   return Navigator.of(context).push(
     PageRouteBuilder(
       opaque: false,
-      pageBuilder: (_, __, ___) => PayDebtModal(debt: debt),
+      pageBuilder: (_, _, _) => PayDebtModal(debt: debt),
     ),
   );
 }

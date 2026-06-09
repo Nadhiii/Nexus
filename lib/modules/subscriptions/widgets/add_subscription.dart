@@ -170,7 +170,7 @@ class _ModernAddSubscriptionScreenState
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: _popularServices.length,
-                          separatorBuilder: (_, __) =>
+                          separatorBuilder: (_, _) =>
                               const SizedBox(width: AppSpacing.md),
                           itemBuilder: (context, index) {
                             final s = _popularServices[index];
@@ -578,7 +578,7 @@ Future<void> showAddSubscription(
   return Navigator.of(context).push(
     PageRouteBuilder(
       opaque: false,
-      pageBuilder: (_, __, ___) =>
+      pageBuilder: (_, _, _) =>
           ModernAddSubscriptionScreen(subscriptionToEdit: subscriptionToEdit),
     ),
   );

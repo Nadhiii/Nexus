@@ -470,7 +470,7 @@ Future<void> showAddDebtModal(BuildContext context, {Debt? debtToEdit}) {
   return Navigator.of(context).push(
     PageRouteBuilder(
       opaque: false,
-      pageBuilder: (_, __, ___) => AddDebtModal(debtToEdit: debtToEdit),
+      pageBuilder: (_, _, _) => AddDebtModal(debtToEdit: debtToEdit),
     ),
   );
 }

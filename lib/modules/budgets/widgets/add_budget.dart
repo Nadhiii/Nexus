@@ -1454,7 +1454,7 @@ Future<void> showAddBudgetModal(BuildContext context, {Budget? budget}) {
   return Navigator.of(context).push(
     PageRouteBuilder(
       opaque: false,
-      pageBuilder: (_, __, ___) => AddBudgetModal(budget: budget),
+      pageBuilder: (_, _, _) => AddBudgetModal(budget: budget),
     ),
   );
 }

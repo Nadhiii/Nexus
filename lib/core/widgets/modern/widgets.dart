@@ -62,7 +62,7 @@ class ModernBalanceCard extends StatelessWidget {
                     letterSpacing: 0.5,
                   ),
                 ),
-                if (trailing != null) trailing!,
+                ?trailing,
               ],
             ),
             const SizedBox(height: AppSpacing.lg),

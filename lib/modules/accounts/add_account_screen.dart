@@ -572,7 +572,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _colorPalette.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
         itemBuilder: (context, index) {
           final color = _colorPalette[index];
           final isSelected = _selectedColor == color;
@@ -614,7 +614,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _iconPalette.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
         itemBuilder: (context, index) {
           final icon = _iconPalette[index];
           final isSelected = _selectedIcon == icon;

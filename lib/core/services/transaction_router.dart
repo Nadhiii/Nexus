@@ -218,8 +218,9 @@ class TransactionRouter {
       updates['currentBalance'] = data['newBalance'] as double;
     }
     if (data['nextPaymentDate'] != null) {
-      updates['nextPaymentDate'] =
-          Timestamp.fromDate(data['nextPaymentDate'] as DateTime);
+      updates['nextPaymentDate'] = Timestamp.fromDate(
+        data['nextPaymentDate'] as DateTime,
+      );
     }
     batch.update(debtRef, updates);
   }
@@ -295,7 +296,7 @@ class TransactionRouter {
       'previousOdometer': bike.currentOdometer,
       'pricePerLiter': fuelLiters > 0 ? detected.amount / fuelLiters : null,
       'isFullTank': isFullTank,
-      if (mileage != null) 'mileage': mileage,
+      'mileage': ?mileage,
     };
 
     final now = DateTime.now();
@@ -329,7 +330,7 @@ class TransactionRouter {
             'fuelLiters': fuelLiters,
             'amount': detected.amount,
             'isFullTank': isFullTank,
-            if (mileage != null) 'mileage': mileage,
+            'mileage': ?mileage,
           },
         ),
         SideEffect(
@@ -343,7 +344,7 @@ class TransactionRouter {
         'odometerReading': odometerReading,
         'fuelLiters': fuelLiters,
         'isFullTank': isFullTank,
-        if (mileage != null) 'mileage': mileage,
+        'mileage': ?mileage,
       },
     );
   }
@@ -364,8 +365,10 @@ class TransactionRouter {
         : null;
 
     final newBalance =
-        (debt.currentBalance - (debt.monthlyEMI ?? detected.amount))
-            .clamp(0.0, double.infinity);
+        (debt.currentBalance - (debt.monthlyEMI ?? detected.amount)).clamp(
+          0.0,
+          double.infinity,
+        );
 
     final now = DateTime.now();
     final transaction = models.Transaction(
@@ -399,7 +402,7 @@ class TransactionRouter {
           data: {
             'debtId': debt.id,
             'newBalance': newBalance,
-            if (nextDate != null) 'nextPaymentDate': nextDate,
+            'nextPaymentDate': ?nextDate,
           },
         ),
       ],
@@ -445,10 +448,7 @@ class TransactionRouter {
         SideEffect(
           type: SideEffectType.updateSubscriptionDueDate,
           description: 'Advance ${subscription.name} due date',
-          data: {
-            'subscriptionId': subscription.id,
-            'newDueDate': newDueDate,
-          },
+          data: {'subscriptionId': subscription.id, 'newDueDate': newDueDate},
         ),
       ],
     );
@@ -490,10 +490,7 @@ class TransactionRouter {
           type: SideEffectType.updateInvestmentAmount,
           description:
               'Add ₹${detected.amount.toStringAsFixed(0)} to ${investment.name}',
-          data: {
-            'investmentId': investment.id,
-            'amount': detected.amount,
-          },
+          data: {'investmentId': investment.id, 'amount': detected.amount},
         ),
       ],
     );

@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/gmail/v1.dart' as gmail;
-import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/detected_transaction.dart';
@@ -66,7 +65,9 @@ class GmailProvider extends ChangeNotifier {
 
   /// Initialize the provider - loads settings
   Future<void> initialize() async {
-    if (_isInitialized) { return; }
+    if (_isInitialized) {
+      return;
+    }
     await _initializeSettings();
     _isInitialized = true;
   }
@@ -79,7 +80,9 @@ class GmailProvider extends ChangeNotifier {
         _settings = GmailSyncSettings.fromJson(jsonDecode(settingsJson));
       }
     } catch (e) {
-      if (kDebugMode) { debugPrint('[GmailProvider] Failed to load settings: $e'); }
+      if (kDebugMode) {
+        debugPrint('[GmailProvider] Failed to load settings: $e');
+      }
     }
   }
 
@@ -106,7 +109,9 @@ class GmailProvider extends ChangeNotifier {
   }
 
   void _startAutoSync() {
-    if (!_settings.autoSyncEnabled || _syncTimer != null) { return; }
+    if (!_settings.autoSyncEnabled || _syncTimer != null) {
+      return;
+    }
 
     if (kDebugMode) {
       debugPrint(
@@ -122,7 +127,9 @@ class GmailProvider extends ChangeNotifier {
   void _stopAutoSync() {
     _syncTimer?.cancel();
     _syncTimer = null;
-    if (kDebugMode) { debugPrint('[GmailProvider] Auto-sync stopped'); }
+    if (kDebugMode) {
+      debugPrint('[GmailProvider] Auto-sync stopped');
+    }
   }
 
   Future<void> linkAccount() async {
@@ -145,9 +152,13 @@ class GmailProvider extends ChangeNotifier {
   }
 
   Future<void> scanEmails() async {
-    if (_currentUser == null) { return; }
+    if (_currentUser == null) {
+      return;
+    }
 
-    if (kDebugMode) { debugPrint('[GmailProvider] Starting email scan...'); }
+    if (kDebugMode) {
+      debugPrint('[GmailProvider] Starting email scan...');
+    }
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -204,7 +215,9 @@ class GmailProvider extends ChangeNotifier {
         finalQuery += ' -from:$sender';
       }
 
-      if (kDebugMode) { debugPrint('[GmailProvider] Query: $finalQuery'); }
+      if (kDebugMode) {
+        debugPrint('[GmailProvider] Query: $finalQuery');
+      }
 
       final listResponse = await gmailApi.users.messages.list(
         'me',
@@ -223,7 +236,9 @@ class GmailProvider extends ChangeNotifier {
 
         for (var message in listResponse.messages!) {
           try {
-            if (message.id == null) { continue; }
+            if (message.id == null) {
+              continue;
+            }
 
             final msg = await gmailApi.users.messages.get(
               'me',
@@ -255,7 +270,9 @@ class GmailProvider extends ChangeNotifier {
             }
           } catch (e) {
             if (kDebugMode) {
-              debugPrint("[GmailProvider] Error processing email ${message.id}: $e");
+              debugPrint(
+                "[GmailProvider] Error processing email ${message.id}: $e",
+              );
             }
           }
         }
@@ -285,7 +302,9 @@ class GmailProvider extends ChangeNotifier {
       }
     } catch (e) {
       _error = 'Failed to scan emails: $e';
-      if (kDebugMode) { debugPrint('[GmailProvider] Error: $e'); }
+      if (kDebugMode) {
+        debugPrint('[GmailProvider] Error: $e');
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -294,7 +313,9 @@ class GmailProvider extends ChangeNotifier {
 
   String? _extractBody(gmail.Message message) {
     final payload = message.payload;
-    if (payload == null) { return message.snippet; }
+    if (payload == null) {
+      return message.snippet;
+    }
 
     String? body = _getPartBody(payload.parts ?? []);
 
@@ -305,7 +326,9 @@ class GmailProvider extends ChangeNotifier {
           allowMalformed: true,
         );
       } catch (e) {
-        if (kDebugMode) { debugPrint('[GmailProvider] Error decoding body: $e'); }
+        if (kDebugMode) {
+          debugPrint('[GmailProvider] Error decoding body: $e');
+        }
       }
     }
 

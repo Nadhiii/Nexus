@@ -54,7 +54,7 @@ class AuthService {
           debugPrint('Google account selected: ${googleUser.email}');
           debugPrint('Getting authentication tokens...');
           
-          final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+          final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
           debugPrint('Access token available: ${googleAuth.accessToken != null}');
           debugPrint('ID token available: ${googleAuth.idToken != null}');

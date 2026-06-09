@@ -134,7 +134,7 @@ class _AddCreditCardModalState extends State<AddCreditCardModal> {
                                   child: ListView.separated(
                                     scrollDirection: Axis.horizontal,
                                     itemCount: _popularCards.length,
-                                    separatorBuilder: (_, __) =>
+                                    separatorBuilder: (_, _) =>
                                         const SizedBox(width: 12),
                                     itemBuilder: (context, index) {
                                       final card = _popularCards[index];
