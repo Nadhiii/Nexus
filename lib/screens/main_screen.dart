@@ -19,7 +19,7 @@ import '../modules/more/more_screen.dart';
 import '../modules/bike/ui/bike_screen.dart';
 import '../core/services/intent_navigation_service.dart';
 import '../core/services/notification_service.dart';
-import '../modules/nbox/new_modern_nbox_screen.dart';
+import '../modules/nbox/nbox_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});

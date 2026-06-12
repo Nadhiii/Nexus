@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:another_telephony/telephony.dart';
@@ -8,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../models/detected_transaction.dart';
 import '../utils/new_sms_parser.dart';
+import '../services/categorization_service.dart';
 import '../services/notification_service.dart';
 import 'category_provider.dart';
 import 'gmail_provider.dart';
@@ -18,12 +21,11 @@ import '../models/nbox_settings.dart';
 // ---------------------------------------------------------------------------
 
 class _SmsBatchPayload {
-  final List<Map<String, dynamic>> messages; // serialisable SMS data
+  final List<Map<String, dynamic>> messages;
   _SmsBatchPayload(this.messages);
 }
 
-/// Runs in a background isolate. Returns a list of serialised
-/// [DetectedTransaction] maps (nulls excluded).
+/// Runs purely in Dart memory. No native platform channels used here.
 List<Map<String, dynamic>> _parseSmsInIsolate(_SmsBatchPayload payload) {
   final results = <Map<String, dynamic>>[];
   for (final msg in payload.messages) {
@@ -68,7 +70,7 @@ class NewNboxProvider extends ChangeNotifier {
   final Telephony _telephony = Telephony.instance;
 
   bool _isLoading = false;
-  bool _isScanning = false; // prevents concurrent scanSmsInbox() calls
+  bool _isScanning = false;
   List<DetectedTransaction> _pendingSms = [];
   List<DetectedTransaction> _pendingEmails = [];
   final List<DetectedTransaction> _rejected = [];
@@ -101,9 +103,7 @@ class NewNboxProvider extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    if (_isInitialized) {
-      return;
-    }
+    if (_isInitialized) return;
     await _loadSettings();
     await _loadNotifiedDetectionIds();
     await _loadProcessedIds();
@@ -115,14 +115,11 @@ class NewNboxProvider extends ChangeNotifier {
     final json = prefs.getString('nbox_settings');
     if (json != null) {
       _settings = NboxSettings.fromJson(
-        Map<String, dynamic>.from(await compute(_decodeJson, json)),
+        Map<String, dynamic>.from(jsonDecode(json)),
       );
       notifyListeners();
     }
   }
-
-  static Map<String, dynamic> _decodeJson(String json) =>
-      Map<String, dynamic>.from(jsonDecode(json));
 
   Future<void> updateSettings(NboxSettings newSettings) async {
     _settings = newSettings;
@@ -150,11 +147,11 @@ class NewNboxProvider extends ChangeNotifier {
 
   void _onGmailProviderChanged() {
     if (_gmailProvider != null) {
-      _processTransactions(_gmailProvider!.detectedTransactions, 'email');
-      
-      // FIX: Defer notification to avoid crashing the ProxyProvider during build
+      final transactions = _gmailProvider!.detectedTransactions;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (hasListeners) notifyListeners();
+        if (!hasListeners) return;
+        _processTransactions(transactions, 'email');
+        notifyListeners();
       });
     }
   }
@@ -169,13 +166,14 @@ class NewNboxProvider extends ChangeNotifier {
   }
 
   Future<void> scanEmails() async {
-    if (!isGmailLinked) {
-      return;
-    }
+    if (!isGmailLinked) return;
     _setLoading(true);
     await NotificationService().showTransactionScanStatus(source: 'email');
     try {
+      debugPrint('=== [NBOX DEBUG] Triggering Gmail Scan ===');
       await _gmailProvider!.scanEmails();
+    } catch (e) {
+      debugPrint('=== [NBOX DEBUG] Error scanning emails: $e ===');
     } finally {
       await NotificationService().stopTransactionScanStatus();
       _setLoading(false);
@@ -183,89 +181,143 @@ class NewNboxProvider extends ChangeNotifier {
   }
 
   Future<void> scanSmsInbox() async {
-    if (!smsReadingEnabled) {
-      if (kDebugMode) debugPrint('[NewNboxProvider] SMS reading disabled.');
-      return;
-    }
-    if (_isScanning) {
-      if (kDebugMode) debugPrint('[NewNboxProvider] Scan already in progress, skipping.');
-      return;
-    }
+    if (!smsReadingEnabled) return;
+    if (_isScanning) return;
+
     _isScanning = true;
-    if (kDebugMode) debugPrint('[NewNboxProvider] Starting SMS scan...');
 
-    // Yield to the event loop so any in-progress page transition animation
-    // fully completes before we hit the platform channel. Without this,
-    // getInboxSms() can deadlock against the platform thread during navigation.
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-
+    // 1. Show UI Spinner immediately
     _setLoading(true);
     await NotificationService().showTransactionScanStatus(source: 'sms');
 
+    // 2. 🛑 IPC COLLISION SHIELD
+    // Wait a full 3 seconds before querying the Android ContentResolver.
+    // This allows Firebase, Google Play Services, and Auto-Backup to finish
+    // their native Android background handshakes. Without this shield, the Binder
+    // drops the package ID and throws a fatal SecurityException.
+    await Future.delayed(const Duration(milliseconds: 3000));
+
     try {
       if (!await _checkSmsPermission()) {
-        if (kDebugMode) debugPrint('[NewNboxProvider] SMS permission denied.');
+        debugPrint('=== [NBOX DEBUG] SMS permission denied ===');
         return;
       }
 
-      final DateTime nowUtc = DateTime.now().toUtc();
-      final DateTime minDate = nowUtc.subtract(const Duration(days: 30));
+      debugPrint('=== [NBOX DEBUG] Starting Native SMS Fetch ===');
+      final List<SmsMessage> messages = [];
+      final DateTime now = DateTime.now();
 
-      List<SmsMessage> messages;
-      try {
-        messages = await _telephony.getInboxSms(
-          filter: SmsFilter.where(SmsColumn.DATE)
-              .greaterThan(minDate.millisecondsSinceEpoch.toString()),
-          sortOrder: [OrderBy(SmsColumn.DATE, sort: Sort.DESC)],
-        );
-      } catch (e) {
-        if (kDebugMode) debugPrint('[NewNboxProvider] Error fetching SMS: $e');
-        return;
+      for (int i = 0; i < 7; i++) {
+        final startMillis = now
+            .subtract(Duration(days: i + 1))
+            .millisecondsSinceEpoch
+            .toString();
+        final endMillis = now
+            .subtract(Duration(days: i))
+            .millisecondsSinceEpoch
+            .toString();
+
+        try {
+          debugPrint('=== [NBOX DEBUG] Fetching Day $i ===');
+          final chunk = await _telephony
+              .getInboxSms(
+                columns: [
+                  SmsColumn.ID,
+                  SmsColumn.ADDRESS,
+                  SmsColumn.BODY,
+                  SmsColumn.DATE,
+                ],
+                filter: SmsFilter.where(SmsColumn.DATE)
+                    .greaterThanOrEqualTo(startMillis)
+                    .and(SmsColumn.DATE)
+                    .lessThan(endMillis),
+              )
+              .timeout(const Duration(seconds: 4));
+
+          messages.addAll(chunk);
+          debugPrint(
+            '=== [NBOX DEBUG] Day $i fetched ${chunk.length} msgs ===',
+          );
+        } catch (e) {
+          debugPrint('=== [NBOX DEBUG] SMS chunk $i failed: $e ===');
+        }
+
+        // Give the UI thread time to render frames AND let other IPC traffic pass
+        await Future.delayed(const Duration(milliseconds: 350));
       }
 
-      // Serialise to plain maps so they can cross the isolate boundary.
-      final rawMessages = messages
-          .where((s) => s.id != null && s.date != null)
-          .map((s) => {
-                'id': s.id.toString(),
-                'body': s.body ?? '',
-                'address': s.address ?? 'Unknown',
-                'date': DateTime.fromMillisecondsSinceEpoch(
-                  s.date!,
-                  isUtc: true,
-                ).toLocal().toIso8601String(),
-              })
-          .toList();
+      debugPrint('=== [NBOX DEBUG] Total SMS Fetched: ${messages.length} ===');
 
-      // Parse entirely in a background isolate — keeps UI thread free.
-      final parsed = await compute(
-        _parseSmsInIsolate,
-        _SmsBatchPayload(rawMessages),
+      final txHint = RegExp(
+        r'(rs\.?|inr|debited|credited|spent|received|payment|ac |a/c)',
+        caseSensitive: false,
+      );
+      final rawMessages = <Map<String, dynamic>>[];
+
+      for (var s in messages) {
+        if (s.id == null || s.date == null || s.body == null) continue;
+        if (txHint.hasMatch(s.body!)) {
+          rawMessages.add({
+            'id': s.id.toString(),
+            'body': s.body!,
+            'address': s.address ?? 'Unknown',
+            'date': DateTime.fromMillisecondsSinceEpoch(
+              s.date!,
+              isUtc: true,
+            ).toLocal().toIso8601String(),
+          });
+        }
+      }
+
+      debugPrint(
+        '=== [NBOX DEBUG] Filtered down to ${rawMessages.length} potential transactions ===',
       );
 
-      final allSmsTransactions = parsed
-          .map((m) => DetectedTransaction(
-                id: m['id'] as String,
-                fingerprint: m['fingerprint'] as String,
-                amount: (m['amount'] as num).toDouble(),
-                merchant: m['merchant'] as String,
-                date: DateTime.parse(m['date'] as String),
-                type: m['type'] as String,
-                source: m['source'] as String,
-                body: m['body'] as String?,
-                confidence: (m['confidence'] as num).toDouble(),
-                warnings: List<String>.from(m['warnings'] as List),
-                detectedCategory: m['detectedCategory'] as String?,
-              ))
+      if (rawMessages.isEmpty) {
+        debugPrint('=== [NBOX DEBUG] No relevant SMS found. Exiting scan. ===');
+        _processTransactions([], 'sms');
+        notifyListeners();
+        return;
+      }
+
+      debugPrint('=== [NBOX DEBUG] Offloading parsing to Dart Isolate ===');
+
+      // Send ONLY pure dart data to the isolate
+      final parsedRaw = await Isolate.run(() {
+        return _parseSmsInIsolate(_SmsBatchPayload(rawMessages));
+      });
+
+      debugPrint('=== [NBOX DEBUG] Isolate completed. Mapping objects... ===');
+
+      final allSmsTransactions = parsedRaw
+          .map(
+            (m) => DetectedTransaction(
+              id: m['id'] as String,
+              fingerprint: m['fingerprint'] as String,
+              amount: (m['amount'] as num).toDouble(),
+              merchant: m['merchant'] as String,
+              date: DateTime.parse(m['date'] as String),
+              type: m['type'] as String,
+              source: m['source'] as String,
+              body: m['body'] as String?,
+              confidence: (m['confidence'] as num).toDouble(),
+              warnings: List<String>.from(m['warnings'] as List),
+              detectedCategory: m['detectedCategory'] as String?,
+            ),
+          )
           .toList();
+
+      debugPrint(
+        '=== [NBOX DEBUG] Successfully mapped ${allSmsTransactions.length} transactions ===',
+      );
 
       _processTransactions(allSmsTransactions, 'sms');
       notifyListeners();
-      if (kDebugMode) debugPrint('[NewNboxProvider] SMS scan complete.');
     } finally {
       _isScanning = false;
       await NotificationService().stopTransactionScanStatus();
       _setLoading(false);
+      debugPrint('=== [NBOX DEBUG] Scan Lifecycle Complete ===');
     }
   }
 
@@ -277,13 +329,12 @@ class NewNboxProvider extends ChangeNotifier {
     final freshRejected = <DetectedTransaction>[];
 
     for (final transaction in transactions) {
-      // Use fingerprint as the stable key for persistence checks
       final approvedKey = '${transaction.source}:${transaction.fingerprint}';
       final rejectedKey =
           '${transaction.source}:${transaction.fingerprint}:rejected';
 
       if (_processedIds.contains(approvedKey)) {
-        continue; // Already approved, skip.
+        continue;
       } else if (_processedIds.contains(rejectedKey)) {
         freshRejected.add(transaction);
       } else {
@@ -460,10 +511,8 @@ class NewNboxProvider extends ChangeNotifier {
 
   Future<void> _loadProcessedIds() async {
     final prefs = await SharedPreferences.getInstance();
-    _processedIds = (prefs.getStringList(_processedIdsStorageKey) ?? []).toSet();
-    // Do NOT call scanAll() here — scanning is triggered by the screen via
-    // scanSmsInbox() / scanEmails(). Calling it during provider construction
-    // blocks the main isolate before the widget tree is ready.
+    _processedIds = (prefs.getStringList(_processedIdsStorageKey) ?? [])
+        .toSet();
   }
 
   Future<void> _persistNotifiedDetectionIds() async {
@@ -489,7 +538,6 @@ class NewNboxProvider extends ChangeNotifier {
   void _setLoading(bool loading) {
     if (_isLoading == loading) return;
     _isLoading = loading;
-    // Schedule after the current frame to avoid setState-during-build errors.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (hasListeners) notifyListeners();
     });

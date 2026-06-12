@@ -13,6 +13,7 @@ import '../providers/debt_provider.dart';
 import '../providers/investment_provider.dart';
 import '../providers/bike_provider.dart';
 import '../providers/notification_provider.dart';
+import '../providers/gmail_provider.dart';
 import '../services/notification_service.dart';
 import '../services/backup_service.dart';
 
@@ -85,7 +86,9 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
 
   Future<void> _initializeProviders(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) { return; }
+    if (user == null) {
+      return;
+    }
 
     final accountProvider = Provider.of<AccountProvider>(
       context,
@@ -110,14 +113,15 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
       listen: false,
     );
     final bikeProvider = Provider.of<BikeProvider>(context, listen: false);
+    final gmailProvider = Provider.of<GmailProvider>(context, listen: false);
 
-    // Initialize all providers
+    // Initialize all standard providers synchronously
     accountProvider.initialize();
     transactionProvider.initialize();
     subscriptionProvider.initialize();
     budgetProvider.initialize();
     goalProvider.loadGoals(user.uid);
-    categoryProvider.refresh(); // Refresh categories after authentication
+    categoryProvider.refresh();
     bikeProvider.fetchBikes();
 
     if (!_initializedNotifications) {
@@ -125,13 +129,21 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
       await NotificationService().initialize(notificationProvider);
     }
 
+    // FIX: STRICT SEQUENCING for Google Play Services
+    // Step 1: Execute Backup API calls
     if (!_ranAutoBackupRestore) {
       _ranAutoBackupRestore = true;
-      _maybeAutoBackupAndRestore();
+      await _maybeAutoBackupAndRestore();
     }
+
+    // Step 2: ONLY once Backup is complete, initialize Gmail API calls.
+    // This prevents the Google Play Services broker from crashing the Android Binder.
+    await gmailProvider.initialize();
   }
 
   Future<void> _maybeAutoBackupAndRestore() async {
+    if (!mounted) return;
+
     final service = BackupService();
     try {
       // Auto-restore first (if user has no data)

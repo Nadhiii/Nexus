@@ -33,6 +33,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   bool _isGmailLoading = false;
   bool _isHandlingQueuedApproval = false;
 
+  late final NewNboxProvider _nboxProvider;
+
   // ── Swipe mode state ──────────────────────────────────────────────────────
   int _swipeIndex = 0;
   double _swipeDx = 0;
@@ -40,56 +42,36 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   bool _swipeAnimating = false;
 
   Future<void> _refreshSms() async {
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _isSmsLoading = true;
-    });
-    final nbox = context.read<NewNboxProvider>();
-    await nbox.scanSmsInbox();
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _isSmsLoading = false;
-    });
+    if (!mounted) return;
+    setState(() => _isSmsLoading = true);
+    await context.read<NewNboxProvider>().scanSmsInbox();
+    if (mounted) setState(() => _isSmsLoading = false);
   }
 
   Future<void> _refreshGmail() async {
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _isGmailLoading = true;
-    });
+    if (!mounted) return;
+    setState(() => _isGmailLoading = true);
     final nbox = context.read<NewNboxProvider>();
     if (nbox.isGmailLinked) {
       await nbox.scanEmails();
     }
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _isGmailLoading = false;
-    });
+    if (mounted) setState(() => _isGmailLoading = false);
   }
 
   @override
   void initState() {
     super.initState();
+    _nboxProvider = context.read<NewNboxProvider>();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshData();
-      // Listen for queued approval requests from notifications.
-      // Must NOT be called inside build() — that causes the silent crash.
-      context.read<NewNboxProvider>().addListener(_onNboxChanged);
+      _nboxProvider.addListener(_onNboxChanged);
     });
   }
 
   @override
   void dispose() {
-    // Safe read — provider outlives the screen so this won't throw.
-    context.read<NewNboxProvider>().removeListener(_onNboxChanged);
+    _nboxProvider.removeListener(_onNboxChanged);
     super.dispose();
   }
 
@@ -102,30 +84,21 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   }
 
   Future<void> _refreshData() async {
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
     setState(() {
       _isSmsLoading = true;
       _isGmailLoading = true;
     });
     final nbox = context.read<NewNboxProvider>();
     await nbox.scanSmsInbox();
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _isSmsLoading = false;
-    });
+    if (!mounted) return;
+    setState(() => _isSmsLoading = false);
+
     if (nbox.isGmailLinked) {
       await nbox.scanEmails();
     }
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _isGmailLoading = false;
-    });
+    if (!mounted) return;
+    setState(() => _isGmailLoading = false);
   }
 
   // --- SELECTION LOGIC ---
@@ -133,9 +106,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     setState(() {
       if (_selectedIds.contains(id)) {
         _selectedIds.remove(id);
-        if (_selectedIds.isEmpty) {
-          _isSelectionMode = false;
-        }
+        if (_selectedIds.isEmpty) _isSelectionMode = false;
       } else {
         _isSelectionMode = true;
         _selectedIds.add(id);
@@ -173,8 +144,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     final nbox = context.read<NewNboxProvider>();
     for (var uid in _selectedIds) {
       final parts = uid.split(':');
-      // uid format: '${t.source}:${t.id}' → parts[0] = source, parts[1] = id
-      nbox.rejectTransaction(parts[1], parts[0], silent: true);
+      // Pass the individual strings: parts is id, parts is source
+      nbox.rejectTransaction(parts, parts, silent: true);
     }
     showTopNotification(
       context,
@@ -264,8 +235,11 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
               if (displayList.isEmpty)
                 SliverFillRemaining(child: _buildEmptyState())
-              else if (displayList.length < 10 && _currentFilter != NBoxFilter.trash && !_isSelectionMode)
+              else if (displayList.length < 10 &&
+                  _currentFilter != NBoxFilter.trash &&
+                  !_isSelectionMode)
                 SliverFillRemaining(
+                  hasScrollBody: false,
                   child: _buildSwipeView(displayList, nbox),
                 )
               else
@@ -319,7 +293,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         ),
       ),
       actions: [
-        // SMS Refresh Button
         _isSmsLoading
             ? const Padding(
                 padding: EdgeInsets.all(8.0),
@@ -349,7 +322,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                   ),
                 ),
               ),
-        // Gmail Refresh Button
         _isGmailLoading
             ? const Padding(
                 padding: EdgeInsets.all(8.0),
@@ -419,7 +391,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     );
   }
 
-  // --- REBUILT LIST ITEM (STACK-BASED) ---
   Widget _buildStreamItem(DetectedTransaction t, bool isLast, bool isTrashTab) {
     final uniqueId = '${t.source}:${t.id}';
     final isExpanded = _expandedIds.contains(uniqueId);
@@ -435,8 +406,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         : (isExpanded
               ? highlightColor.withValues(alpha: 0.3)
               : Colors.white.withValues(alpha: 0.05));
-    
-    // FIX: Fallback safely to a single solid background if card is not expanded
+
     final bgGradient = isExpanded
         ? LinearGradient(
             begin: Alignment.topLeft,
@@ -450,9 +420,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
     return Stack(
       children: [
-        // 1. TIMELINE LINE (Background Layer)
         Positioned(
-          left: 30, // Centered under the dot
+          left: 30,
           top: 0,
           bottom: 0,
           child: Container(
@@ -475,18 +444,16 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           ),
         ),
 
-        // 2. CONTENT ROW (Foreground Layer)
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // A. Timeline Dot (Clickable)
               GestureDetector(
                 onTap: () => _toggleSelection(uniqueId),
                 behavior: HitTestBehavior.opaque,
                 child: Container(
-                  width: 60, // Fixed width column for alignment
+                  width: 60,
                   alignment: Alignment.topCenter,
                   padding: const EdgeInsets.only(top: 18),
                   child: AnimatedContainer(
@@ -519,7 +486,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                 ),
               ),
 
-              // B. The Card
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(right: 20),
@@ -530,7 +496,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                       duration: AppAnimations.standard,
                       decoration: BoxDecoration(
                         gradient: bgGradient,
-                        color: bgGradient == null ? AppColors.cardSurface : null, // Added solid color fallback
+                        color: bgGradient == null
+                            ? AppColors.cardSurface
+                            : null,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: borderColor),
                         boxShadow: isExpanded
@@ -547,7 +515,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // --- HEADER (Always Visible) ---
                           Padding(
                             padding: const EdgeInsets.all(16),
                             child: Column(
@@ -577,7 +544,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                                       TextOverflow.ellipsis,
                                                 ),
                                               ),
-                                              // Confidence Badge (Email only)
                                               if (t.source == 'email') ...[
                                                 const SizedBox(width: 8),
                                                 _buildConfidenceBadge(t),
@@ -625,7 +591,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                         fontSize: 11,
                                       ),
                                     ),
-                                    // Show warnings if any
                                     if (t.warnings.isNotEmpty) ...[
                                       const SizedBox(width: 8),
                                       const Icon(
@@ -640,7 +605,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                             ),
                           ),
 
-                          // --- EXPANDED SECTION (Animated) ---
                           AnimatedSize(
                             duration: AppAnimations.slow,
                             curve: AppAnimations.smoothCurve,
@@ -656,8 +620,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                           alpha: 0.05,
                                         ),
                                       ),
-
-                                      // 1. ANALYSIS
                                       const Padding(
                                         padding: EdgeInsets.fromLTRB(
                                           16,
@@ -700,10 +662,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                           ],
                                         ),
                                       ),
-
                                       const SizedBox(height: 16),
-
-                                      // 2. RAW SOURCE
                                       const Padding(
                                         padding: EdgeInsets.fromLTRB(
                                           16,
@@ -750,10 +709,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                           ),
                                         ),
                                       ),
-
                                       const SizedBox(height: 20),
-
-                                      // 3. ACTION BAR
                                       Container(
                                         padding: const EdgeInsets.all(16),
                                         decoration: BoxDecoration(
@@ -839,8 +795,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       ],
     );
   }
-
-  // --- HELPERS ---
 
   Widget _buildAnalysisChip(IconData icon, String label) {
     return Container(
@@ -957,7 +911,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'PENDING REVIEW',
+                "PENDING REVIEW",
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 11,
@@ -980,7 +934,11 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.inbox_rounded, color: Colors.white70, size: 12),
+                    const Icon(
+                      Icons.inbox_rounded,
+                      color: Colors.white70,
+                      size: 12,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '$count NBox Items',
@@ -1042,69 +1000,80 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   // ---------------------------------------------------------------------------
 
   Widget _buildSwipeView(List<DetectedTransaction> list, NewNboxProvider nbox) {
-    // Reset index if it's out of bounds (items got approved/rejected externally)
-    final safeIndex = _swipeIndex.clamp(0, list.length - 1);
+    final safeIndex = list.isEmpty ? 0 : _swipeIndex.clamp(0, list.length - 1);
     if (safeIndex != _swipeIndex) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) setState(() => _swipeIndex = safeIndex);
       });
     }
 
-    return Column(
-      children: [
-        // Mode label
-        Padding(
-          padding: const EdgeInsets.only(top: 4, bottom: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.swipe, color: AppColors.textTertiary, size: 14),
-              const SizedBox(width: 6),
-              Text(
-                'SWIPE MODE · ${list.length - _swipeIndex} LEFT',
-                style: const TextStyle(
-                  color: AppColors.textTertiary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ],
-          ),
-        ),
+    // FIX 1 & 2: Strict dimension limits ensure the card never stretches during
+    // the matrix rotation math.
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = screenWidth - 48; // 24 padding on left and right
+    final cardHeight =
+        480.0; // Fixed height prevents Spacer() from extending wildly
 
-        // Card stack
-        Expanded(
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Back card (next item in queue, peeking behind)
-              if (_swipeIndex + 1 < list.length)
-                Positioned(
-                  top: 24,
-                  left: 32,
-                  right: 32,
-                  bottom: 80,
-                  child: Transform.scale(
-                    scale: 0.94,
-                    child: _buildSwipeCard(list[_swipeIndex + 1], isBack: true),
+    return Padding(
+      // FIX 3: Lift the entire swipe view up by 100 pixels so it doesn't hide behind the BottomNavBar
+      padding: const EdgeInsets.only(bottom: 100.0),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.swipe,
+                  color: AppColors.textTertiary,
+                  size: 14,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'SWIPE MODE · ${list.length - safeIndex} LEFT',
+                  style: const TextStyle(
+                    color: AppColors.textTertiary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
                   ),
                 ),
+              ],
+            ),
+          ),
 
-              // Front card (draggable)
-              if (_swipeIndex < list.length)
-                Positioned(
-                  top: 8,
-                  left: 20,
-                  right: 20,
-                  bottom: 80,
-                  child: GestureDetector(
+          Expanded(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (safeIndex + 1 < list.length)
+                  Transform.translate(
+                    offset: const Offset(0, 20),
+                    child: Transform.scale(
+                      scale: 0.94,
+                      child: SizedBox(
+                        width: cardWidth,
+                        height: cardHeight,
+                        child: _buildSwipeCard(
+                          list[safeIndex + 1],
+                          isBack: true,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                if (safeIndex < list.length)
+                  GestureDetector(
                     onHorizontalDragUpdate: _swipeAnimating
                         ? null
                         : (d) => setState(() {
-                              _swipeDx += d.delta.dx;
-                              _swipeRotation = (_swipeDx / 300).clamp(-0.15, 0.15);
-                            }),
+                            _swipeDx += d.delta.dx;
+                            _swipeRotation = (_swipeDx / 300).clamp(
+                              -0.15,
+                              0.15,
+                            );
+                          }),
                     onHorizontalDragEnd: _swipeAnimating
                         ? null
                         : (d) => _onSwipeDragEnd(list, nbox),
@@ -1112,57 +1081,64 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                       offset: Offset(_swipeDx, 0),
                       child: Transform.rotate(
                         angle: _swipeRotation,
-                        child: Stack(
-                          children: [
-                            _buildSwipeCard(list[_swipeIndex], isBack: false),
-                            // Approve overlay
-                            if (_swipeDx > 30)
-                              Positioned(
-                                top: 24,
-                                left: 24,
-                                child: _buildSwipeLabel('APPROVE', Colors.green),
-                              ),
-                            // Reject overlay
-                            if (_swipeDx < -30)
-                              Positioned(
-                                top: 24,
-                                right: 24,
-                                child: _buildSwipeLabel('REJECT', AppColors.error),
-                              ),
-                          ],
+                        child: SizedBox(
+                          width: cardWidth,
+                          height: cardHeight,
+                          child: Stack(
+                            children: [
+                              _buildSwipeCard(list[safeIndex], isBack: false),
+                              if (_swipeDx > 30)
+                                Positioned(
+                                  top: 24,
+                                  left: 24,
+                                  child: _buildSwipeLabel(
+                                    'APPROVE',
+                                    Colors.green,
+                                  ),
+                                ),
+                              if (_swipeDx < -30)
+                                Positioned(
+                                  top: 24,
+                                  right: 24,
+                                  child: _buildSwipeLabel(
+                                    'REJECT',
+                                    AppColors.error,
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
 
-              // "All done" state when index has reached the end
-              if (_swipeIndex >= list.length)
-                _buildEmptyState(),
-            ],
+                if (safeIndex >= list.length) _buildEmptyState(),
+              ],
+            ),
           ),
-        ),
 
-        // Hint row
-        Padding(
-          padding: const EdgeInsets.only(bottom: 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildSwipeHint(Icons.arrow_back, 'Reject', AppColors.error),
-              const SizedBox(width: 40),
-              _buildSwipeHint(Icons.arrow_forward, 'Approve', Colors.green),
-            ],
+          Padding(
+            padding: const EdgeInsets.only(top: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildSwipeHint(Icons.close_rounded, 'Reject', AppColors.error),
+                const SizedBox(width: 48),
+                _buildSwipeHint(Icons.check_rounded, 'Approve', Colors.green),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildSwipeCard(DetectedTransaction t, {required bool isBack}) {
     final isIncome = t.type.toLowerCase() == 'income';
     final isSms = t.source == 'sms';
-    final highlightColor = isSms ? const Color(0xFFF59E0B) : const Color(0xFF3B82F6);
+    final highlightColor = isSms
+        ? const Color(0xFFF59E0B)
+        : const Color(0xFF3B82F6);
 
     return Container(
       decoration: BoxDecoration(
@@ -1171,10 +1147,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           end: Alignment.bottomRight,
           colors: isBack
               ? [AppColors.cardSurface, AppColors.cardSurface]
-              : [
-                  highlightColor.withValues(alpha: 0.12),
-                  AppColors.cardSurface,
-                ],
+              : [highlightColor.withValues(alpha: 0.12), AppColors.cardSurface],
         ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
@@ -1198,7 +1171,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Source tag + confidence
                 Row(
                   children: [
                     _buildTag(isSms ? 'SMS' : 'EMAIL', highlightColor),
@@ -1216,21 +1188,21 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                 ),
                 const SizedBox(height: 24),
 
-                // Amount — big and centred
                 Center(
                   child: Text(
                     '${isIncome ? '+' : '−'}₹${NumberFormat('#,##,###').format(t.amount)}',
                     style: TextStyle(
                       fontSize: 42,
                       fontWeight: FontWeight.w900,
-                      color: isIncome ? AppColors.pastelGreen : AppColors.textPrimary,
+                      color: isIncome
+                          ? AppColors.pastelGreen
+                          : AppColors.textPrimary,
                       letterSpacing: -1,
                     ),
                   ),
                 ),
                 const SizedBox(height: 8),
 
-                // Merchant
                 Center(
                   child: Text(
                     t.merchant,
@@ -1258,38 +1230,48 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                   ),
                 ],
 
-                const Spacer(),
+                const SizedBox(height: 20),
 
-                // Raw message preview
-                if (t.body != null) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-                    ),
-                    child: Text(
-                      t.body!,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                        height: 1.5,
+                // FIX 4: Removed hardcoded maxLines and Spacer() so the raw message
+                // consumes all remaining space and becomes scrollable.
+                if (t.body != null)
+                  Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.05),
+                        ),
+                      ),
+                      child: SingleChildScrollView(
+                        child: Text(
+                          t.body!,
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                            height: 1.5,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                  )
+                else
+                  const Spacer(),
+
+                if (t.body != null) const SizedBox(height: 16),
 
                 if (t.warnings.isNotEmpty) ...[
                   Row(
                     children: [
-                      const Icon(Icons.warning_amber_rounded,
-                          color: AppColors.pastelOrange, size: 14),
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: AppColors.pastelOrange,
+                        size: 14,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -1304,7 +1286,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
                 ],
               ],
             ),
@@ -1353,15 +1334,11 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
   void _onSwipeDragEnd(List<DetectedTransaction> list, NewNboxProvider nbox) {
     const threshold = 120.0;
-
     if (_swipeDx > threshold) {
-      // Swiped right → Approve
       _commitSwipe(list, nbox, approved: true);
     } else if (_swipeDx < -threshold) {
-      // Swiped left → Reject
       _commitSwipe(list, nbox, approved: false);
     } else {
-      // Snap back
       setState(() {
         _swipeDx = 0;
         _swipeRotation = 0;
@@ -1375,11 +1352,13 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     required bool approved,
   }) {
     if (_swipeAnimating) return;
-    final t = list[_swipeIndex];
+
+    final safeIndex = list.isEmpty ? 0 : _swipeIndex.clamp(0, list.length - 1);
+    if (list.isEmpty) return;
+    final t = list[safeIndex];
 
     setState(() => _swipeAnimating = true);
 
-    // Fly the card off screen, then process
     final targetDx = approved ? 500.0 : -500.0;
     setState(() {
       _swipeDx = targetDx;
@@ -1393,7 +1372,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         _navigateToApproveScreen(t).then((_) {
           if (mounted) {
             setState(() {
-              _swipeIndex = (_swipeIndex).clamp(0, list.length - 1);
+              _swipeIndex = list.isEmpty
+                  ? 0
+                  : (_swipeIndex).clamp(0, list.length - 1);
               _swipeDx = 0;
               _swipeRotation = 0;
               _swipeAnimating = false;
@@ -1404,8 +1385,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         nbox.rejectTransaction(t.id, t.source, silent: true);
         showTopNotification(context, 'Moved to Trash', isError: true);
         setState(() {
-          // Don't advance index — the list shrinks, so the next card
-          // slides into the same position automatically.
           _swipeDx = 0;
           _swipeRotation = 0;
           _swipeAnimating = false;
@@ -1601,18 +1580,11 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   }
 
   void _attemptQueuedApproval(NewNboxProvider nbox) {
-    if (_isHandlingQueuedApproval || !nbox.hasPendingApprovalRequest) {
-      return;
-    }
-
+    if (_isHandlingQueuedApproval || !nbox.hasPendingApprovalRequest) return;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted || _isHandlingQueuedApproval) {
-        return;
-      }
+      if (!mounted || _isHandlingQueuedApproval) return;
       final pending = nbox.takePendingApprovalRequest();
-      if (pending == null) {
-        return;
-      }
+      if (pending == null) return;
 
       _isHandlingQueuedApproval = true;
       try {
@@ -1625,8 +1597,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
   Future<void> _navigateToApproveScreen(DetectedTransaction t) async {
     final nbox = context.read<NewNboxProvider>();
-
-    // Classify intent first — if no side effects, go straight to add screen.
     final subs = context.read<SubscriptionProvider>().subscriptions;
     final debts = context.read<DebtProvider>().debts;
     final investments = context.read<InvestmentProvider>().investments;
@@ -1639,29 +1609,28 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     );
 
     bool success = false;
-
     if (classification.intent == TransactionIntent.salary) {
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PaydayScreen(
-            incomeAmount: t.amount,
-            incomeSource: t.merchant,
-            incomeDate: t.date,
-          ),
-        ),
-      );
-      success = result == true;
-    } else if (classification.intent.hasSideEffects) {
-      // Show smart bottom sheet.
-      success = await showSmartApprovalSheet(context, t);
-    } else {
-      // Go straight to add_transaction_screen pre-filled
       success =
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => ModernAddTransactionScreen(detectedTransaction: t),
+              builder: (_) => PaydayScreen(
+                incomeAmount: t.amount,
+                incomeSource: t.merchant,
+                incomeDate: t.date,
+              ),
+            ),
+          ) ==
+          true;
+    } else if (classification.intent.hasSideEffects) {
+      success = await showSmartApprovalSheet(context, t);
+    } else {
+      success =
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  ModernAddTransactionScreen(detectedTransaction: t),
             ),
           ) ??
           false;
@@ -1669,9 +1638,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
     if (success == true) {
       nbox.markAsApproved(t.id, t.source);
-      if (mounted) {
-        showTopNotification(context, "Verified & Added");
-      }
+      if (mounted) showTopNotification(context, "Verified & Added");
     }
   }
 

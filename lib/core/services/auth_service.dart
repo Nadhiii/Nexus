@@ -8,8 +8,8 @@ class AuthService {
   // --- REPLACE THIS WITH YOUR WEB CLIENT ID ---
   // Source: Google Cloud Console → APIs & Services → Credentials
   // → "Web client (auto created by Google Service)" → copy the Client ID
-  static const String _webClientId =
-      '217588531616-vac0sturbdi7ojbqj12jvdcf040dm730.apps.googleusercontent.com';
+  // Looks like: 1234567890-xxxxxxxxxxxxxxxx.apps.googleusercontent.com
+  static const String _webClientId = 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com';
   // --------------------------------------------
 
   bool _googleSignInInitialized = false;
@@ -39,8 +39,8 @@ class AuthService {
         await _ensureGoogleSignInInitialized();
 
         // v7: authenticate() replaces signIn()
-        final GoogleSignInAccount googleUser = await GoogleSignIn.instance
-            .authenticate();
+        final GoogleSignInAccount googleUser =
+            await GoogleSignIn.instance.authenticate();
 
         debugPrint('Google account selected: ${googleUser.email}');
 
@@ -56,7 +56,9 @@ class AuthService {
         final idToken = googleUser.authentication.idToken;
 
         if (authorization.accessToken.isEmpty || idToken == null) {
-          throw Exception('Failed to get authentication tokens from Google');
+          throw Exception(
+            'Failed to get authentication tokens from Google',
+          );
         }
 
         debugPrint('Creating Firebase credential...');
@@ -66,9 +68,8 @@ class AuthService {
         );
 
         debugPrint('Signing in to Firebase...');
-        final UserCredential userCredential = await _auth.signInWithCredential(
-          credential,
-        );
+        final UserCredential userCredential =
+            await _auth.signInWithCredential(credential);
 
         debugPrint(
           'Firebase sign-in successful: ${userCredential.user?.email}',

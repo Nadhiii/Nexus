@@ -31,6 +31,8 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
   DateTime? _customStartDate;
   DateTime? _customEndDate;
 
+  bool _showAllLogs = false;
+
   double _currentFuelPrice = 0.0;
   final ScrollController _scrollController = ScrollController();
   bool _initialized = false;
@@ -250,7 +252,12 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'RECENT LOGS (Last 5)',
+                            (_filterCategory != 'All' ||
+                                    _filterTime != 'All Time')
+                                ? 'FILTERED LOGS'
+                                : (_showAllLogs
+                                      ? 'ALL LOGS'
+                                      : 'RECENT LOGS (Last 5)'),
                             style: AppTypography.labelMedium.copyWith(
                               color: AppColors.textTertiary,
                               fontWeight: FontWeight.bold,
@@ -380,7 +387,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
     for (var entry in provider.currentBikeEntries) {
       if (entry.category != null && entry.category!.isNotEmpty) {
         String cat = entry.category!.toLowerCase();
-        cat = cat[0].toUpperCase() + cat.substring(1); // Capitalize
+        cat = cat.toUpperCase() + cat.substring(1); // Capitalize
         uniqueCategories.add(cat);
       }
     }
@@ -697,8 +704,19 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
       entries.sort((a, b) => a.date.compareTo(b.date));
     }
 
-    // Limit to the last 5 logs
-    entries = entries.take(5).toList();
+    // --- NEW LIMITING LOGIC ---
+    bool isFiltering = _filterCategory != 'All' || _filterTime != 'All Time';
+    bool hasMore = false;
+
+    // Only limit to 5 if we are NOT filtering and NOT showing all logs
+    if (!isFiltering && !_showAllLogs && entries.length > 5) {
+      hasMore = true;
+      entries = entries.take(5).toList();
+    }
+
+    // Check if we should show a "Show Less" button
+    bool canCollapse =
+        !isFiltering && _showAllLogs && provider.currentBikeEntries.length > 5;
 
     if (entries.isEmpty) {
       return const SliverToBoxAdapter(
@@ -718,17 +736,71 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
+          // Render the "View All" or "Show Less" button at the very end of the list
+          if (index == entries.length) {
+            if (hasMore) {
+              return TextButton(
+                onPressed: () => setState(() => _showAllLogs = true),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'View All History',
+                      style: TextStyle(
+                        color: AppColors.primaryBlue,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.keyboard_arrow_down,
+                      color: AppColors.primaryBlue,
+                      size: 18,
+                    ),
+                  ],
+                ),
+              );
+            } else if (canCollapse) {
+              return TextButton(
+                onPressed: () => setState(() => _showAllLogs = false),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Show Less',
+                      style: TextStyle(
+                        color: AppColors.textTertiary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.keyboard_arrow_up,
+                      color: AppColors.textTertiary,
+                      size: 18,
+                    ),
+                  ],
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          }
+
           final entry = entries[index];
-          final isLast = index == entries.length - 1;
+          final isLast =
+              index == entries.length - 1 && !(hasMore || canCollapse);
           final isFuel = (entry.category ?? 'fuel').toLowerCase() == 'fuel';
           final color = isFuel ? AppColors.primaryBlue : AppColors.pastelOrange;
           final icon = isFuel ? Icons.local_gas_station : Icons.build;
 
           String mileageText = '';
           if (isFuel) {
-            // Reliable full-tank-to-full-tank mileage. Only Full Tank
-            // entries get a value; partial fills show nothing (mileage
-            // can't be reliably computed at a partial fill).
             final mileage = provider.getMileageForEntry(entry.id);
             if (mileage != null && mileage > 0) {
               mileageText = '${mileage.toStringAsFixed(1)} km/L';
@@ -944,7 +1016,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
               ],
             ),
           );
-        }, childCount: entries.length),
+        }, childCount: entries.length + ((hasMore || canCollapse) ? 1 : 0)),
       ),
     );
   }

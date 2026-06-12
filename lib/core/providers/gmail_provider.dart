@@ -15,9 +15,7 @@ import '../services/categorization_service.dart';
 import 'category_provider.dart';
 
 class GmailProvider extends ChangeNotifier {
-  static const List<String> _gmailScopes = [
-    gmail.GmailApi.gmailReadonlyScope,
-  ];
+  static const List<String> _gmailScopes = [gmail.GmailApi.gmailReadonlyScope];
 
   final CategoryProvider? _categoryProvider;
 
@@ -41,14 +39,18 @@ class GmailProvider extends ChangeNotifier {
 
   bool _isInitialized = false;
 
-  GmailProvider({
-    CategoryProvider? categoryProvider,
-  }) : _categoryProvider = categoryProvider {
-    initialize();
+  GmailProvider({CategoryProvider? categoryProvider})
+    : _categoryProvider = categoryProvider {
+    // FIX: Removed initialize() from constructor.
+    // It will now be called explicitly by AuthGate.
+  }
 
-    // v7: listen to authenticationEvents stream
-    _authSubscription =
-        GoogleSignIn.instance.authenticationEvents.listen(
+  Future<void> initialize() async {
+    if (_isInitialized) return;
+    await _initializeSettings();
+    _isInitialized = true;
+
+    _authSubscription = GoogleSignIn.instance.authenticationEvents.listen(
       (event) {
         if (event is GoogleSignInAuthenticationEventSignIn) {
           _currentUser = event.user;
@@ -69,14 +71,11 @@ class GmailProvider extends ChangeNotifier {
       },
     );
 
-    // v7: replaces signInSilently()
-    GoogleSignIn.instance.attemptLightweightAuthentication();
-  }
-
-  Future<void> initialize() async {
-    if (_isInitialized) return;
-    await _initializeSettings();
-    _isInitialized = true;
+    try {
+      await GoogleSignIn.instance.attemptLightweightAuthentication();
+    } catch (e) {
+      if (kDebugMode) debugPrint('[GmailProvider] Auth init failed: $e');
+    }
   }
 
   Future<void> _initializeSettings() async {
@@ -129,7 +128,6 @@ class GmailProvider extends ChangeNotifier {
 
   Future<void> linkAccount() async {
     try {
-      // v7: authenticate() replaces signIn()
       await GoogleSignIn.instance.authenticate();
     } catch (e) {
       _error = 'Failed to link Gmail account: $e';
@@ -147,8 +145,6 @@ class GmailProvider extends ChangeNotifier {
     }
   }
 
-  /// Gets an authenticated HTTP client for the Gmail API.
-  /// Uses the extension package: GoogleSignInClientAuthorization.authClient()
   Future<gapis.AuthClient?> _getAuthenticatedClient() async {
     if (_currentUser == null) return null;
     try {
@@ -164,23 +160,21 @@ class GmailProvider extends ChangeNotifier {
   }
 
   Future<void> scanEmails() async {
+    if (_isLoading) return;
     if (_currentUser == null) return;
 
     if (kDebugMode) debugPrint('[GmailProvider] Starting email scan...');
     _isLoading = true;
     _error = null;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
 
     gapis.AuthClient? client;
     try {
       AICategorizationService? aiService;
       if (_categoryProvider != null) {
-        aiService = AICategorizationService(categoryProvider: _categoryProvider);
-        if (kDebugMode) debugPrint('[GmailProvider] AI categorization enabled');
-      } else {
-        if (kDebugMode) {
-          debugPrint('[GmailProvider] Using fallback categorization (no CategoryProvider)');
-        }
+        aiService = AICategorizationService(
+          categoryProvider: _categoryProvider,
+        );
       }
 
       client = await _getAuthenticatedClient();
@@ -190,7 +184,8 @@ class GmailProvider extends ChangeNotifier {
 
       final gmailApi = gmail.GmailApi(client);
 
-      final startDate = _lastSyncTime ??
+      final startDate =
+          _lastSyncTime ??
           DateTime.now().subtract(Duration(days: _settings.daysToScan));
       final formattedDate = startDate.toIso8601String().split('T').first;
 
@@ -205,11 +200,9 @@ class GmailProvider extends ChangeNotifier {
         finalQuery += ' -from:$sender';
       }
 
-      if (kDebugMode) debugPrint('[GmailProvider] Query: $finalQuery');
-
       final listResponse = await gmailApi.users.messages.list(
         'me',
-        maxResults: 150,
+        maxResults: 40,
         q: finalQuery,
       );
 
@@ -223,6 +216,8 @@ class GmailProvider extends ChangeNotifier {
         }
 
         for (var message in listResponse.messages!) {
+          await Future.delayed(const Duration(milliseconds: 50));
+
           try {
             if (message.id == null) continue;
 
@@ -252,7 +247,9 @@ class GmailProvider extends ChangeNotifier {
             }
           } catch (e) {
             if (kDebugMode) {
-              debugPrint('[GmailProvider] Error processing email ${message.id}: $e');
+              debugPrint(
+                '[GmailProvider] Error processing email ${message.id}: $e',
+              );
             }
           }
         }
