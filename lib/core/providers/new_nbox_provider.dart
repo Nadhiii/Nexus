@@ -152,7 +152,11 @@ class NewNboxProvider extends ChangeNotifier {
   void _onGmailProviderChanged() {
     if (_gmailProvider != null) {
       _processTransactions(_gmailProvider!.detectedTransactions, 'email');
-      notifyListeners();
+      
+      // FIX: Defer notification to avoid crashing the ProxyProvider during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (hasListeners) notifyListeners();
+      });
     }
   }
 
