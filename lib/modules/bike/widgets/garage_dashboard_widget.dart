@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/models/bike.dart'; // <-- Added import to fix the typing crash
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -19,7 +20,7 @@ class GarageDashboardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<BikeProvider>(
       builder: (context, provider, _) {
-        final bike = provider.currentBike;
+        final bike = provider.selectedBike;
 
         if (bike == null) {
           return _EmptyGarageCard(onOpenGarage: onOpenGarage);
@@ -32,9 +33,10 @@ class GarageDashboardWidget extends StatelessWidget {
 
         final double latestOdo = fuelEntries.isNotEmpty
             ? fuelEntries
-                .reduce((a, b) =>
-                    a.odometerReading > b.odometerReading ? a : b)
-                .odometerReading
+                  .reduce(
+                    (a, b) => a.odometerReading > b.odometerReading ? a : b,
+                  )
+                  .odometerReading
             : 0;
 
         final double totalCost = fuelEntries.fold(
@@ -55,8 +57,7 @@ class GarageDashboardWidget extends StatelessWidget {
             children: [
               // ── Header ───────────────────────────────────────────────
               Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -65,7 +66,9 @@ class GarageDashboardWidget extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: AppColors.primaryBlue.withValues(alpha: 0.12),
+                            color: AppColors.primaryBlue.withValues(
+                              alpha: 0.12,
+                            ),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
@@ -103,12 +106,16 @@ class GarageDashboardWidget extends StatelessWidget {
                       onTap: onOpenGarage,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryBlue.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: AppColors.primaryBlue.withValues(alpha: 0.25),
+                            color: AppColors.primaryBlue.withValues(
+                              alpha: 0.25,
+                            ),
                           ),
                         ),
                         child: Text(
@@ -136,9 +143,7 @@ class GarageDashboardWidget extends StatelessWidget {
                   children: [
                     _StatCell(
                       label: 'MILEAGE',
-                      value: mileage > 0
-                          ? mileage.toStringAsFixed(1)
-                          : '--',
+                      value: mileage > 0 ? mileage.toStringAsFixed(1) : '--',
                       unit: 'km/L',
                       color: AppColors.primaryBlue,
                       icon: Icons.speed_rounded,
@@ -146,9 +151,7 @@ class GarageDashboardWidget extends StatelessWidget {
                     _vDivider(),
                     _StatCell(
                       label: 'ODOMETER',
-                      value: latestOdo > 0
-                          ? _formatOdo(latestOdo)
-                          : '--',
+                      value: latestOdo > 0 ? _formatOdo(latestOdo) : '--',
                       unit: 'km',
                       color: AppColors.pastelGreen,
                       icon: Icons.route_rounded,
@@ -179,11 +182,11 @@ class GarageDashboardWidget extends StatelessWidget {
   }
 
   Widget _vDivider() => Container(
-        width: 1,
-        height: 44,
-        color: Colors.white.withValues(alpha: 0.06),
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-      );
+    width: 1,
+    height: 44,
+    color: Colors.white.withValues(alpha: 0.06),
+    margin: const EdgeInsets.symmetric(horizontal: 4),
+  );
 
   String _formatOdo(double v) =>
       v >= 1000 ? '${(v / 1000).toStringAsFixed(1)}k' : v.toStringAsFixed(0);
@@ -198,38 +201,33 @@ class GarageDashboardWidget extends StatelessWidget {
 
 class _LastFillBanner extends StatelessWidget {
   final BikeProvider provider;
-  final List<dynamic> fuelEntries;
-  const _LastFillBanner(
-      {required this.provider, required this.fuelEntries});
+  final List<BikeEntry>
+  fuelEntries; // <-- FIXED: Was dynamic, now strongly typed
+
+  const _LastFillBanner({required this.provider, required this.fuelEntries});
 
   @override
   Widget build(BuildContext context) {
     // Most recent entry by date
-    final last = fuelEntries.reduce(
-        (a, b) => a.date.isAfter(b.date) ? a : b);
+    final last = fuelEntries.reduce((a, b) => a.date.isAfter(b.date) ? a : b);
+
     final daysAgo = DateTime.now().difference(last.date).inDays;
     final daysLabel = daysAgo == 0
         ? 'today'
         : daysAgo == 1
-            ? 'yesterday'
-            : '$daysAgo days ago';
+        ? 'yesterday'
+        : '$daysAgo days ago';
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.primaryBlue.withValues(alpha: 0.06),
-        borderRadius: const BorderRadius.vertical(
-          bottom: Radius.circular(20),
-        ),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.history_rounded,
-            size: 13,
-            color: AppColors.textTertiary,
-          ),
+          Icon(Icons.history_rounded, size: 13, color: AppColors.textTertiary),
           const SizedBox(width: 6),
           Text(
             'Last fill: ${last.odometerReading.toStringAsFixed(0)} km  ·  ${last.fuelQuantity.toStringAsFixed(1)} L  ·  $daysLabel',
@@ -352,8 +350,7 @@ class _EmptyGarageCard extends StatelessWidget {
                 ),
                 Text(
                   'Tap to open Garage',
-                  style:
-                      TextStyle(color: AppColors.textTertiary, fontSize: 12),
+                  style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
                 ),
               ],
             ),

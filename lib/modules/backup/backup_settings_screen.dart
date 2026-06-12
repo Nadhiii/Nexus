@@ -34,7 +34,9 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
       _autoRestoreEnabled = await _backupService.getAutoRestoreEnabled();
     } catch (_) {}
     await _loadBackups();
-    if (mounted) { setState(() => _isLoading = false); }
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _loadBackups() async {
@@ -48,9 +50,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading backups: $e')));
+        _showSnackBar('Error loading backups: $e', isError: true);
       }
     }
   }
@@ -60,16 +60,12 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
     try {
       await _backupService.createBackup();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Backup created successfully!')),
-        );
+        _showSnackBar('Backup created successfully!');
       }
       await _loadBackups();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error creating backup: $e')));
+        _showSnackBar('Error creating backup: $e', isError: true);
       }
     } finally {
       setState(() => _isCreatingBackup = false);
@@ -80,33 +76,27 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: AppColors.backgroundBlack,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-        insetPadding: const EdgeInsets.all(16),
+        backgroundColor: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusLg),
+        insetPadding: const EdgeInsets.all(AppSpacing.lg),
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: AppSpacing.cardPaddingLg,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Restore Backup',
-                style: AppTypography.headlineSmall.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
+              Text('Restore Backup', style: AppTypography.headlineSmall),
+              const SizedBox(height: AppSpacing.lg),
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
                   color: replace
-                      ? AppColors.error.withValues(alpha: 0.1)
+                      ? AppColors.lossRose.withValues(alpha: 0.1)
                       : AppColors.primaryBlue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: AppSpacing.borderRadiusSm,
                   border: Border.all(
                     color: replace
-                        ? AppColors.error.withValues(alpha: 0.3)
+                        ? AppColors.lossRose.withValues(alpha: 0.3)
                         : AppColors.primaryBlue.withValues(alpha: 0.3),
                   ),
                 ),
@@ -115,71 +105,61 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                   children: [
                     Icon(
                       replace ? Icons.warning_amber : Icons.info_outline,
-                      color: replace ? AppColors.error : AppColors.primaryBlue,
-                      size: 20,
+                      color: replace
+                          ? AppColors.lossRose
+                          : AppColors.primaryBlueLight,
+                      size: AppSpacing.iconSm,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
                         replace
                             ? 'This will replace all your current data with the backup. This action cannot be undone.'
                             : 'This will merge the backup data with your current data.',
-                        style: TextStyle(
+                        style: AppTypography.bodyMedium.copyWith(
                           color: replace
-                              ? AppColors.error
-                              : AppColors.primaryBlue,
-                          fontSize: 14,
+                              ? AppColors.pastelPink
+                              : AppColors.textPrimary,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xl3),
               Row(
                 children: [
                   Expanded(
-                    child: SizedBox(
-                      height: 52,
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.1),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.md,
                         ),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(color: Colors.white),
+                        side: BorderSide(color: AppColors.textTertiary),
+                        shape: const StadiumBorder(),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: AppTypography.labelLarge.copyWith(
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
-                    child: SizedBox(
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: replace
-                              ? AppColors.error
-                              : AppColors.primaryBlue,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: const Text(
-                          'Restore',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: replace
+                            ? AppColors.lossRose
+                            : AppColors.primaryBlue,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.md,
                         ),
                       ),
+                      child: const Text('Restore'),
                     ),
                   ),
                 ],
@@ -190,21 +170,17 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
       ),
     );
 
-    if (confirmed != true) { return; }
+    if (confirmed != true) return;
 
     setState(() => _isLoading = true);
     try {
       await _backupService.restoreBackup(backupId, replace: replace);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Backup restored successfully!')),
-        );
+        _showSnackBar('Backup restored successfully!');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error restoring backup: $e')));
+        _showSnackBar('Error restoring backup: $e', isError: true);
       }
     } finally {
       setState(() => _isLoading = false);
@@ -215,70 +191,53 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: AppColors.backgroundBlack,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-        insetPadding: const EdgeInsets.all(16),
+        backgroundColor: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusLg),
+        insetPadding: const EdgeInsets.all(AppSpacing.lg),
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: AppSpacing.cardPaddingLg,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text('Delete Backup', style: AppTypography.headlineSmall),
+              const SizedBox(height: AppSpacing.lg),
               Text(
-                'Delete Backup',
-                style: AppTypography.headlineSmall.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                'Are you sure you want to delete this backup? This cannot be undone.',
+                style: AppTypography.bodyMedium,
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Are you sure you want to delete this backup?',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xl3),
               Row(
                 children: [
                   Expanded(
-                    child: SizedBox(
-                      height: 52,
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.1),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.md,
                         ),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(color: Colors.white),
+                        side: BorderSide(color: AppColors.textTertiary),
+                        shape: const StadiumBorder(),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: AppTypography.labelLarge.copyWith(
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
-                    child: SizedBox(
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: const Text(
-                          'Delete',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.lossRose,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.md,
                         ),
                       ),
+                      child: const Text('Delete'),
                     ),
                   ),
                 ],
@@ -289,51 +248,41 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
       ),
     );
 
-    if (confirmed != true) { return; }
+    if (confirmed != true) return;
 
     try {
       await _backupService.deleteBackup(backupId);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Backup deleted')));
+        _showSnackBar('Backup deleted');
       }
       await _loadBackups();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error deleting backup: $e')));
+        _showSnackBar('Error deleting backup: $e', isError: true);
       }
     }
   }
 
   void _showRestoreOptions(BuildContext context, String backupId) {
-    final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.cardElevated,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppSpacing.radiusLg),
         ),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Restore Backup',
-              style: AppTypography.headlineSmall.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
+            Text('Restore Options', style: AppTypography.titleLarge),
+            const SizedBox(height: AppSpacing.xl),
             _buildRestoreOptionCard(
-              icon: Icons.merge,
-              title: 'Merge',
+              icon: Icons.merge_type_rounded,
+              title: 'Merge Data',
               description:
                   'Add backup data to your current data. Keeps both old and new entries.',
               onTap: () {
@@ -343,8 +292,8 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
             _buildRestoreOptionCard(
-              icon: Icons.restore,
-              title: 'Replace',
+              icon: Icons.restore_rounded,
+              title: 'Replace Data',
               description:
                   'Replace all current data with backup. This action cannot be undone.',
               onTap: () {
@@ -353,7 +302,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
               },
               isDangerous: true,
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.lg),
             SizedBox(
               width: double.infinity,
               child: TextButton(
@@ -362,9 +311,15 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                   _deleteBackup(backupId);
                 },
                 style: TextButton.styleFrom(
-                  foregroundColor: theme.colorScheme.error,
+                  foregroundColor: AppColors.error,
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                 ),
-                child: const Text('Delete Backup'),
+                child: Text(
+                  'Delete Backup',
+                  style: AppTypography.labelLarge.copyWith(
+                    color: AppColors.lossRose,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -381,23 +336,21 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
     required VoidCallback onTap,
     bool isDangerous = false,
   }) {
-    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppSpacing.borderRadiusMd,
       child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
+          color: isDangerous
+              ? AppColors.lossRose.withValues(alpha: 0.05)
+              : AppColors.cardSurface,
           border: Border.all(
             color: isDangerous
-                ? theme.colorScheme.error.withValues(alpha: 0.3)
-                : theme.colorScheme.outline.withValues(alpha: 0.2),
-            width: 1,
+                ? AppColors.lossRose.withValues(alpha: 0.3)
+                : AppColors.cardElevated,
           ),
-          borderRadius: BorderRadius.circular(12),
-          color: isDangerous
-              ? theme.colorScheme.error.withValues(alpha: 0.05)
-              : theme.colorScheme.surface,
+          borderRadius: AppSpacing.borderRadiusMd,
         ),
         child: Row(
           children: [
@@ -405,18 +358,18 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: isDangerous
-                    ? theme.colorScheme.error.withValues(alpha: 0.1)
-                    : theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
+                    ? AppColors.lossRose.withValues(alpha: 0.1)
+                    : AppColors.primaryBlue.withValues(alpha: 0.1),
+                borderRadius: AppSpacing.borderRadiusSm,
               ),
               child: Icon(
                 icon,
                 color: isDangerous
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.onPrimaryContainer,
+                    ? AppColors.lossRose
+                    : AppColors.primaryBlueLight,
               ),
             ),
-            const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: AppSpacing.lg),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -424,105 +377,122 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                   Text(
                     title,
                     style: AppTypography.titleMedium.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: isDangerous ? theme.colorScheme.error : null,
+                      color: isDangerous
+                          ? AppColors.pastelPink
+                          : AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    description,
-                    style: AppTypography.bodySmall.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                  ),
+                  Text(description, style: AppTypography.bodySmall),
                 ],
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            Icon(
-              Icons.chevron_right,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-            ),
+            Icon(Icons.chevron_right, color: AppColors.textTertiary),
           ],
         ),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Backup & Restore',
-          style: AppTypography.headlineMedium.copyWith(
-            fontWeight: FontWeight.bold,
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: AppTypography.labelMedium.copyWith(
+            color: AppColors.textPrimary,
           ),
         ),
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: isError ? AppColors.lossRose : AppColors.cardElevated,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusSm),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.backgroundBlack,
+      appBar: AppBar(
+        title: const Text('Backup & Restore'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
+            color: AppColors.textPrimary,
             onPressed: _isLoading ? null : _loadBackups,
           ),
         ],
       ),
-      backgroundColor: theme.colorScheme.surface,
       body: _isLoading && _backups == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryBlue),
+            )
           : Column(
               children: [
+                // Settings Section
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.cardSurface,
+                      borderRadius: AppSpacing.borderRadiusMd,
+                    ),
+                    child: Column(
+                      children: [
+                        _buildSwitch(
+                          title: 'Auto backup daily',
+                          subtitle:
+                              'Create a backup after login if latest is older than 24h.',
+                          value: _autoBackupEnabled,
+                          onChanged: (v) async {
+                            setState(() => _autoBackupEnabled = v);
+                            await _backupService.setAutoBackupEnabled(v);
+                          },
+                        ),
+                        Divider(color: AppColors.cardElevated, height: 1),
+                        _buildSwitch(
+                          title: 'Auto-restore when empty',
+                          subtitle:
+                              'Restore latest backup (merge) if data is empty after login.',
+                          value: _autoRestoreEnabled,
+                          onChanged: (v) async {
+                            setState(() => _autoRestoreEnabled = v);
+                            await _backupService.setAutoRestoreEnabled(v);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Main Action Button
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.md,
                   ),
-                  child: Column(
-                    children: [
-                      _buildSwitch(
-                        title: 'Auto backup daily',
-                        subtitle:
-                            'If the latest backup is older than 24 hours, create one after login.',
-                        value: _autoBackupEnabled,
-                        onChanged: (v) async {
-                          setState(() => _autoBackupEnabled = v);
-                          await _backupService.setAutoBackupEnabled(v);
-                        },
-                      ),
-                      _buildSwitch(
-                        title: 'Auto-restore when empty',
-                        subtitle:
-                            'After login, if your data is empty, restore the latest backup (merge only).',
-                        value: _autoRestoreEnabled,
-                        onChanged: (v) async {
-                          setState(() => _autoRestoreEnabled = v);
-                          await _backupService.setAutoRestoreEnabled(v);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: FilledButton.icon(
+                  child: ElevatedButton.icon(
                     onPressed: _isCreatingBackup ? null : _createBackup,
                     icon: _isCreatingBackup
                         ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            width: AppSpacing.xl,
+                            height: AppSpacing.xl,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
-                        : const Icon(Icons.backup),
+                        : const Icon(Icons.cloud_upload_rounded),
                     label: Text(
                       _isCreatingBackup ? 'Creating...' : 'Create Backup',
                     ),
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                    ),
                   ),
                 ),
+
+                const SizedBox(height: AppSpacing.xl),
+
+                // Backups List
                 Expanded(
                   child: _backups == null || _backups!.isEmpty
                       ? Center(
@@ -530,27 +500,19 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.cloud_off,
+                                Icons.cloud_off_rounded,
                                 size: 80,
-                                color: theme.colorScheme.onSurface.withValues(alpha: 
-                                  0.3,
-                                ),
+                                color: AppColors.textTertiary,
                               ),
                               const SizedBox(height: AppSpacing.lg),
                               Text(
                                 'No backups yet',
-                                style: AppTypography.headlineSmall.copyWith(
-                                  color: theme.colorScheme.onSurface
-                                      .withValues(alpha: 0.6),
-                                ),
+                                style: AppTypography.titleLarge,
                               ),
                               const SizedBox(height: AppSpacing.sm),
                               Text(
                                 'Create your first backup to secure your data',
-                                style: AppTypography.bodyMedium.copyWith(
-                                  color: theme.colorScheme.onSurface
-                                      .withValues(alpha: 0.4),
-                                ),
+                                style: AppTypography.bodyMedium,
                               ),
                             ],
                           ),
@@ -570,64 +532,93 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                               (sum, count) => sum + count,
                             );
 
-                            return Card(
+                            return Container(
                               margin: const EdgeInsets.only(
                                 bottom: AppSpacing.md,
                               ),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.all(
-                                  AppSpacing.md,
-                                ),
-                                leading: CircleAvatar(
-                                  backgroundColor:
-                                      theme.colorScheme.primaryContainer,
-                                  child: Icon(
-                                    Icons.backup,
-                                    color: theme.colorScheme.onPrimaryContainer,
-                                  ),
-                                ),
-                                title: Text(
-                                  dateFormat.format(backup.createdAt),
-                                  style: AppTypography.titleMedium.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: AppSpacing.xs),
-                                    Text(
-                                      '$totalItems items backed up',
-                                      style: AppTypography.bodySmall,
+                              padding: const EdgeInsets.all(AppSpacing.md),
+                              decoration: BoxDecoration(
+                                color: AppColors.cardSurface,
+                                borderRadius: AppSpacing.borderRadiusMd,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(
+                                      AppSpacing.md,
                                     ),
-                                    const SizedBox(height: AppSpacing.xs),
-                                    Wrap(
-                                      spacing: AppSpacing.xs,
-                                      runSpacing: AppSpacing.xs,
-                                      children: backup.counts.entries.map((
-                                        entry,
-                                      ) {
-                                        if (entry.value == 0) {
-                                          return const SizedBox.shrink();
-                                        }
-                                        return Chip(
-                                          label: Text(
-                                            '${entry.key}: ${entry.value}',
-                                            style: AppTypography.labelSmall,
-                                          ),
-                                          materialTapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                          visualDensity: VisualDensity.compact,
-                                        );
-                                      }).toList(),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryBlue.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      shape: BoxShape.circle,
                                     ),
-                                  ],
-                                ),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.more_vert),
-                                  onPressed: () =>
-                                      _showRestoreOptions(context, backup.id),
-                                ),
+                                    child: const Icon(
+                                      Icons.cloud_done_rounded,
+                                      color: AppColors.primaryBlueLight,
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.md),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          dateFormat.format(backup.createdAt),
+                                          style: AppTypography.titleMedium,
+                                        ),
+                                        const SizedBox(height: AppSpacing.xs),
+                                        Text(
+                                          '$totalItems items backed up',
+                                          style: AppTypography.bodySmall,
+                                        ),
+                                        const SizedBox(height: AppSpacing.md),
+                                        Wrap(
+                                          spacing: AppSpacing.sm,
+                                          runSpacing: AppSpacing.sm,
+                                          children: backup.counts.entries
+                                              .where((e) => e.value > 0)
+                                              .map((entry) {
+                                                return Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal:
+                                                            AppSpacing.sm,
+                                                        vertical: AppSpacing.xs,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        AppColors.cardElevated,
+                                                    borderRadius: AppSpacing
+                                                        .borderRadiusXs,
+                                                  ),
+                                                  child: Text(
+                                                    '${entry.key}: ${entry.value}',
+                                                    style: AppTypography
+                                                        .labelSmall
+                                                        .copyWith(
+                                                          color: AppColors
+                                                              .textSecondary,
+                                                        ),
+                                                  ),
+                                                );
+                                              })
+                                              .toList(),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.more_vert_rounded,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    onPressed: () =>
+                                        _showRestoreOptions(context, backup.id),
+                                  ),
+                                ],
                               ),
                             );
                           },
@@ -644,13 +635,26 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(title, style: AppTypography.titleMedium),
-      subtitle: Text(subtitle, style: AppTypography.bodySmall),
-      trailing: NexusSwitch(
-        value: value,
-        onChanged: onChanged,
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppTypography.titleMedium),
+                const SizedBox(height: AppSpacing.xs),
+                Text(subtitle, style: AppTypography.bodySmall),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          NexusSwitch(value: value, onChanged: onChanged),
+        ],
       ),
     );
   }

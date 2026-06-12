@@ -77,7 +77,9 @@ class NotificationService {
       _approvalRequestController.stream;
 
   Future<void> initialize(NotificationProvider notificationProvider) async {
-    if (_initialized) { return; }
+    if (_initialized) {
+      return;
+    }
     _notificationProvider = notificationProvider;
 
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
@@ -160,9 +162,7 @@ class NotificationService {
       final launchDetails = await _localNotifications
           .getNotificationAppLaunchDetails();
       if (launchDetails?.didNotificationLaunchApp == true) {
-        handleNotificationPayload(
-          launchDetails?.notificationResponse?.payload,
-        );
+        handleNotificationPayload(launchDetails?.notificationResponse?.payload);
       }
     } catch (e) {
       log('❌ Error setting up local notifications: $e');
@@ -242,10 +242,10 @@ class NotificationService {
     final localId = notification.id.hashCode & 0x7fffffff;
 
     await _localNotifications.show(
-      localId,
-      notification.title,
-      notification.message,
-      details,
+      id: localId,
+      title: notification.title,
+      body: notification.message,
+      notificationDetails: details,
       payload: notification.actionRoute,
     );
   }
@@ -304,8 +304,7 @@ class NotificationService {
       return;
     }
 
-    final payload =
-        'nbox_approve|${transaction.source}|${transaction.id}';
+    final payload = 'nbox_approve|${transaction.source}|${transaction.id}';
     final localId =
         (transaction.id.hashCode ^ transaction.source.hashCode) & 0x7fffffff;
     final title = 'New transaction detected';
@@ -341,9 +340,7 @@ class NotificationService {
           AndroidNotificationAction('log_it', 'Log It'),
         ],
       ),
-      iOS: DarwinNotificationDetails(
-        categoryIdentifier: 'detected_tx_prompt',
-      ),
+      iOS: DarwinNotificationDetails(categoryIdentifier: 'detected_tx_prompt'),
     );
 
     await _localNotifications.show(
@@ -365,7 +362,7 @@ class NotificationService {
       if (parts.length >= 3) {
         _approvalRequestController.add(
           DetectionApprovalRequest(
-            source: parts,
+            source: parts[1],
             transactionId: parts.sublist(2).join('|'),
           ),
         );
@@ -424,7 +421,9 @@ class NotificationService {
   Future<void> _storeToken(String token) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) { return; }
+      if (user == null) {
+        return;
+      }
 
       final ref = FirebaseFirestore.instance
           .collection('users')

@@ -124,7 +124,7 @@ class UpcomingWeekWidget extends StatelessWidget {
     // ── Subscriptions due this week ──────────────────────────────────
     for (final sub in subProvider.subscriptions) {
       if (!sub.isActive) continue;
-      final due = sub.nextBillingDate;
+      final due = sub.calculateNextDueDate();;
       if (due == null) continue;
       if (due.isBefore(now.subtract(const Duration(days: 1)))) continue;
       if (due.isAfter(cutoff)) continue;

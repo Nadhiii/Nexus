@@ -222,10 +222,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
               if (!_isSelectionMode)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     child: _buildFilterPills(
                       nbox.pendingSms.length,
                       nbox.pendingEmails.length,
@@ -984,6 +981,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   Widget _buildFilterPills(int smsCount, int emailCount) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
           _buildPill("All", NBoxFilter.all),
@@ -1007,15 +1005,11 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       });
     }
 
-    // FIX 1 & 2: Strict dimension limits ensure the card never stretches during
-    // the matrix rotation math.
     final screenWidth = MediaQuery.of(context).size.width;
     final cardWidth = screenWidth - 48; // 24 padding on left and right
-    final cardHeight =
-        480.0; // Fixed height prevents Spacer() from extending wildly
+    final cardHeight = 480.0;
 
     return Padding(
-      // FIX 3: Lift the entire swipe view up by 100 pixels so it doesn't hide behind the BottomNavBar
       padding: const EdgeInsets.only(bottom: 100.0),
       child: Column(
         children: [
@@ -1172,6 +1166,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     _buildTag(isSms ? 'SMS' : 'EMAIL', highlightColor),
                     const SizedBox(width: 8),
@@ -1186,83 +1181,80 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
 
-                Center(
-                  child: Text(
-                    '${isIncome ? '+' : '−'}₹${NumberFormat('#,##,###').format(t.amount)}',
-                    style: TextStyle(
-                      fontSize: 42,
-                      fontWeight: FontWeight.w900,
-                      color: isIncome
-                          ? AppColors.pastelGreen
-                          : AppColors.textPrimary,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                Center(
-                  child: Text(
-                    t.merchant,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-
-                if (t.detectedCategory != null) ...[
-                  const SizedBox(height: 6),
-                  Center(
-                    child: Text(
-                      t.detectedCategory!,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.accentTeal,
-                      ),
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 20),
-
-                // FIX 4: Removed hardcoded maxLines and Spacer() so the raw message
-                // consumes all remaining space and becomes scrollable.
-                if (t.body != null)
-                  Expanded(
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.05),
-                        ),
-                      ),
-                      child: SingleChildScrollView(
-                        child: Text(
-                          t.body!,
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                            height: 1.5,
+                Expanded(
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '${isIncome ? '+' : '−'}₹${NumberFormat('#,##,###').format(t.amount)}',
+                          style: TextStyle(
+                            fontSize: 42,
+                            fontWeight: FontWeight.w900,
+                            color: isIncome
+                                ? AppColors.pastelGreen
+                                : AppColors.textPrimary,
+                            letterSpacing: -1,
                           ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          t.merchant,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                        if (t.detectedCategory != null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            t.detectedCategory!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.accentTeal,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+
+                if (t.body != null)
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 120),
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.05),
+                      ),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Text(
+                        t.body!,
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                          height: 1.5,
                         ),
                       ),
                     ),
-                  )
-                else
-                  const Spacer(),
+                  ),
 
-                if (t.body != null) const SizedBox(height: 16),
+                if (t.body != null && t.warnings.isNotEmpty)
+                  const SizedBox(height: 16),
 
                 if (t.warnings.isNotEmpty) ...[
                   Row(
