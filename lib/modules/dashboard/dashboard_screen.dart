@@ -96,7 +96,10 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
                 AppSpacing.xl,
                 0,
               ),
-              child: const GarageDashboardWidget(),
+              child: GarageDashboardWidget(
+                // Switch to the Garage tab (index 2 — adjust if different in your app)
+                onOpenGarage: () => widget.onNavigate?.call(2), 
+              ),
             ),
           ),
 

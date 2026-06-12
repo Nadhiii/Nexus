@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../core/providers/new_nbox_provider.dart';
+import '../../core/providers/nbox_provider.dart';
 import '../../core/providers/subscription_provider.dart';
 import '../../core/providers/debt_provider.dart';
 import '../../core/providers/investment_provider.dart';
@@ -144,8 +144,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     final nbox = context.read<NewNboxProvider>();
     for (var uid in _selectedIds) {
       final parts = uid.split(':');
-      // Pass the individual strings: parts is id, parts is source
-      nbox.rejectTransaction(parts, parts, silent: true);
+      // uid format is "source:id" — split and pass each part individually
+      nbox.rejectTransaction(parts[1], parts[0], silent: true);
     }
     showTopNotification(
       context,

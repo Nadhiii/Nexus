@@ -11,7 +11,7 @@ import '../../core/providers/transaction_provider.dart';
 import '../../core/providers/account_provider.dart';
 import '../../core/providers/category_provider.dart';
 import '../../core/models/detected_transaction.dart';
-import '../../core/providers/new_nbox_provider.dart';
+import '../../core/providers/nbox_provider.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/services/smart_category_resolver.dart';
 import '../../core/utils/logo_utils.dart';

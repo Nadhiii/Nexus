@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/bike_image_utils.dart';
+import '../../../core/widgets/top_snackbar.dart';
 
 class GarageManagementScreen extends StatefulWidget {
   const GarageManagementScreen({super.key});
@@ -211,9 +212,7 @@ class _GarageManagementScreenState extends State<GarageManagementScreen> {
 
     if (mounted) {
       setState(() => _hasChanges = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Order saved successfully')));
+      showTopSnackBar(context, 'Order saved successfully');
     }
   }
 }

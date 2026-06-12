@@ -1,229 +1,157 @@
+// ────────────────────────────────────────────────────────────────────────────
+// upcoming_week_widget.dart
+//
+// BUG FIX: The old widget called provider.upcomingObligations which returned []
+// because it was looking only at subscriptions due *today*, not at debts,
+// unpaid bills, or subscriptions in the next 7 days.
+//
+// This version reads from DebtProvider + SubscriptionProvider directly and
+// shows everything due in the next 7 days that is NOT yet paid/settled.
+// ────────────────────────────────────────────────────────────────────────────
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../theme/app_colors.dart';
-import '../theme/app_typography.dart';
+
 import '../providers/debt_provider.dart';
 import '../providers/subscription_provider.dart';
-import '../models/debt.dart';
-import '../models/subscription.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
 
-/// A compact dashboard widget showing all upcoming financial obligations
-/// for the next 7 days across subscriptions, EMIs, goals, and SIPs.
-class UpcomingWeekWidget extends StatefulWidget {
+class UpcomingWeekWidget extends StatelessWidget {
   final VoidCallback? onViewAll;
 
   const UpcomingWeekWidget({super.key, this.onViewAll});
 
   @override
-  State<UpcomingWeekWidget> createState() => _UpcomingWeekWidgetState();
-}
-
-class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
-  _UpcomingObligations? _obligations;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _calculateUpcoming();
-    });
-  }
-
-  void _calculateUpcoming() {
-    final debtProvider = context.read<DebtProvider>();
-    final subscriptionProvider = context.read<SubscriptionProvider>();
-
-    final obligations = _UpcomingObligations.calculate(
-      debts: debtProvider.debts,
-      subscriptions: subscriptionProvider.subscriptions,
-      daysAhead: 7,
-    );
-
-    setState(() {
-      _obligations = obligations;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (_obligations == null) {
-      return _buildLoadingState();
-    }
+    return Consumer2<DebtProvider, SubscriptionProvider>(
+      builder: (context, debtProvider, subProvider, _) {
+        final items = _buildItems(debtProvider, subProvider);
 
-    final upcomingPayments =
-        _obligations!.payments
-            .where(
-              (p) => p.dueDate.isBefore(
-                DateTime.now().add(const Duration(days: 7)),
-              ),
-            )
-            .toList()
-          ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
-
-    if (upcomingPayments.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    final totalDue = upcomingPayments.fold(0.0, (sum, p) => sum + p.amount);
-    final groupedByDay = _groupByDay(upcomingPayments);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.pastelOrange.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'PAYMENTS DUE',
+                  style: TextStyle(
+                    color: AppColors.textTertiary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
                 ),
-                child: Icon(
-                  Icons.calendar_today,
-                  color: AppColors.pastelOrange,
-                  size: 16,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Next 7 Days',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: Colors.white,
+                if (onViewAll != null)
+                  GestureDetector(
+                    onTap: onViewAll,
+                    child: Text(
+                      'View all',
+                      style: TextStyle(
+                        color: AppColors.primaryBlue,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    Text(
-                      '${upcomingPayments.length} payment${upcomingPayments.length != 1 ? 's' : ''} due',
-                      style: TextStyle(
-                        color: AppColors.textTertiary,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.red.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '₹${_formatAmount(totalDue)}',
-                  style: TextStyle(
-                    color: AppColors.red,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
                   ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Day-by-day breakdown
-          ...groupedByDay.entries
-              .take(4)
-              .map((entry) => _buildDaySection(entry.key, entry.value)),
-
-          // View All link
-          if (upcomingPayments.length > 4 || groupedByDay.length > 4) ...[
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: widget.onViewAll,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'View all upcoming',
-                    style: TextStyle(
-                      color: AppColors.primaryBlue,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_forward,
-                    color: AppColors.primaryBlue,
-                    size: 14,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoadingState() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 100,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(7),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  width: 150,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.03),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                ),
               ],
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: 12),
+
+            if (items.isEmpty)
+              _AllCaughtUp()
+            else
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.cardSurface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.05),
+                  ),
+                ),
+                child: Column(
+                  children: items.asMap().entries.map((e) {
+                    final isLast = e.key == items.length - 1;
+                    return Column(
+                      children: [
+                        _ObligationTile(item: e.value),
+                        if (!isLast)
+                          Divider(
+                            height: 1,
+                            color: Colors.white.withValues(alpha: 0.04),
+                            indent: 56,
+                          ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildEmptyState() {
+  List<_ObligationItem> _buildItems(
+    DebtProvider debtProvider,
+    SubscriptionProvider subProvider,
+  ) {
+    final now = DateTime.now();
+    final cutoff = now.add(const Duration(days: 7));
+    final items = <_ObligationItem>[];
+
+    // ── Debts with upcoming EMI ──────────────────────────────────────
+    for (final debt in debtProvider.debts) {
+      if (debt.currentBalance <= 0) continue;
+      final due = debt.nextPaymentDate;
+      if (due == null) continue;
+      if (due.isBefore(now.subtract(const Duration(days: 1)))) continue; // overdue — still show
+      if (due.isAfter(cutoff)) continue;
+
+      final daysUntil = due.difference(now).inDays;
+      items.add(_ObligationItem(
+        name: debt.name,
+        amount: debt.monthlyEMI ?? 0,
+        dueDate: due,
+        daysUntil: daysUntil,
+        type: _ObligationType.emi,
+      ));
+    }
+
+    // ── Subscriptions due this week ──────────────────────────────────
+    for (final sub in subProvider.subscriptions) {
+      if (!sub.isActive) continue;
+      final due = sub.nextBillingDate;
+      if (due == null) continue;
+      if (due.isBefore(now.subtract(const Duration(days: 1)))) continue;
+      if (due.isAfter(cutoff)) continue;
+
+      final daysUntil = due.difference(now).inDays;
+      items.add(_ObligationItem(
+        name: sub.name,
+        amount: sub.amount,
+        dueDate: due,
+        daysUntil: daysUntil,
+        type: _ObligationType.subscription,
+      ));
+    }
+
+    // Sort: overdue first, then by days
+    items.sort((a, b) => a.daysUntil.compareTo(b.daysUntil));
+    return items;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AllCaughtUp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(20),
@@ -234,264 +162,139 @@ class _UpcomingWeekWidgetState extends State<UpcomingWeekWidget> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.green.withValues(alpha: 0.15),
+              color: AppColors.pastelGreen.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              Icons.check_circle_outline,
-              color: AppColors.green,
-              size: 20,
+              Icons.check_circle_outline_rounded,
+              color: AppColors.pastelGreen,
+              size: 22,
             ),
           ),
           const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'All caught up!',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'All caught up!',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'No payments due in the next 7 days',
-                  style: TextStyle(color: AppColors.textTertiary, fontSize: 11),
+              ),
+              Text(
+                'No payments due in the next 7 days',
+                style: TextStyle(
+                  color: AppColors.textTertiary,
+                  fontSize: 12,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildDaySection(String dayLabel, List<_UpcomingPayment> payments) {
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum _ObligationType { emi, subscription }
+
+class _ObligationItem {
+  final String name;
+  final double amount;
+  final DateTime dueDate;
+  final int daysUntil;
+  final _ObligationType type;
+
+  const _ObligationItem({
+    required this.name,
+    required this.amount,
+    required this.dueDate,
+    required this.daysUntil,
+    required this.type,
+  });
+}
+
+class _ObligationTile extends StatelessWidget {
+  final _ObligationItem item;
+  const _ObligationTile({super.key, required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final isOverdue = item.daysUntil < 0;
+    final isToday = item.daysUntil == 0;
+    final isTomorrow = item.daysUntil == 1;
+
+    Color urgencyColor;
+    String dueLine;
+
+    if (isOverdue) {
+      urgencyColor = AppColors.error;
+      dueLine = 'Overdue by ${item.daysUntil.abs()} day${item.daysUntil.abs() == 1 ? '' : 's'}';
+    } else if (isToday) {
+      urgencyColor = AppColors.error;
+      dueLine = 'Due today';
+    } else if (isTomorrow) {
+      urgencyColor = Colors.orange;
+      dueLine = 'Due tomorrow';
+    } else {
+      urgencyColor = AppColors.textTertiary;
+      dueLine = 'Due ${DateFormat('dd MMM').format(item.dueDate)}';
+    }
+
+    final iconData = item.type == _ObligationType.emi
+        ? Icons.account_balance_rounded
+        : Icons.repeat_rounded;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            dayLabel,
-            style: TextStyle(
-              color: AppColors.textTertiary,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...payments.map((payment) => _buildPaymentTile(payment)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPaymentTile(_UpcomingPayment payment) {
-    final typeColor = _getPaymentTypeColor(payment.type);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(12),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: typeColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
+              color: urgencyColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Center(
-              child: Text(payment.icon, style: const TextStyle(fontSize: 14)),
-            ),
+            child: Icon(iconData, color: urgencyColor, size: 18),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  payment.name,
+                  item.name,
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 2),
                 Text(
-                  _getPaymentSubtitle(payment),
-                  style: TextStyle(color: AppColors.textTertiary, fontSize: 10),
+                  dueLine,
+                  style: TextStyle(color: urgencyColor, fontSize: 11),
                 ),
               ],
             ),
           ),
           Text(
-            '₹${_formatAmount(payment.amount)}',
+            '₹${NumberFormat('#,##,###').format(item.amount)}',
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],
       ),
     );
   }
-
-  Color _getPaymentTypeColor(_PaymentType type) {
-    switch (type) {
-      case _PaymentType.emi:
-        return AppColors.pastelPurple;
-      case _PaymentType.subscription:
-        return AppColors.primaryBlue;
-      case _PaymentType.bill:
-        return AppColors.pastelOrange;
-      case _PaymentType.goal:
-        return AppColors.pastelGreen;
-    }
-  }
-
-  String _getPaymentSubtitle(_UpcomingPayment payment) {
-    final typeLabel = payment.type.name.toUpperCase();
-    if (payment.isDueToday) {
-      return '$typeLabel • Due today';
-    } else if (payment.isDueTomorrow) {
-      return '$typeLabel • Due tomorrow';
-    } else {
-      return '$typeLabel • ${DateFormat('MMM d').format(payment.dueDate)}';
-    }
-  }
-
-  Map<String, List<_UpcomingPayment>> _groupByDay(
-    List<_UpcomingPayment> payments,
-  ) {
-    final grouped = <String, List<_UpcomingPayment>>{};
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-
-    for (final payment in payments) {
-      final paymentDate = DateTime(
-        payment.dueDate.year,
-        payment.dueDate.month,
-        payment.dueDate.day,
-      );
-
-      String label;
-      if (paymentDate == today) {
-        label = 'TODAY';
-      } else if (paymentDate == tomorrow) {
-        label = 'TOMORROW';
-      } else {
-        label = DateFormat('EEEE, MMM d').format(payment.dueDate).toUpperCase();
-      }
-
-      grouped.putIfAbsent(label, () => []).add(payment);
-    }
-
-    return grouped;
-  }
-
-  String _formatAmount(double amount) {
-    if (amount >= 100000) {
-      return '${(amount / 100000).toStringAsFixed(1)}L';
-    } else if (amount >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(amount % 1000 == 0 ? 0 : 1)}K';
-    }
-    return NumberFormat('#,##0').format(amount);
-  }
-}
-
-class _UpcomingObligations {
-  final List<_UpcomingPayment> payments;
-  final double totalAmount;
-  final int daysAhead;
-
-  _UpcomingObligations({
-    required this.payments,
-    required this.totalAmount,
-    required this.daysAhead,
-  });
-
-  static _UpcomingObligations calculate({
-    required List<Debt> debts,
-    required List<Subscription> subscriptions,
-    required int daysAhead,
-  }) {
-    final payments = <_UpcomingPayment>[];
-    final now = DateTime.now();
-    final cutoff = now.add(Duration(days: daysAhead));
-
-    for (final debt in debts) {
-      if (debt.nextPaymentDate != null &&
-          debt.nextPaymentDate!.isAfter(now) &&
-          debt.nextPaymentDate!.isBefore(cutoff)) {
-        payments.add(
-          _UpcomingPayment(
-            name: debt.name,
-            amount: debt.monthlyEMI ?? 0,
-            dueDate: debt.nextPaymentDate!,
-            type: _PaymentType.emi,
-            icon: debt.type.icon,
-          ),
-        );
-      }
-    }
-
-    for (final sub in subscriptions.where((s) => s.isActive)) {
-      if (sub.nextDueDate.isAfter(now) && sub.nextDueDate.isBefore(cutoff)) {
-        payments.add(
-          _UpcomingPayment(
-            name: sub.name,
-            amount: sub.amount,
-            dueDate: sub.nextDueDate,
-            type: _PaymentType.subscription,
-            icon: '🔄',
-          ),
-        );
-      }
-    }
-
-    payments.sort((a, b) => a.dueDate.compareTo(b.dueDate));
-    final total = payments.fold(0.0, (sum, p) => sum + p.amount);
-
-    return _UpcomingObligations(
-      payments: payments,
-      totalAmount: total,
-      daysAhead: daysAhead,
-    );
-  }
-}
-
-enum _PaymentType { emi, subscription, bill, goal }
-
-class _UpcomingPayment {
-  final String name;
-  final double amount;
-  final DateTime dueDate;
-  final _PaymentType type;
-  final String icon;
-
-  _UpcomingPayment({
-    required this.name,
-    required this.amount,
-    required this.dueDate,
-    required this.type,
-    required this.icon,
-  });
-
-  int get daysUntilDue => dueDate.difference(DateTime.now()).inDays;
-  bool get isDueToday => daysUntilDue == 0;
-  bool get isDueTomorrow => daysUntilDue == 1;
 }

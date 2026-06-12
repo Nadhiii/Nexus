@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/collapsible_fab.dart';
+import '../../../core/widgets/top_snackbar.dart';
 
 import '../widgets/bike_stats_widget.dart';
 import '../widgets/add_bike.dart';
@@ -124,12 +125,10 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                       ),
                       onPressed: () {
                         provider.setDashboardBike(selectedBike.id);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '${selectedBike.name} is now on Dashboard',
-                            ),
-                          ),
+                        showTopSnackBar(
+                          context,
+                          '${selectedBike.name} is now on Dashboard',
+                          icon: Icons.star_rounded,
                         );
                       },
                     ),
@@ -1110,9 +1109,12 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
             onPressed: () {
               Navigator.pop(ctx);
               provider.deleteBikeEntry(entry.id);
-              ScaffoldMessenger.of(
+              showTopSnackBar(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('Entry deleted')));
+                'Entry deleted',
+                isError: true,
+                icon: Icons.delete_outline_rounded,
+              );
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Delete', style: TextStyle(color: Colors.white)),

@@ -7,7 +7,7 @@ import 'dart:ui';
 import 'package:animations/animations.dart';
 
 import '../core/providers/is_popup_active_provider.dart';
-import '../core/providers/new_nbox_provider.dart';
+import '../core/providers/nbox_provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_animations.dart';
 

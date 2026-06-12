@@ -9,7 +9,7 @@ import 'package:another_telephony/telephony.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../models/detected_transaction.dart';
-import '../utils/new_sms_parser.dart';
+import '../utils/sms_parser.dart';
 import '../services/categorization_service.dart';
 import '../services/notification_service.dart';
 import 'category_provider.dart';

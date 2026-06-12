@@ -7,7 +7,7 @@ import 'core/theme/app_theme.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/account_provider.dart';
 import 'core/providers/transaction_provider.dart';
-import 'core/providers/new_nbox_provider.dart';
+import 'core/providers/nbox_provider.dart';
 import 'core/providers/debt_provider.dart';
 import 'core/providers/investment_provider.dart';
 import 'core/providers/biometric_provider.dart';

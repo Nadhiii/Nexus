@@ -215,6 +215,41 @@ class NotificationService {
     );
   }
 
+  Future<void> sendLocalNotification(AppNotification notification) async {
+    if (!_initialized) return;
+
+    final androidDetails = AndroidNotificationDetails(
+      _defaultChannel.id,
+      _defaultChannel.name,
+      channelDescription: _defaultChannel.description,
+      importance: Importance.high,
+      priority: Priority.high,
+      styleInformation: BigTextStyleInformation(notification.message),
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    // Use a stable, collision-resistant ID derived from the notification id
+    final localId = notification.id.hashCode & 0x7fffffff;
+
+    await _localNotifications.show(
+      localId,
+      notification.title,
+      notification.message,
+      details,
+      payload: notification.actionRoute,
+    );
+  }
+
   bool _isScanStatusEnabled() {
     return _notificationProvider?.liveScanStatusEnabled ?? true;
   }
@@ -330,7 +365,7 @@ class NotificationService {
       if (parts.length >= 3) {
         _approvalRequestController.add(
           DetectionApprovalRequest(
-            source: parts[1],
+            source: parts,
             transactionId: parts.sublist(2).join('|'),
           ),
         );

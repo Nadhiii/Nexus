@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/notification.dart';
+import '../services/notification_service.dart';
 
 class NotificationProvider extends ChangeNotifier {
   static const _notificationsStorageKey = 'app_notifications';
@@ -112,6 +113,35 @@ class NotificationProvider extends ChangeNotifier {
     _notifications.insert(0, notification);
     _saveNotifications();
     notifyListeners();
+
+    // ── NEW: fire real device notification ───────────────────────────
+    final shouldPush = _shouldPushToDevice(notification.type);
+    if (shouldPush) {
+      NotificationService().sendLocalNotification(notification);
+    }
+  }
+
+  /// Map notification type → user preference flag.
+  bool _shouldPushToDevice(NotificationType type) {
+    switch (type) {
+      case NotificationType.budgetWarning:
+        return _budgetAlertsEnabled;
+      case NotificationType.subscriptionReminder:
+        return _subscriptionRemindersEnabled;
+      case NotificationType.billReminder:
+        return _subscriptionRemindersEnabled; // same gate as subs
+      case NotificationType.transactionAlert:
+        return _largeTransactionAlertsEnabled;
+      case NotificationType.fuelLogged:
+        return _fuelNotificationsEnabled;
+      case NotificationType.goalAchievement:
+      case NotificationType.goalProgress:
+        return true; // always push goal achievements
+      case NotificationType.unusualSpending:
+        return _budgetAlertsEnabled;
+      case NotificationType.systemUpdate:
+        return false; // never push system/internal events to device
+    }
   }
 
   void markAsRead(String notificationId) {
@@ -144,15 +174,23 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   void sendTestNotification() {
-    addNotification(
-      AppNotification(
-        id: 'test_${DateTime.now().millisecondsSinceEpoch}',
-        type: NotificationType.systemUpdate,
-        title: 'Test Notification',
-        message: 'If you see this, your notifications are working correctly!',
-        createdAt: DateTime.now(),
-      ),
+    final notification = AppNotification(
+      id: 'test_${DateTime.now().millisecondsSinceEpoch}',
+      type: NotificationType.systemUpdate,
+      title: 'Test Notification',
+      message: 'If you see this on your device, push notifications are working!',
+      createdAt: DateTime.now(),
     );
+    
+    // Add in-app entry
+    if (!_notifications.any((n) => n.id == notification.id)) {
+      _notifications.insert(0, notification);
+      _saveNotifications();
+      notifyListeners();
+    }
+    
+    // Always push test to device regardless of settings
+    NotificationService().sendLocalNotification(notification);
   }
 
   void notifyTransaction(

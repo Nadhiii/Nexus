@@ -1,5 +1,6 @@
 // ignore_for_file: unused_element
 import 'package:flutter/material.dart';
+import 'package:animations/animations.dart';
 import '../../core/widgets/collapsible_fab.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -322,11 +323,23 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
             ? 'Add Account'
             : 'Log Transaction',
         onPressed: () {
+          final destination = _currentView == WalletView.accounts
+              ? const ModernAddAccountScreen()
+              : const ModernAddTransactionScreen();
           Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => _currentView == WalletView.accounts
-                  ? const ModernAddAccountScreen()
-                  : const ModernAddTransactionScreen(),
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  destination,
+              transitionDuration: AppAnimations.pageTransitionDuration,
+              reverseTransitionDuration: AppAnimations.pageTransitionDuration,
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) =>
+                      SharedAxisTransition(
+                        animation: animation,
+                        secondaryAnimation: secondaryAnimation,
+                        transitionType: SharedAxisTransitionType.vertical,
+                        child: child,
+                      ),
             ),
           );
         },

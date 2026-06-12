@@ -8,7 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/top_snackbar.dart';
-import '../../core/providers/new_nbox_provider.dart';
+import '../../core/providers/nbox_provider.dart';
 
 class GmailSettingsEnhancedScreen extends StatefulWidget {
   const GmailSettingsEnhancedScreen({super.key});

@@ -26,24 +26,49 @@ class CollapsibleFab extends StatefulWidget {
   State<CollapsibleFab> createState() => _CollapsibleFabState();
 }
 
-class _CollapsibleFabState extends State<CollapsibleFab> {
+class _CollapsibleFabState extends State<CollapsibleFab>
+    with SingleTickerProviderStateMixin {
   bool _expanded = false;
   Timer? _collapseTimer;
+  late AnimationController _controller;
+  late Animation<double> _widthFactor;
+  late Animation<double> _labelOpacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: AppAnimations.slow, // 300ms
+      vsync: this,
+    );
+
+    _widthFactor = CurvedAnimation(
+      parent: _controller,
+      curve: AppAnimations.standardCurve,
+    );
+
+    // Label fades in slightly delayed so it only appears once the pill is wide enough
+    _labelOpacity = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.4, 1.0, curve: Curves.easeOut),
+    );
+  }
 
   @override
   void dispose() {
     _collapseTimer?.cancel();
+    _controller.dispose();
     super.dispose();
   }
 
   void _expandTemporarily() {
     setState(() => _expanded = true);
+    _controller.forward();
     _collapseTimer?.cancel();
     _collapseTimer = Timer(widget.expandedDuration, () {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       setState(() => _expanded = false);
+      _controller.reverse();
     });
   }
 
@@ -54,36 +79,60 @@ class _CollapsibleFabState extends State<CollapsibleFab> {
 
   @override
   Widget build(BuildContext context) {
-    // Add margin to lift the FAB above the floating NavBar
-    // 70 (NavBar height) + 32 (NavBar bottom margin) + 16 (extra spacing) = ~118
+    final bg = widget.backgroundColor ?? Theme.of(context).colorScheme.primary;
+    final fg = widget.foregroundColor ?? Colors.white;
+    final fabSize = 56.0;
+    final expandedWidth = 160.0;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 90),
-      child: AnimatedCrossFade(
-        duration: AppAnimations.fabCrossFadeDuration,
-        crossFadeState: _expanded
-            ? CrossFadeState.showSecond
-            : CrossFadeState.showFirst,
-        firstChild: FloatingActionButton(
-          heroTag: widget.heroTag,
-          onPressed: _handlePressed,
-          backgroundColor: widget.backgroundColor,
-          foregroundColor: widget.foregroundColor,
-          child: widget.icon,
-        ),
-        secondChild: FloatingActionButton.extended(
-          heroTag: widget.heroTag == null ? null : '${widget.heroTag}_expanded',
-          onPressed: _handlePressed,
-          backgroundColor: widget.backgroundColor,
-          foregroundColor: widget.foregroundColor,
-          icon: widget.icon,
-          label: Text(
-            widget.label,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
-        firstCurve: AppAnimations.fadeOutCurve,
-        secondCurve: AppAnimations.fadeInCurve,
-        sizeCurve: AppAnimations.sizeCurve,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final width = fabSize + (expandedWidth - fabSize) * _widthFactor.value;
+          return GestureDetector(
+            onTap: _handlePressed,
+            child: Container(
+              height: fabSize,
+              width: width,
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(fabSize / 2), // always pill/circle
+                boxShadow: [
+                  BoxShadow(
+                    color: bg.withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconTheme(data: IconThemeData(color: fg, size: 24), child: widget.icon),
+                  // Label slides in as the pill widens
+                  if (_controller.value > 0.1)
+                    FadeTransition(
+                      opacity: _labelOpacity,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8, right: 4),
+                        child: Text(
+                          widget.label,
+                          style: TextStyle(
+                            color: fg,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.clip,
+                          maxLines: 1,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
