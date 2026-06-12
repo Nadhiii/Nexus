@@ -33,6 +33,12 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   bool _isGmailLoading = false;
   bool _isHandlingQueuedApproval = false;
 
+  // ── Swipe mode state ──────────────────────────────────────────────────────
+  int _swipeIndex = 0;
+  double _swipeDx = 0;
+  double _swipeRotation = 0;
+  bool _swipeAnimating = false;
+
   Future<void> _refreshSms() async {
     if (!mounted) {
       return;
@@ -72,7 +78,27 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshData());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshData();
+      // Listen for queued approval requests from notifications.
+      // Must NOT be called inside build() — that causes the silent crash.
+      context.read<NewNboxProvider>().addListener(_onNboxChanged);
+    });
+  }
+
+  @override
+  void dispose() {
+    // Safe read — provider outlives the screen so this won't throw.
+    context.read<NewNboxProvider>().removeListener(_onNboxChanged);
+    super.dispose();
+  }
+
+  void _onNboxChanged() {
+    if (!mounted) return;
+    final nbox = context.read<NewNboxProvider>();
+    if (nbox.hasPendingApprovalRequest && !_isHandlingQueuedApproval) {
+      _attemptQueuedApproval(nbox);
+    }
   }
 
   Future<void> _refreshData() async {
@@ -181,8 +207,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           final allPending = [...nbox.pendingSms, ...nbox.pendingEmails]
             ..sort((a, b) => b.date.compareTo(a.date));
 
-          _attemptQueuedApproval(nbox);
-
           List<DetectedTransaction> displayList;
           switch (_currentFilter) {
             case NBoxFilter.sms:
@@ -240,6 +264,10 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
               if (displayList.isEmpty)
                 SliverFillRemaining(child: _buildEmptyState())
+              else if (displayList.length < 10 && _currentFilter != NBoxFilter.trash && !_isSelectionMode)
+                SliverFillRemaining(
+                  child: _buildSwipeView(displayList, nbox),
+                )
               else
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(0, 10, 0, 100),
@@ -1008,6 +1036,385 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // SWIPE MODE  (< 10 pending items, non-trash tab)
+  // ---------------------------------------------------------------------------
+
+  Widget _buildSwipeView(List<DetectedTransaction> list, NewNboxProvider nbox) {
+    // Reset index if it's out of bounds (items got approved/rejected externally)
+    final safeIndex = _swipeIndex.clamp(0, list.length - 1);
+    if (safeIndex != _swipeIndex) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _swipeIndex = safeIndex);
+      });
+    }
+
+    return Column(
+      children: [
+        // Mode label
+        Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.swipe, color: AppColors.textTertiary, size: 14),
+              const SizedBox(width: 6),
+              Text(
+                'SWIPE MODE · ${list.length - _swipeIndex} LEFT',
+                style: const TextStyle(
+                  color: AppColors.textTertiary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Card stack
+        Expanded(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Back card (next item in queue, peeking behind)
+              if (_swipeIndex + 1 < list.length)
+                Positioned(
+                  top: 24,
+                  left: 32,
+                  right: 32,
+                  bottom: 80,
+                  child: Transform.scale(
+                    scale: 0.94,
+                    child: _buildSwipeCard(list[_swipeIndex + 1], isBack: true),
+                  ),
+                ),
+
+              // Front card (draggable)
+              if (_swipeIndex < list.length)
+                Positioned(
+                  top: 8,
+                  left: 20,
+                  right: 20,
+                  bottom: 80,
+                  child: GestureDetector(
+                    onHorizontalDragUpdate: _swipeAnimating
+                        ? null
+                        : (d) => setState(() {
+                              _swipeDx += d.delta.dx;
+                              _swipeRotation = (_swipeDx / 300).clamp(-0.15, 0.15);
+                            }),
+                    onHorizontalDragEnd: _swipeAnimating
+                        ? null
+                        : (d) => _onSwipeDragEnd(list, nbox),
+                    child: Transform.translate(
+                      offset: Offset(_swipeDx, 0),
+                      child: Transform.rotate(
+                        angle: _swipeRotation,
+                        child: Stack(
+                          children: [
+                            _buildSwipeCard(list[_swipeIndex], isBack: false),
+                            // Approve overlay
+                            if (_swipeDx > 30)
+                              Positioned(
+                                top: 24,
+                                left: 24,
+                                child: _buildSwipeLabel('APPROVE', Colors.green),
+                              ),
+                            // Reject overlay
+                            if (_swipeDx < -30)
+                              Positioned(
+                                top: 24,
+                                right: 24,
+                                child: _buildSwipeLabel('REJECT', AppColors.error),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+              // "All done" state when index has reached the end
+              if (_swipeIndex >= list.length)
+                _buildEmptyState(),
+            ],
+          ),
+        ),
+
+        // Hint row
+        Padding(
+          padding: const EdgeInsets.only(bottom: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildSwipeHint(Icons.arrow_back, 'Reject', AppColors.error),
+              const SizedBox(width: 40),
+              _buildSwipeHint(Icons.arrow_forward, 'Approve', Colors.green),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSwipeCard(DetectedTransaction t, {required bool isBack}) {
+    final isIncome = t.type.toLowerCase() == 'income';
+    final isSms = t.source == 'sms';
+    final highlightColor = isSms ? const Color(0xFFF59E0B) : const Color(0xFF3B82F6);
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isBack
+              ? [AppColors.cardSurface, AppColors.cardSurface]
+              : [
+                  highlightColor.withValues(alpha: 0.12),
+                  AppColors.cardSurface,
+                ],
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: isBack
+              ? Colors.white.withValues(alpha: 0.04)
+              : highlightColor.withValues(alpha: 0.35),
+        ),
+        boxShadow: isBack
+            ? []
+            : [
+                BoxShadow(
+                  color: highlightColor.withValues(alpha: 0.2),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+      ),
+      padding: const EdgeInsets.all(28),
+      child: isBack
+          ? const SizedBox.shrink()
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Source tag + confidence
+                Row(
+                  children: [
+                    _buildTag(isSms ? 'SMS' : 'EMAIL', highlightColor),
+                    const SizedBox(width: 8),
+                    if (t.source == 'email') _buildConfidenceBadge(t),
+                    const Spacer(),
+                    Text(
+                      DateFormat('dd MMM, hh:mm a').format(t.date),
+                      style: const TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Amount — big and centred
+                Center(
+                  child: Text(
+                    '${isIncome ? '+' : '−'}₹${NumberFormat('#,##,###').format(t.amount)}',
+                    style: TextStyle(
+                      fontSize: 42,
+                      fontWeight: FontWeight.w900,
+                      color: isIncome ? AppColors.pastelGreen : AppColors.textPrimary,
+                      letterSpacing: -1,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Merchant
+                Center(
+                  child: Text(
+                    t.merchant,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                if (t.detectedCategory != null) ...[
+                  const SizedBox(height: 6),
+                  Center(
+                    child: Text(
+                      t.detectedCategory!,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.accentTeal,
+                      ),
+                    ),
+                  ),
+                ],
+
+                const Spacer(),
+
+                // Raw message preview
+                if (t.body != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                    ),
+                    child: Text(
+                      t.body!,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                if (t.warnings.isNotEmpty) ...[
+                  Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded,
+                          color: AppColors.pastelOrange, size: 14),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          t.warnings.first,
+                          style: const TextStyle(
+                            color: AppColors.pastelOrange,
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ],
+            ),
+    );
+  }
+
+  Widget _buildSwipeLabel(String text, Color color) {
+    return Transform.rotate(
+      angle: text == 'APPROVE' ? -0.2 : 0.2,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: color, width: 2.5),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSwipeHint(IconData icon, String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 16),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _onSwipeDragEnd(List<DetectedTransaction> list, NewNboxProvider nbox) {
+    const threshold = 120.0;
+
+    if (_swipeDx > threshold) {
+      // Swiped right → Approve
+      _commitSwipe(list, nbox, approved: true);
+    } else if (_swipeDx < -threshold) {
+      // Swiped left → Reject
+      _commitSwipe(list, nbox, approved: false);
+    } else {
+      // Snap back
+      setState(() {
+        _swipeDx = 0;
+        _swipeRotation = 0;
+      });
+    }
+  }
+
+  void _commitSwipe(
+    List<DetectedTransaction> list,
+    NewNboxProvider nbox, {
+    required bool approved,
+  }) {
+    if (_swipeAnimating) return;
+    final t = list[_swipeIndex];
+
+    setState(() => _swipeAnimating = true);
+
+    // Fly the card off screen, then process
+    final targetDx = approved ? 500.0 : -500.0;
+    setState(() {
+      _swipeDx = targetDx;
+      _swipeRotation = approved ? 0.3 : -0.3;
+    });
+
+    Future.delayed(const Duration(milliseconds: 220), () {
+      if (!mounted) return;
+
+      if (approved) {
+        _navigateToApproveScreen(t).then((_) {
+          if (mounted) {
+            setState(() {
+              _swipeIndex = (_swipeIndex).clamp(0, list.length - 1);
+              _swipeDx = 0;
+              _swipeRotation = 0;
+              _swipeAnimating = false;
+            });
+          }
+        });
+      } else {
+        nbox.rejectTransaction(t.id, t.source, silent: true);
+        showTopNotification(context, 'Moved to Trash', isError: true);
+        setState(() {
+          // Don't advance index — the list shrinks, so the next card
+          // slides into the same position automatically.
+          _swipeDx = 0;
+          _swipeRotation = 0;
+          _swipeAnimating = false;
+        });
+      }
+    });
+  }
+
+  // ---------------------------------------------------------------------------
 
   Widget _buildPill(String label, NBoxFilter value) {
     final isSelected = _currentFilter == value;

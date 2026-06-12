@@ -32,15 +32,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Only Firebase is truly required before runApp — and even this
+  // can be done faster with a loading screen
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  await CrashReportingService().initialize();
-
-  try {
-    await dotenv.load(fileName: ".env");
-  } catch (e) {
-    debugPrint('dotenv load skipped: $e');
-  }
 
   IntentNavigationService.initialize();
 
@@ -145,7 +139,7 @@ class NexusApp extends StatelessWidget {
   }
 }
 
-/// Initializes OTA notifications once after the first frame,
+/// Initializes OTA notifications and secondary services once after the first frame,
 /// without causing unnecessary rebuilds of the widget tree.
 class _AppInitializer extends StatefulWidget {
   final Widget child;
@@ -166,6 +160,16 @@ class _AppInitializerState extends State<_AppInitializer> {
       _initialized = true;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
+        
+        // Initialize secondary services after the first frame paints
+        await CrashReportingService().initialize();
+        
+        try {
+          await dotenv.load(fileName: ".env");
+        } catch (e) {
+          debugPrint('dotenv load skipped: $e');
+        }
+
         // ONLY initialize notifications here — version check lives in More Screen
         // to avoid the "Reply already submitted" crash during login/SMS scan.
         await _otaService.initNotifications();

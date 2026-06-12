@@ -17,13 +17,14 @@ class BikeStatsWidget extends StatelessWidget {
         .toList();
 
     if (fuelEntries.isNotEmpty) {
-      // Sort by odometer reading for distance calculation
-      fuelEntries.sort(
-        (a, b) => a.odometerReading.compareTo(b.odometerReading),
-      );
-
+      // Use min/max odometer for total distance (more robust than
+      // relying on sort order matching chronological order)
       double minOdo = fuelEntries.first.odometerReading;
-      double maxOdo = fuelEntries.last.odometerReading;
+      double maxOdo = fuelEntries.first.odometerReading;
+      for (final e in fuelEntries) {
+        if (e.odometerReading < minOdo) minOdo = e.odometerReading;
+        if (e.odometerReading > maxOdo) maxOdo = e.odometerReading;
+      }
       totalKm = maxOdo - minOdo;
 
       // Calculate total fuel (all entries)
@@ -31,13 +32,14 @@ class BikeStatsWidget extends StatelessWidget {
         totalFuel += entry.fuelQuantity;
       }
 
+      // Reliable mileage: full-tank-to-full-tank average
+      final reliableMileage = provider.getReliableAverageMileage();
+
       // Prepare stats list
       final stats = [
         _StatData(
           'Mileage',
-          totalKm > 0 && totalFuel > 0
-              ? (totalKm / totalFuel).toStringAsFixed(1)
-              : '--',
+          reliableMileage > 0 ? reliableMileage.toStringAsFixed(1) : '--',
           'km/l',
           Icons.speed,
         ),
@@ -49,7 +51,7 @@ class BikeStatsWidget extends StatelessWidget {
         ),
         _StatData(
           'Distance',
-          totalKm > 0 ? totalKm.toStringAsFixed(0) : '--',
+          totalKm > 0 ? totalKm.toStringAsFixed(1) : '--',
           'km',
           Icons.route,
         ),

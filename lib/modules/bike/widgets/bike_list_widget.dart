@@ -110,17 +110,12 @@ class BikeListWidget extends StatelessWidget {
     final isFuel = (entry.category ?? 'fuel').toLowerCase() == 'fuel';
     final color = isFuel ? AppColors.primaryBlue : AppColors.pastelOrange;
 
-    // Dynamic Mileage Calculation for Display
+    // Reliable Mileage (Full Tank -> Full Tank method)
     String mileageDisplay = '-';
-    if (isFuel && entry.fuelQuantity > 0) {
-      if (entry.mileage != null && entry.mileage! > 0) {
-        mileageDisplay = entry.mileage!.toStringAsFixed(1);
-      } else if (prevEntry != null) {
-        // Fallback: Calculate roughly based on previous entry
-        final dist = entry.odometerReading - prevEntry.odometerReading;
-        if (dist > 0) {
-          mileageDisplay = (dist / entry.fuelQuantity).toStringAsFixed(1);
-        }
+    if (isFuel) {
+      final mileage = provider.getMileageForEntry(entry.id);
+      if (mileage != null && mileage > 0) {
+        mileageDisplay = mileage.toStringAsFixed(1);
       }
     }
 
@@ -196,7 +191,7 @@ class BikeListWidget extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              "${entry.odometerReading.toStringAsFixed(0)} km",
+                              "${entry.odometerReading.toStringAsFixed(1)} km",
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 20,

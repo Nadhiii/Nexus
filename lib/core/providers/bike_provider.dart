@@ -388,18 +388,71 @@ class BikeProvider with ChangeNotifier {
     }
   }
 
-  // Statistics
-  double getTotalFuelCost() {
-    final total = _currentBikeEntries.fold<double>(
-      0,
-      (sum, entry) =>
-          sum +
-          ((entry.category?.toLowerCase() == 'fuel') ? entry.fuelAmount : 0),
-    );
-    debugPrint(
-      '💰 getTotalFuelCost: $total (from ${_currentBikeEntries.length} entries)',
-    );
-    return total;
+  // ═══════════════════════════════════════════════════════════════════════
+  // MILEAGE CALCULATION (Full Tank → Full Tank method)
+  //
+  // This matches the spreadsheet "Real Mileage" logic:
+  //   - Sort all FUEL entries by odometer reading (ascending = chronological
+  //     by distance traveled, which is more reliable than date for bikes
+  //     where entries might be logged out of order).
+  //   - Walk through entries, accumulating fuel quantity (including
+  //     partial fills) since the last Full Tank.
+  //   - When we hit a Full Tank entry, mileage = (odometer delta since the
+  //     PREVIOUS full tank) / (sum of fuel added since then, INCLUDING
+  //     this full tank's own fuel).
+  //   - Partial fills get NO standalone mileage value (mileageDisplay = '-')
+  //     because mileage can only be reliably computed at a full-tank point.
+  //
+  // This avoids the "0.01 km/L" bug, which happened because the old code
+  // computed dist / fuelQuantity using the nearest-lower-odometer entry
+  // (which could be a partial fill just a few km away), giving a tiny
+  // distance divided against a normal fuel amount.
+  // ═══════════════════════════════════════════════════════════════════════
+
+  /// Returns a map of entryId -> calculated mileage (km/L) for FULL TANK
+  /// entries only. Partial fill entries are not included (no key present).
+  Map<String, double> getEntryMileageMap() {
+    final Map<String, double> result = {};
+
+    final fuelEntries = _currentBikeEntries
+        .where((e) => (e.category ?? 'fuel').toLowerCase() == 'fuel')
+        .toList();
+
+    if (fuelEntries.length < 2) {
+      return result;
+    }
+
+    // Sort by odometer reading ascending (chronological by distance)
+    final sorted = List<BikeEntry>.from(fuelEntries)
+      ..sort((a, b) => a.odometerReading.compareTo(b.odometerReading));
+
+    double? lastFullTankOdo;
+    double fuelSinceLastFullTank = 0.0;
+
+    for (final entry in sorted) {
+      fuelSinceLastFullTank += entry.fuelQuantity;
+
+      if (entry.isFullTank) {
+        if (lastFullTankOdo != null) {
+          final dist = entry.odometerReading - lastFullTankOdo;
+          if (dist > 0 && fuelSinceLastFullTank > 0) {
+            result[entry.id] = dist / fuelSinceLastFullTank;
+          }
+        }
+        // Reset accumulator from this full tank point
+        lastFullTankOdo = entry.odometerReading;
+        fuelSinceLastFullTank = 0.0;
+      }
+    }
+
+    return result;
+  }
+
+  /// Get the calculated mileage for a specific entry, or null if not
+  /// applicable (e.g. partial fill, or first full-tank entry with no
+  /// prior reference point).
+  double? getMileageForEntry(String entryId) {
+    return getEntryMileageMap()[entryId];
   }
 
   double getAverageMileage() {
@@ -416,37 +469,64 @@ class BikeProvider with ChangeNotifier {
     return avg;
   }
 
-  /// Calculate mileage using simple average of individual entry mileages
-  /// Matches spreadsheet formula: AVERAGE of all (trip/fuel) values
+  /// Calculate overall average mileage using the Full Tank → Full Tank
+  /// method. This is the RELIABLE, production method — it matches the
+  /// spreadsheet's "Real Mileage" approach and correctly accounts for
+  /// partial fills between full tanks.
   double getReliableAverageMileage() {
+    final mileageMap = getEntryMileageMap();
+
+    if (mileageMap.isEmpty) {
+      return 0.0;
+    }
+
+    final total = mileageMap.values.fold<double>(0, (sum, m) => sum + m);
+    final avg = total / mileageMap.length;
+
+    debugPrint(
+      '⛽ getReliableAverageMileage: $avg km/l (from ${mileageMap.length} full-tank intervals)',
+    );
+    return avg;
+  }
+
+  /// Overall mileage computed across the ENTIRE tracked range:
+  /// total distance (first full tank odo -> last full tank odo) divided by
+  /// total fuel consumed in that range (excludes the very first full tank's
+  /// own fuel, since that fuel fills the tank to start the range, not
+  /// "consumed" within it). Useful for a single headline stat.
+  double getOverallMileage() {
     final fuelEntries = _currentBikeEntries
         .where((e) => (e.category ?? 'fuel').toLowerCase() == 'fuel')
         .toList();
 
-    if (fuelEntries.isEmpty) {
+    final fullTanks = fuelEntries.where((e) => e.isFullTank).toList()
+      ..sort((a, b) => a.odometerReading.compareTo(b.odometerReading));
+
+    if (fullTanks.length < 2) {
       return 0.0;
     }
 
-    // Get entries that have valid mileage calculated
-    final entriesWithMileage = fuelEntries
-        .where((e) => e.mileage != null && e.mileage! > 0)
-        .toList();
+    final firstOdo = fullTanks.first.odometerReading;
+    final lastOdo = fullTanks.last.odometerReading;
+    final totalDist = lastOdo - firstOdo;
 
-    if (entriesWithMileage.isNotEmpty) {
-      // Simple average: sum of mileages / count (matches spreadsheet AVERAGE)
-      final totalMileage = entriesWithMileage.fold<double>(
-        0,
-        (sum, e) => sum + e.mileage!,
-      );
-      final avg = totalMileage / entriesWithMileage.length;
-
-      debugPrint(
-        '⛽ getReliableAverageMileage: $avg km/l (simple avg of ${entriesWithMileage.length} entries)',
-      );
-      return avg;
+    if (totalDist <= 0) {
+      return 0.0;
     }
 
-    return 0.0;
+    // Sum fuel for all entries with odometer > firstOdo and <= lastOdo
+    double totalFuel = 0.0;
+    for (final e in fuelEntries) {
+      if (e.odometerReading > firstOdo && e.odometerReading <= lastOdo) {
+        totalFuel += e.fuelQuantity;
+      }
+    }
+
+    if (totalFuel <= 0) {
+      return 0.0;
+    }
+
+    return totalDist / totalFuel;
   }
 
   int getTotalFillups() {
@@ -462,9 +542,15 @@ class BikeProvider with ChangeNotifier {
 
     // Calculate from odometer difference if we have entries
     if (_currentBikeEntries.isNotEmpty) {
-      final oldest = _currentBikeEntries.last.odometerReading;
-      final newest = _currentBikeEntries.first.odometerReading;
-      totalDistance += (newest - oldest).abs();
+      // Use min/max odometer rather than first/last by date, since the
+      // list order is not guaranteed to be chronological by odometer.
+      double minOdo = _currentBikeEntries.first.odometerReading;
+      double maxOdo = _currentBikeEntries.first.odometerReading;
+      for (final e in _currentBikeEntries) {
+        if (e.odometerReading < minOdo) minOdo = e.odometerReading;
+        if (e.odometerReading > maxOdo) maxOdo = e.odometerReading;
+      }
+      totalDistance += (maxOdo - minOdo).abs();
     }
 
     // Add trip distances
@@ -532,6 +618,20 @@ class BikeProvider with ChangeNotifier {
   // Calculate total distance from all trips
   double getTotalDistanceFromTrips() {
     return _currentTrips.fold<double>(0, (sum, trip) => sum + trip.distanceKm);
+  }
+
+  // Statistics
+  double getTotalFuelCost() {
+    final total = _currentBikeEntries.fold<double>(
+      0,
+      (sum, entry) =>
+          sum +
+          ((entry.category?.toLowerCase() == 'fuel') ? entry.fuelAmount : 0),
+    );
+    debugPrint(
+      '💰 getTotalFuelCost: $total (from ${_currentBikeEntries.length} entries)',
+    );
+    return total;
   }
 
   void _setLoading(bool value) {

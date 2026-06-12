@@ -725,24 +725,13 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
           final icon = isFuel ? Icons.local_gas_station : Icons.build;
 
           String mileageText = '';
-          if (isFuel && entry.fuelQuantity > 0) {
-            BikeEntry? prevEntry;
-            for (var e in provider.currentBikeEntries) {
-              if (e.id != entry.id &&
-                  e.odometerReading < entry.odometerReading) {
-                if (prevEntry == null ||
-                    e.odometerReading > prevEntry.odometerReading) {
-                  prevEntry = e;
-                }
-              }
-            }
-
-            if (prevEntry != null) {
-              final dist = entry.odometerReading - prevEntry.odometerReading;
-              if (dist > 0) {
-                final mileage = dist / entry.fuelQuantity;
-                mileageText = '${mileage.toStringAsFixed(1)} km/L';
-              }
+          if (isFuel) {
+            // Reliable full-tank-to-full-tank mileage. Only Full Tank
+            // entries get a value; partial fills show nothing (mileage
+            // can't be reliably computed at a partial fill).
+            final mileage = provider.getMileageForEntry(entry.id);
+            if (mileage != null && mileage > 0) {
+              mileageText = '${mileage.toStringAsFixed(1)} km/L';
             }
           }
 
@@ -926,7 +915,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  "${entry.odometerReading.toStringAsFixed(0)} km",
+                                  "${entry.odometerReading.toStringAsFixed(1)} km",
                                   style: const TextStyle(
                                     color: Colors.white54,
                                     fontSize: 12,
