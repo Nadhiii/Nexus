@@ -1172,11 +1172,17 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     const SizedBox(width: 8),
                     if (t.source == 'email') _buildConfidenceBadge(t),
                     const Spacer(),
-                    Text(
-                      DateFormat('dd MMM, hh:mm a').format(t.date),
-                      style: const TextStyle(
-                        color: AppColors.textTertiary,
-                        fontSize: 11,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Text(
+                        DateFormat('dd MMM, hh:mm a').format(t.date),
+                        style: const TextStyle(
+                          color: AppColors.textTertiary,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                   ],
@@ -1423,7 +1429,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         gradient: LinearGradient(
           colors: [color.withValues(alpha: 0.2), color.withValues(alpha: 0.1)],
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(
