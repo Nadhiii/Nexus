@@ -8,16 +8,6 @@ import 'package:animations/animations.dart';
 
 import '../core/providers/is_popup_active_provider.dart';
 import '../core/providers/new_nbox_provider.dart';
-import '../core/providers/account_provider.dart';
-import '../core/providers/debt_provider.dart';
-import '../core/providers/investment_provider.dart';
-import '../core/providers/subscription_provider.dart';
-import '../core/providers/transaction_provider.dart';
-import '../core/providers/budget_provider.dart';
-import '../core/providers/goal_provider.dart';
-import '../core/providers/bike_provider.dart';
-import '../core/providers/shared_expense_provider.dart';
-import '../core/providers/category_provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_animations.dart';
 
@@ -42,7 +32,7 @@ class _MainScreenState extends State<MainScreen>
     with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
   int _financeScreenInitialTab = 0;
-  bool _aiInitialized = false;
+  final bool _aiInitialized = false;
   AnimationController? _navAnimationController;
   Animation<double>? _navAnimation;
   int _previousIndex = 0;
