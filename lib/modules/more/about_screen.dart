@@ -92,7 +92,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(20),
                       child: Image.asset(
-                        'assets/icons/Nexus.png',
+                        'assets/icons/icon.png',
                         fit: BoxFit.cover,
                       ),
                     ),

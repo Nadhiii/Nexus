@@ -9,7 +9,7 @@ class AuthService {
   // Source: Google Cloud Console → APIs & Services → Credentials
   // → "Web client (auto created by Google Service)" → copy the Client ID
   // Looks like: 1234567890-xxxxxxxxxxxxxxxx.apps.googleusercontent.com
-  static const String _webClientId = 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com';
+  static const String _webClientId = '217588531616-vac0sturbdi7ojbqj12jvdcf040dm730.apps.googleusercontent.com';
   // --------------------------------------------
 
   bool _googleSignInInitialized = false;

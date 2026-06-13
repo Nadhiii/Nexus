@@ -144,7 +144,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     final nbox = context.read<NewNboxProvider>();
     for (var uid in _selectedIds) {
       final parts = uid.split(':');
-      // uid format is "source:id" — split and pass each part individually
       nbox.rejectTransaction(parts[1], parts[0], silent: true);
     }
     showTopNotification(
@@ -199,13 +198,51 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
             (sum, t) => sum + t.amount,
           );
 
+          final bool isSwipeMode = displayList.isNotEmpty &&
+              displayList.length < 10 &&
+              _currentFilter != NBoxFilter.trash &&
+              !_isSelectionMode;
+
+          // ── SWIPE MODE: Pure Flex Layout ─────────────────────────────────
+          if (isSwipeMode) {
+            return SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  _buildStandardHeader(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    child: _buildInboxSummaryCard(
+                      allPending.length,
+                      totalPendingValue,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: _buildFilterPills(
+                      nbox.pendingSms.length,
+                      nbox.pendingEmails.length,
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildSwipeView(displayList, nbox),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // ── LIST / TRASH MODE: Sliver Layout ─────────────────────────────
           return CustomScrollView(
             slivers: [
               _isSelectionMode
                   ? _buildSelectionHeader(displayList)
                   : _buildMainHeader(),
 
-              if (!_isSelectionMode && _currentFilter != NBoxFilter.trash)
+              if (_currentFilter != NBoxFilter.trash)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -219,34 +256,25 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                   ),
                 ),
 
-              if (!_isSelectionMode)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: _buildFilterPills(
-                      nbox.pendingSms.length,
-                      nbox.pendingEmails.length,
-                    ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: _buildFilterPills(
+                    nbox.pendingSms.length,
+                    nbox.pendingEmails.length,
                   ),
                 ),
+              ),
 
               if (displayList.isEmpty)
                 SliverFillRemaining(child: _buildEmptyState())
-              else if (displayList.length < 10 &&
-                  _currentFilter != NBoxFilter.trash &&
-                  !_isSelectionMode)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _buildSwipeView(displayList, nbox),
-                )
               else
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(0, 10, 0, 100),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate((context, index) {
                       final t = displayList[index];
-                      final showHeader =
-                          index == 0 ||
+                      final showHeader = index == 0 ||
                           !_isSameDay(t.date, displayList[index - 1].date);
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,6 +298,87 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   }
 
   // --- HEADERS ---
+
+  Widget _buildStandardHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 16, 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'NBox',
+            style: AppTypography.headlineMedium.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Row(
+            children: [
+              _isSmsLoading
+                  ? const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: AppColors.primaryBlue,
+                          strokeWidth: 2.5,
+                        ),
+                      ),
+                    )
+                  : IconButton(
+                      tooltip: 'Refresh SMS',
+                      onPressed: _refreshSms,
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardSurface,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: const Icon(
+                          Icons.sms,
+                          color: AppColors.primaryBlue,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+              _isGmailLoading
+                  ? const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: AppColors.primaryBlue,
+                          strokeWidth: 2.5,
+                        ),
+                      ),
+                    )
+                  : IconButton(
+                      tooltip: 'Refresh Gmail',
+                      onPressed: _refreshGmail,
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardSurface,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: const Icon(
+                          Icons.email,
+                          color: AppColors.primaryBlue,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMainHeader() {
     return SliverAppBar(
       pinned: true,
@@ -387,6 +496,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       ],
     );
   }
+
+  // --- LIST MODE STREAM ITEM ---
 
   Widget _buildStreamItem(DetectedTransaction t, bool isLast, bool isTrashTab) {
     final uniqueId = '${t.source}:${t.id}';
@@ -878,6 +989,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     );
   }
 
+  // --- SUMMARY & FILTERS ---
+
   Widget _buildInboxSummaryCard(int count, double totalValue) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -994,7 +1107,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   }
 
   // ---------------------------------------------------------------------------
-  // SWIPE MODE  (< 10 pending items, non-trash tab)
+  // SWIPE MODE
   // ---------------------------------------------------------------------------
 
   Widget _buildSwipeView(List<DetectedTransaction> list, NewNboxProvider nbox) {
@@ -1005,24 +1118,17 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       });
     }
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final cardWidth = screenWidth - 48; // 24 padding on left and right
-    final cardHeight = 480.0;
-
     return Padding(
-      padding: const EdgeInsets.only(bottom: 100.0),
+      padding: const EdgeInsets.only(bottom: 120.0, top: 10.0),
       child: Column(
         children: [
+          // ── Swipe mode label ──
           Padding(
-            padding: const EdgeInsets.only(top: 4, bottom: 20),
+            padding: const EdgeInsets.only(bottom: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.swipe,
-                  color: AppColors.textTertiary,
-                  size: 14,
-                ),
+                const Icon(Icons.swipe, color: AppColors.textTertiary, size: 14),
                 const SizedBox(width: 6),
                 Text(
                   'SWIPE MODE · ${list.length - safeIndex} LEFT',
@@ -1037,87 +1143,77 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
             ),
           ),
 
+          // ── Dynamic Card Stack ──
           Expanded(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                if (safeIndex + 1 < list.length)
-                  Transform.translate(
-                    offset: const Offset(0, 20),
-                    child: Transform.scale(
-                      scale: 0.94,
-                      child: SizedBox(
-                        width: cardWidth,
-                        height: cardHeight,
-                        child: _buildSwipeCard(
-                          list[safeIndex + 1],
-                          isBack: true,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 30.0),
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  if (safeIndex + 1 < list.length)
+                    Positioned.fill(
+                      child: Transform.translate(
+                        offset: const Offset(0, 16),
+                        child: Transform.scale(
+                          scale: 0.94,
+                          child: _buildSwipeCard(list[safeIndex + 1], isBack: true),
                         ),
                       ),
                     ),
-                  ),
 
-                if (safeIndex < list.length)
-                  GestureDetector(
-                    onHorizontalDragUpdate: _swipeAnimating
-                        ? null
-                        : (d) => setState(() {
-                            _swipeDx += d.delta.dx;
-                            _swipeRotation = (_swipeDx / 300).clamp(
-                              -0.15,
-                              0.15,
-                            );
-                          }),
-                    onHorizontalDragEnd: _swipeAnimating
-                        ? null
-                        : (d) => _onSwipeDragEnd(list, nbox),
-                    child: Transform.translate(
-                      offset: Offset(_swipeDx, 0),
-                      child: Transform.rotate(
-                        angle: _swipeRotation,
-                        child: SizedBox(
-                          width: cardWidth,
-                          height: cardHeight,
-                          child: Stack(
-                            children: [
-                              _buildSwipeCard(list[safeIndex], isBack: false),
-                              if (_swipeDx > 30)
-                                Positioned(
-                                  top: 24,
-                                  left: 24,
-                                  child: _buildSwipeLabel(
-                                    'APPROVE',
-                                    Colors.green,
+                  if (safeIndex < list.length)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        onHorizontalDragUpdate: _swipeAnimating
+                            ? null
+                            : (d) => setState(() {
+                                _swipeDx += d.delta.dx;
+                                _swipeRotation = (_swipeDx / 300).clamp(-0.15, 0.15);
+                              }),
+                        onHorizontalDragEnd: _swipeAnimating
+                            ? null
+                            : (d) => _onSwipeDragEnd(list, nbox),
+                        child: Transform.translate(
+                          offset: Offset(_swipeDx, 0),
+                          child: Transform.rotate(
+                            angle: _swipeRotation,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              fit: StackFit.expand,
+                              children: [
+                                _buildSwipeCard(list[safeIndex], isBack: false),
+                                if (_swipeDx > 30)
+                                  Positioned(
+                                    top: 24, left: 24,
+                                    child: _buildSwipeLabel('APPROVE', Colors.green),
                                   ),
-                                ),
-                              if (_swipeDx < -30)
-                                Positioned(
-                                  top: 24,
-                                  right: 24,
-                                  child: _buildSwipeLabel(
-                                    'REJECT',
-                                    AppColors.error,
+                                if (_swipeDx < -30)
+                                  Positioned(
+                                    top: 24, right: 24,
+                                    child: _buildSwipeLabel('REJECT', AppColors.error),
                                   ),
-                                ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
 
-                if (safeIndex >= list.length) _buildEmptyState(),
-              ],
+                  if (safeIndex >= list.length) _buildEmptyState(),
+                ],
+              ),
             ),
           ),
 
+          // ── Action Hints ──
           Padding(
-            padding: const EdgeInsets.only(top: 24),
+            padding: const EdgeInsets.only(top: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _buildSwipeHint(Icons.close_rounded, 'Reject', AppColors.error),
-                const SizedBox(width: 48),
+                const SizedBox(width: 64),
                 _buildSwipeHint(Icons.check_rounded, 'Approve', Colors.green),
               ],
             ),
@@ -1140,31 +1236,42 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isBack
-              ? [AppColors.cardSurface, AppColors.cardSurface]
-              : [highlightColor.withValues(alpha: 0.12), AppColors.cardSurface],
+              ? [
+                  // Darken and mute the back card to push it into the background
+                  AppColors.cardSurface.withValues(alpha: 0.6), 
+                  AppColors.cardSurface.withValues(alpha: 0.4),
+                ]
+              : [
+                  highlightColor.withValues(alpha: 0.12), 
+                  AppColors.cardSurface,
+                ],
         ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: isBack
-              ? Colors.white.withValues(alpha: 0.04)
+              // Crisper, thinner border for the back card to keep it sharp
+              ? Colors.white.withValues(alpha: 0.08) 
               : highlightColor.withValues(alpha: 0.35),
+          width: isBack ? 0.5 : 1.0, 
         ),
         boxShadow: isBack
             ? []
             : [
                 BoxShadow(
-                  color: highlightColor.withValues(alpha: 0.2),
+                  color: highlightColor.withValues(alpha: 0.1),
                   blurRadius: 24,
+                  spreadRadius: -8, // Tighter shadow footprint
                   offset: const Offset(0, 8),
                 ),
               ],
       ),
-      padding: const EdgeInsets.all(28),
+      padding: const EdgeInsets.all(24),
       child: isBack
           ? const SizedBox.shrink()
           : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch, 
               children: [
+                // ── Top row: source tag + date ─────────────────────────────
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -1172,111 +1279,133 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     const SizedBox(width: 8),
                     if (t.source == 'email') _buildConfidenceBadge(t),
                     const Spacer(),
+                    
+                    // ── The Updated Date Pill ──
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.25), 
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          width: 0.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.6), 
+                            blurRadius: 6,      
+                            spreadRadius: 1,    
+                            offset: const Offset(0, 3), 
+                          ),
+                        ],
                       ),
                       child: Text(
                         DateFormat('dd MMM, hh:mm a').format(t.date),
                         style: const TextStyle(
-                          color: AppColors.textTertiary,
+                          color: Colors.white, 
                           fontSize: 11,
+                          fontWeight: FontWeight.w600, 
+                          letterSpacing: 0.3,
+                          height: 1.0, 
                         ),
                       ),
                     ),
                   ],
                 ),
 
+                const SizedBox(height: 16),
+
+                // ── Center: amount + merchant + category ───────────────────
                 Expanded(
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '${isIncome ? '+' : '−'}₹${NumberFormat('#,##,###').format(t.amount)}',
-                          style: TextStyle(
-                            fontSize: 42,
-                            fontWeight: FontWeight.w900,
-                            color: isIncome
-                                ? AppColors.pastelGreen
-                                : AppColors.textPrimary,
-                            letterSpacing: -1,
-                          ),
-                          textAlign: TextAlign.center,
+                  flex: 3,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${isIncome ? '+' : '−'}₹${NumberFormat('#,##,###').format(t.amount)}',
+                        style: TextStyle(
+                          fontSize: 42,
+                          fontWeight: FontWeight.w900,
+                          color: isIncome
+                              ? AppColors.pastelGreen
+                              : AppColors.textPrimary,
+                          letterSpacing: -1,
                         ),
-                        const SizedBox(height: 8),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        t.merchant,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                      if (t.detectedCategory != null) ...[
+                        const SizedBox(height: 6),
                         Text(
-                          t.merchant,
+                          t.detectedCategory!,
                           style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            fontSize: 13,
+                            color: AppColors.accentTeal,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
                         ),
-                        if (t.detectedCategory != null) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            t.detectedCategory!,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.accentTeal,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
                       ],
-                    ),
+                    ],
                   ),
                 ),
 
-                if (t.body != null)
-                  Container(
-                    constraints: const BoxConstraints(maxHeight: 120),
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.05),
+                // ── Bottom: SMS/email body ─────────────────────────────────
+                if (t.body != null) ...[
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.05),
+                        ),
                       ),
-                    ),
-                    child: SingleChildScrollView(
-                      child: Text(
-                        t.body!,
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
-                          height: 1.5,
+                      child: SingleChildScrollView(
+                        child: Text(
+                          t.body!,
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 12, 
+                            color: AppColors.textSecondary,
+                            height: 1.5,
+                          ),
                         ),
                       ),
                     ),
                   ),
+                ],
 
-                if (t.body != null && t.warnings.isNotEmpty)
-                  const SizedBox(height: 16),
-
+                // ── Warning row (if any) ───────────────────────────────────
                 if (t.warnings.isNotEmpty) ...[
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       const Icon(
                         Icons.warning_amber_rounded,
                         color: AppColors.pastelOrange,
-                        size: 14,
+                        size: 16,
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           t.warnings.first,
                           style: const TextStyle(
                             color: AppColors.pastelOrange,
-                            fontSize: 11,
+                            fontSize: 12,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:another_telephony/telephony.dart';
@@ -10,7 +9,6 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../models/detected_transaction.dart';
 import '../utils/sms_parser.dart';
-import '../services/categorization_service.dart';
 import '../services/notification_service.dart';
 import 'category_provider.dart';
 import 'gmail_provider.dart';
