@@ -7,6 +7,42 @@ class BikeStatsWidget extends StatelessWidget {
 
   const BikeStatsWidget({super.key, required this.provider});
 
+  void _showMileageInfoDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.info_outline, color: AppColors.primaryBlue),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'Mileage Calculation',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Your mileage is calculated using the Full Tank to Full Tank method. We measure the distance driven between two full tanks and divide it by the total fuel added, automatically accounting for any partial fill-ups along the way.',
+          style: TextStyle(color: Colors.white70, height: 1.5, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Got it',
+              style: TextStyle(
+                  color: AppColors.primaryBlue, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     double totalFuel = 0.0;
@@ -84,7 +120,8 @@ class BikeStatsWidget extends StatelessWidget {
         itemBuilder: (context, index) {
           final stat = stats[index];
           final statColor = _getStatColor(index);
-          return Container(
+          
+          final cardWidget = Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -182,6 +219,16 @@ class BikeStatsWidget extends StatelessWidget {
               ],
             ),
           );
+
+          // Add tap detection only to the Mileage card
+          if (stat.label == 'Mileage') {
+            return GestureDetector(
+              onTap: () => _showMileageInfoDialog(context),
+              child: cardWidget,
+            );
+          }
+
+          return cardWidget;
         },
       );
     }

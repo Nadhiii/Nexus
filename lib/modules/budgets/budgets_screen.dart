@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/providers/budget_provider.dart';
-import 'widgets/add_budget.dart';
+import 'widgets/add_budget_screen.dart';
 
 class ModernBudgetsScreen extends StatefulWidget {
   const ModernBudgetsScreen({super.key});

@@ -525,9 +525,16 @@ Future<void> navToAddInvestmentScreen(
   Investment? investmentToEdit,
 }) {
   return Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) =>
+    PageRouteBuilder(
+      opaque: false,
+      pageBuilder: (_, _, _) =>
           ModernAddInvestmentScreen(investmentToEdit: investmentToEdit),
     ),
   );
 }
+
+// Optional: Add this alias so you don't have to rename functions across your app right now
+Future<void> showAddInvestmentModal(
+  BuildContext context, {
+  Investment? investmentToEdit,
+}) => navToAddInvestmentScreen(context, investmentToEdit: investmentToEdit);

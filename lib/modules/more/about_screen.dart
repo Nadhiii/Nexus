@@ -121,7 +121,7 @@ class _AboutScreenState extends State<AboutScreen> {
                 _buildGlassCard(
                   context,
                   child: Text(
-                    "Nexus is built on the belief that you know your money best. No black-box algorithms or AI guesswork—just powerful, precision tools wrapped in a stunning, distraction-free interface. Take absolute control of your financial destiny with clarity and confidence.",
+                    "Nexus is built on the belief that you know your money best. No black-box algorithms or AI guesswork, just powerful, precision tools wrapped in a stunning, distraction-free interface. Take absolute control of your financial destiny with clarity and confidence.",
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       height: 1.5,

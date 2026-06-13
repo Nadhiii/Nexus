@@ -8,7 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/animated_number_text.dart';
 import '../../core/theme/app_animations.dart';
-import 'widgets/add_investment_modal.dart';
+import 'add_investment_screen.dart';
 
 class ModernInvestmentScreen extends StatefulWidget {
   const ModernInvestmentScreen({super.key});
@@ -111,7 +111,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
         },
       ),
       floatingActionButton: CollapsibleFab(
-        onPressed: () => showAddInvestmentModal(context),
+        onPressed: () => navToAddInvestmentScreen(context),
         backgroundColor: AppColors.investmentIndigo,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add, color: Colors.white),

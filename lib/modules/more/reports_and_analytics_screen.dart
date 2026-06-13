@@ -21,34 +21,47 @@ class ReportsAndAnalyticsScreen extends StatefulWidget {
 class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
   TimeFilter _selectedFilter = TimeFilter.thisMonth;
 
+  DateTime _startDateForFilter(TimeFilter filter, DateTime now) {
+    switch (filter) {
+      case TimeFilter.thisMonth:
+        return DateTime(now.year, now.month, 1);
+      case TimeFilter.threeMonths:
+        // Calendar-accurate: 3 months back, handling year rollover.
+        final month = now.month - 3;
+        if (month <= 0) {
+          return DateTime(now.year - 1, month + 12, now.day);
+        }
+        return DateTime(now.year, month, now.day);
+      case TimeFilter.sixMonths:
+        final month = now.month - 6;
+        if (month <= 0) {
+          return DateTime(now.year - 1, month + 12, now.day);
+        }
+        return DateTime(now.year, month, now.day);
+      case TimeFilter.thisYear:
+        return DateTime(now.year, 1, 1);
+    }
+  }
+
   List<Transaction> _getFilteredTransactions(
     List<Transaction> allTransactions,
   ) {
     final now = DateTime.now();
-    DateTime startDate;
-
-    switch (_selectedFilter) {
-      case TimeFilter.thisMonth:
-        startDate = DateTime(now.year, now.month, 1);
-        break;
-      case TimeFilter.threeMonths:
-        startDate = now.subtract(const Duration(days: 90));
-        break;
-      case TimeFilter.sixMonths:
-        startDate = now.subtract(const Duration(days: 180));
-        break;
-      case TimeFilter.thisYear:
-        startDate = DateTime(now.year, 1, 1);
-        break;
-    }
+    final startDate = _startDateForFilter(_selectedFilter, now);
     return allTransactions.where((t) => t.date.isAfter(startDate)).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final allTransactions = Provider.of<TransactionProvider>(
-      context,
-    ).transactions;
+    final isLoading = context.select<TransactionProvider, bool>(
+      (p) => p.isLoading && !p.isInitialized,
+    );
+    final error = context.select<TransactionProvider, String?>(
+      (p) => p.error,
+    );
+    final allTransactions = context.select<TransactionProvider, List<Transaction>>(
+      (p) => p.transactions,
+    );
     final filteredTransactions = _getFilteredTransactions(allTransactions);
 
     return Scaffold(
@@ -84,8 +97,12 @@ class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
             ),
           ),
 
-          if (filteredTransactions.isEmpty)
-            SliverFillRemaining(child: _buildEmptyState())
+          if (isLoading)
+            const SliverFillRemaining(child: _LoadingState())
+          else if (error != null)
+            SliverFillRemaining(child: _ErrorState(message: error))
+          else if (filteredTransactions.isEmpty)
+            const SliverFillRemaining(child: _EmptyState())
           else
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -160,7 +177,83 @@ class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  TextStyle _headerStyle() {
+    return AppTypography.labelSmall.copyWith(
+      color: AppColors.textTertiary,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 1.2,
+    );
+  }
+
+  String _filterToText(TimeFilter filter) {
+    switch (filter) {
+      case TimeFilter.thisMonth:
+        return 'This Month';
+      case TimeFilter.threeMonths:
+        return '3 Months';
+      case TimeFilter.sixMonths:
+        return '6 Months';
+      case TimeFilter.thisYear:
+        return 'This Year';
+    }
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: CircularProgressIndicator(color: AppColors.primaryBlue),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final String message;
+
+  const _ErrorState({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppColors.error.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "Couldn't load analytics",
+              style: TextStyle(color: AppColors.textTertiary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.textTertiary.withValues(alpha: 0.5),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -186,26 +279,5 @@ class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
         ],
       ),
     );
-  }
-
-  TextStyle _headerStyle() {
-    return AppTypography.labelSmall.copyWith(
-      color: AppColors.textTertiary,
-      fontWeight: FontWeight.w800,
-      letterSpacing: 1.2,
-    );
-  }
-
-  String _filterToText(TimeFilter filter) {
-    switch (filter) {
-      case TimeFilter.thisMonth:
-        return 'This Month';
-      case TimeFilter.threeMonths:
-        return '3 Months';
-      case TimeFilter.sixMonths:
-        return '6 Months';
-      case TimeFilter.thisYear:
-        return 'This Year';
-    }
   }
 }

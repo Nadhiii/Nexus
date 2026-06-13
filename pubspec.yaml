@@ -133,11 +133,11 @@ flutter:
 
 flutter_native_splash:
   color: "#0F172A"
-  image: "assets/icons/Nexus_splash_logo.png"
+  image: "assets/icons/icon.png"
   android: true
   ios: true
   web: false
   fullscreen: true
   android_12:
-    image: "assets/icons/Nexus_splash_logo.png"
+    image: "assets/icons/icon.png"
     color: "#0F172A"
