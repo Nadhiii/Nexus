@@ -16,7 +16,6 @@ import 'package:intl/intl.dart';
 import '../providers/debt_provider.dart';
 import '../providers/subscription_provider.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_typography.dart';
 
 class UpcomingWeekWidget extends StatelessWidget {
   final VoidCallback? onViewAll;
