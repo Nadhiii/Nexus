@@ -14,14 +14,6 @@
       },
       "oauth_client": [
         {
-          "client_id": "217588531616-h7ophm0n9qnb5emumdvmifq330h1cq9f.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.mahanadhi.nexus",
-            "certificate_hash": "0c4ce0b430547b0ed2c3925384af72c25a1789cd"
-          }
-        },
-        {
           "client_id": "217588531616-i58torrt647s6pttse1adfeerkgpamkh.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
