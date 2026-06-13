@@ -16,7 +16,6 @@ import 'package:intl/intl.dart';
 import '../providers/debt_provider.dart';
 import '../providers/subscription_provider.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_typography.dart';
 
 class UpcomingWeekWidget extends StatelessWidget {
   final VoidCallback? onViewAll;
@@ -124,8 +123,7 @@ class UpcomingWeekWidget extends StatelessWidget {
     // ── Subscriptions due this week ──────────────────────────────────
     for (final sub in subProvider.subscriptions) {
       if (!sub.isActive) continue;
-      final due = sub.calculateNextDueDate();;
-      if (due == null) continue;
+      final due = sub.calculateNextDueDate();
       if (due.isBefore(now.subtract(const Duration(days: 1)))) continue;
       if (due.isAfter(cutoff)) continue;
 
@@ -220,7 +218,7 @@ class _ObligationItem {
 
 class _ObligationTile extends StatelessWidget {
   final _ObligationItem item;
-  const _ObligationTile({super.key, required this.item});
+  const _ObligationTile({required this.item});
 
   @override
   Widget build(BuildContext context) {
