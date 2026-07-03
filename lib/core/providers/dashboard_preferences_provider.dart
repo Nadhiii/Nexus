@@ -8,14 +8,19 @@ class DashboardPreferencesProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isEditMode = false;
 
+  List<DashboardWidget>? _cachedVisibleWidgets;
+
   // Getters
   DashboardPreferences get preferences => _preferences;
   bool get isLoading => _isLoading;
   bool get isEditMode => _isEditMode;
 
-  List<DashboardWidget> get visibleWidgets =>
-      _preferences.widgets.where((widget) => widget.isVisible).toList()
-        ..sort((a, b) => a.order.compareTo(b.order));
+  List<DashboardWidget> get visibleWidgets {
+    _cachedVisibleWidgets ??=
+        _preferences.widgets.where((w) => w.isVisible).toList()
+          ..sort((a, b) => a.order.compareTo(b.order));
+    return _cachedVisibleWidgets!;
+  }
 
   List<DashboardWidget> get allWidgets => _preferences.widgets;
   List<DashboardWidget> get hiddenWidgets =>
@@ -37,11 +42,13 @@ class DashboardPreferencesProvider extends ChangeNotifier {
       if (prefsJson != null) {
         final Map<String, dynamic> prefsMap = json.decode(prefsJson);
         _preferences = DashboardPreferences.fromMap(prefsMap);
+        _cachedVisibleWidgets = null;
       }
     } catch (e) {
       debugPrint('Error loading dashboard preferences: $e');
       // Use default preferences if loading fails
       _preferences = DashboardPreferences.getDefault();
+      _cachedVisibleWidgets = null;
     }
 
     _isLoading = false;
@@ -83,6 +90,7 @@ class DashboardPreferencesProvider extends ChangeNotifier {
 
     _preferences = _preferences.copyWith(widgets: widgets);
     _savePreferences();
+    _cachedVisibleWidgets = null;
     notifyListeners();
   }
 
@@ -97,6 +105,7 @@ class DashboardPreferencesProvider extends ChangeNotifier {
 
     _preferences = _preferences.copyWith(widgets: widgets);
     _savePreferences();
+    _cachedVisibleWidgets = null;
     notifyListeners();
   }
 
@@ -110,6 +119,7 @@ class DashboardPreferencesProvider extends ChangeNotifier {
 
     _preferences = _preferences.copyWith(widgets: widgets);
     _savePreferences();
+    _cachedVisibleWidgets = null;
     notifyListeners();
   }
 
@@ -140,6 +150,7 @@ class DashboardPreferencesProvider extends ChangeNotifier {
 
     _preferences = _preferences.copyWith(widgets: widgets);
     _savePreferences();
+    _cachedVisibleWidgets = null;
     notifyListeners();
   }
 
@@ -154,6 +165,7 @@ class DashboardPreferencesProvider extends ChangeNotifier {
 
     _preferences = _preferences.copyWith(widgets: widgets);
     _savePreferences();
+    _cachedVisibleWidgets = null;
     notifyListeners();
   }
 
@@ -161,6 +173,7 @@ class DashboardPreferencesProvider extends ChangeNotifier {
   void updateGreetingName(String name) {
     _preferences = _preferences.copyWith(greetingName: name);
     _savePreferences();
+    _cachedVisibleWidgets = null;
     notifyListeners();
   }
 
@@ -170,6 +183,7 @@ class DashboardPreferencesProvider extends ChangeNotifier {
       showWelcomeMessage: !_preferences.showWelcomeMessage,
     );
     _savePreferences();
+    _cachedVisibleWidgets = null;
     notifyListeners();
   }
 
@@ -177,6 +191,7 @@ class DashboardPreferencesProvider extends ChangeNotifier {
   void resetToDefault() {
     _preferences = DashboardPreferences.getDefault();
     _savePreferences();
+    _cachedVisibleWidgets = null;
     notifyListeners();
   }
 

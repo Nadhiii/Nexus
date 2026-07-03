@@ -472,7 +472,7 @@ class NewSmsParser {
       merchant: _normaliseMerchant(merchant),
       accountNumber: _accountPattern.firstMatch(body)?.group(1),
       balance: _balancePattern.firstMatch(body).let(
-        (m) => m != null ? double.tryParse(m.group(1)!.replaceAll(',', '')) : null,
+        (m) => double.tryParse(m.group(1)!.replaceAll(',', '')),
       ),
     );
   }

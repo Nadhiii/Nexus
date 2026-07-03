@@ -14,6 +14,9 @@ class DetectedTransaction {
   final List<String>
   warnings; // e.g., ["Merchant unclear", "Amount incomplete"]
   final String? detectedCategory; // Auto-detected category, if any
+  final String? bankName; // e.g., "IDFC FIRST Bank" - identified source bank
+  final double?
+  balanceAfter; // Account balance after this transaction, if the alert included one
 
   const DetectedTransaction({
     required this.id,
@@ -27,6 +30,8 @@ class DetectedTransaction {
     this.confidence = 0.8,
     this.warnings = const [],
     this.detectedCategory,
+    this.bankName,
+    this.balanceAfter,
   });
 
   // Quick check for reliability
@@ -57,6 +62,8 @@ class DetectedTransaction {
     double? confidence,
     List<String>? warnings,
     String? detectedCategory,
+    String? bankName,
+    double? balanceAfter,
   }) {
     return DetectedTransaction(
       id: id ?? this.id,
@@ -70,6 +77,8 @@ class DetectedTransaction {
       confidence: confidence ?? this.confidence,
       warnings: warnings ?? this.warnings,
       detectedCategory: detectedCategory ?? this.detectedCategory,
+      bankName: bankName ?? this.bankName,
+      balanceAfter: balanceAfter ?? this.balanceAfter,
     );
   }
 }

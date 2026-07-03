@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/providers/nbox_provider.dart';
 import '../../core/providers/subscription_provider.dart';
 import '../../core/providers/debt_provider.dart';
 import '../../core/providers/investment_provider.dart';
+import '../../core/providers/transaction_provider.dart';
+import '../../core/providers/category_provider.dart';
+import '../../core/providers/account_provider.dart';
 import '../../core/services/transaction_intent_classifier.dart';
+import '../../core/services/smart_category_resolver.dart';
 import '../../core/widgets/top_notification.dart';
 import '../../core/models/detected_transaction.dart';
+import '../../core/models/transaction.dart';
 import '../transactions/add_transaction_screen.dart';
 import '../payday/payday_screen.dart';
 import 'smart_approval_sheet.dart';
@@ -16,6 +22,11 @@ import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_animations.dart';
 
 enum NBoxFilter { all, sms, email, trash }
+
+/// Two lenses over the same pending list: a scrollable list (default) and an
+/// optional single-card "focus" review mode. No auto-switching between them
+/// based on item count anymore -- the person controls this explicitly.
+enum NBoxViewMode { list, focus }
 
 class NewModernNBoxScreen extends StatefulWidget {
   const NewModernNBoxScreen({super.key});
@@ -35,11 +46,17 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
   late final NewNboxProvider _nboxProvider;
 
-  // ── Swipe mode state ──────────────────────────────────────────────────────
-  int _swipeIndex = 0;
-  double _swipeDx = 0;
-  double _swipeRotation = 0;
-  bool _swipeAnimating = false;
+  // ── View mode state ───────────────────────────────────────────────────────
+  NBoxViewMode _viewMode = NBoxViewMode.list;
+
+  // When set, Focus mode only shows these ids (used after a bulk-approve run
+  // hands off the "needs review" items). Null means "show the full filtered
+  // list" in Focus mode.
+  Set<String>? _focusQueueIds;
+
+  // Guards against double-tapping Approve/Reject on the same row while a
+  // save is already in flight.
+  bool _isBulkApproving = false;
 
   Future<void> _refreshSms() async {
     if (!mounted) return;
@@ -121,6 +138,13 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     });
   }
 
+  void _enterSelectionModeEmpty() {
+    setState(() {
+      _isSelectionMode = true;
+      _selectedIds.clear();
+    });
+  }
+
   void _exitSelectionMode() {
     setState(() {
       _isSelectionMode = false;
@@ -198,13 +222,37 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
             (sum, t) => sum + t.amount,
           );
 
-          final bool isSwipeMode = displayList.isNotEmpty &&
-              displayList.length < 10 &&
+          final bool inFocusMode =
+              _viewMode == NBoxViewMode.focus &&
               _currentFilter != NBoxFilter.trash &&
-              !_isSelectionMode;
+              !_isSelectionMode &&
+              displayList.isNotEmpty;
 
-          // ── SWIPE MODE: Pure Flex Layout ─────────────────────────────────
-          if (isSwipeMode) {
+          // Focus mode shows either the full filtered list, or -- right
+          // after a bulk-approve run -- just the leftover items that need
+          // manual review (fuel/EMI/subscription/investment/salary).
+          final focusList = _focusQueueIds == null
+              ? displayList
+              : displayList
+                    .where(
+                      (t) => _focusQueueIds!.contains('${t.source}:${t.id}'),
+                    )
+                    .toList();
+
+          // ── FOCUS MODE: single-card review ───────────────────────────────
+          if (inFocusMode) {
+            if (focusList.isEmpty) {
+              // Queue drained while we were in focus mode -- fall back to
+              // list mode automatically instead of showing a dead screen.
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() {
+                    _viewMode = NBoxViewMode.list;
+                    _focusQueueIds = null;
+                  });
+                }
+              });
+            }
             return SafeArea(
               bottom: false,
               child: Column(
@@ -228,7 +276,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     ),
                   ),
                   Expanded(
-                    child: _buildSwipeView(displayList, nbox),
+                    child: focusList.isEmpty
+                        ? _buildEmptyState()
+                        : _buildFocusView(focusList, nbox),
                   ),
                 ],
               ),
@@ -274,7 +324,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate((context, index) {
                       final t = displayList[index];
-                      final showHeader = index == 0 ||
+                      final showHeader =
+                          index == 0 ||
                           !_isSameDay(t.date, displayList[index - 1].date);
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,6 +350,62 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
   // --- HEADERS ---
 
+  Widget _buildViewModeToggle() {
+    return IconButton(
+      tooltip: _viewMode == NBoxViewMode.list ? 'Focus review' : 'List view',
+      onPressed: () {
+        setState(() {
+          _viewMode = _viewMode == NBoxViewMode.list
+              ? NBoxViewMode.focus
+              : NBoxViewMode.list;
+          // Manual toggle always shows the full list, not a leftover queue.
+          _focusQueueIds = null;
+        });
+      },
+      icon: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: _viewMode == NBoxViewMode.focus
+              ? AppColors.primaryBlue.withValues(alpha: 0.2)
+              : AppColors.cardSurface,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: _viewMode == NBoxViewMode.focus
+                ? AppColors.primaryBlue
+                : Colors.white10,
+          ),
+        ),
+        child: Icon(
+          _viewMode == NBoxViewMode.list
+              ? Icons.view_agenda_outlined
+              : Icons.view_list_outlined,
+          color: AppColors.primaryBlue,
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectEntryButton() {
+    return IconButton(
+      tooltip: 'Select multiple',
+      onPressed: _enterSelectionModeEmpty,
+      icon: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white10),
+        ),
+        child: const Icon(
+          Icons.checklist_rounded,
+          color: AppColors.primaryBlue,
+          size: 20,
+        ),
+      ),
+    );
+  }
+
   Widget _buildStandardHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 10, 16, 10),
@@ -314,6 +421,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           ),
           Row(
             children: [
+              _buildSelectEntryButton(),
+              _buildViewModeToggle(),
               _isSmsLoading
                   ? const Padding(
                       padding: EdgeInsets.all(8.0),
@@ -399,6 +508,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         ),
       ),
       actions: [
+        _buildSelectEntryButton(),
+        _buildViewModeToggle(),
         _isSmsLoading
             ? const Padding(
                 padding: EdgeInsets.all(8.0),
@@ -489,9 +600,33 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
             ),
           ),
         ),
+        if (_isBulkApproving)
+          const Padding(
+            padding: EdgeInsets.all(12.0),
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: AppColors.primaryBlue,
+                strokeWidth: 2.5,
+              ),
+            ),
+          )
+        else
+          IconButton(
+            tooltip: 'Approve selected',
+            icon: const Icon(
+              Icons.check_circle_outline,
+              color: AppColors.primaryBlue,
+            ),
+            onPressed: _selectedIds.isEmpty
+                ? null
+                : () => _approveSelected(list),
+          ),
         IconButton(
+          tooltip: 'Reject selected',
           icon: const Icon(Icons.delete_outline, color: AppColors.error),
-          onPressed: _rejectSelected,
+          onPressed: _selectedIds.isEmpty ? null : _rejectSelected,
         ),
       ],
     );
@@ -686,27 +821,57 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                 ),
                                 const SizedBox(height: 6),
                                 Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    _buildTag(
-                                      isSms ? "SMS" : "EMAIL",
-                                      highlightColor,
+                                    Row(
+                                      children: [
+                                        _buildTag(
+                                          isSms ? "SMS" : "EMAIL",
+                                          highlightColor,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          DateFormat('hh:mm a').format(t.date),
+                                          style: const TextStyle(
+                                            color: AppColors.textTertiary,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                        if (t.warnings.isNotEmpty) ...[
+                                          const SizedBox(width: 8),
+                                          const Icon(
+                                            Icons.warning_amber_rounded,
+                                            size: 14,
+                                            color: AppColors.pastelOrange,
+                                          ),
+                                        ],
+                                      ],
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      DateFormat('hh:mm a').format(t.date),
-                                      style: const TextStyle(
-                                        color: AppColors.textTertiary,
-                                        fontSize: 11,
+                                    // Real, working one-tap actions -- no
+                                    // need to expand the row first. Hidden
+                                    // once expanded (bigger buttons take
+                                    // over down there) or in Trash/selection.
+                                    if (!isTrashTab &&
+                                        !isExpanded &&
+                                        !_isSelectionMode)
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          _buildQuickActionIcon(
+                                            icon: Icons.close_rounded,
+                                            color: AppColors.error,
+                                            onTap: () => _rejectTransaction(t),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          _buildQuickActionIcon(
+                                            icon: Icons.check_rounded,
+                                            color: AppColors.pastelGreen,
+                                            onTap: () =>
+                                                _navigateToApproveScreen(t),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                    if (t.warnings.isNotEmpty) ...[
-                                      const SizedBox(width: 8),
-                                      const Icon(
-                                        Icons.warning_amber_rounded,
-                                        size: 14,
-                                        color: AppColors.pastelOrange,
-                                      ),
-                                    ],
                                   ],
                                 ),
                               ],
@@ -1110,28 +1275,32 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   // SWIPE MODE
   // ---------------------------------------------------------------------------
 
-  Widget _buildSwipeView(List<DetectedTransaction> list, NewNboxProvider nbox) {
-    final safeIndex = list.isEmpty ? 0 : _swipeIndex.clamp(0, list.length - 1);
-    if (safeIndex != _swipeIndex) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _swipeIndex = safeIndex);
-      });
-    }
+  /// `list` is guaranteed non-empty by the caller. The current card is
+  /// always list[0] -- once it's approved/rejected, the provider's
+  /// notifyListeners() shrinks `list` on the next build and list[0]
+  /// naturally becomes whatever's next. No manual index bookkeeping.
+  Widget _buildFocusView(List<DetectedTransaction> list, NewNboxProvider nbox) {
+    final current = list[0];
+    final next = list.length > 1 ? list[1] : null;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 120.0, top: 10.0),
+      padding: const EdgeInsets.only(bottom: 24.0, top: 10.0),
       child: Column(
         children: [
-          // ── Swipe mode label ──
+          // ── Focus mode label ──
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.swipe, color: AppColors.textTertiary, size: 14),
+                const Icon(
+                  Icons.center_focus_strong_outlined,
+                  color: AppColors.textTertiary,
+                  size: 14,
+                ),
                 const SizedBox(width: 6),
                 Text(
-                  'SWIPE MODE · ${list.length - safeIndex} LEFT',
+                  'FOCUS REVIEW · ${list.length} LEFT',
                   style: const TextStyle(
                     color: AppColors.textTertiary,
                     fontSize: 11,
@@ -1143,79 +1312,36 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
             ),
           ),
 
-          // ── Dynamic Card Stack ──
+          // ── Card + real buttons, isolated so drag doesn't rebuild the
+          // whole NBox screen on every frame ──
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 30.0),
-              child: Stack(
-                clipBehavior: Clip.none,
-                alignment: Alignment.center,
-                children: [
-                  if (safeIndex + 1 < list.length)
-                    Positioned.fill(
-                      child: Transform.translate(
-                        offset: const Offset(0, 16),
-                        child: Transform.scale(
-                          scale: 0.94,
-                          child: _buildSwipeCard(list[safeIndex + 1], isBack: true),
-                        ),
-                      ),
-                    ),
-
-                  if (safeIndex < list.length)
-                    Positioned.fill(
-                      child: GestureDetector(
-                        onHorizontalDragUpdate: _swipeAnimating
-                            ? null
-                            : (d) => setState(() {
-                                _swipeDx += d.delta.dx;
-                                _swipeRotation = (_swipeDx / 300).clamp(-0.15, 0.15);
-                              }),
-                        onHorizontalDragEnd: _swipeAnimating
-                            ? null
-                            : (d) => _onSwipeDragEnd(list, nbox),
-                        child: Transform.translate(
-                          offset: Offset(_swipeDx, 0),
-                          child: Transform.rotate(
-                            angle: _swipeRotation,
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              fit: StackFit.expand,
-                              children: [
-                                _buildSwipeCard(list[safeIndex], isBack: false),
-                                if (_swipeDx > 30)
-                                  Positioned(
-                                    top: 24, left: 24,
-                                    child: _buildSwipeLabel('APPROVE', Colors.green),
-                                  ),
-                                if (_swipeDx < -30)
-                                  Positioned(
-                                    top: 24, right: 24,
-                                    child: _buildSwipeLabel('REJECT', AppColors.error),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  if (safeIndex >= list.length) _buildEmptyState(),
-                ],
+              padding: const EdgeInsets.symmetric(
+                horizontal: 40.0,
+                vertical: 20.0,
               ),
-            ),
-          ),
-
-          // ── Action Hints ──
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildSwipeHint(Icons.close_rounded, 'Reject', AppColors.error),
-                const SizedBox(width: 64),
-                _buildSwipeHint(Icons.check_rounded, 'Approve', Colors.green),
-              ],
+              child: _SwipeCardStack(
+                // New key per card => fresh drag state automatically, no
+                // manual reset needed when the card underneath changes.
+                key: ValueKey('${current.source}:${current.id}'),
+                current: current,
+                next: next,
+                cardBuilder: _buildSwipeCard,
+                labelBuilder: _buildSwipeLabel,
+                actionButtonBuilder: _buildActionButton,
+                onCommitted: (t, approved) {
+                  if (approved) {
+                    _navigateToApproveScreen(t);
+                  } else {
+                    nbox.rejectTransaction(t.id, t.source, silent: true);
+                    showTopNotification(
+                      context,
+                      'Moved to Trash',
+                      isError: true,
+                    );
+                  }
+                },
+              ),
             ),
           ),
         ],
@@ -1238,21 +1364,18 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           colors: isBack
               ? [
                   // Darken and mute the back card to push it into the background
-                  AppColors.cardSurface.withValues(alpha: 0.6), 
+                  AppColors.cardSurface.withValues(alpha: 0.6),
                   AppColors.cardSurface.withValues(alpha: 0.4),
                 ]
-              : [
-                  highlightColor.withValues(alpha: 0.12), 
-                  AppColors.cardSurface,
-                ],
+              : [highlightColor.withValues(alpha: 0.12), AppColors.cardSurface],
         ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: isBack
               // Crisper, thinner border for the back card to keep it sharp
-              ? Colors.white.withValues(alpha: 0.08) 
+              ? Colors.white.withValues(alpha: 0.08)
               : highlightColor.withValues(alpha: 0.35),
-          width: isBack ? 0.5 : 1.0, 
+          width: isBack ? 0.5 : 1.0,
         ),
         boxShadow: isBack
             ? []
@@ -1269,7 +1392,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       child: isBack
           ? const SizedBox.shrink()
           : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch, 
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // ── Top row: source tag + date ─────────────────────────────
                 Row(
@@ -1279,12 +1402,15 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     const SizedBox(width: 8),
                     if (t.source == 'email') _buildConfidenceBadge(t),
                     const Spacer(),
-                    
+
                     // ── The Updated Date Pill ──
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.25), 
+                        color: Colors.black.withValues(alpha: 0.25),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: Colors.white.withValues(alpha: 0.1),
@@ -1292,21 +1418,21 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.6), 
-                            blurRadius: 6,      
-                            spreadRadius: 1,    
-                            offset: const Offset(0, 3), 
+                            color: Colors.black.withValues(alpha: 0.6),
+                            blurRadius: 6,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
                       child: Text(
                         DateFormat('dd MMM, hh:mm a').format(t.date),
                         style: const TextStyle(
-                          color: Colors.white, 
+                          color: Colors.white,
                           fontSize: 11,
-                          fontWeight: FontWeight.w600, 
+                          fontWeight: FontWeight.w600,
                           letterSpacing: 0.3,
-                          height: 1.0, 
+                          height: 1.0,
                         ),
                       ),
                     ),
@@ -1379,7 +1505,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                           t.body!,
                           style: const TextStyle(
                             fontFamily: 'monospace',
-                            fontSize: 12, 
+                            fontSize: 12,
                             color: AppColors.textSecondary,
                             height: 1.5,
                           ),
@@ -1441,85 +1567,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     );
   }
 
-  Widget _buildSwipeHint(IconData icon, String label, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: color, size: 16),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _onSwipeDragEnd(List<DetectedTransaction> list, NewNboxProvider nbox) {
-    const threshold = 120.0;
-    if (_swipeDx > threshold) {
-      _commitSwipe(list, nbox, approved: true);
-    } else if (_swipeDx < -threshold) {
-      _commitSwipe(list, nbox, approved: false);
-    } else {
-      setState(() {
-        _swipeDx = 0;
-        _swipeRotation = 0;
-      });
-    }
-  }
-
-  void _commitSwipe(
-    List<DetectedTransaction> list,
-    NewNboxProvider nbox, {
-    required bool approved,
-  }) {
-    if (_swipeAnimating) return;
-
-    final safeIndex = list.isEmpty ? 0 : _swipeIndex.clamp(0, list.length - 1);
-    if (list.isEmpty) return;
-    final t = list[safeIndex];
-
-    setState(() => _swipeAnimating = true);
-
-    final targetDx = approved ? 500.0 : -500.0;
-    setState(() {
-      _swipeDx = targetDx;
-      _swipeRotation = approved ? 0.3 : -0.3;
-    });
-
-    Future.delayed(const Duration(milliseconds: 220), () {
-      if (!mounted) return;
-
-      if (approved) {
-        _navigateToApproveScreen(t).then((_) {
-          if (mounted) {
-            setState(() {
-              _swipeIndex = list.isEmpty
-                  ? 0
-                  : (_swipeIndex).clamp(0, list.length - 1);
-              _swipeDx = 0;
-              _swipeRotation = 0;
-              _swipeAnimating = false;
-            });
-          }
-        });
-      } else {
-        nbox.rejectTransaction(t.id, t.source, silent: true);
-        showTopNotification(context, 'Moved to Trash', isError: true);
-        setState(() {
-          _swipeDx = 0;
-          _swipeRotation = 0;
-          _swipeAnimating = false;
-        });
-      }
-    });
-  }
-
   // ---------------------------------------------------------------------------
 
   Widget _buildPill(String label, NBoxFilter value) {
@@ -1547,6 +1594,27 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionIcon({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 26,
+        height: 26,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Icon(icon, size: 15, color: color),
       ),
     );
   }
@@ -1771,4 +1839,305 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+
+  // ---------------------------------------------------------------------------
+  // BULK APPROVE
+  // ---------------------------------------------------------------------------
+
+  /// Splits the current selection into "simple" transactions (no side
+  /// effects -- salary excluded too, since that opens PaydayScreen) which
+  /// get saved silently with sensible defaults, and everything else, which
+  /// gets handed off to Focus mode for one-by-one review right after.
+  Future<void> _approveSelected(List<DetectedTransaction> currentList) async {
+    if (_isBulkApproving) return;
+
+    final nbox = context.read<NewNboxProvider>();
+    final subs = context.read<SubscriptionProvider>().subscriptions;
+    final debts = context.read<DebtProvider>().debts;
+    final investments = context.read<InvestmentProvider>().investments;
+
+    final selected = currentList
+        .where((t) => _selectedIds.contains('${t.source}:${t.id}'))
+        .toList();
+
+    if (selected.isEmpty) return;
+
+    setState(() => _isBulkApproving = true);
+
+    final needsReview = <DetectedTransaction>[];
+    var quickApproved = 0;
+    var failed = 0;
+
+    for (final t in selected) {
+      final classification = TransactionIntentClassifier.classify(
+        detected: t,
+        subscriptions: subs,
+        debts: debts,
+        investments: investments,
+      );
+
+      final needsForm =
+          classification.intent.hasSideEffects ||
+          classification.intent == TransactionIntent.salary;
+
+      if (needsForm) {
+        needsReview.add(t);
+        continue;
+      }
+
+      final ok = await _quickApprove(t);
+      if (ok) {
+        quickApproved++;
+        nbox.markAsApproved(t.id, t.source);
+      } else {
+        // Couldn't save silently (e.g. no account selected yet) -- don't
+        // lose the transaction, just fall back to manual review too.
+        needsReview.add(t);
+        failed++;
+      }
+    }
+
+    if (!mounted) return;
+
+    setState(() => _isBulkApproving = false);
+    _exitSelectionMode();
+
+    final parts = <String>[];
+    if (quickApproved > 0) parts.add('Approved $quickApproved');
+    if (needsReview.length - failed > 0) {
+      parts.add('${needsReview.length - failed} need review');
+    }
+    if (failed > 0) parts.add('$failed failed');
+    showTopNotification(
+      context,
+      parts.isEmpty ? 'Nothing to approve' : parts.join(' · '),
+      isError: quickApproved == 0,
+    );
+
+    if (needsReview.isNotEmpty) {
+      setState(() {
+        _focusQueueIds = needsReview.map((t) => '${t.source}:${t.id}').toSet();
+        _viewMode = NBoxViewMode.focus;
+      });
+    }
+  }
+
+  /// Silently saves a "simple" detected transaction (no side effects) using
+  /// the same persistence path as the manual Add Transaction form --
+  /// TransactionProvider.addTransaction -- but with sensible defaults
+  /// instead of a form: first available account, detected/resolved category.
+  /// Returns false (and does nothing) if there's no account to save against,
+  /// so the caller can fall back to manual review instead of losing data.
+  Future<bool> _quickApprove(DetectedTransaction t) async {
+    final accounts = context.read<AccountProvider>().accounts;
+    if (accounts.isEmpty) return false;
+    final accountId = accounts.first.id;
+
+    final categories = context.read<CategoryProvider>().categories;
+    String? resolvedCategoryId =
+        t.detectedCategory ??
+        SmartCategoryResolver.resolve(
+          merchant: t.merchant,
+          body: t.body,
+          amount: t.amount,
+          transactionType: t.type,
+        );
+    final hasId = categories.any((c) => c.id == resolvedCategoryId);
+    if (!hasId) {
+      final byName = categories
+          .where((c) => c.name == resolvedCategoryId)
+          .toList();
+      if (byName.isNotEmpty) resolvedCategoryId = byName.first.id;
+    }
+
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final now = DateTime.now();
+    final isIncome = t.type.toLowerCase() == 'income';
+
+    final transaction = Transaction(
+      id: '',
+      userId: userId,
+      type: isIncome ? TransactionType.income : TransactionType.expense,
+      amount: t.amount,
+      description: t.merchant,
+      categoryId: resolvedCategoryId,
+      accountId: accountId,
+      toAccountId: null,
+      date: t.date,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    return context.read<TransactionProvider>().addTransaction(transaction);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// FOCUS MODE CARD STACK -- isolated drag/animation state
+// -----------------------------------------------------------------------------
+//
+// This widget owns its own drag state (_dx, _rotation, _animating). Its
+// setState calls only rebuild this small subtree -- never the parent NBox
+// screen's header, summary card, or list-sort logic. Dragging is optional;
+// the two buttons underneath are the primary, always-working way to act.
+class _SwipeCardStack extends StatefulWidget {
+  final DetectedTransaction current;
+  final DetectedTransaction? next;
+  final Widget Function(DetectedTransaction t, {required bool isBack})
+  cardBuilder;
+  final Widget Function(String label, Color color) labelBuilder;
+  final Widget Function(
+    String label,
+    IconData icon,
+    Color fg,
+    Color bg,
+    VoidCallback onTap,
+  )
+  actionButtonBuilder;
+  final void Function(DetectedTransaction t, bool approved) onCommitted;
+
+  const _SwipeCardStack({
+    super.key,
+    required this.current,
+    required this.next,
+    required this.cardBuilder,
+    required this.labelBuilder,
+    required this.actionButtonBuilder,
+    required this.onCommitted,
+  });
+
+  @override
+  State<_SwipeCardStack> createState() => _SwipeCardStackState();
+}
+
+class _SwipeCardStackState extends State<_SwipeCardStack> {
+  double _dx = 0;
+  double _rotation = 0;
+  bool _animating = false;
+
+  void _onDragUpdate(DragUpdateDetails d) {
+    setState(() {
+      _dx += d.delta.dx;
+      _rotation = (_dx / 300).clamp(-0.15, 0.15);
+    });
+  }
+
+  void _onDragEnd(DragEndDetails d) {
+    const threshold = 120.0;
+    if (_dx > threshold) {
+      _commit(true);
+    } else if (_dx < -threshold) {
+      _commit(false);
+    } else {
+      setState(() {
+        _dx = 0;
+        _rotation = 0;
+      });
+    }
+  }
+
+  void _commit(bool approved) {
+    if (_animating) return;
+    setState(() {
+      _animating = true;
+      _dx = approved ? 500.0 : -500.0;
+      _rotation = approved ? 0.3 : -0.3;
+    });
+    Future.delayed(const Duration(milliseconds: 220), () {
+      if (!mounted) return;
+      widget.onCommitted(widget.current, approved);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              if (widget.next != null)
+                Positioned.fill(
+                  child: RepaintBoundary(
+                    child: Transform.translate(
+                      offset: const Offset(0, 16),
+                      child: Transform.scale(
+                        scale: 0.94,
+                        child: widget.cardBuilder(widget.next!, isBack: true),
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned.fill(
+                child: RepaintBoundary(
+                  child: GestureDetector(
+                    onHorizontalDragUpdate: _animating ? null : _onDragUpdate,
+                    onHorizontalDragEnd: _animating ? null : _onDragEnd,
+                    child: Transform.translate(
+                      offset: Offset(_dx, 0),
+                      child: Transform.rotate(
+                        angle: _rotation,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          fit: StackFit.expand,
+                          children: [
+                            widget.cardBuilder(widget.current, isBack: false),
+                            if (_dx > 30)
+                              Positioned(
+                                top: 24,
+                                left: 24,
+                                child: widget.labelBuilder(
+                                  'APPROVE',
+                                  Colors.green,
+                                ),
+                              ),
+                            if (_dx < -30)
+                              Positioned(
+                                top: 24,
+                                right: 24,
+                                child: widget.labelBuilder(
+                                  'REJECT',
+                                  AppColors.error,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Real, primary buttons -- dragging is optional garnish on top.
+        Row(
+          children: [
+            Expanded(
+              child: widget.actionButtonBuilder(
+                "Reject",
+                Icons.close,
+                AppColors.error,
+                AppColors.error.withValues(alpha: 0.1),
+                _animating ? () {} : () => _commit(false),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: widget.actionButtonBuilder(
+                "Approve",
+                Icons.check,
+                Colors.white,
+                AppColors.primaryBlue,
+                _animating ? () {} : () => _commit(true),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }

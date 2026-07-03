@@ -149,30 +149,27 @@ class DashboardWidgetRenderer extends StatelessWidget {
   }
 
   Widget _buildPlaceholder(BuildContext context, String label) {
-    final colorScheme = Theme.of(context).colorScheme;
+    // Replaced Theme.of(context) with static colors to prevent unnecessary rebuilds.
     return Container(
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: Colors.grey.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.1)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
       ),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.build, size: 40),
+            const Icon(Icons.build, size: 40, color: Colors.grey),
             const SizedBox(height: 8),
             Text(
               label,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
-            Text(
+            const Text(
               'Widget not implemented',
-              style: TextStyle(
-                fontSize: 12,
-                color: colorScheme.onSurfaceVariant,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
         ),
