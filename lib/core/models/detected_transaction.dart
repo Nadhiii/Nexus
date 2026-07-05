@@ -15,8 +15,8 @@ class DetectedTransaction {
   warnings; // e.g., ["Merchant unclear", "Amount incomplete"]
   final String? detectedCategory; // Auto-detected category, if any
   final String? bankName; // e.g., "IDFC FIRST Bank" - identified source bank
-  final double?
-  balanceAfter; // Account balance after this transaction, if the alert included one
+  final double? balanceAfter; // Account balance after this transaction, if the alert included one
+  final String? accountNumber; // Last-4 digits of account/card, if present
 
   const DetectedTransaction({
     required this.id,
@@ -32,6 +32,7 @@ class DetectedTransaction {
     this.detectedCategory,
     this.bankName,
     this.balanceAfter,
+    this.accountNumber,
   });
 
   // Quick check for reliability
@@ -64,6 +65,7 @@ class DetectedTransaction {
     String? detectedCategory,
     String? bankName,
     double? balanceAfter,
+    String? accountNumber,
   }) {
     return DetectedTransaction(
       id: id ?? this.id,
@@ -79,6 +81,7 @@ class DetectedTransaction {
       detectedCategory: detectedCategory ?? this.detectedCategory,
       bankName: bankName ?? this.bankName,
       balanceAfter: balanceAfter ?? this.balanceAfter,
+      accountNumber: accountNumber ?? this.accountNumber,
     );
   }
 }

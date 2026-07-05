@@ -63,7 +63,20 @@ class GmailParser {
           r'(?:PhonePe|PayTM|Google Pay).*?(?:INR|Rs\.?|₹)\s*(?<amount>[\d,.]+).*?(?:to|at|from)\s+(?<merchant>.*?)(?:\s+on|\s+at|$)',
     ),
 
-    // 8. SALARY & GENERAL CREDITS (kept last — broadest pattern, so
+    // 8. SLICE (slice small finance bank)
+    // Format: "You have received ₹404 via UPI in your slice bank
+    // account xx8047. Avl. Bal. ₹405.98 Transaction date 04-Jul-26
+    // From NANDINI MILK GALAXY AND CAFE M RRN 618566376353"
+    // Covers both incoming ("From") and outgoing ("To") phrasing.
+    BankPattern(
+      name: 'Slice',
+      regex:
+          r'you have (?<action>received|paid|sent)\s+(?:₹|Rs\.?|INR)\s*(?<amount>[\d,.]+)\s+via\s+upi'
+          r'.*?transaction date\s+(?<date>\d{1,2}-[A-Za-z]{3}-\d{2,4})'
+          r'.*?(?:from|to)\s+(?<merchant>.*?)\s+rrn',
+    ),
+
+    // 9. SALARY & GENERAL CREDITS (kept last — broadest pattern, so
     // specific bank formats above get first shot at matching).
     BankPattern(
       name: 'Salary/Credit Alert',
@@ -84,6 +97,7 @@ class GmailParser {
     'icici': 'ICICI Bank',
     'kotak': 'Kotak Mahindra Bank',
     'federal bank': 'Federal Bank',
+    'slice': 'Slice',
   };
 
   static Future<DetectedTransaction?> parse(
@@ -145,7 +159,7 @@ class GmailParser {
     if (lower.contains('refund policy')) {
       return false;
     }
-    return lower.contains('received from') ||
+    return lower.contains('received') ||
         lower.contains('credited') ||
         lower.contains('refunded') ||
         lower.contains('salary');
@@ -156,7 +170,7 @@ class GmailParser {
     // disclaimer boilerplate (which almost always mentions OTP/CVV as
     // a "never share this" warning) discard it.
     final looksLikeTransaction = RegExp(
-      r'\b(debited|credited|spent|withdrawn|txn of|transaction of|purchase of|paid)\b',
+      r'\b(debited|credited|received|spent|withdrawn|txn of|transaction of|purchase of|paid)\b',
     ).hasMatch(lower);
 
     if (looksLikeTransaction) {
@@ -191,7 +205,7 @@ class GmailParser {
   // style phrases. Optional — most SMS alerts won't have this, most
   // bank emails will.
   static final RegExp _balancePattern = RegExp(
-    r'(?:new balance|available balance|avl bal|balance)\s*(?:is|:)?\s*(?:INR|Rs\.?|₹)\s*([\d,.]+)',
+    r'(?:new balance|available balance|avl\.?\s*bal\.?|balance)\s*(?:is|:)?\s*(?:INR|Rs\.?|₹)\s*([\d,.]+)',
     caseSensitive: false,
   );
 
@@ -199,6 +213,57 @@ class GmailParser {
     final match = _balancePattern.firstMatch(text);
     if (match == null) return null;
     return double.tryParse(match.group(1)!.replaceAll(',', ''));
+  }
+
+  static const Map<String, int> _monthAbbreviations = {
+    'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+    'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
+  };
+
+  // Turns a captured date string into a real DateTime, trying each
+  // format banks in bankPatterns actually use. Falls back to the
+  // email's own timestamp if the string doesn't match anything known
+  // or looks implausible (e.g. malformed capture).
+  static DateTime _parseCapturedDate(String raw, DateTime fallback) {
+    final trimmed = raw.trim();
+
+    // dd/MM/yyyy[ HH:mm]  — IDFC, HDFC, ICICI, Federal Bank
+    final slash = RegExp(
+      r'^(\d{1,2})/(\d{1,2})/(\d{2,4})(?:\s+(\d{1,2}):(\d{2}))?$',
+    ).firstMatch(trimmed);
+    if (slash != null) {
+      try {
+        final day = int.parse(slash.group(1)!);
+        final month = int.parse(slash.group(2)!);
+        var year = int.parse(slash.group(3)!);
+        if (year < 100) year += 2000;
+        final hour = slash.group(4) != null ? int.parse(slash.group(4)!) : 0;
+        final minute = slash.group(5) != null ? int.parse(slash.group(5)!) : 0;
+        return DateTime(year, month, day, hour, minute);
+      } catch (_) {
+        return fallback;
+      }
+    }
+
+    // dd-MMM-yy or dd-MMM-yyyy — Slice
+    final dashMonth = RegExp(
+      r'^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$',
+    ).firstMatch(trimmed);
+    if (dashMonth != null) {
+      final month = _monthAbbreviations[dashMonth.group(2)!.toLowerCase()];
+      if (month != null) {
+        try {
+          final day = int.parse(dashMonth.group(1)!);
+          var year = int.parse(dashMonth.group(3)!);
+          if (year < 100) year += 2000;
+          return DateTime(year, month, day);
+        } catch (_) {
+          return fallback;
+        }
+      }
+    }
+
+    return fallback;
   }
 
   static String? _detectBankName(String lower) {
@@ -324,6 +389,17 @@ class GmailParser {
         }
       }
 
+      // Date: prefer the transaction date captured from the email body
+      // over the email's arrival timestamp — these can differ when
+      // Gmail sync lags or a bank sends a delayed/batched alert.
+      DateTime txnDate = emailDate;
+      if (match.groupNames.contains('date')) {
+        final capturedDate = match.namedGroup('date')?.trim();
+        if (capturedDate != null && capturedDate.isNotEmpty) {
+          txnDate = _parseCapturedDate(capturedDate, emailDate);
+        }
+      }
+
       // Confidence reflects how much of the match came from a
       // structured bank-specific pattern vs. an assumption:
       // - action captured directly next to amount: type is certain
@@ -345,7 +421,7 @@ class GmailParser {
         id,
         amount,
         merchant,
-        emailDate,
+        txnDate,
         type,
         fullBody,
         aiCategorizationService,

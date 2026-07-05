@@ -10,15 +10,21 @@ class _ParseResult {
   final double amount;
   final String type; // 'expense' | 'income'
   final String merchant;
+  final String? bankName; // e.g. "HDFC Bank" - identified source bank
   final String? accountNumber; // last-4 digits if present
   final double? balance; // available/closing balance if present
+  final double confidence;
+  final List<String> warnings;
 
   const _ParseResult({
     required this.amount,
     required this.type,
     required this.merchant,
+    this.bankName,
     this.accountNumber,
     this.balance,
+    this.confidence = 0.8,
+    this.warnings = const [],
   });
 }
 
@@ -45,6 +51,9 @@ class _BankTemplate {
   /// e.g. "HDFCBK" matches both "AD-HDFCBK" and "VM-HDFCBK".
   final List<String> senderPrefixes;
 
+  /// Human-readable bank name shown on the review card, e.g. "HDFC Bank".
+  final String displayName;
+
   /// Amount regex override. Group 1 must be the raw numeric string.
   final RegExp? amountPattern;
 
@@ -53,6 +62,7 @@ class _BankTemplate {
 
   const _BankTemplate({
     required this.senderPrefixes,
+    required this.displayName,
     this.amountPattern,
     this.extractMerchant,
   });
@@ -100,10 +110,12 @@ class NewSmsParser {
       type: result.type,
       source: 'sms',
       body: body,
+      confidence: result.confidence,
+      warnings: result.warnings,
       detectedCategory: detectedCategory,
-      // Uncomment when DetectedTransaction grows these fields:
-      // accountNumber: result.accountNumber,
-      // balance: result.balance,
+      bankName: result.bankName,
+      balanceAfter: result.balance,
+      accountNumber: result.accountNumber,
     );
   }
 
@@ -143,13 +155,38 @@ class NewSmsParser {
 
   static final List<_IgnoreRule> _ignoreRules = [
     // Security / auth
+    // IMPORTANT: this rule runs BEFORE the confirmed-movement check
+    // (see class comment), specifically so genuine OTP-delivery SMS
+    // get dropped even if they happen to contain a movement word like
+    // "sent" (e.g. "OTP sent for your login"). But most real bank
+    // transaction SMS *also* carry a disclaimer like "Do not share
+    // OTP/PIN with anyone" — a bare `contains('otp')` would wrongly
+    // drop those too. So: always drop messages that actually deliver
+    // an OTP (code adjacent to the word), but for a bare mention of
+    // OTP/PIN/verification-code with no code attached, only drop it
+    // if there's no confirmed movement keyword elsewhere in the body.
     _IgnoreRule(
       'otp',
-      (s) =>
-          s.contains('otp') ||
-          s.contains('one time password') ||
-          s.contains('is your code') ||
-          s.contains('verification code'),
+      (s) {
+        final deliversOtp = RegExp(
+              r'\d{4,8}\s+is\s+(?:your\s+)?(?:otp|one[\s-]?time\s+password|verification\s+code)',
+            ).hasMatch(s) ||
+            RegExp(
+              r'\b(?:otp|one[\s-]?time\s+password|verification\s+code)\b\s*(?:is|:)?\s*\d{4,8}\b',
+            ).hasMatch(s) ||
+            RegExp(r'\buse\s+otp\s*\d{4,8}\b').hasMatch(s);
+        if (deliversOtp) return true;
+
+        final mentionsOtp = s.contains('otp') ||
+            s.contains('one time password') ||
+            s.contains('is your code') ||
+            s.contains('verification code');
+        if (!mentionsOtp) return false;
+
+        // Bare disclaimer mention — only ignorable if nothing here
+        // actually looks like a completed transaction.
+        return !_confirmedMovementPattern.hasMatch(s);
+      },
     ),
 
     // Failed / declined / reversed — no money moved
@@ -245,6 +282,7 @@ class NewSmsParser {
     // "Rs.500.00 debited from a/c **1234 on 12-Jun-25 to VPA merchant@upi"
     _BankTemplate(
       senderPrefixes: ['HDFCBK', 'HDFCBA', 'HDFCBN', 'HDFCCC', 'HDFCDC', 'HDFCHI', 'PAYZAP'],
+      displayName: 'HDFC Bank',
       amountPattern: RegExp(r'Rs\.?\s*([0-9,]+(?:\.[0-9]{1,2})?)', caseSensitive: false),
       extractMerchant: (body) {
         // Prefer explicit "to VPA xyz@bank"
@@ -267,6 +305,7 @@ class NewSmsParser {
     // "ICICI Bank Acct XX1234 debited for Rs 500.00 on 12-Jun-25; info: Swiggy"
     _BankTemplate(
       senderPrefixes: ['ICICIB', 'ICICIH', 'ICICIBNK', 'ISRVCE'],
+      displayName: 'ICICI Bank',
       amountPattern: RegExp(r'(?:Rs\.?|INR)\s*([0-9,]+(?:\.[0-9]{1,2})?)', caseSensitive: false),
       extractMerchant: (body) {
         final info = RegExp(
@@ -287,6 +326,7 @@ class NewSmsParser {
     // "Your A/c X1234 is debited with INR 500.00 on 12Jun25..."
     _BankTemplate(
       senderPrefixes: ['SBIINB', 'SBIPAY', 'SBIATM', 'SBIUPI', 'SBIBNK', 'SBISMS', 'ATMSBI'],
+      displayName: 'SBI',
       amountPattern: RegExp(r'(?:INR|Rs\.?|₹)\s*([0-9,]+(?:\.[0-9]{1,2})?)', caseSensitive: false),
       extractMerchant: (body) {
         final to = RegExp(
@@ -300,6 +340,7 @@ class NewSmsParser {
     // ── Axis Bank ──────────────────────────────────────────────────────────
     _BankTemplate(
       senderPrefixes: ['AXISBK', 'AXISIN', 'AXISB', 'AXISHR', 'AXISMR'],
+      displayName: 'Axis Bank',
       extractMerchant: (body) {
         final at = RegExp(
           r'(?:at|to)\s+([A-Za-z0-9 &.\-]{2,40}?)(?:\s+on\b|\s+Ref|\s+UPI|\.|$)',
@@ -312,6 +353,7 @@ class NewSmsParser {
     // ── Kotak Mahindra ─────────────────────────────────────────────────────
     _BankTemplate(
       senderPrefixes: ['KOTAKB', 'KOTAKP', 'KTKBNK', 'KTKREM'],
+      displayName: 'Kotak Mahindra Bank',
       extractMerchant: (body) {
         final at = RegExp(
           r'(?:at|to)\s+([A-Za-z0-9 &.\-]{2,40}?)(?:\s+on\b|\s+Ref|\.|$)',
@@ -325,6 +367,7 @@ class NewSmsParser {
     // "INR 500.00 sent from your Federal Bank A/C to <merchant>.Ref..."
     _BankTemplate(
       senderPrefixes: ['FEDBNK', 'FEDADV'],
+      displayName: 'Federal Bank',
       extractMerchant: (body) {
         final to = RegExp(
           r'\b(?:sent|paid|debited|transferred)\b.{0,30}?\bto\s+([A-Za-z0-9 &.\-]{2,50}?)(?:\.Ref|\s+Ref|\.?\s+on\b|\.|$)',
@@ -337,6 +380,7 @@ class NewSmsParser {
     // ── IDFC First ─────────────────────────────────────────────────────────
     _BankTemplate(
       senderPrefixes: ['IDFCBK', 'IDFCFB', 'IDFCIT'],
+      displayName: 'IDFC FIRST Bank',
       extractMerchant: (body) {
         final at = RegExp(
           r'\bat\s+([A-Za-z0-9 &.\-]{2,40}?)(?:\s+on\b|\s+Ref|\.|$)',
@@ -349,6 +393,7 @@ class NewSmsParser {
     // ── IndusInd ───────────────────────────────────────────────────────────
     _BankTemplate(
       senderPrefixes: ['INDUSB', 'INDUSA', 'INDUSO'],
+      displayName: 'IndusInd Bank',
       extractMerchant: (body) {
         final at = RegExp(
           r'(?:at|to)\s+([A-Za-z0-9 &.\-]{2,40}?)(?:\s+on\b|\s+Ref|\.|$)',
@@ -362,7 +407,8 @@ class NewSmsParser {
     // Expense: "Rs. 403.98 sent from a/c xx8047 on 10-Jun-26 to ZOMATO (UPI Ref: …)"
     // Income:  "Rs. 1,000 received in slice A/c xx8047 on … from Mahanadi P J via UPI"
     _BankTemplate(
-      senderPrefixes: ['SLICEP', 'SLICEB', 'SLCPAY', 'SLICEP'],
+      senderPrefixes: ['SLICEP', 'SLICEB', 'SLCPAY'],
+      displayName: 'Slice',
       amountPattern: RegExp(r'Rs\.?\s*([0-9,]+(?:\.[0-9]{1,2})?)', caseSensitive: false),
       extractMerchant: (body) {
         // Expense: "to <NAME> (UPI Ref" or "to <NAME> via UPI"
@@ -464,16 +510,41 @@ class NewSmsParser {
       merchant ??= _extractToAt(body); // "sent/paid to <name>"
     }
 
+    // Track this separately from the final fallback below — a merchant
+    // that came from the raw sender code isn't a real counterparty and
+    // should be flagged for review rather than presented as certain.
+    final merchantWasExtracted = merchant != null;
     merchant ??= _cleanSender(sender);
+
+    // Confidence: a recognized bank template plus a genuinely extracted
+    // merchant is as reliable as this parser gets. Either piece missing
+    // drops confidence and adds a specific, actionable warning rather
+    // than silently defaulting to "pretty sure."
+    double confidence = template != null ? 0.9 : 0.65;
+    final warnings = <String>[];
+    if (!merchantWasExtracted) {
+      confidence -= 0.15;
+      warnings.add('Merchant unclear - using sender ID');
+    }
+    if (template == null) {
+      warnings.add('Bank not recognized - generic parsing used');
+    }
 
     return _ParseResult(
       amount: amount,
       type: type,
       merchant: _normaliseMerchant(merchant),
+      // Fall back to the cleaned sender code (e.g. "PAYTMB") when no
+      // dedicated template exists — still better than nothing on the
+      // review card, and consistent with how merchant already falls
+      // back to the sender elsewhere in this function.
+      bankName: template?.displayName ?? _cleanSender(sender),
       accountNumber: _accountPattern.firstMatch(body)?.group(1),
       balance: _balancePattern.firstMatch(body).let(
         (m) => double.tryParse(m.group(1)!.replaceAll(',', '')),
       ),
+      confidence: confidence.clamp(0.0, 1.0),
+      warnings: warnings,
     );
   }
 
