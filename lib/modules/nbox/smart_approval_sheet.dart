@@ -145,13 +145,23 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
         }
       }
 
-      // Auto-select bike if only one
+     // Auto-select bike if only one
       final bikes = context.read<BikeProvider>().bikes;
       if (bikes.length == 1) _selectedBike = bikes.first;
 
-      // Default to first account
+      // Default account: prefer the account matching the detected bank
+      // (by name) over just picking the first one in the list.
       final accounts = context.read<AccountProvider>().accounts;
-      if (accounts.isNotEmpty) _selectedAccountId = accounts.first.id;
+      if (accounts.isNotEmpty) {
+        final detectedBank = widget.detected.bankName?.toLowerCase();
+        final matched = detectedBank != null
+            ? accounts.where((a) =>
+                a.name.toLowerCase().contains(detectedBank) ||
+                detectedBank.contains(a.name.toLowerCase()))
+                .firstOrNull
+            : null;
+        _selectedAccountId = (matched ?? accounts.first).id;
+      }
     });
   }
 
@@ -376,6 +386,7 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
     final isIncome =
         widget.detected.type.toLowerCase() == 'income';
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Column(
@@ -401,15 +412,57 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
           ),
         ),
         const SizedBox(width: 16),
-        Text(
-          '${isIncome ? '+' : ''}₹${NumberFormat('#,##,###').format(widget.detected.amount)}',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w900,
-            color: isIncome
-                ? AppColors.pastelGreen
-                : AppColors.textPrimary,
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isIncome
+                      ? Icons.arrow_downward_rounded
+                      : Icons.arrow_upward_rounded,
+                  size: 14,
+                  color: isIncome
+                      ? AppColors.pastelGreen
+                      : AppColors.error,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  isIncome ? 'CREDITED' : 'DEBITED',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.6,
+                    color: isIncome
+                        ? AppColors.pastelGreen
+                        : AppColors.error,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '${isIncome ? '+' : '−'}₹${NumberFormat('#,##,###').format(widget.detected.amount)}',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+                color: isIncome
+                    ? AppColors.pastelGreen
+                    : AppColors.textPrimary,
+              ),
+            ),
+            if (widget.detected.balanceAfter != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                'Bal. ₹${NumberFormat('#,##,###.##').format(widget.detected.balanceAfter)}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textTertiary,
+                ),
+              ),
+            ],
+          ],
         ),
       ],
     );
@@ -487,10 +540,15 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
     );
   }
 
-  Widget _buildConfidenceChip() {
+ Widget _buildConfidenceChip() {
     Color color;
     String label;
-    switch (_classification.confidenceLabel) {
+    final confidenceLabel = widget.detected.isHighConfidence
+        ? 'High'
+        : widget.detected.isLowConfidence
+            ? 'Low'
+            : 'Medium';
+    switch (confidenceLabel) {
       case 'High':
         color = AppColors.pastelGreen;
         label = '✓ High confidence';

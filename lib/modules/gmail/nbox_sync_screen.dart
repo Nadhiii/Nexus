@@ -10,16 +10,14 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/providers/nbox_provider.dart';
 
-class GmailSettingsEnhancedScreen extends StatefulWidget {
-  const GmailSettingsEnhancedScreen({super.key});
+class NboxSyncScreen extends StatefulWidget {
+  const NboxSyncScreen({super.key});
 
   @override
-  State<GmailSettingsEnhancedScreen> createState() =>
-      _GmailSettingsEnhancedScreenState();
+  State<NboxSyncScreen> createState() => _NboxSyncScreenState();
 }
 
-class _GmailSettingsEnhancedScreenState
-    extends State<GmailSettingsEnhancedScreen> {
+class _NboxSyncScreenState extends State<NboxSyncScreen> {
   late GmailSyncSettings _settings;
   bool _isSaving = false;
 
@@ -124,19 +122,50 @@ class _GmailSettingsEnhancedScreenState
                         horizontal: AppSpacing.lg,
                       ),
                       value: gmailEnabled,
-                      onChanged: gmailEnabled
-                          ? (val) {
-                              if (!val) {
-                                provider.unlinkAccount();
-                              }
-                            }
-                          : null,
+                      onChanged: (val) async {
+                        if (val) {
+                          await provider.linkAccount();
+                        } else {
+                          await provider.unlinkAccount();
+                        }
+                        if (!mounted) return;
+                        if (provider.error != null) {
+                          showTopSnackBar(
+                            context,
+                            provider.error!,
+                            isError: true,
+                          );
+                        }
+                      },
                       title: const Text('Enable Gmail Reading'),
                       subtitle: const Text(
                         'Detect transactions from your Gmail account. Only transactional emails are read; no personal content is accessed.',
                       ),
                       activeThumbColor: AppColors.primaryBlue,
                     ),
+                    if (gmailEnabled && provider.error != null)
+  Padding(
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.lg,
+      vertical: 8,
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            provider.error!,
+            style: const TextStyle(color: AppColors.error, fontSize: 12),
+          ),
+        ),
+        TextButton(
+          onPressed: () async {
+            await provider.linkAccount();
+          },
+          child: const Text('Reconnect'),
+        ),
+      ],
+    ),
+  ),
                   ],
                 ),
               ),

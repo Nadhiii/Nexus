@@ -1,27 +1,27 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../providers/gmail_provider.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // --- REPLACE THIS WITH YOUR WEB CLIENT ID ---
-  // Source: Google Cloud Console → APIs & Services → Credentials
-  // → "Web client (auto created by Google Service)" → copy the Client ID
-  // Looks like: 1234567890-xxxxxxxxxxxxxxxx.apps.googleusercontent.com
-  static const String _webClientId = '217588531616-vac0sturbdi7ojbqj12jvdcf040dm730.apps.googleusercontent.com';
-  // --------------------------------------------
 
-  bool _googleSignInInitialized = false;
+ static const String _webClientId = '217588531616-vac0sturbdi7ojbqj12jvdcf040dm730.apps.googleusercontent.com';
+// --------------------------------------------
 
-  User? get currentUser => _auth.currentUser;
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+static bool _googleSignInInitialized = false;
 
-  Future<void> _ensureGoogleSignInInitialized() async {
-    if (_googleSignInInitialized) return;
-    await GoogleSignIn.instance.initialize(serverClientId: _webClientId);
-    _googleSignInInitialized = true;
-  }
+User? get currentUser => _auth.currentUser;
+Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+// Public + static so any part of the app (GmailProvider included) can call
+// this safely regardless of call order, and it only ever runs once.
+static Future<void> ensureGoogleSignInInitialized() async {
+  if (_googleSignInInitialized) return;
+  await GoogleSignIn.instance.initialize(serverClientId: _webClientId);
+  _googleSignInInitialized = true;
+}
 
   Future<User?> signInWithGoogle() async {
     try {
@@ -36,7 +36,7 @@ class AuthService {
       try {
         debugPrint('Starting Google Sign-In (v7)...');
 
-        await _ensureGoogleSignInInitialized();
+       await AuthService.ensureGoogleSignInInitialized();
 
         // v7: authenticate() replaces signIn()
         final GoogleSignInAccount googleUser =

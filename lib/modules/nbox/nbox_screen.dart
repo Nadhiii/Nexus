@@ -20,8 +20,9 @@ import 'smart_approval_sheet.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_animations.dart';
+import '../../core/services/pdf_statement_import_service.dart';
 
-enum NBoxFilter { all, sms, email, trash }
+enum NBoxFilter { all, sms, email, pdf, trash }
 
 /// Two lenses over the same pending list: a scrollable list (default) and an
 /// optional single-card "focus" review mode. No auto-switching between them
@@ -69,11 +70,97 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     if (!mounted) return;
     setState(() => _isGmailLoading = true);
     final nbox = context.read<NewNboxProvider>();
+    debugPrint('[NboxScreen] isGmailLinked: ${nbox.isGmailLinked}');
     if (nbox.isGmailLinked) {
       await nbox.scanEmails();
+    } else {
+      debugPrint(
+        '[NboxScreen] Gmail not linked — skipping scan. Please sign in again.',
+      );
     }
     if (mounted) setState(() => _isGmailLoading = false);
   }
+
+  bool _isPdfLoading = false;
+
+Future<void> _importPdf() async {
+  if (!mounted) return;
+  setState(() => _isPdfLoading = true);
+  try {
+    final parseData = await PdfStatementImportService.pickAndParse(
+  onPromptPassword: () => _showPasswordDialog(context),
+);
+
+if (parseData == null) return; // User cancelled picking or password entry
+
+if (parseData.transactions.isEmpty) {
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('No transactions found in this statement.')),
+    );
+  }
+  return;
+}
+
+await context.read<NewNboxProvider>().importFromPdf(parseData.transactions);
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Import failed: $e')),
+      );
+    }
+  } finally {
+    if (mounted) setState(() => _isPdfLoading = false);
+  }
+}
+
+/// Displays an AlertDialog prompting the user for the PDF password.
+Future<String?> _showPasswordDialog(BuildContext context) {
+  String enteredPassword = '';
+  return showDialog<String>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) {
+      return AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        title: const Text(
+          'PDF Password Required',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: TextField(
+          obscureText: true,
+          autofocus: true,
+          style: const TextStyle(color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            hintText: 'Enter PDF password',
+            hintStyle: const TextStyle(color: AppColors.textTertiary),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderSide: BorderSide(color: AppColors.primaryBlue),
+            ),
+          ),
+          onChanged: (val) => enteredPassword = val,
+          onSubmitted: (val) => Navigator.pop(dialogContext, val),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, null),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, enteredPassword),
+            child: const Text('Submit', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   @override
   void initState() {
@@ -198,8 +285,11 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       backgroundColor: AppColors.backgroundBlack,
       body: Consumer<NewNboxProvider>(
         builder: (context, nbox, child) {
-          final allPending = [...nbox.pendingSms, ...nbox.pendingEmails]
-            ..sort((a, b) => b.date.compareTo(a.date));
+          final allPending = [
+            ...nbox.pendingSms,
+            ...nbox.pendingEmails,
+            ...nbox.pendingPdf,
+          ]..sort((a, b) => b.date.compareTo(a.date));
 
           List<DetectedTransaction> displayList;
           switch (_currentFilter) {
@@ -208,6 +298,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
               break;
             case NBoxFilter.email:
               displayList = nbox.pendingEmails;
+              break;
+            case NBoxFilter.pdf:
+              displayList = nbox.pendingPdf;
               break;
             case NBoxFilter.trash:
               displayList = nbox.rejected;
@@ -273,6 +366,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     child: _buildFilterPills(
                       nbox.pendingSms.length,
                       nbox.pendingEmails.length,
+                      nbox.pendingPdf.length,
                     ),
                   ),
                   Expanded(
@@ -312,6 +406,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                   child: _buildFilterPills(
                     nbox.pendingSms.length,
                     nbox.pendingEmails.length,
+                    nbox.pendingPdf.length,
                   ),
                 ),
               ),
@@ -481,6 +576,36 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                         ),
                       ),
                     ),
+
+                    _isPdfLoading
+    ? const Padding(
+        padding: EdgeInsets.all(8.0),
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            color: AppColors.primaryBlue,
+            strokeWidth: 2.5,
+          ),
+        ),
+      )
+    : IconButton(
+        tooltip: 'Import PDF Statement',
+        onPressed: _importPdf,
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.cardSurface,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white10),
+          ),
+          child: const Icon(
+            Icons.picture_as_pdf,
+            color: AppColors.primaryBlue,
+            size: 20,
+          ),
+        ),
+      ),
             ],
           ),
         ],
@@ -568,6 +693,36 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                   ),
                 ),
               ),
+
+              _isPdfLoading
+    ? const Padding(
+        padding: EdgeInsets.all(8.0),
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            color: AppColors.primaryBlue,
+            strokeWidth: 2.5,
+          ),
+        ),
+      )
+    : IconButton(
+        tooltip: 'Import PDF Statement',
+        onPressed: _importPdf,
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.cardSurface,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white10),
+          ),
+          child: const Icon(
+            Icons.picture_as_pdf,
+            color: AppColors.primaryBlue,
+            size: 20,
+          ),
+        ),
+      ),
         const SizedBox(width: 16),
       ],
     );
@@ -632,6 +787,33 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     );
   }
 
+  // --- SOURCE STYLING ---
+  // Single source of truth for per-source color/label so SMS, Email, and PDF
+  // never collapse into the old SMS-vs-everything-else binary again.
+  Color _sourceColor(String source) {
+    switch (source) {
+      case 'sms':
+        return const Color(0xFFF59E0B);
+      case 'pdf':
+        return const Color(0xFF10B981);
+      case 'email':
+      default:
+        return const Color(0xFF3B82F6);
+    }
+  }
+
+  String _sourceLabel(String source) {
+    switch (source) {
+      case 'sms':
+        return 'SMS';
+      case 'pdf':
+        return 'PDF';
+      case 'email':
+      default:
+        return 'EMAIL';
+    }
+  }
+
   // --- LIST MODE STREAM ITEM ---
 
   Widget _buildStreamItem(DetectedTransaction t, bool isLast, bool isTrashTab) {
@@ -639,11 +821,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     final isExpanded = _expandedIds.contains(uniqueId);
     final isSelected = _selectedIds.contains(uniqueId);
     final isIncome = t.type.toLowerCase() == 'income';
-    final isSms = t.source == 'sms';
 
-    final highlightColor = isSms
-        ? const Color(0xFFF59E0B)
-        : const Color(0xFF3B82F6);
+    final highlightColor = _sourceColor(t.source);
     final borderColor = isSelected
         ? AppColors.primaryBlue
         : (isExpanded
@@ -827,7 +1006,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                     Row(
                                       children: [
                                         _buildTag(
-                                          isSms ? "SMS" : "EMAIL",
+                                          _sourceLabel(t.source),
                                           highlightColor,
                                         ),
                                         const SizedBox(width: 8),
@@ -1164,16 +1343,16 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF6D28D9).withValues(alpha: 0.9),
-            const Color(0xFF4C1D95),
+            AppColors.nboxHeroStart.withValues(alpha: 0.9),
+            AppColors.nboxHeroEnd,
             AppColors.cardSurface,
           ],
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.nboxAccent.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: Colors.purple.withValues(alpha: 0.2),
+            color: AppColors.nboxAccent.withValues(alpha: 0.2),
             blurRadius: 30,
             offset: const Offset(0, 10),
           ),
@@ -1203,7 +1382,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                   color: Colors.black26,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.purple.withValues(alpha: 0.3),
+                    color: AppColors.nboxAccent.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -1240,7 +1419,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.auto_awesome, color: Colors.purple.shade200, size: 14),
+              Icon(Icons.auto_awesome, color: AppColors.nboxAccent, size: 14),
               const SizedBox(width: 6),
               Text(
                 'Detected from SMS and Email',
@@ -1256,7 +1435,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     );
   }
 
-  Widget _buildFilterPills(int smsCount, int emailCount) {
+  Widget _buildFilterPills(int smsCount, int emailCount, int pdfCount) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1265,6 +1444,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           _buildPill("All", NBoxFilter.all),
           _buildPill("SMS ($smsCount)", NBoxFilter.sms),
           _buildPill("Email ($emailCount)", NBoxFilter.email),
+          _buildPill("PDF ($pdfCount)", NBoxFilter.pdf),
           _buildPill("Trash", NBoxFilter.trash),
         ],
       ),
@@ -1351,10 +1531,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
   Widget _buildSwipeCard(DetectedTransaction t, {required bool isBack}) {
     final isIncome = t.type.toLowerCase() == 'income';
-    final isSms = t.source == 'sms';
-    final highlightColor = isSms
-        ? const Color(0xFFF59E0B)
-        : const Color(0xFF3B82F6);
+    final highlightColor = _sourceColor(t.source);
 
     return Container(
       decoration: BoxDecoration(
@@ -1398,7 +1575,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    _buildTag(isSms ? 'SMS' : 'EMAIL', highlightColor),
+                    _buildTag(_sourceLabel(t.source), highlightColor),
                     const SizedBox(width: 8),
                     if (t.source == 'email') _buildConfidenceBadge(t),
                     const Spacer(),
@@ -1478,6 +1655,17 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                           style: const TextStyle(
                             fontSize: 13,
                             color: AppColors.accentTeal,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                      if (t.balanceAfter != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          '${t.bankName ?? 'Bank'} bal. ₹${NumberFormat('#,##,###.##').format(t.balanceAfter)}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textTertiary,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -1722,13 +1910,16 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Colors.purple.withValues(alpha: 0.1), AppColors.cardSurface],
+          colors: [
+            AppColors.nboxAccent.withValues(alpha: 0.1),
+            AppColors.cardSurface,
+          ],
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.purple.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.nboxAccent.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-            color: Colors.purple.withValues(alpha: 0.1),
+            color: AppColors.nboxAccent.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -1741,13 +1932,13 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.purple.withValues(alpha: 0.1),
+              color: AppColors.nboxAccent.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.inbox_rounded,
               size: 48,
-              color: Colors.purple.shade300,
+              color: AppColors.nboxAccent,
             ),
           ),
           const SizedBox(height: 20),

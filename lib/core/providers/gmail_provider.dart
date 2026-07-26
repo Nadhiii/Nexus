@@ -13,6 +13,7 @@ import '../models/gmail_sync_settings.dart';
 import '../utils/gmail_parser.dart';
 import '../services/categorization_service.dart';
 import 'category_provider.dart';
+import '../services/auth_service.dart';
 
 class GmailProvider extends ChangeNotifier {
   static const List<String> _gmailScopes = [gmail.GmailApi.gmailReadonlyScope];
@@ -20,6 +21,7 @@ class GmailProvider extends ChangeNotifier {
   final CategoryProvider? _categoryProvider;
 
   GoogleSignInAccount? _currentUser;
+  bool _hasGmailAccess = false;
   bool _isLoading = false;
   String? _error;
   List<DetectedTransaction> _detectedTransactions = [];
@@ -29,7 +31,7 @@ class GmailProvider extends ChangeNotifier {
   StreamSubscription<GoogleSignInAuthenticationEvent>? _authSubscription;
 
   GoogleSignInAccount? get currentUser => _currentUser;
-  bool get isLinked => _currentUser != null;
+  bool get isLinked => _currentUser != null && _hasGmailAccess;
   bool get isLoading => _isLoading;
   String? get error => _error;
   List<DetectedTransaction> get detectedTransactions =>
@@ -46,20 +48,28 @@ class GmailProvider extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    if (_isInitialized) return;
-    await _initializeSettings();
-    _isInitialized = true;
+  if (_isInitialized) return;
+  await AuthService.ensureGoogleSignInInitialized();
+  await _initializeSettings();
+  _isInitialized = true;
 
     _authSubscription = GoogleSignIn.instance.authenticationEvents.listen(
       (event) {
         if (event is GoogleSignInAuthenticationEventSignIn) {
           _currentUser = event.user;
-          Future.microtask(() {
-            scanEmails();
-            _startAutoSync();
+          Future.microtask(() async {
+            final existing = await event.user.authorizationClient
+                .authorizationForScopes(_gmailScopes);
+            _hasGmailAccess = existing != null;
+            if (_hasGmailAccess) {
+              scanEmails();
+              _startAutoSync();
+            }
+            notifyListeners();
           });
         } else if (event is GoogleSignInAuthenticationEventSignOut) {
           _currentUser = null;
+          _hasGmailAccess = false;
           _detectedTransactions.clear();
           _lastSyncTime = null;
           _stopAutoSync();
@@ -128,11 +138,22 @@ class GmailProvider extends ChangeNotifier {
 
   Future<void> linkAccount() async {
     try {
-      await GoogleSignIn.instance.authenticate();
+      _currentUser ??= await GoogleSignIn.instance.authenticate();
+      final authorization = await _currentUser!.authorizationClient
+          .authorizeScopes(_gmailScopes);
+      _hasGmailAccess = authorization.accessToken.isNotEmpty;
+      _error = null;
+      if (_hasGmailAccess) {
+        Future.microtask(() {
+          scanEmails();
+          _startAutoSync();
+        });
+      }
     } catch (e) {
       _error = 'Failed to link Gmail account: $e';
-      notifyListeners();
+      _hasGmailAccess = false;
     }
+    notifyListeners();
   }
 
   Future<void> unlinkAccount() async {
@@ -179,7 +200,10 @@ class GmailProvider extends ChangeNotifier {
 
       client = await _getAuthenticatedClient();
       if (client == null) {
-        throw Exception('Authenticated client not available.');
+        _hasGmailAccess = false;
+        throw Exception(
+          'Gmail session expired. Please reconnect your account.',
+        );
       }
 
       final gmailApi = gmail.GmailApi(client);
@@ -187,7 +211,17 @@ class GmailProvider extends ChangeNotifier {
       final startDate =
           _lastSyncTime ??
           DateTime.now().subtract(Duration(days: _settings.daysToScan));
-      final formattedDate = startDate.toIso8601String().split('T').first;
+      // Gmail's after: filter excludes the given day itself, so subtract
+      // one extra day to make sure we don't lose today's/this sync
+      // window's emails when startDate is "now" from a prior sync.
+      final queryDate = startDate.subtract(const Duration(days: 1));
+      final formattedDate = queryDate.toIso8601String().split('T').first;
+
+      if (kDebugMode) {
+        debugPrint(
+          '[GmailProvider] lastSyncTime: $_lastSyncTime, daysToScan: ${_settings.daysToScan}, startDate: $startDate, formattedDate: $formattedDate',
+        );
+      }
 
       final baseQuery =
           '(subject:(receipt OR transaction OR payment OR spent OR debited OR credited OR "sent you" OR "paid" OR alert OR notification) OR body:(debited OR credited OR "account balance" OR "available balance")) -subject:("OTP" OR "One Time Password" OR "statement" OR "bill due" OR "payment due" OR "reminder" OR verification OR "verify your")';
@@ -200,11 +234,19 @@ class GmailProvider extends ChangeNotifier {
         finalQuery += ' -from:$sender';
       }
 
+      if (kDebugMode) debugPrint('[GmailProvider] Query: $finalQuery');
+
       final listResponse = await gmailApi.users.messages.list(
         'me',
         maxResults: 40,
         q: finalQuery,
       );
+
+      if (kDebugMode) {
+        debugPrint(
+          '[GmailProvider] resultSizeEstimate: ${listResponse.resultSizeEstimate}, messages: ${listResponse.messages?.length}',
+        );
+      }
 
       final List<DetectedTransaction> freshTransactions = [];
 

@@ -15,6 +15,11 @@ class AppColors {
   static const Color pastelYellow = Color(0xFFFACC15); // Soft Amber
   static const Color pastelIndigo = Color(0xFF6366F1); // Soft Indigo
 
+  // --- NBox Hero Accent (deep violet, distinct from pastelPurple) ---
+  static const Color nboxHeroStart = Color(0xFF6D28D9);
+  static const Color nboxHeroEnd = Color(0xFF4C1D95);
+  static const Color nboxAccent = Color(0xFFC084FC); // matches Colors.purple.shade300
+
   // --- Premium/Special Colors ---
   static const Color premiumAmber = Color(0xFFD97706); // Premium badge
   static const Color investmentIndigo = Color(0xFF6366F1); // Investment screens
@@ -22,6 +27,10 @@ class AppColors {
   static const Color profitEmeraldDark = Color(0xFF064E3B);
   static const Color lossRose = Color(0xFF9F1239); // Loss indicators
   static const Color lossRoseDark = Color(0xFF881337);
+
+
+  static const Color smsAccent = Color(0xFFF59E0B);   // amber, SMS source tag
+  static const Color emailAccent = Color(0xFF3B82F6); // blue, Email source tag
 
   // --- Backgrounds (Dark Grey/Blue) ---
   static const Color backgroundBlack = Color.fromARGB(
@@ -76,6 +85,8 @@ class AppColors {
   static const List<Color> tealGradient = [pastelTeal, Color(0xFF14B8A6)];
 
   static const List<Color> purpleGradient = [pastelPurple, Color(0xFF8B5CF6)];
+
+  static const List<Color> nboxHeroGradient = [nboxHeroStart, nboxHeroEnd];
 
   static const List<Color> indigoGradient = [pastelIndigo, Color(0xFF4F46E5)];
 

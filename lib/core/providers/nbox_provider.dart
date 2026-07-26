@@ -86,6 +86,8 @@ class NewNboxProvider extends ChangeNotifier {
   List<DetectedTransaction> get pendingEmails =>
       List.unmodifiable(_pendingEmails);
   List<DetectedTransaction> get rejected => List.unmodifiable(_rejected);
+  List<DetectedTransaction> _pendingPdf = [];
+  List<DetectedTransaction> get pendingPdf => List.unmodifiable(_pendingPdf);
 
   bool get hasPendingApprovalRequest =>
       _pendingApprovalSource != null && _pendingApprovalId != null;
@@ -176,6 +178,11 @@ class NewNboxProvider extends ChangeNotifier {
       await NotificationService().stopTransactionScanStatus();
       _setLoading(false);
     }
+  }
+
+  Future<void> importFromPdf(List<DetectedTransaction> transactions) async {
+    _processTransactions(transactions, 'pdf');
+    notifyListeners();
   }
 
   Future<void> scanSmsInbox() async {
@@ -344,6 +351,8 @@ class NewNboxProvider extends ChangeNotifier {
       _pendingSms = freshPending;
     } else if (source == 'email') {
       _pendingEmails = freshPending;
+    } else if (source == 'pdf') {
+      _pendingPdf = freshPending;
     }
 
     _rejected.removeWhere((t) => t.source == source);
@@ -416,6 +425,7 @@ class NewNboxProvider extends ChangeNotifier {
 
     _pendingSms.removeWhere((t) => t.id == id && t.source == source);
     _pendingEmails.removeWhere((t) => t.id == id && t.source == source);
+    _pendingPdf.removeWhere((t) => t.id == id && t.source == source);
     _rejected.removeWhere((t) => t.id == id && t.source == source);
 
     final approvedKey = '$source:${transaction.fingerprint}';
@@ -482,8 +492,10 @@ class NewNboxProvider extends ChangeNotifier {
     if (transactionToMove != null) {
       if (source == 'sms') {
         _pendingSms.add(transactionToMove!);
-      } else {
+      } else if (source == 'email') {
         _pendingEmails.add(transactionToMove!);
+      } else {
+        _pendingPdf.add(transactionToMove!);
       }
 
       _processedIds.remove(
@@ -500,6 +512,7 @@ class NewNboxProvider extends ChangeNotifier {
     _pendingSms.sort((a, b) => b.date.compareTo(a.date));
     _pendingEmails.sort((a, b) => b.date.compareTo(a.date));
     _rejected.sort((a, b) => b.date.compareTo(a.date));
+    _pendingPdf.sort((a, b) => b.date.compareTo(a.date));
   }
 
   Future<void> _persistIds() async {

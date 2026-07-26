@@ -9,9 +9,11 @@ import '../../core/widgets/swipe_to_delete.dart';
 import '../../core/models/account.dart';
 import '../../core/models/transaction.dart';
 import '../../core/providers/transaction_provider.dart';
+import '../../core/services/pdf_statement_import_service.dart';
 import '../../core/utils/logo_utils.dart';
 import '../transactions/add_transaction_screen.dart';
 import 'add_account_screen.dart';
+import '../../core/services/statement_import_review_screen.dart';
 
 class ModernAccountDetailScreen extends StatefulWidget {
   final Account account;
@@ -26,6 +28,7 @@ class ModernAccountDetailScreen extends StatefulWidget {
 class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
     with SingleTickerProviderStateMixin {
   bool _isFlipped = false;
+  bool _isImporting = false;
   late AnimationController _flipAnimationController;
   late Animation<double> _flipAnimation;
 
@@ -66,6 +69,11 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.upload_file, color: Colors.white),
+                tooltip: 'Import statement',
+                onPressed: _isImporting ? null : _importStatement,
+              ),
               IconButton(
                 icon: const Icon(Icons.edit, color: Colors.white),
                 onPressed: () => Navigator.push(
@@ -690,6 +698,87 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _importStatement() async {
+    setState(() => _isImporting = true);
+    try {
+      final parseData = await PdfStatementImportService.pickAndParse(
+        onPromptPassword: () => _promptForPassword(),
+      );
+
+      if (!mounted) return;
+
+      if (parseData == null) {
+        // User cancelled the file picker or the password prompt.
+        return;
+      }
+
+      if (parseData.transactions.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No transactions found in that statement')),
+        );
+        return;
+      }
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => StatementImportReviewScreen(
+            account: widget.account,
+            detected: parseData.transactions,
+            openingBalance: parseData.openingBalance,
+            closingBalance: parseData.closingBalance,
+          ),
+        ),
+      );
+    } on UnsupportedError catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Could not read this statement')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Import failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
+  }
+
+  /// Simple password prompt used by [PdfStatementImportService] when a
+  /// statement is encrypted and no saved password unlocks it.
+  Future<String?> _promptForPassword() {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        title: const Text(
+          'Statement is password protected',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: TextField(
+          controller: controller,
+          obscureText: true,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(hintText: 'Enter PDF password'),
+          onSubmitted: (v) => Navigator.pop(dialogContext, v),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, null),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: const Text('Unlock'),
           ),
         ],
       ),

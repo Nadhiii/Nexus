@@ -12,7 +12,7 @@ import '../../core/widgets/spring_tap.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../backup/backup_settings_screen.dart';
 import '../notifications/notification_settings_screen.dart';
-import '../gmail/gmail_settings_enhanced_screen.dart';
+import '../gmail/nbox_sync_screen.dart';
 import '../family/screens/family_dashboard_screen.dart';
 import '../family/screens/expense_splitter_screen.dart';
 import '../../core/services/ota_update_service.dart';
@@ -402,7 +402,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             icon: Icons.mark_email_unread_rounded,
             color: AppColors.error,
             title: "NBox Sync",
-            onTap: () => _navigate(const GmailSettingsEnhancedScreen()),
+            onTap: () => _navigate(const NboxSyncScreen()),
           ),
         ],
       ),

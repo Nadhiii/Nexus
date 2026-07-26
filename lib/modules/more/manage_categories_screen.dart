@@ -288,13 +288,11 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     );
   }
 
-  Widget _buildCategoryTile(BuildContext context, Category category) {
-    final isLocked = !category.isCustom;
+ Widget _buildCategoryTile(BuildContext context, Category category) {
+    final isLocked = false;
 
     return GestureDetector(
-      onTap: isLocked
-          ? null
-          : () => showEditCategoryModal(context, category: category),
+      onTap: () => showEditCategoryModal(context, category: category),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -354,11 +352,9 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    isLocked ? "System Protected" : "User Minted",
+                    category.isCustom ? "User Minted" : "Editable Default",
                     style: TextStyle(
-                      color: isLocked
-                          ? AppColors.textTertiary
-                          : category.color.withValues(alpha: 0.8),
+                      color: category.color.withValues(alpha: 0.8),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -375,9 +371,9 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                isLocked ? Icons.lock_outline : Icons.edit_outlined,
+                Icons.edit_outlined,
                 size: 16,
-                color: isLocked ? AppColors.textTertiary : Colors.white70,
+                color: Colors.white70,
               ),
             ),
           ],
