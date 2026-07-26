@@ -42,25 +42,25 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
         physics: const BouncingScrollPhysics(),
         slivers: [
           // ── 1. APP BAR ─────────────────────────────────────────────────
-          _buildAppBar(),
+          const _DashboardAppBar(),
 
           // ── 2. BALANCE CARD ────────────────────────────────────────────
-          SliverToBoxAdapter(
+          const SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 AppSpacing.xl,
                 AppSpacing.sm,
                 AppSpacing.xl,
                 0,
               ),
-              child: const TotalBalanceCard(),
+              child: TotalBalanceCard(),
             ),
           ),
 
           // ── 3. ACTION BAR ──────────────────────────────────────────────
-          SliverToBoxAdapter(
+          const SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 AppSpacing.xl,
                 AppSpacing.lg,
                 AppSpacing.xl,
@@ -97,41 +97,47 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
                 0,
               ),
               child: GarageDashboardWidget(
-                // Switch to the Garage tab (index 2 — adjust if different in your app)
-                onOpenGarage: () => widget.onNavigate?.call(2), 
+                onOpenGarage: () => widget.onNavigate?.call(2),
               ),
             ),
           ),
 
           // ── 6. RECENT ACTIVITY ─────────────────────────────────────────
-          SliverToBoxAdapter(
+          const SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 AppSpacing.xl,
                 AppSpacing.lg,
                 AppSpacing.xl,
                 0,
               ),
-              child: _RecentActivitySection(),
+              child: _RecentActivitySectionWrapper(),
             ),
           ),
 
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 120),
-          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
       ),
     );
   }
+}
 
-  SliverAppBar _buildAppBar() {
+// ─────────────────────────────────────────────────────────────────────────────
+// App Bar
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DashboardAppBar extends StatelessWidget {
+  const _DashboardAppBar();
+
+  @override
+  Widget build(BuildContext context) {
     return SliverAppBar(
       pinned: true,
       backgroundColor: AppColors.backgroundBlack,
       surfaceTintColor: AppColors.backgroundBlack,
       elevation: 0,
       automaticallyImplyLeading: false,
-      title: _GreetingTitle(),
+      title: const _GreetingTitle(),
       actions: [
         Consumer<NotificationProvider>(
           builder: (context, notifProvider, _) {
@@ -149,14 +155,12 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
                 decoration: BoxDecoration(
                   color: AppColors.cardSurface,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppColors.white12,
-                  ),
+                  border: Border.all(color: AppColors.white12),
                 ),
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.notifications_outlined,
                       color: AppColors.textSecondary,
                       size: 20,
@@ -200,23 +204,25 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _GreetingTitle extends StatelessWidget {
+  const _GreetingTitle();
+
   String _greetingByTime() {
     final hour = DateTime.now().hour;
     return hour < 12 ? 'Good morning,' : 'Good evening,';
   }
 
-  String _resolveUserName(BuildContext context) {
-    final providerName = context.watch<UserProvider>().user?.displayName ?? '';
+  @override
+  Widget build(BuildContext context) {
+    // Only rebuilds if displayName specifically changes
+    final providerName = context.select<UserProvider, String>(
+      (p) => p.user?.displayName ?? '',
+    );
     final authName = FirebaseAuth.instance.currentUser?.displayName ?? '';
     final candidate = providerName.trim().isNotEmpty
         ? providerName.trim()
         : authName.trim();
-    return candidate.isNotEmpty ? candidate : 'User';
-  }
+    final userName = candidate.isNotEmpty ? candidate : 'User';
 
-  @override
-  Widget build(BuildContext context) {
-    final userName = _resolveUserName(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -244,6 +250,8 @@ class _GreetingTitle extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ActionBar extends StatelessWidget {
+  const _ActionBar();
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -257,7 +265,8 @@ class _ActionBar extends StatelessWidget {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) => const ModernAddTransactionScreen()),
+                    builder: (_) => const ModernAddTransactionScreen(),
+                  ),
                 ),
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -274,9 +283,9 @@ class _ActionBar extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(Icons.add_rounded, color: Colors.white, size: 20),
                       SizedBox(width: 8),
                       Text(
@@ -311,14 +320,18 @@ class _ActionBar extends StatelessWidget {
                     color: AppColors.cardSurface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08)),
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.swap_horiz_rounded,
-                          color: AppColors.textSecondary, size: 18),
-                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.swap_horiz_rounded,
+                        color: AppColors.textSecondary,
+                        size: 18,
+                      ),
+                      SizedBox(width: 6),
                       Text(
                         'Transfer',
                         style: TextStyle(
@@ -346,13 +359,19 @@ class _ActionBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.cardSurface,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: AppColors.success.withValues(alpha: 0.3),
+              ),
             ),
-            child: Row(
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.call_split_rounded, color: AppColors.success, size: 18),
-                const SizedBox(width: 8),
+                Icon(
+                  Icons.call_split_rounded,
+                  color: AppColors.success,
+                  size: 18,
+                ),
+                SizedBox(width: 8),
                 Text(
                   'Quick Split (No Save)',
                   style: TextStyle(
@@ -374,101 +393,117 @@ class _ActionBar extends StatelessWidget {
 // Recent Activity
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _RecentActivitySection extends StatelessWidget {
+class _RecentActivitySectionWrapper extends StatelessWidget {
+  const _RecentActivitySectionWrapper();
+
   @override
   Widget build(BuildContext context) {
     return Consumer<TransactionProvider>(
       builder: (context, txProvider, _) {
         final recent = txProvider.transactions.take(5).toList();
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'RECENT ACTIVITY',
-                  style: TextStyle(
-                    color: AppColors.textTertiary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    // Navigate to full transactions screen via bottom nav
-                    // handled by parent scaffold tab switching
-                  },
-                  child: Text(
-                    'View all',
-                    style: TextStyle(
-                      color: AppColors.primaryBlue,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (recent.isEmpty)
-              _buildEmptyState()
-            else
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.05)),
-                ),
-                child: Column(
-                  children: recent.asMap().entries.map((entry) {
-                    final i = entry.key;
-                    final tx = entry.value;
-                    return Column(
-                      children: [
-                        AnimatedListItem(
-                          delay: Duration(milliseconds: 60 * i),
-                          child: _TransactionTile(transaction: tx),
-                        ),
-                        if (i < recent.length - 1)
-                          Divider(
-                            height: 1,
-                            color: Colors.white.withValues(alpha: 0.04),
-                            indent: 60,
-                          ),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
-          ],
-        );
+        return _RecentActivitySection(recentTransactions: recent);
       },
     );
   }
+}
 
-  Widget _buildEmptyState() {
+class _RecentActivitySection extends StatelessWidget {
+  final List<Transaction> recentTransactions;
+  const _RecentActivitySection({required this.recentTransactions});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'RECENT ACTIVITY',
+              style: TextStyle(
+                color: AppColors.textTertiary,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                // Navigate to full transactions screen via bottom nav
+                // handled by parent scaffold tab switching
+              },
+              child: const Text(
+                'View all',
+                style: TextStyle(
+                  color: AppColors.primaryBlue,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (recentTransactions.isEmpty)
+          const _EmptyState()
+        else
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.cardSurface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            ),
+            child: Column(
+              children: recentTransactions.asMap().entries.map((entry) {
+                final i = entry.key;
+                final tx = entry.value;
+                return Column(
+                  children: [
+                    AnimatedListItem(
+                      delay: Duration(milliseconds: 60 * i),
+                      child: _TransactionTile(transaction: tx),
+                    ),
+                    if (i < recentTransactions.length - 1)
+                      Divider(
+                        height: 1,
+                        color: Colors.white.withValues(alpha: 0.04),
+                        indent: 60,
+                      ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(20),
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
-      child: Center(
+      child: const Center(
         child: Column(
           children: [
-            Icon(Icons.receipt_long_outlined,
-                color: AppColors.textTertiary, size: 32),
-            const SizedBox(height: 12),
+            Icon(
+              Icons.receipt_long_outlined,
+              color: AppColors.textTertiary,
+              size: 32,
+            ),
+            SizedBox(height: 12),
             Text(
               'No transactions yet',
-              style: TextStyle(
-                  color: AppColors.textTertiary, fontSize: 13),
+              style: TextStyle(color: AppColors.textTertiary, fontSize: 13),
             ),
           ],
         ),
@@ -538,7 +573,7 @@ class _TransactionTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -549,8 +584,10 @@ class _TransactionTile extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   DateFormat('dd MMM').format(transaction.date),
-                  style: TextStyle(
-                      color: AppColors.textTertiary, fontSize: 11),
+                  style: const TextStyle(
+                    color: AppColors.textTertiary,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
