@@ -155,8 +155,26 @@ class GmailParser {
     );
   }
 
+  // Matches phrasing like "credited to your Loan account no. XX2965" or
+  // "credited to your Card account". Banks use "credited" here to mean
+  // money went INTO the loan/card account on your behalf — i.e. you made
+  // a repayment. That's an expense from the user's perspective, even
+  // though the literal word is "credited". Without this guard, every EMI/
+  // credit-card repayment confirmation email gets typed as income.
+  static final RegExp _loanOrCardAccountCreditPattern = RegExp(
+    r'credited\s+(?:to|towards)\s+(?:your\s+)?(?:loan|card)\s+(?:account|a/?c)',
+    caseSensitive: false,
+  );
+
+  static bool _isLoanOrCardRepayment(String lower) {
+    return _loanOrCardAccountCreditPattern.hasMatch(lower);
+  }
+
   static bool _isCredit(String lower) {
     if (lower.contains('refund policy')) {
+      return false;
+    }
+    if (_isLoanOrCardRepayment(lower)) {
       return false;
     }
     return lower.contains('received') ||
@@ -389,6 +407,13 @@ class GmailParser {
         }
       }
 
+      // Override: "credited to your Loan/Card account" is a repayment
+      // (expense), not income, regardless of which pattern matched or
+      // what its action group captured.
+      if (_isLoanOrCardRepayment(fullBody.toLowerCase())) {
+        type = 'expense';
+      }
+
       // Date: prefer the transaction date captured from the email body
       // over the email's arrival timestamp — these can differ when
       // Gmail sync lags or a bank sends a delayed/batched alert.
@@ -415,6 +440,9 @@ class GmailParser {
       if (!merchantWasCaptured) {
         confidence -= 0.10;
         warnings.add('Merchant unclear - using bank name');
+      }
+      if (_isLoanOrCardRepayment(fullBody.toLowerCase())) {
+        warnings.add('Detected as loan/card repayment, not income');
       }
 
       return _finalizeTransaction(

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Added for Haptics
+import 'package:flutter/services.dart';
 import 'package:flutter/physics.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
@@ -32,9 +32,7 @@ class _MainScreenState extends State<MainScreen>
     with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
   int _financeScreenInitialTab = 0;
-  final bool _aiInitialized = false;
   AnimationController? _navAnimationController;
-  Animation<double>? _navAnimation;
   int _previousIndex = 0;
   StreamSubscription<int>? _intentSub;
   StreamSubscription<DetectionApprovalRequest>? _approvalSub;
@@ -47,20 +45,14 @@ class _MainScreenState extends State<MainScreen>
       lowerBound: 0.0,
       upperBound: 1.0,
     );
-    _navAnimation = CurvedAnimation(
-      parent: _navAnimationController!,
-      curve: AppAnimations.standardCurve,
-    );
 
     _intentSub = IntentNavigationService.tabStream.listen((tabIndex) {
-      if (!mounted) { return; }
+      if (!mounted) return;
       _navigateToScreen(tabIndex);
     });
 
     _approvalSub = NotificationService().approvalRequestStream.listen((event) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       context.read<NewNboxProvider>().queueApprovalRequestFromNotification(
         transactionId: event.transactionId,
         source: event.source,
@@ -78,9 +70,8 @@ class _MainScreenState extends State<MainScreen>
   }
 
   void _navigateToScreen(int index, {int? financeTab}) {
-    if (index == _currentIndex) { return; }
+    if (index == _currentIndex) return;
 
-    // Light haptic feedback for a tactile feel
     HapticFeedback.selectionClick();
 
     setState(() {
@@ -88,13 +79,14 @@ class _MainScreenState extends State<MainScreen>
       _financeScreenInitialTab = financeTab ?? 0;
       _currentIndex = index;
     });
-    _navAnimationController?.duration = const Duration(milliseconds: 400);
+
+    _navAnimationController?.duration = const Duration(milliseconds: 350);
     final spring = SpringDescription(
       mass: 1.0,
-      stiffness: 200.0,
-      damping: 22.0,
+      stiffness: 220.0,
+      damping: 24.0,
     );
-    final simulation = SpringSimulation(spring, 0.0, 1.0, 4.0);
+    final simulation = SpringSimulation(spring, 0.0, 1.0, 3.5);
     _navAnimationController?.animateWith(simulation);
   }
 
@@ -109,9 +101,10 @@ class _MainScreenState extends State<MainScreen>
       const ModernMoreScreen(),
     ];
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.backgroundBlack,
-      // Extends body under the floating nav bar for true translucency
+      backgroundColor: isDark ? AppColors.backgroundBlack : AppColors.kuveraBgLight,
       extendBody: true,
       body: PageTransitionSwitcher(
         duration: AppAnimations.pageTransitionDuration,
@@ -119,175 +112,139 @@ class _MainScreenState extends State<MainScreen>
           return FadeThroughTransition(
             animation: primaryAnimation,
             secondaryAnimation: secondaryAnimation,
-            fillColor: AppColors.backgroundBlack,
+            fillColor: isDark ? AppColors.backgroundBlack : AppColors.kuveraBgLight,
             child: child,
           );
         },
         child: screens[_currentIndex],
       ),
-      bottomNavigationBar: _buildFloatingNavBar(context, _currentIndex),
+      bottomNavigationBar: _buildKuveraFloatingDock(context, _currentIndex),
     );
   }
 
-  Widget _buildFloatingNavBar(BuildContext context, int currentIndex) {
+  Widget _buildKuveraFloatingDock(BuildContext context, int currentIndex) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-      height: 70,
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(35),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
-            blurRadius: 25,
-            offset: const Offset(0, 12),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+      height: 64,
+      child: Row(
+        children: [
+          // Main Floating Pill Navigation Bar
+          Expanded(
+            child: Container(
+              height: 64,
+              decoration: BoxDecoration(
+                color: isDark 
+                    ? AppColors.cardSurface.withValues(alpha: 0.95)
+                    : Colors.white.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(36),
+                border: Border.all(
+                  color: isDark ? AppColors.white12 : AppColors.kuveraBorderLight,
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: _buildDockNavItems(currentIndex, isDark),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Detached Quick Action Button
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _navigateToScreen(4), // Quick Jump to NBox
+              borderRadius: BorderRadius.circular(32),
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.white : AppColors.black,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.search,
+                  color: isDark ? AppColors.black : AppColors.white,
+                  size: 24,
+                ),
+              ),
+            ),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(35),
-        child: ValueListenableBuilder<bool>(
-          valueListenable: isPopupActiveNotifier,
-          builder: (context, isPopupActive, child) {
-            return BackdropFilter(
-              filter: isPopupActive
-                  ? ImageFilter.blur(sigmaX: 0, sigmaY: 0)
-                  : ImageFilter.blur(sigmaX: 20, sigmaY: 20), // Stronger blur
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.white12,
-                  borderRadius: BorderRadius.circular(35),
-                  border: Border.all(
-                    color: AppColors.white12,
-                    width: 0.5,
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: _buildNavItems(currentIndex),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
     );
   }
 
-  List<Widget> _buildNavItems(int currentIndex) {
+  List<Widget> _buildDockNavItems(int currentIndex, bool isDark) {
     final items = [
-      {
-        'icon': Icons.dashboard_outlined,
-        'selectedIcon': Icons.dashboard_rounded,
-        'label': 'Home',
-        'index': 0,
-      },
-      {
-        'icon': Icons.account_balance_wallet_outlined,
-        'selectedIcon': Icons.account_balance_wallet_rounded,
-        'label': 'Wallet',
-        'index': 1,
-      },
-      {
-        'icon': Icons.pie_chart_outline,
-        'selectedIcon': Icons.pie_chart_rounded,
-        'label': 'Wealth',
-        'index': 2,
-      },
-      {
-        'icon': Icons.two_wheeler_outlined,
-        'selectedIcon': Icons.two_wheeler_rounded,
-        'label': 'Garage',
-        'index': 3,
-      },
-      {
-        'icon': Icons.inbox_outlined,
-        'selectedIcon': Icons.inbox_rounded,
-        'label': 'NBox',
-        'index': 4,
-      },
-      {
-        'icon': Icons.more_horiz_outlined,
-        'selectedIcon': Icons.more_horiz_rounded,
-        'label': 'More',
-        'index': 5,
-      },
+      {'icon': Icons.home_outlined, 'selectedIcon': Icons.home_rounded, 'label': 'Home', 'index': 0},
+      {'icon': Icons.account_balance_wallet_outlined, 'selectedIcon': Icons.account_balance_wallet_rounded, 'label': 'Wallet', 'index': 1},
+      {'icon': Icons.pie_chart_outline, 'selectedIcon': Icons.pie_chart_rounded, 'label': 'Holdings', 'index': 2},
+      {'icon': Icons.two_wheeler_outlined, 'selectedIcon': Icons.two_wheeler_rounded, 'label': 'Garage', 'index': 3},
+      {'icon': Icons.more_horiz_outlined, 'selectedIcon': Icons.more_horiz_rounded, 'label': 'More', 'index': 5},
     ];
 
     return items.map((item) {
       final index = item['index'] as int;
       final isSelected = currentIndex == index;
-      final wasSelected = _previousIndex == index;
       final label = item['label'] as String;
+
+      final activeBg = isDark ? AppColors.white : AppColors.black;
+      final activeFg = isDark ? AppColors.black : AppColors.white;
+      final inactiveFg = isDark ? AppColors.textSecondary : AppColors.kuveraTextSecondaryLight;
 
       return GestureDetector(
         onTap: () => _navigateToScreen(index),
         behavior: HitTestBehavior.opaque,
-        child: AnimatedBuilder(
-          animation: _navAnimation ?? const AlwaysStoppedAnimation(1.0),
-          builder: (context, child) {
-            double selectionProgress = isSelected
-                ? (_navAnimation?.value ?? 1.0)
-                : (wasSelected ? 1.0 - (_navAnimation?.value ?? 0.0) : 0.0);
-
-            selectionProgress = selectionProgress.clamp(0.0, 1.0);
-
-            if (!(_navAnimationController?.isAnimating ?? false)) {
-              selectionProgress = isSelected ? 1.0 : 0.0;
-            }
-
-            return Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: 12 + (4 * selectionProgress),
-                vertical: 10,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.symmetric(
+            horizontal: isSelected ? 16 : 10,
+            vertical: 8,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected ? activeBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isSelected ? item['selectedIcon'] as IconData : item['icon'] as IconData,
+                color: isSelected ? activeFg : inactiveFg,
+                size: 20,
               ),
-              decoration: BoxDecoration(
-                color: AppColors.primaryBlue.withValues(alpha: 
-                  0.15 * selectionProgress,
+              if (isSelected) ...[
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: activeFg,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    selectionProgress > 0.5
-                        ? item['selectedIcon'] as IconData
-                        : item['icon'] as IconData,
-                    color: Color.lerp(
-                      AppColors.textTertiary,
-                      AppColors.primaryBlue,
-                      selectionProgress,
-                    ),
-                    size: 22,
-                  ),
-                  ClipRect(
-                    child: AnimatedAlign(
-                      duration: AppAnimations.navDuration,
-                      curve: AppAnimations.standardCurve,
-                      alignment: Alignment.centerLeft,
-                      widthFactor: selectionProgress,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: Opacity(
-                          opacity: selectionProgress,
-                          child: Text(
-                            label,
-                            style: TextStyle(
-                              color: AppColors.primaryBlue,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+              ],
+            ],
+          ),
         ),
       );
     }).toList();

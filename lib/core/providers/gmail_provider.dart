@@ -224,7 +224,7 @@ class GmailProvider extends ChangeNotifier {
       }
 
       final baseQuery =
-          '(subject:(receipt OR transaction OR payment OR spent OR debited OR credited OR "sent you" OR "paid" OR alert OR notification) OR body:(debited OR credited OR "account balance" OR "available balance")) -subject:("OTP" OR "One Time Password" OR "statement" OR "bill due" OR "payment due" OR "reminder" OR verification OR "verify your")';
+          '(subject:(receipt OR transaction OR payment OR spent OR debited OR credited OR "sent you" OR "paid" OR alert OR notification OR received) OR body:(debited OR credited OR "account balance" OR "available balance" OR avl)) -subject:("OTP" OR "One Time Password" OR "statement" OR "bill due" OR "payment due" OR "reminder" OR verification OR "verify your")';
 
       String finalQuery = '$baseQuery after:$formattedDate';
 
@@ -309,7 +309,19 @@ class GmailProvider extends ChangeNotifier {
         }
       }
 
-      _detectedTransactions = finalTransactions;
+      // Merge fresh detections into the existing list instead of
+      // overwriting it. scanEmails() only queries messages *after*
+      // _lastSyncTime, so a small/empty fresh batch is expected on
+      // repeat scans and must not wipe out previously detected,
+      // still-pending transactions.
+      final Map<String, DetectedTransaction> merged = {
+        for (final tx in _detectedTransactions)
+          '${tx.source}:${tx.fingerprint}': tx,
+      };
+      for (final tx in finalTransactions) {
+        merged['${tx.source}:${tx.fingerprint}'] = tx;
+      }
+      _detectedTransactions = merged.values.toList();
       _lastSyncTime = DateTime.now();
 
       if (kDebugMode) {

@@ -347,12 +347,33 @@ class NewNboxProvider extends ChangeNotifier {
       }
     }
 
+    // Merge fresh detections into the existing pending list by
+    // fingerprint instead of overwriting it. A rescan that finds
+    // nothing new (or fewer items than before, e.g. a Gmail delta
+    // query) must not delete transactions the user hasn't approved
+    // or rejected yet.
+    List<DetectedTransaction> mergePending(
+      List<DetectedTransaction> existing,
+      List<DetectedTransaction> fresh,
+    ) {
+      final Map<String, DetectedTransaction> byKey = {
+        for (final t in existing) '${t.source}:${t.fingerprint}': t,
+      };
+      for (final t in fresh) {
+        byKey['${t.source}:${t.fingerprint}'] = t;
+      }
+      // Drop anything that's since been approved/rejected but may
+      // still be sitting in the merged map from a prior pending state.
+      byKey.removeWhere((key, _) => _processedIds.contains(key));
+      return byKey.values.toList();
+    }
+
     if (source == 'sms') {
-      _pendingSms = freshPending;
+      _pendingSms = mergePending(_pendingSms, freshPending);
     } else if (source == 'email') {
-      _pendingEmails = freshPending;
+      _pendingEmails = mergePending(_pendingEmails, freshPending);
     } else if (source == 'pdf') {
-      _pendingPdf = freshPending;
+      _pendingPdf = mergePending(_pendingPdf, freshPending);
     }
 
     _rejected.removeWhere((t) => t.source == source);

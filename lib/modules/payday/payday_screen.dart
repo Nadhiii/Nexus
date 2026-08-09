@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/models/payday_checklist.dart';
+import '../../core/models/detected_transaction.dart';
+import '../../core/models/transaction.dart';
 import '../../core/services/payday_checklist_service.dart';
+import '../../core/services/smart_category_resolver.dart';
 import '../../core/providers/debt_provider.dart';
 import '../../core/providers/subscription_provider.dart';
 import '../../core/providers/goal_provider.dart';
 import '../../core/providers/budget_provider.dart';
 import '../../core/providers/family_debt_provider.dart';
+import '../../core/providers/account_provider.dart';
+import '../../core/providers/category_provider.dart';
+import '../../core/providers/transaction_provider.dart';
 import '../../core/widgets/top_snackbar.dart';
 
 /// Full-screen payday checklist shown when salary income is detected
@@ -32,11 +39,21 @@ class PaydayScreen extends StatefulWidget {
   final String? incomeSource;
   final DateTime? incomeDate;
 
+  /// Pass the still-unsaved DetectedTransaction when opening this screen
+  /// from NBox approval (salary intent). PaydayScreen will save it via
+  /// TransactionProvider.addTransaction when the user taps Done.
+  ///
+  /// Leave null when the income transaction has ALREADY been saved
+  /// elsewhere (e.g. manual entry via AddTransactionScreen that then shows
+  /// this checklist as a follow-up) -- in that case Done just dismisses.
+  final DetectedTransaction? detectedTransaction;
+
   const PaydayScreen({
     super.key,
     required this.incomeAmount,
     this.incomeSource,
     this.incomeDate,
+    this.detectedTransaction,
   });
 
   @override
@@ -49,6 +66,7 @@ class _PaydayScreenState extends State<PaydayScreen>
   final Set<String> _checked = {};
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -708,21 +726,96 @@ class _PaydayScreenState extends State<PaydayScreen>
     );
   }
 
+  /// Actually persists the salary income as a real Transaction, the same
+  /// way the "simple" quick-approve path in NBox does. Returns false (and
+  /// shows an error) if there's no account to save against, so we never
+  /// silently drop the transaction.
+  Future<bool> _saveIncomeTransaction() async {
+    final t = widget.detectedTransaction;
+    if (t == null) {
+      // Already saved elsewhere (e.g. manual entry flow) -- nothing to do.
+      return true;
+    }
+
+    final accounts = context.read<AccountProvider>().accounts;
+    if (accounts.isEmpty) {
+      if (mounted) {
+        showTopSnackBar(
+          context,
+          'No account to save into — add an account first',
+        );
+      }
+      return false;
+    }
+    final accountId = accounts.first.id;
+
+    final categories = context.read<CategoryProvider>().categories;
+    String? resolvedCategoryId = t.detectedCategory ??
+        SmartCategoryResolver.resolve(
+          merchant: t.merchant,
+          body: t.body,
+          amount: t.amount,
+          transactionType: t.type,
+        );
+    final hasId = categories.any((c) => c.id == resolvedCategoryId);
+    if (!hasId) {
+      final byName =
+          categories.where((c) => c.name == resolvedCategoryId).toList();
+      if (byName.isNotEmpty) resolvedCategoryId = byName.first.id;
+    }
+
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final now = DateTime.now();
+
+    final transaction = Transaction(
+      id: '',
+      userId: userId,
+      type: TransactionType.income,
+      amount: t.amount,
+      description: t.merchant,
+      categoryId: resolvedCategoryId,
+      accountId: accountId,
+      toAccountId: null,
+      date: t.date,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    final ok = await context.read<TransactionProvider>().addTransaction(transaction);
+    if (!ok && mounted) {
+      showTopSnackBar(context, 'Could not save — try again');
+    }
+    return ok;
+  }
+
   Widget _buildDoneButton() {
     final totalChecked = _checked.length;
     final totalItems = _checklist?.items.length ?? 0;
     final allDone = totalChecked == totalItems && totalItems > 0;
 
     return GestureDetector(
-      onTap: () {
-        showTopSnackBar(
-          context,
-          allDone
-              ? 'All done! Payday sorted 🎉'
-              : 'Saved — $totalChecked/$totalItems items checked',
-        );
-        Navigator.pop(context, true);
-      },
+      onTap: _isSaving
+          ? null
+          : () async {
+              setState(() => _isSaving = true);
+              final saved = await _saveIncomeTransaction();
+              if (!mounted) return;
+              setState(() => _isSaving = false);
+
+              if (!saved) {
+                // Error already shown inside _saveIncomeTransaction. Stay
+                // on screen so nothing gets silently lost.
+                return;
+              }
+
+              showTopSnackBar(
+                context,
+                allDone
+                    ? 'All done! Payday sorted 🎉'
+                    : 'Saved — $totalChecked/$totalItems items checked',
+              );
+              Navigator.pop(context, true);
+            },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
@@ -744,16 +837,28 @@ class _PaydayScreenState extends State<PaydayScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              allDone ? Icons.celebration_rounded : Icons.check_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
+            if (_isSaving)
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                ),
+              )
+            else
+              Icon(
+                allDone ? Icons.celebration_rounded : Icons.check_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
             const SizedBox(width: 10),
             Text(
-              allDone
-                  ? 'All Done — Payday Sorted!'
-                  : 'Done ($totalChecked/$totalItems checked)',
+              _isSaving
+                  ? 'Saving...'
+                  : allDone
+                      ? 'All Done — Payday Sorted!'
+                      : 'Done ($totalChecked/$totalItems checked)',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,

@@ -97,7 +97,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
                 0,
               ),
               child: GarageDashboardWidget(
-                onOpenGarage: () => widget.onNavigate?.call(2),
+                onOpenGarage: () => widget.onNavigate?.call(3),
               ),
             ),
           ),

@@ -115,7 +115,10 @@ class BudgetProvider extends ChangeNotifier {
 
   Future<void> createBudget(Budget budget) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) { return; }
+    if (user == null) {
+      _setError('User not logged in');
+      throw Exception('User not logged in');
+    }
 
     try {
       _setLoading(true);
@@ -123,6 +126,7 @@ class BudgetProvider extends ChangeNotifier {
       await refresh();
     } catch (e) {
       _setError('Failed to create budget: $e');
+      rethrow;
     } finally {
       _setLoading(false);
     }
@@ -130,13 +134,17 @@ class BudgetProvider extends ChangeNotifier {
 
   Future<void> updateBudget(Budget budget) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) { return; }
+    if (user == null) {
+      _setError('User not logged in');
+      throw Exception('User not logged in');
+    }
 
     try {
       _setLoading(true);
       await _budgetService.updateBudget(user.uid, budget);
     } catch (e) {
       _setError('Failed to update budget: $e');
+      rethrow;
     } finally {
       _setLoading(false);
     }
@@ -144,13 +152,17 @@ class BudgetProvider extends ChangeNotifier {
 
   Future<void> deleteBudget(String budgetId) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) { return; }
+    if (user == null) {
+      _setError('User not logged in');
+      throw Exception('User not logged in');
+    }
 
     try {
       _setLoading(true);
       await _budgetService.deleteBudget(user.uid, budgetId);
     } catch (e) {
       _setError('Failed to delete budget: $e');
+      rethrow;
     } finally {
       _setLoading(false);
     }

@@ -14,7 +14,7 @@ import '../../core/providers/subscription_provider.dart';
 // import '../../core/providers/goal_provider.dart';   // Uncomment when available
 
 // Screens
-import '../investments/investment_portfolio_screen.dart';
+import '../investments/investment_screen.dart';
 import '../debts/screens/liabilities_screen.dart';
 import '../subscriptions/subscription_screen.dart';
 import '../budgets/budgets_screen.dart'; // Assuming this exists

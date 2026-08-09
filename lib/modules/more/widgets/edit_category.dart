@@ -362,22 +362,39 @@ class _EditCategoryModalState extends State<EditCategoryModal> {
       setState(() => _isLoading = true);
       try {
         final provider = context.read<CategoryProvider>();
+        final editingExisting = widget.categoryToEdit != null;
+
+        // IMPORTANT: preserve the original isCustom flag when editing.
+        // Editing a default category (isCustom == false) must stay
+        // false — it's saved as an *override* doc keyed by the same
+        // default id, not promoted to a brand-new custom category.
+        // Only genuinely new categories (created via the "+" button,
+        // categoryToEdit == null) are isCustom: true.
+        final isCustom = editingExisting
+            ? widget.categoryToEdit!.isCustom
+            : true;
+
         final category = Category(
-          id:
-              widget.categoryToEdit?.id ??
+          id: widget.categoryToEdit?.id ??
               DateTime.now().millisecondsSinceEpoch.toString(),
           name: _nameController.text.trim(),
           emoji: _emojiController.text.trim().isEmpty
               ? '🏷️'
               : _emojiController.text.trim(),
           color: _selectedColor,
-          isCustom: true,
+          isCustom: isCustom,
         );
 
-        if (widget.categoryToEdit != null) {
+        if (editingExisting) {
+          // updateCategory now uses set(merge: true), so this works for
+          // true custom categories AND for overriding a default id.
           await provider.updateCategory(category);
         } else {
           await provider.addCategory(category);
+        }
+
+        if (provider.error != null) {
+          throw Exception(provider.error);
         }
 
         if (mounted) {
@@ -385,9 +402,13 @@ class _EditCategoryModalState extends State<EditCategoryModal> {
           showTopSnackBar(context, 'Category minted successfully');
         }
       } catch (e) {
-        if (mounted) { showTopSnackBar(context, 'Error: $e', isError: true); }
+        if (mounted) {
+          showTopSnackBar(context, 'Error: $e', isError: true);
+        }
       } finally {
-        if (mounted) { setState(() => _isLoading = false); }
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     }
   }

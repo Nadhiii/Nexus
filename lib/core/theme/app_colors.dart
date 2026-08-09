@@ -1,48 +1,55 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // --- Brand Colors (Softened for Pastel Theme) ---
+  // --- Kuvera Light Palette Extensions ---
+  static const Color kuveraBgLight = Color(0xFFF9FAFB);
+  static const Color kuveraCardLight = Color(0xFFFFFFFF);
+  static const Color kuveraBorderLight = Color(0xFFE5E7EB);
+  static const Color kuveraTextPrimaryLight = Color(0xFF111827);
+  static const Color kuveraTextSecondaryLight = Color(0xFF6B7280);
+  
+  // --- Kuvera Specific Accents ---
+  static const Color kuveraGreen = Color(0xFF00A859);
+  static const Color kuveraGreenBg = Color(0xFFE8F8F0);
+  static const Color kuveraRed = Color(0xFFE53935);
+  static const Color kuveraRedBg = Color(0xFFFFEBEE);
+  static const Color kuveraArcBgLight = Color(0xFFF3F4F6);
+  static const Color kuveraArcBgDark = Color(0xFF111827);
+
+  // --- Brand Colors ---
   static const Color primaryBlue = Color(0xFF4B6BFB);
   static const Color primaryBlueDark = Color(0xFF324AB2);
   static const Color primaryBlueLight = Color(0xFF7B92FF);
 
   // --- Pastel Accents ---
-  static const Color pastelTeal = Color(0xFF2DD4BF); // Soft Mint
-  static const Color pastelPurple = Color(0xFFA78BFA); // Soft LavenderS
-  static const Color pastelPink = Color(0xFFF472B6); // Soft Rose
-  static const Color pastelOrange = Color(0xFFFB923C); // Soft Apricot
-  static const Color pastelGreen = Color(0xFF34D399); // Soft Emerald
-  static const Color pastelYellow = Color(0xFFFACC15); // Soft Amber
-  static const Color pastelIndigo = Color(0xFF6366F1); // Soft Indigo
+  static const Color pastelTeal = Color(0xFF2DD4BF);
+  static const Color pastelPurple = Color(0xFFA78BFA);
+  static const Color pastelPink = Color(0xFFF472B6);
+  static const Color pastelOrange = Color(0xFFFB923C);
+  static const Color pastelGreen = Color(0xFF34D399);
+  static const Color pastelYellow = Color(0xFFFACC15);
+  static const Color pastelIndigo = Color(0xFF6366F1);
 
-  // --- NBox Hero Accent (deep violet, distinct from pastelPurple) ---
+  // --- NBox Hero Accent ---
   static const Color nboxHeroStart = Color(0xFF6D28D9);
   static const Color nboxHeroEnd = Color(0xFF4C1D95);
-  static const Color nboxAccent = Color(0xFFC084FC); // matches Colors.purple.shade300
+  static const Color nboxAccent = Color(0xFFC084FC);
 
   // --- Premium/Special Colors ---
-  static const Color premiumAmber = Color(0xFFD97706); // Premium badge
-  static const Color investmentIndigo = Color(0xFF6366F1); // Investment screens
-  static const Color profitEmerald = Color(0xFF065F46); // Profit indicators
+  static const Color premiumAmber = Color(0xFFD97706);
+  static const Color investmentIndigo = Color(0xFF6366F1);
+  static const Color profitEmerald = Color(0xFF065F46);
   static const Color profitEmeraldDark = Color(0xFF064E3B);
-  static const Color lossRose = Color(0xFF9F1239); // Loss indicators
+  static const Color lossRose = Color(0xFF9F1239);
   static const Color lossRoseDark = Color(0xFF881337);
 
+  static const Color smsAccent = Color(0xFFF59E0B);
+  static const Color emailAccent = Color(0xFF3B82F6);
 
-  static const Color smsAccent = Color(0xFFF59E0B);   // amber, SMS source tag
-  static const Color emailAccent = Color(0xFF3B82F6); // blue, Email source tag
-
-  // --- Backgrounds (Dark Grey/Blue) ---
-  static const Color backgroundBlack = Color.fromARGB(
-    255,
-    19,
-    20,
-    39,
-  ); // Main Background (Pitch Black)
-  static const Color cardSurface = Color(0xFF1E293B); // Card Background
-  static const Color cardElevated = Color(
-    0xFF334155,
-  ); // Input fields / Highlights
+  // --- Backgrounds (Dark Mode) ---
+  static const Color backgroundBlack = Color.fromARGB(255, 19, 20, 39);
+  static const Color cardSurface = Color(0xFF1E293B);
+  static const Color cardElevated = Color(0xFF334155);
 
   // --- Semantic Colors ---
   static const Color success = Color(0xFF34D399);
@@ -50,12 +57,12 @@ class AppColors {
   static const Color error = Color(0xFFF87171);
   static const Color info = Color(0xFF60A5FA);
 
-  // --- Text (High Contrast for Safety) ---
-  static const Color textPrimary = Color(0xFFF8FAFC); // White-ish
-  static const Color textSecondary = Color(0xFF94A3B8); // Cool Grey
-  static const Color textTertiary = Color(0xFF64748B); // Darker Grey
+  // --- Text (Dark Mode) ---
+  static const Color textPrimary = Color(0xFFF8FAFC);
+  static const Color textSecondary = Color(0xFF94A3B8);
+  static const Color textTertiary = Color(0xFF64748B);
 
-  // --- Neutral Colors (Kept for compatibility) ---
+  // --- Neutral Colors ---
   static const Color white = Color(0xFFFFFFFF);
   static const Color black = Color(0xFF000000);
   static const Color transparent = Color(0x00000000);
@@ -73,53 +80,42 @@ class AppColors {
   static const Color accentIndigo = pastelIndigo;
   static const Color accentYellow = pastelYellow;
 
-  // Card colors aliases
   static const Color cardDark = cardSurface;
   static const Color cardDarkElevated = cardElevated;
 
   // Gradients
   static const List<Color> darkGradient = [backgroundBlack, cardSurface];
-
   static const List<Color> blueGradient = [primaryBlue, primaryBlueDark];
-
   static const List<Color> tealGradient = [pastelTeal, Color(0xFF14B8A6)];
-
   static const List<Color> purpleGradient = [pastelPurple, Color(0xFF8B5CF6)];
-
   static const List<Color> nboxHeroGradient = [nboxHeroStart, nboxHeroEnd];
-
   static const List<Color> indigoGradient = [pastelIndigo, Color(0xFF4F46E5)];
-
   static const List<Color> profitGradient = [profitEmerald, profitEmeraldDark];
-
   static const List<Color> lossGradient = [lossRose, lossRoseDark];
-
   static const List<Color> summaryCardGradient = [
     Color(0xFF1E293B),
     Color(0xFF0F172A),
   ];
 
-  // Net Worth Card Gradients
   static const List<Color> netWorthPositiveGradient = [
-    Color(0xFF0F172A), // Dark slate
-    Color(0xFF1E293B), // Slate
+    Color(0xFF0F172A),
+    Color(0xFF1E293B),
   ];
 
   static const List<Color> netWorthNegativeGradient = [
-    Color(0xFF450A0A), // Dark red
-    Color(0xFF7F1D1D), // Red
+    Color(0xFF450A0A),
+    Color(0xFF7F1D1D),
   ];
 
   // Opacity variations
-  static const Color whiteDim = Color(0x99FFFFFF); // white 60%
-  static const Color whiteLight = Color(0xB3FFFFFF); // white 70%
-  static const Color white12 = Color(0x1FFFFFFF); // white 12%
-  static const Color white38 = Color(0x61FFFFFF); // white 38%
-  static const Color white54 = Color(0x8AFFFFFF); // white 54%
-  static const Color white70 = Color(0xB3FFFFFF); // white 70%
-  static const Color black12 = Color(0x1F000000); // black 12%
+  static const Color whiteDim = Color(0x99FFFFFF);
+  static const Color whiteLight = Color(0xB3FFFFFF);
+  static const Color white12 = Color(0x1FFFFFFF);
+  static const Color white38 = Color(0x61FFFFFF);
+  static const Color white54 = Color(0x8AFFFFFF);
+  static const Color white70 = Color(0xB3FFFFFF);
+  static const Color black12 = Color(0x1F000000);
 
-  // Neutral Colors (for compatibility)
   static const Color neutral900 = backgroundBlack;
   static const Color neutral800 = cardSurface;
   static const Color neutral700 = cardElevated;
@@ -145,7 +141,6 @@ class AppColors {
     'other': textSecondary,
   };
 
-  // Account Type Colors
   static const Map<String, Color> accountTypeColors = {
     'cash': pastelGreen,
     'bank': info,

@@ -111,6 +111,15 @@ class AccountProvider with ChangeNotifier {
     }
   }
 
+  /// Stages an account (and its transactions) for possible undo *before*
+  /// deletion actually happens. Callers must fetch the account's own
+  /// transactions (e.g. from TransactionProvider) and pass them in, since
+  /// AccountProvider has no direct visibility into the transaction list.
+  void stageForUndo(Account account, List<Transaction> transactions) {
+    _lastDeletedAccount = account;
+    _lastDeletedTransactions = List<Transaction>.from(transactions);
+  }
+
   Future<void> deleteAccount(String accountId) async {
     final user = _auth.currentUser;
     if (user == null) { return; }
@@ -127,6 +136,10 @@ class AccountProvider with ChangeNotifier {
       );
     } catch (e) {
       _setError(e.toString());
+      // Deletion failed — clear any staged undo data so a stale restore
+      // isn't offered for an account that was never actually removed.
+      _lastDeletedAccount = null;
+      _lastDeletedTransactions = [];
     } finally {
       _setLoading(false);
     }

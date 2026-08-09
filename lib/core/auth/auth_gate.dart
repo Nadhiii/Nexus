@@ -16,6 +16,7 @@ import '../providers/notification_provider.dart';
 import '../providers/gmail_provider.dart';
 import '../services/notification_service.dart';
 import '../services/backup_service.dart';
+import '../services/legacy_data_migration_service.dart';
 
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
@@ -75,6 +76,7 @@ class AuthenticatedApp extends StatefulWidget {
 class _AuthenticatedAppState extends State<AuthenticatedApp> {
   bool _ranAutoBackupRestore = false;
   bool _initializedNotifications = false;
+  bool _ranLegacyMigration = false;
 
   @override
   void initState() {
@@ -88,6 +90,11 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return;
+    }
+
+    if (!_ranLegacyMigration) {
+      _ranLegacyMigration = true;
+      await LegacyDataMigrationService().migrateIfNeeded();
     }
 
     final accountProvider = Provider.of<AccountProvider>(

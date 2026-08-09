@@ -128,9 +128,16 @@ class SubscriptionProvider extends ChangeNotifier {
   Future<void> addSubscription(Subscription subscription) async {
     try {
       _setLoading(true);
-      await _subscriptionService.addSubscription(subscription);
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not logged in');
+      }
+      await _subscriptionService.addSubscription(
+        subscription.copyWith(userId: user.uid),
+      );
     } catch (e) {
       _setError('Failed to add subscription: $e');
+      rethrow;
     } finally {
       _setLoading(false);
     }
@@ -139,9 +146,16 @@ class SubscriptionProvider extends ChangeNotifier {
   Future<void> updateSubscription(Subscription subscription) async {
     try {
       _setLoading(true);
-      await _subscriptionService.updateSubscription(subscription);
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not logged in');
+      }
+      await _subscriptionService.updateSubscription(
+        subscription.copyWith(userId: user.uid),
+      );
     } catch (e) {
       _setError('Failed to update subscription: $e');
+      rethrow;
     } finally {
       _setLoading(false);
     }
@@ -153,6 +167,7 @@ class SubscriptionProvider extends ChangeNotifier {
       await _subscriptionService.deleteSubscription(subscriptionId);
     } catch (e) {
       _setError('Failed to delete subscription: $e');
+      rethrow;
     } finally {
       _setLoading(false);
     }

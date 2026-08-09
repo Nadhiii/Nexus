@@ -9,7 +9,7 @@ import '../../core/providers/goal_provider.dart';
 import '../../core/providers/budget_provider.dart';
 import '../../core/providers/family_debt_provider.dart';
 import '../../core/theme/app_animations.dart';
-import 'payday_checklist_sheet.dart';
+import 'payday_screen.dart';
 
 /// Helper to trigger payday checklist when income is added
 class PaydayChecklistHelper {
@@ -75,13 +75,18 @@ class PaydayChecklistHelper {
     // Small delay to let the transaction screen close
     await Future.delayed(AppAnimations.slow);
 
+    // Transaction is already saved in this flow, so we open PaydayScreen
+    // without passing detectedTransaction.
     if (context.mounted) {
-      await PaydayChecklistSheet.show(
+      await Navigator.push(
         context,
-        checklist: checklist,
-        onItemTap: onItemTap != null
-            ? (_) => onItemTap()
-            : (item) => _handleItemTap(context, item),
+        MaterialPageRoute(
+          builder: (_) => PaydayScreen(
+            incomeAmount: transaction.amount,
+            incomeSource: transaction.description ?? transaction.categoryId,
+            incomeDate: transaction.date,
+          ),
+        ),
       );
     }
   }
@@ -93,20 +98,6 @@ class PaydayChecklistHelper {
     } catch (e) {
       return null;
     }
-  }
-
-  /// Handle tapping on a checklist item
-  static void _handleItemTap(BuildContext context, PaydayChecklistItem item) {
-    // For now, just log the tap
-    // In the future, this could navigate to the relevant screen
-    debugPrint('Tapped checklist item: ${item.title} (${item.type})');
-
-    // Could navigate based on type:
-    // - debtEMI -> debt detail screen
-    // - familyDebt -> family debt screen
-    // - subscription -> subscription screen
-    // - goalContribution -> goal detail screen
-    // - budgetAllocation -> budget screen
   }
 
   /// Generate checklist without showing (for preview/testing)

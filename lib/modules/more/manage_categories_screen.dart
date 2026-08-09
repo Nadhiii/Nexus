@@ -17,7 +17,7 @@ class ManageCategoriesScreen extends StatefulWidget {
 }
 
 class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
-  String _activeFilter = 'All'; // 'All', 'System', 'Custom'
+  String _activeFilter = 'All'; // 'All', 'System', 'Custom', 'Hidden'
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +26,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
       body: Consumer<CategoryProvider>(
         builder: (context, provider, child) {
           final allCategories = provider.categories;
+          final hiddenCategories = provider.hiddenCategories;
           final systemCategories = allCategories
               .where((c) => !c.isCustom)
               .toList();
@@ -33,10 +34,13 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
               .where((c) => c.isCustom)
               .toList();
 
+          final isHiddenView = _activeFilter == 'Hidden';
+
           // Apply Filter
           List<Category> displayedCategories = allCategories;
           if (_activeFilter == 'System') { displayedCategories = systemCategories; }
           if (_activeFilter == 'Custom') { displayedCategories = customCategories; }
+          if (isHiddenView) { displayedCategories = hiddenCategories; }
 
           return CustomScrollView(
             slivers: [
@@ -81,6 +85,13 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                           _buildFilterChip('System'),
                           const SizedBox(width: AppSpacing.sm),
                           _buildFilterChip('Custom'),
+                          if (hiddenCategories.isNotEmpty) ...[
+                            const SizedBox(width: AppSpacing.sm),
+                            _buildFilterChip(
+                              'Hidden',
+                              badgeCount: hiddenCategories.length,
+                            ),
+                          ],
                         ],
                       ),
                       const SizedBox(height: AppSpacing.md),
@@ -95,7 +106,9 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                   hasScrollBody: false,
                   child: Center(
                     child: Text(
-                      "No categories found",
+                      isHiddenView
+                          ? "Nothing hidden — deleted defaults show up here"
+                          : "No categories found",
                       style: TextStyle(color: AppColors.textTertiary),
                     ),
                   ),
@@ -111,22 +124,39 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate((context, index) {
                       final category = displayedCategories[index];
+
+                      if (isHiddenView) {
+                        // Hidden defaults aren't swipeable/editable here —
+                        // just show them with an explicit restore action.
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                          child: _buildHiddenCategoryTile(
+                            context,
+                            category,
+                            onRestore: () => provider.unhideCategory(category.id),
+                          ),
+                        );
+                      }
+
                       final tile = Padding(
                         padding: const EdgeInsets.only(bottom: AppSpacing.md),
                         child: _buildCategoryTile(context, category),
                       );
 
-                      // Only allow swipe to delete for custom categories
-                      if (category.isCustom) {
-                        return SwipeToDelete(
-                          itemKey: ValueKey(category.id),
-                          itemId: category.id,
-                          itemName: category.name,
-                          onDelete: () => provider.deleteCategory(category.id),
-                          child: tile,
-                        );
-                      }
-                      return tile;
+                      // Allow swipe-to-delete for BOTH custom and default
+                      // categories. For defaults, deleteCategory() marks
+                      // them 'hidden' instead of truly deleting the
+                      // (non-existent) Firestore doc.
+                      return SwipeToDelete(
+                        itemKey: ValueKey(category.id),
+                        itemId: category.id,
+                        itemName: category.name,
+                        onDelete: () => provider.deleteCategory(
+                          category.id,
+                          isDefault: !category.isCustom,
+                        ),
+                        child: tile,
+                      );
                     }, childCount: displayedCategories.length),
                   ),
                 ),
@@ -258,7 +288,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label) {
+  Widget _buildFilterChip(String label, {int? badgeCount}) {
     final isActive = _activeFilter == label;
     return GestureDetector(
       onTap: () => setState(() => _activeFilter = label),
@@ -276,21 +306,44 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                 : Colors.white.withValues(alpha: 0.1),
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? AppColors.primaryBlue : Colors.white70,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive ? AppColors.primaryBlue : Colors.white70,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (badgeCount != null && badgeCount > 0) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? AppColors.primaryBlue
+                      : Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$badgeCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
   }
 
  Widget _buildCategoryTile(BuildContext context, Category category) {
-    final isLocked = false;
-
     return GestureDetector(
       onTap: () => showEditCategoryModal(context, category: category),
       child: Container(
@@ -351,13 +404,38 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    category.isCustom ? "User Minted" : "Editable Default",
-                    style: TextStyle(
-                      color: category.color.withValues(alpha: 0.8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        category.isCustom ? "User Minted" : "Editable Default",
+                        style: TextStyle(
+                          color: category.color.withValues(alpha: 0.8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (category.isModified) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            "Modified",
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
@@ -374,6 +452,79 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                 Icons.edit_outlined,
                 size: 16,
                 color: Colors.white70,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHiddenCategoryTile(
+    BuildContext context,
+    Category category, {
+    required VoidCallback onRestore,
+  }) {
+    return Opacity(
+      opacity: 0.6,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.cardElevated,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: category.color.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                border: Border.all(color: category.color.withValues(alpha: 0.2)),
+              ),
+              child: Center(
+                child: Text(
+                  category.emoji,
+                  style: const TextStyle(fontSize: 24),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    category.name,
+                    style: AppTypography.titleMedium.copyWith(
+                      color: AppColors.white.withValues(alpha: 0.8),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    "Hidden",
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            TextButton.icon(
+              onPressed: onRestore,
+              icon: const Icon(Icons.restore, size: 16, color: AppColors.primaryBlue),
+              label: const Text(
+                "Restore",
+                style: TextStyle(
+                  color: AppColors.primaryBlue,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],

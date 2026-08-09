@@ -9,6 +9,7 @@ import '../../core/widgets/swipe_to_delete.dart';
 import '../../core/models/account.dart';
 import '../../core/models/transaction.dart';
 import '../../core/providers/transaction_provider.dart';
+import '../../core/providers/account_provider.dart';
 import '../../core/services/pdf_statement_import_service.dart';
 import '../../core/utils/logo_utils.dart';
 import '../transactions/add_transaction_screen.dart';
@@ -65,17 +66,17 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
             backgroundColor: AppColors.backgroundBlack,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              icon: const Icon(Icons.arrow_back, color: AppColors.white),
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.upload_file, color: Colors.white),
+                icon: const Icon(Icons.upload_file, color: AppColors.white),
                 tooltip: 'Import statement',
                 onPressed: _isImporting ? null : _importStatement,
               ),
               IconButton(
-                icon: const Icon(Icons.edit, color: Colors.white),
+                icon: const Icon(Icons.edit, color: AppColors.white),
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -83,6 +84,11 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                         ModernAddAccountScreen(accountToEdit: widget.account),
                   ),
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                tooltip: 'Delete account',
+                onPressed: _confirmAndDeleteAccount,
               ),
             ],
           ),
@@ -95,36 +101,62 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
             ),
           ),
 
-          // 3. ACTION BUTTONS
+          // 3. ACTION BENTO GRID
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-              child: Row(
+              child: Column(
                 children: [
-                  Expanded(
-                    child: _buildActionButton(
-                      Icons.arrow_downward_rounded,
-                      "Deposit",
-                      AppColors.pastelGreen,
-                      () => _addTransaction(TransactionType.income),
+                  // Top row: Deposit gets a wider tile since it's the most
+                  // common action; Pay stays compact beside it.
+                  IntrinsicHeight(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: _buildActionButton(
+                            Icons.arrow_downward_rounded,
+                            "Deposit",
+                            AppColors.pastelGreen,
+                            () => _addTransaction(TransactionType.income),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: _buildActionButton(
+                            Icons.arrow_upward_rounded,
+                            "Pay",
+                            AppColors.error,
+                            () => _addTransaction(TransactionType.expense),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildActionButton(
-                      Icons.arrow_upward_rounded,
-                      "Pay",
-                      AppColors.error,
-                      () => _addTransaction(TransactionType.expense),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildActionButton(
-                      Icons.swap_horiz_rounded,
-                      "Transfer",
-                      AppColors.primaryBlue,
-                      () => _addTransaction(TransactionType.transfer),
+                  const SizedBox(height: 12),
+                  // Bottom row: Transfer and Import share the space evenly.
+                  IntrinsicHeight(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildActionButton(
+                            Icons.swap_horiz_rounded,
+                            "Transfer",
+                            AppColors.primaryBlue,
+                            () => _addTransaction(TransactionType.transfer),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildActionButton(
+                            Icons.upload_file_rounded,
+                            "Import",
+                            AppColors.pastelPurple,
+                            _isImporting ? () {} : _importStatement,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -257,19 +289,19 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
             hasLogo
                 ? const Color(0xFF111111)
                 : widget.account.color.withValues(alpha: 0.6),
-            Colors.black.withValues(alpha: 0.8),
+            AppColors.black.withValues(alpha: 0.8),
           ],
         ),
         boxShadow: [
           BoxShadow(
             color: hasLogo
-                ? Colors.black.withValues(alpha: 0.5)
+                ? AppColors.black.withValues(alpha: 0.5)
                 : widget.account.color.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: AppColors.white.withValues(alpha: 0.1)),
       ),
       child: Stack(
         children: [
@@ -297,7 +329,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                     Text(
                       widget.account.bankName ?? widget.account.name,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -310,7 +342,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                           )
                         : Icon(
                             widget.account.icon,
-                            color: Colors.white.withValues(alpha: 0.8),
+                            color: AppColors.white.withValues(alpha: 0.8),
                             size: 28,
                           ),
                   ],
@@ -321,14 +353,14 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                     Text(
                       "BALANCE",
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
+                        color: AppColors.white.withValues(alpha: 0.6),
                         fontSize: 10,
                       ),
                     ),
                     Text(
                       "₹${widget.account.balance.toStringAsFixed(2)}",
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontSize: 32,
                         fontWeight: FontWeight.w900,
                       ),
@@ -345,14 +377,14 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                           Text(
                             "ACCOUNT #",
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
+                              color: AppColors.white.withValues(alpha: 0.5),
                               fontSize: 9,
                             ),
                           ),
                           Text(
                             widget.account.accountNumber ?? "—",
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: AppColors.white.withValues(alpha: 0.8),
                               fontFamily: "Monospace",
                               fontSize: 14,
                             ),
@@ -367,14 +399,14 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                           Text(
                             "IFSC",
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
+                              color: AppColors.white.withValues(alpha: 0.5),
                               fontSize: 9,
                             ),
                           ),
                           Text(
                             widget.account.ifscCode ?? "—",
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: AppColors.white.withValues(alpha: 0.8),
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -394,7 +426,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
               message: "Tap to flip",
               child: Icon(
                 Icons.flip,
-                color: Colors.white.withValues(alpha: 0.4),
+                color: AppColors.white.withValues(alpha: 0.4),
                 size: 16,
               ),
             ),
@@ -416,17 +448,17 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
           colors: [
             const Color(0xFF1A1A1A),
             const Color(0xFF111111),
-            Colors.black.withValues(alpha: 0.8),
+            AppColors.black.withValues(alpha: 0.8),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
+            color: AppColors.black.withValues(alpha: 0.5),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: AppColors.white.withValues(alpha: 0.1)),
       ),
       child: Stack(
         children: [
@@ -456,14 +488,14 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                       Text(
                         "CARD",
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
+                          color: AppColors.white.withValues(alpha: 0.6),
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Icon(
                         Icons.credit_card,
-                        color: Colors.white.withValues(alpha: 0.6),
+                        color: AppColors.white.withValues(alpha: 0.6),
                         size: 20,
                       ),
                     ],
@@ -474,14 +506,14 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                       Text(
                         "CARD NUMBER",
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: AppColors.white.withValues(alpha: 0.5),
                           fontSize: 9,
                         ),
                       ),
                       Text(
                         widget.account.cardNumber ?? "—",
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.white,
                           fontSize: 14,
                           fontFamily: "Monospace",
                           fontWeight: FontWeight.w500,
@@ -501,14 +533,14 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                           Text(
                             "HOLDER",
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
+                              color: AppColors.white.withValues(alpha: 0.5),
                               fontSize: 9,
                             ),
                           ),
                           Text(
                             widget.account.cardHolderName!.toUpperCase(),
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: AppColors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -522,14 +554,14 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                           Text(
                             "EXPIRY",
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
+                              color: AppColors.white.withValues(alpha: 0.5),
                               fontSize: 9,
                             ),
                           ),
                           Text(
                             widget.account.cardExpiry!,
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: AppColors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -544,14 +576,14 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                     Text(
                       "FLIP TO VIEW ACCOUNT",
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: AppColors.white.withValues(alpha: 0.5),
                         fontSize: 9,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
                     Icon(
                       Icons.flip,
-                      color: Colors.white.withValues(alpha: 0.4),
+                      color: AppColors.white.withValues(alpha: 0.4),
                       size: 16,
                     ),
                   ],
@@ -577,7 +609,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          border: Border.all(color: AppColors.white.withValues(alpha: 0.05)),
         ),
         child: Column(
           children: [
@@ -592,10 +624,8 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
             const SizedBox(height: 8),
             Text(
               label,
-              style: TextStyle(
+              style: AppTypography.labelSmall.copyWith(
                 color: AppColors.textSecondary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -631,7 +661,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                 Expanded(
                   child: Container(
                     width: 2,
-                    color: isLast ? Colors.transparent : AppColors.cardSurface,
+                    color: isLast ? AppColors.transparent : AppColors.cardSurface,
                   ),
                 ),
               ],
@@ -648,13 +678,21 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                 itemName: "Transaction",
                 onDelete: () =>
                     context.read<TransactionProvider>().deleteTransaction(t.id),
-                child: Container(
+                onUndoDelete: () =>
+                    context.read<TransactionProvider>().restoreTransaction(t),
+                showConfirmation: true,
+                confirmMessage:
+                    'Are you sure you want to delete this transaction?',
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => _editTransaction(t),
+                  child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppColors.cardSurface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: AppColors.white.withValues(alpha: 0.05),
                     ),
                   ),
                   child: Row(
@@ -695,11 +733,97 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                       ),
                     ],
                   ),
+                  ),
                 ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _editTransaction(Transaction t) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ModernAddTransactionScreen(transaction: t),
+      ),
+    );
+  }
+
+  Future<void> _confirmAndDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          'Delete ${widget.account.name}?',
+          style: AppTypography.titleLarge.copyWith(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          'This will also delete every transaction linked to this account. '
+          'You can undo this right after.',
+          style: AppTypography.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(
+              backgroundColor: AppColors.error.withValues(alpha: 0.1),
+            ),
+            child: Text(
+              'Delete',
+              style: TextStyle(
+                color: AppColors.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final accountProvider = context.read<AccountProvider>();
+    final transactionProvider = context.read<TransactionProvider>();
+    final account = widget.account;
+
+    // Snapshot this account's transactions BEFORE deleting so undo has
+    // something to restore.
+    final relatedTransactions = transactionProvider.transactions
+        .where(
+          (t) => t.accountId == account.id || t.toAccountId == account.id,
+        )
+        .toList();
+    accountProvider.stageForUndo(account, relatedTransactions);
+
+    await accountProvider.deleteAccount(account.id);
+    if (!mounted) return;
+
+    Navigator.pop(context); // Leave the detail screen; account is gone.
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${account.name} deleted'),
+        backgroundColor: AppColors.cardElevated,
+        action: SnackBarAction(
+          label: 'UNDO',
+          textColor: AppColors.primaryBlue,
+          onPressed: () => accountProvider.restoreDeletedAccount(),
+        ),
       ),
     );
   }
@@ -761,13 +885,13 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
         backgroundColor: AppColors.cardSurface,
         title: const Text(
           'Statement is password protected',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppColors.white),
         ),
         content: TextField(
           controller: controller,
           obscureText: true,
           autofocus: true,
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: AppColors.white),
           decoration: const InputDecoration(hintText: 'Enter PDF password'),
           onSubmitted: (v) => Navigator.pop(dialogContext, v),
         ),

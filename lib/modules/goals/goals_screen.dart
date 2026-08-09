@@ -27,12 +27,18 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
 
   String? get _userId => _auth.currentUser?.uid;
 
+  CollectionReference<Map<String, dynamic>>? get _goalsCollection {
+    final userId = _userId;
+    if (userId == null) {
+      return null;
+    }
+    return _firestore.collection('users').doc(userId).collection('goals');
+  }
+
   Stream<List<Goal>> _getGoalsStream() {
     if (_userId == null) return Stream.value([]);
 
-    return _firestore
-        .collection('goals')
-        .where('userId', isEqualTo: _userId)
+    return _goalsCollection!
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
@@ -47,7 +53,11 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
       if (user != null) {
         final goalData = goal.toMap();
         goalData['userId'] = user.uid;
-        await FirebaseFirestore.instance.collection('goals').add(goalData);
+        final goals = _goalsCollection;
+        if (goals == null) {
+          throw Exception('User not logged in');
+        }
+        await goals.add(goalData);
         if (mounted) showTopSnackBar(context, 'Goal added successfully');
       }
     } catch (e) {
@@ -57,10 +67,11 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
 
   Future<void> _updateGoal(Goal goal) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('goals')
-          .doc(goal.id)
-          .update(goal.toMap());
+      final goals = _goalsCollection;
+      if (goals == null) {
+        throw Exception('User not logged in');
+      }
+      await goals.doc(goal.id).update(goal.toMap());
       if (mounted) showTopSnackBar(context, 'Goal updated successfully');
     } catch (e) {
       if (mounted) showTopSnackBar(context, 'Error updating goal: $e', isError: true);
@@ -69,7 +80,11 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
 
   Future<void> _deleteGoal(Goal goal) async {
     try {
-      await FirebaseFirestore.instance.collection('goals').doc(goal.id).delete();
+      final goals = _goalsCollection;
+      if (goals == null) {
+        throw Exception('User not logged in');
+      }
+      await goals.doc(goal.id).delete();
       if (mounted) showTopSnackBar(context, 'Goal deleted successfully');
     } catch (e) {
       if (mounted) showTopSnackBar(context, 'Error deleting goal: $e', isError: true);

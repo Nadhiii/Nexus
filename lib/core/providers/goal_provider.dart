@@ -50,13 +50,14 @@ class GoalProvider extends ChangeNotifier {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _setError('User not logged in');
-      return;
+      throw Exception('User not logged in');
     }
     _setLoading(true);
     try {
       await _goalService.addGoal(goal.copyWith(userId: user.uid));
     } catch (e) {
       _setError('Error adding goal: $e');
+      rethrow;
     } finally {
       _setLoading(false);
     }
@@ -68,6 +69,7 @@ class GoalProvider extends ChangeNotifier {
       await _goalService.updateGoal(goal);
     } catch (e) {
       _setError('Error updating goal: $e');
+      rethrow;
     } finally {
       _setLoading(false);
     }
@@ -79,6 +81,7 @@ class GoalProvider extends ChangeNotifier {
       await _goalService.deleteGoal(goalId);
     } catch (e) {
       _setError('Error deleting goal: $e');
+      rethrow;
     } finally {
       _setLoading(false);
     }
@@ -90,6 +93,7 @@ class GoalProvider extends ChangeNotifier {
       await _goalService.addContribution(goalId, amount);
     } catch (e) {
       _setError('Error adding contribution: $e');
+      rethrow;
     } finally {
       _setLoading(false);
     }

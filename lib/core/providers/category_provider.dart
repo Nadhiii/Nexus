@@ -5,16 +5,29 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/category.dart';
 
 /// Manages user-defined and default transaction categories.
+///
+/// Default categories are hardcoded (not Firestore docs). To let users
+/// "edit" or "delete" a default category, we store a user-scoped
+/// *override* document keyed by the SAME id as the default
+/// (e.g. 'food', 'bills'). On load we merge: default -> override (if any)
+/// -> hidden (if flagged). True custom categories are any user doc whose
+/// id does NOT match a default id.
 class CategoryProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   StreamSubscription<QuerySnapshot>? _categorySubscription;
 
   List<Category> _categories = [];
+  List<Category> _hiddenCategories = [];
   bool _isLoading = false;
   String? _error;
 
   List<Category> get categories => _categories;
+
+  /// Default categories the user has swiped-deleted (hidden). Shown in
+  /// the "Hidden" filter so they can be restored via unhideCategory().
+  List<Category> get hiddenCategories => _hiddenCategories;
+
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -31,7 +44,9 @@ class CategoryProvider with ChangeNotifier {
   /// Loads both default and user-defined categories with real-time updates.
   Future<void> _loadCategories() async {
     final user = _auth.currentUser;
-    if (user == null) { return; }
+    if (user == null) {
+      return;
+    }
 
     _isLoading = true;
     notifyListeners();
@@ -48,16 +63,63 @@ class CategoryProvider with ChangeNotifier {
           .snapshots()
           .listen(
             (snapshot) {
-              // Start with a list of default, non-custom categories
               final List<Category> defaultCategories = _getDefaultCategories();
+              final defaultIds = defaultCategories.map((c) => c.id).toSet();
 
-              final userCategories = snapshot.docs.map((doc) {
-                return Category.fromMap(doc.id, doc.data());
-              }).toList();
+              final userDocs = {
+                for (final doc in snapshot.docs) doc.id: doc.data(),
+              };
+
+              final List<Category> hidden = [];
+
+              // Merge defaults with any user overrides (edits/hides).
+              final mergedDefaults = defaultCategories
+                  .map((def) {
+                    final override = userDocs[def.id];
+                    if (override == null) {
+                      return def;
+                    }
+                    if (override['hidden'] == true) {
+                      // User "deleted" this default -> hide it, but keep
+                      // it around (with its last known name/emoji/color)
+                      // so it can be shown in the Hidden filter.
+                      hidden.add(
+                        Category.fromMap(def.id, {
+                          ...override,
+                          'is_custom': false,
+                        }),
+                      );
+                      return null;
+                    }
+                    // Apply override fields on top of the default,
+                    // but a default category always stays isCustom: false
+                    // so it renders/behaves as "Editable Default".
+                    return Category.fromMap(
+                      def.id,
+                      {...override, 'is_custom': false},
+                      isModified: true,
+                    );
+                  })
+                  .whereType<Category>()
+                  .toList();
+
+              // True custom categories: doc id is not a default id,
+              // and not hidden.
+              final customCategories = userDocs.entries
+                  .where(
+                    (e) =>
+                        !defaultIds.contains(e.key) &&
+                        e.value['hidden'] != true,
+                  )
+                  .map((e) => Category.fromMap(e.key, e.value))
+                  .toList();
 
               // Combine and sort the lists
-              _categories = [...defaultCategories, ...userCategories];
+              _categories = [...mergedDefaults, ...customCategories];
               _categories.sort((a, b) => a.name.compareTo(b.name));
+
+              _hiddenCategories = hidden
+                ..sort((a, b) => a.name.compareTo(b.name));
 
               _isLoading = false;
               _error = null;
@@ -84,7 +146,9 @@ class CategoryProvider with ChangeNotifier {
   /// Adds a new custom category to Firestore.
   Future<void> addCategory(Category category) async {
     final user = _auth.currentUser;
-    if (user == null) { return; }
+    if (user == null) {
+      return;
+    }
 
     try {
       await _firestore
@@ -99,10 +163,18 @@ class CategoryProvider with ChangeNotifier {
     }
   }
 
-  /// Updates an existing custom category in Firestore.
+  /// Updates an existing category in Firestore.
+  ///
+  /// Works for BOTH true custom categories and overrides of default
+  /// categories, since a default category id has no existing document
+  /// yet. Uses set(merge: true) instead of update() — update() throws
+  /// on a non-existent doc, which is why edits to default categories
+  /// used to silently fail.
   Future<void> updateCategory(Category category) async {
     final user = _auth.currentUser;
-    if (user == null || !category.isCustom) { return; }
+    if (user == null) {
+      return;
+    }
 
     try {
       await _firestore
@@ -110,7 +182,7 @@ class CategoryProvider with ChangeNotifier {
           .doc(user.uid)
           .collection('categories')
           .doc(category.id)
-          .update(category.toMap());
+          .set(category.toMap(), SetOptions(merge: true));
       // Stream will auto-update the list
     } catch (e) {
       _error = 'Error updating category: $e';
@@ -118,18 +190,32 @@ class CategoryProvider with ChangeNotifier {
     }
   }
 
-  /// Deletes a custom category from Firestore.
-  Future<void> deleteCategory(String categoryId) async {
+  /// Deletes (or hides) a category.
+  ///
+  /// - True custom category -> the Firestore doc is deleted outright.
+  /// - Default category -> can't be deleted (it isn't a real doc and
+  ///   SmartCategoryResolver may still route transactions to its id),
+  ///   so we mark it 'hidden' instead. It moves into hiddenCategories
+  ///   and disappears from the main list, but the id stays reserved
+  ///   and can be restored via unhideCategory().
+  Future<void> deleteCategory(String categoryId, {bool isDefault = false}) async {
     final user = _auth.currentUser;
-    if (user == null) { return; }
+    if (user == null) {
+      return;
+    }
 
     try {
-      await _firestore
+      final ref = _firestore
           .collection('users')
           .doc(user.uid)
           .collection('categories')
-          .doc(categoryId)
-          .delete();
+          .doc(categoryId);
+
+      if (isDefault) {
+        await ref.set({'hidden': true}, SetOptions(merge: true));
+      } else {
+        await ref.delete();
+      }
       // Stream will auto-update the list
     } catch (e) {
       _error = 'Error deleting category: $e';
@@ -137,7 +223,29 @@ class CategoryProvider with ChangeNotifier {
     }
   }
 
-  /// Returns a list of default categories that are not user-modifiable.
+  /// Restores a previously hidden default category back to visible.
+  Future<void> unhideCategory(String categoryId) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      return;
+    }
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('categories')
+          .doc(categoryId)
+          .set({'hidden': false}, SetOptions(merge: true));
+    } catch (e) {
+      _error = 'Error restoring category: $e';
+      notifyListeners();
+    }
+  }
+
+  /// Returns a list of default categories that are not user-modifiable
+  /// (i.e. their base definition — users can still override name/emoji/
+  /// color or hide them via updateCategory/deleteCategory above).
   List<Category> _getDefaultCategories() {
     return [
       // --- INCOME ---
@@ -234,6 +342,43 @@ class CategoryProvider with ChangeNotifier {
         name: 'Travel & Trips',
         emoji: '🏕️',
         color: Colors.cyan,
+        isCustom: false,
+      ),
+
+      // --- INDIA-SPECIFIC ADDITIONS ---
+      Category(
+        id: 'upi_p2p',
+        name: 'UPI / Sent to Person',
+        emoji: '📲',
+        color: Colors.deepPurple,
+        isCustom: false,
+      ),
+      Category(
+        id: 'rent',
+        name: 'Rent',
+        emoji: '🏠',
+        color: Colors.brown,
+        isCustom: false,
+      ),
+      Category(
+        id: 'insurance',
+        name: 'Insurance & PF',
+        emoji: '🛡️',
+        color: Colors.blueAccent,
+        isCustom: false,
+      ),
+      Category(
+        id: 'donation',
+        name: 'Donations & Religious',
+        emoji: '🙏',
+        color: Colors.amberAccent,
+        isCustom: false,
+      ),
+      Category(
+        id: 'family',
+        name: 'Family Support',
+        emoji: '👨‍👩‍👧',
+        color: Colors.pinkAccent,
         isCustom: false,
       ),
 

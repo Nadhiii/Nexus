@@ -188,14 +188,14 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
               Text(
                 "Hold Card to Back",
                 style: AppTypography.titleLarge.copyWith(
-                  color: Colors.white,
+                  color: AppColors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
               const Text(
                 "Searching for banking chip...",
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               const Spacer(),
@@ -286,7 +286,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
       backgroundColor: AppColors.backgroundBlack,
       appBar: AppBar(
         backgroundColor: AppColors.backgroundBlack,
-        surfaceTintColor: Colors.transparent,
+        surfaceTintColor: AppColors.transparent,
         elevation: 0,
         centerTitle: true,
         title: Text(
@@ -399,9 +399,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                               icon: const Icon(Icons.nfc),
                               label: const Text("Scan Card via NFC"),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
+                                foregroundColor: AppColors.white,
                                 side: BorderSide(
-                                  color: Colors.white.withValues(alpha: 0.3),
+                                  color: AppColors.white.withValues(alpha: 0.3),
                                 ),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: AppSpacing.md,
@@ -536,7 +536,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
           final isSelected = _selectedType == type;
           final typeString = type.toString().split('.').last;
           final typeName = typeString.isNotEmpty
-              ? '${typeString.toUpperCase()}${typeString.substring(1)}'
+              ? '${typeString[0].toUpperCase()}${typeString.substring(1)}'
               : '';
 
           return Padding(
@@ -554,7 +554,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
               side: BorderSide(
-                color: isSelected ? _selectedColor : Colors.transparent,
+                color: isSelected ? _selectedColor : AppColors.transparent,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -586,7 +586,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                 color: color,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? Colors.white : Colors.transparent,
+                  color: isSelected ? Colors.white : AppColors.transparent,
                   width: 3,
                 ),
                 boxShadow: isSelected
@@ -599,7 +599,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                     : [],
               ),
               child: isSelected
-                  ? const Icon(Icons.check, color: Colors.white)
+                  ? const Icon(Icons.check, color: AppColors.white)
                   : null,
             ),
           );
@@ -629,8 +629,8 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 border: Border.all(
                   color: isSelected
-                      ? Colors.white.withValues(alpha: 0.5)
-                      : Colors.transparent,
+                      ? AppColors.white.withValues(alpha: 0.5)
+                      : AppColors.transparent,
                 ),
               ),
               child: Icon(
@@ -650,7 +650,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
       decoration: BoxDecoration(
         color: AppColors.backgroundBlack,
         border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+          top: BorderSide(color: AppColors.white.withValues(alpha: 0.05)),
         ),
       ),
       child: SafeArea(
@@ -752,7 +752,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
           colors: [
             const Color(0xFF1A1A1A),
             const Color(0xFF111111),
-            Colors.black.withValues(alpha: 0.8),
+            AppColors.black.withValues(alpha: 0.8),
             const Color(0xFF0A0A0A).withValues(alpha: 0.9),
           ],
         ),
@@ -799,7 +799,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                                   ? _bankNameController.text.toUpperCase()
                                   : "NEW ACCOUNT"),
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -817,7 +817,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                             )
                           : Icon(
                               _selectedIcon,
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: AppColors.white.withValues(alpha: 0.8),
                               size: 24,
                             ),
                     ),
@@ -825,11 +825,11 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                 ),
                 Row(
                   children: [
-                    const Icon(Icons.sim_card, color: Colors.amber, size: 28),
+                    const Icon(Icons.sim_card, color: AppColors.premiumAmber, size: 28),
                     const SizedBox(width: 8),
                     Icon(
                       Icons.wifi,
-                      color: Colors.white.withValues(alpha: 0.5),
+                      color: AppColors.white.withValues(alpha: 0.5),
                       size: 20,
                     ),
                   ],
@@ -839,12 +839,17 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                   children: [
                     Text(
                       displayCardNum,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: AppColors.white,
                         fontFamily: "Monospace",
                         fontSize: 16,
                         letterSpacing: 2,
-                        shadows: [Shadow(blurRadius: 2, color: Colors.black45)],
+                        shadows: [
+                          Shadow(
+                            blurRadius: 2,
+                            color: AppColors.black.withValues(alpha: 0.45),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -857,14 +862,14 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                             Text(
                               "BALANCE",
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.6),
+                                color: AppColors.white.withValues(alpha: 0.6),
                                 fontSize: 8,
                               ),
                             ),
                             Text(
                               "₹${_balanceController.text.isEmpty ? '0.00' : _balanceController.text}",
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppColors.white,
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -877,7 +882,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                             Text(
                               "EXPIRY",
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.6),
+                                color: AppColors.white.withValues(alpha: 0.6),
                                 fontSize: 8,
                               ),
                             ),
@@ -886,7 +891,7 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
                                   ? "MM/YY"
                                   : _cardExpiryController.text,
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppColors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),

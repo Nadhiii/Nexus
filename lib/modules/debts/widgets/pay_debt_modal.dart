@@ -409,6 +409,12 @@ class _PayDebtModalState extends State<PayDebtModal>
         categoryId: "debt_repayment", // Or fetch ID for 'Debt'
         accountId: _selectedAccount!.id,
         date: _selectedDate,
+        metadata: {
+          'intent': 'debt_repayment',
+          'debtId': widget.debt.id,
+          'debtName': widget.debt.name,
+          'paidMonthIndex': (widget.debt.paidMonths ?? 0) + 1,
+        },
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

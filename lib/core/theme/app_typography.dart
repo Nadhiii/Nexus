@@ -4,9 +4,28 @@ import 'app_colors.dart';
 class AppTypography {
   // --- Font Families ---
   static const String bodyFont = 'Inter';
-  static const String headerFont = 'RammettoOne'; // Bold, playful display font
+  static const String headerFont = 'RammettoOne';
+  static const String serifHeaderFont = 'PlayfairDisplay'; // Kuvera-style Serif font
 
-  // --- Headlines (RammettoOne) ---
+  // --- Kuvera Serif Hero Titles ---
+  static const TextStyle kuveraSerifLarge = TextStyle(
+    fontFamily: serifHeaderFont,
+    fontSize: 38,
+    fontWeight: FontWeight.w700,
+    height: 1.15,
+    letterSpacing: -0.5,
+    color: AppColors.kuveraTextPrimaryLight,
+  );
+
+  static const TextStyle kuveraSerifMedium = TextStyle(
+    fontFamily: serifHeaderFont,
+    fontSize: 28,
+    fontWeight: FontWeight.w600,
+    height: 1.2,
+    color: AppColors.kuveraTextPrimaryLight,
+  );
+
+  // --- Headlines ---
   static const TextStyle displayLarge = TextStyle(
     fontFamily: headerFont,
     fontSize: 48,
@@ -55,7 +74,7 @@ class AppTypography {
     color: AppColors.textPrimary,
   );
 
-  // --- Currency Styles (RammettoOne for numbers) ---
+  // --- Currency Styles ---
   static const TextStyle currencyLarge = TextStyle(
     fontFamily: headerFont,
     fontSize: 36,
@@ -73,8 +92,7 @@ class AppTypography {
     color: AppColors.textPrimary,
   );
 
-  // --- Body & Lists (Inter) ---
-  // Inter Variable font handles all these weights (400, 600) perfectly
+  // --- Body & Lists ---
   static const TextStyle bodyLarge = TextStyle(
     fontFamily: bodyFont,
     fontSize: 16,
@@ -99,7 +117,7 @@ class AppTypography {
     color: AppColors.textSecondary,
   );
 
-  // --- Titles (Inter) ---
+  // --- Titles ---
   static const TextStyle titleLarge = TextStyle(
     fontFamily: bodyFont,
     fontSize: 22,
@@ -126,7 +144,7 @@ class AppTypography {
     color: AppColors.textPrimary,
   );
 
-  // --- Labels (Inter) ---
+  // --- Labels ---
   static const TextStyle labelLarge = TextStyle(
     fontFamily: bodyFont,
     fontSize: 14,

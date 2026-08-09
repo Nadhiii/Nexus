@@ -43,7 +43,15 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   bool _isSelectionMode = false;
   bool _isSmsLoading = false;
   bool _isGmailLoading = false;
-  bool _isHandlingQueuedApproval = false;
+  // Single-flight guard for _navigateToApproveScreen. Lives here (not just
+  // inside the queued-approval path) because approval screens can be
+  // triggered from several independent places at once -- a manual tap on
+  // the list checkmark, the expanded "Approve" button, a focus-mode swipe,
+  // AND a notification tap-through (queueApprovalRequestFromNotification in
+  // NewNboxProvider) -- any pair of which can race and stack two approval
+  // screens for the same or different transactions. Only one may be open
+  // at a time.
+  bool _isApprovalScreenOpen = false;
 
   late final NewNboxProvider _nboxProvider;
 
@@ -182,7 +190,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
   void _onNboxChanged() {
     if (!mounted) return;
     final nbox = context.read<NewNboxProvider>();
-    if (nbox.hasPendingApprovalRequest && !_isHandlingQueuedApproval) {
+    if (nbox.hasPendingApprovalRequest) {
       _attemptQueuedApproval(nbox);
     }
   }
@@ -1966,65 +1974,73 @@ Future<String?> _showPasswordDialog(BuildContext context) {
   }
 
   void _attemptQueuedApproval(NewNboxProvider nbox) {
-    if (_isHandlingQueuedApproval || !nbox.hasPendingApprovalRequest) return;
+    if (!nbox.hasPendingApprovalRequest) return;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted || _isHandlingQueuedApproval) return;
+      if (!mounted) return;
       final pending = nbox.takePendingApprovalRequest();
       if (pending == null) return;
-
-      _isHandlingQueuedApproval = true;
-      try {
-        await _navigateToApproveScreen(pending);
-      } finally {
-        _isHandlingQueuedApproval = false;
-      }
+      await _navigateToApproveScreen(pending);
     });
   }
 
+  /// Single dispatcher for every "open the approval screen" entry point
+  /// (list checkmark, expanded Approve button, focus-mode swipe, queued
+  /// notification tap-through). Guarded so only one approval screen can be
+  /// open at a time -- without this, two of those triggers firing close
+  /// together stack two screens, and whichever one ends up buried never
+  /// gets seen or saved even though the person filled it in.
   Future<void> _navigateToApproveScreen(DetectedTransaction t) async {
-    final nbox = context.read<NewNboxProvider>();
-    final subs = context.read<SubscriptionProvider>().subscriptions;
-    final debts = context.read<DebtProvider>().debts;
-    final investments = context.read<InvestmentProvider>().investments;
+    if (_isApprovalScreenOpen) return;
+    _isApprovalScreenOpen = true;
 
-    final classification = TransactionIntentClassifier.classify(
-      detected: t,
-      subscriptions: subs,
-      debts: debts,
-      investments: investments,
-    );
+    try {
+      final nbox = context.read<NewNboxProvider>();
+      final subs = context.read<SubscriptionProvider>().subscriptions;
+      final debts = context.read<DebtProvider>().debts;
+      final investments = context.read<InvestmentProvider>().investments;
 
-    bool success = false;
-    if (classification.intent == TransactionIntent.salary) {
-      success =
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => PaydayScreen(
-                incomeAmount: t.amount,
-                incomeSource: t.merchant,
-                incomeDate: t.date,
+      final classification = TransactionIntentClassifier.classify(
+        detected: t,
+        subscriptions: subs,
+        debts: debts,
+        investments: investments,
+      );
+
+      bool success = false;
+      if (classification.intent == TransactionIntent.salary) {
+        success =
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PaydayScreen(
+                  incomeAmount: t.amount,
+                  incomeSource: t.merchant,
+                  incomeDate: t.date,
+                  detectedTransaction: t,
+                ),
               ),
-            ),
-          ) ==
-          true;
-    } else if (classification.intent.hasSideEffects) {
-      success = await showSmartApprovalSheet(context, t);
-    } else {
-      success =
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  ModernAddTransactionScreen(detectedTransaction: t),
-            ),
-          ) ??
-          false;
-    }
+            ) ==
+            true;
+      } else if (classification.intent.hasSideEffects) {
+        success = await showSmartApprovalSheet(context, t);
+      } else {
+        success =
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    ModernAddTransactionScreen(detectedTransaction: t),
+              ),
+            ) ??
+            false;
+      }
 
-    if (success == true) {
-      nbox.markAsApproved(t.id, t.source);
-      if (mounted) showTopNotification(context, "Verified & Added");
+      if (success == true) {
+        nbox.markAsApproved(t.id, t.source);
+        if (mounted) showTopNotification(context, "Verified & Added");
+      }
+    } finally {
+      _isApprovalScreenOpen = false;
     }
   }
 

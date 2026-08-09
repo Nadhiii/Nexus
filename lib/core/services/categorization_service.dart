@@ -34,7 +34,12 @@ class AICategorizationService {
     required String transactionType,
     String? fullMessageBody,
   }) async {
-    final cacheKey = '$merchantName|$description|$transactionType'
+    // amount is included because SmartCategoryResolver uses it as a
+    // fallback signal (e.g. amount <= 50 -> food, recharge-shaped
+    // amounts -> bills) when merchant/body don't match anything. Without
+    // it here, the first amount seen for a given merchant+description+
+    // type gets cached and wrongly reused for every later amount.
+    final cacheKey = '$merchantName|$description|$transactionType|$amount'
         .toLowerCase();
     if (_cache.containsKey(cacheKey)) {
       debugPrint('[AICategorizationService] Cache hit for: $merchantName');
@@ -79,5 +84,3 @@ class AICategorizationService {
   /// Get cache size for debugging
   int get cacheSize => _cache.length;
 }
-
-// TimeoutException removed — AI integration disabled.

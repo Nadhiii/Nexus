@@ -20,6 +20,10 @@ class InvestmentProvider extends ChangeNotifier {
   }
 
   void _init() {
+    initialize();
+  }
+
+  void initialize() {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       loadInvestments(user.uid);
@@ -67,7 +71,7 @@ class InvestmentProvider extends ChangeNotifier {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _setError('User not logged in');
-      return;
+      throw Exception('User not logged in');
     }
     _setLoading(true);
     try {
@@ -76,6 +80,7 @@ class InvestmentProvider extends ChangeNotifier {
       );
     } catch (e) {
       _setError('Error adding investment: $e');
+      rethrow;
     } finally {
       _setLoading(false);
     }
@@ -87,6 +92,7 @@ class InvestmentProvider extends ChangeNotifier {
       await _investmentService.updateInvestment(investment);
     } catch (e) {
       _setError('Error updating investment: $e');
+      rethrow;
     } finally {
       _setLoading(false);
     }
@@ -98,6 +104,7 @@ class InvestmentProvider extends ChangeNotifier {
       await _investmentService.deleteInvestment(investmentId);
     } catch (e) {
       _setError('Error deleting investment: $e');
+      rethrow;
     } finally {
       _setLoading(false);
     }
