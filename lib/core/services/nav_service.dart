@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/investment.dart';
 import 'package:flutter/foundation.dart';
@@ -25,34 +25,34 @@ class NavService {
     return null;
   }
 
-  /// Update investment with current NAV and calculate portfolio values
+  /// Update investment with current NAV and recalculate its market value.
+  ///
+  /// IMPORTANT: This only ever touches `currentAmount`. `investedAmount` is
+  /// what the user actually typed in when they logged the purchase ΓÇö it is
+  /// ground truth and must never be recalculated or overwritten here.
   Future<Investment> enrichInvestmentWithNav(Investment investment) async {
-    // Only enrich Mutual Fund investments that have a scheme code
+    // Only enrich Mutual Fund investments that have a scheme code.
+    // Other asset types (stock/crypto/gold/real estate/other) have no
+    // live-price source wired up yet, so they pass through unchanged.
     if (investment.mutualFundSchemeCode == null) {
       return investment;
     }
-
-    // Calculate total invested amount based on actual purchase
-    // (quantity owned * purchase price per unit)
-    final investedAmount = investment.quantity * investment.purchasePrice;
 
     // Fetch current NAV for the scheme
     final currentNav = await getCurrentNav(investment.mutualFundSchemeCode!);
 
     if (currentNav == null) {
-      // Return with investedAmount calculated even if NAV fetch failed
-      return investment.copyWith(
-        investedAmount: investedAmount,
-        lastUpdated: DateTime.now(),
-      );
+      // NAV fetch failed ΓÇö leave the investment exactly as it was.
+      // Do NOT touch investedAmount or currentAmount here.
+      return investment;
     }
 
-    // Calculate current value
+    // Only recalculate the current market value. investedAmount is
+    // intentionally left untouched ΓÇö it's user-entered, not derived.
     final currentValue = investment.quantity * currentNav;
 
     return investment.copyWith(
       currentAmount: currentValue,
-      investedAmount: investedAmount,
       lastUpdated: DateTime.now(),
     );
   }

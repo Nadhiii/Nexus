@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -7,7 +8,11 @@ import '../../core/providers/biometric_provider.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_animations.dart';
+import '../../core/widgets/nexus_button.dart';
 import '../../core/widgets/nexus_switch.dart';
+import '../../core/widgets/nexus_card.dart';
 import '../../core/widgets/spring_tap.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../backup/backup_settings_screen.dart';
@@ -33,6 +38,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
   double _downloadProgress = 0;
   bool _isDownloading = false;
   bool _isCancelled = false;
+  StreamSubscription<int>? _otaProgressSubscription;
 
   @override
   void initState() {
@@ -44,6 +50,8 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
   }
 
   Future<void> _checkForUpdates() async {
+    await _otaProgressSubscription?.cancel();
+    _otaProgressSubscription = null;
     setState(() {
       _updateStatus = 'Checking for updates...';
       _isDownloading = false;
@@ -58,12 +66,13 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
       final update = await _otaService.checkForUpdate(currentVersion);
 
       if (update != null) {
+        _isCancelled = false;
         setState(() {
           _updateStatus = 'Update available! Starting download...';
           _isDownloading = true;
         });
 
-        _otaService.progressStream.listen((progress) {
+        _otaProgressSubscription = _otaService.progressStream.listen((progress) {
           if (mounted && !_isCancelled) {
             setState(() {
               if (progress < 0) {
@@ -104,69 +113,76 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
   }
 
   @override
+  void dispose() {
+    _otaProgressSubscription?.cancel();
+    _otaService.cancelOTA();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.backgroundBlack,
+      backgroundColor: AppColors.surfaceBackground,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverAppBar(
             pinned: true,
             expandedHeight: 120,
-            backgroundColor: AppColors.backgroundBlack,
-            surfaceTintColor: AppColors.backgroundBlack,
+            backgroundColor: AppColors.surfaceBackground,
+            surfaceTintColor: AppColors.transparent,
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: false,
-              titlePadding: const EdgeInsets.only(left: 20, bottom: 20),
+              titlePadding: AppSpacing.appBarTitlePadding,
               title: Text(
                 'More',
                 style: AppTypography.headlineMedium.copyWith(
-                  color: AppColors.textPrimary,
+                  color: colorScheme.onSurface,
                   fontWeight: FontWeight.w800,
                 ),
               ),
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: AppSpacing.screenHorizontalPadding,
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                const SizedBox(height: 10),
+                const SizedBox(height: AppSpacing.sm),
 
                 _buildSectionHeader("FINANCIAL TOOLS"),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.contentGap),
                 _buildToolsGrid(),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xl3),
 
                 _buildSectionHeader("PREFERENCES"),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.contentGap),
                 _buildSettingsSection(),
                 
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xl3),
 
                 _buildSectionHeader("SUPPORT"),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.contentGap),
                 _buildSupportSection(),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: AppSpacing.xl4),
 
                 _buildExpressiveDownloadButton(),
 
                 if (!_isDownloading && _updateStatus != null) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Center(
                     child: Text(
                       _updateStatus!,
                       style: TextStyle(
-                        color: AppColors.textTertiary,
-                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
                 ],
 
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.contentGap),
 
                 _buildBottomActionButton(
                   label: "Sign Out",
@@ -189,30 +205,30 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
         return GestureDetector(
           onTap: _isDownloading ? null : _checkForUpdates,
           child: Container(
-            height: 56,
+            height: AppSpacing.buttonHeightMd,
             width: double.infinity,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: Colors.transparent,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              borderRadius: AppSpacing.borderRadiusSm,
+              color: AppColors.transparent,
+              border: Border.all(color: AppColors.borderSubtle),
             ),
             clipBehavior: Clip.antiAlias,
             child: Stack(
               children: [
                 if (_isDownloading)
                   AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOutCubic,
+                    duration: AppAnimations.stateChangeDuration,
+                    curve: AppAnimations.interactionCurve,
                     width: constraints.maxWidth * _downloadProgress,
                     height: double.infinity,
                     decoration: BoxDecoration(
                       color: AppColors.primaryBlue.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: AppSpacing.borderRadiusSm,
                     ),
                   ),
 
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: AppSpacing.cardPaddingMd,
                   child: Row(
                     children: [
                       Expanded(
@@ -239,15 +255,16 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                             child: GestureDetector(
                               onTap: _cancelUpdate,
                               child: Container(
-                                padding: const EdgeInsets.all(6),
+                              padding: const EdgeInsets.all(AppSpacing.sm),
                                 decoration: BoxDecoration(
                                   color: AppColors.error.withValues(alpha: 0.2),
                                   shape: BoxShape.circle,
                                 ),
-                                child: Icon(
-                                  Icons.close_rounded,
+                                child: IconButton(
+                                  tooltip: 'Cancel update download',
+                                  onPressed: _cancelUpdate,
+                                  icon: const Icon(Icons.close_rounded),
                                   color: AppColors.error,
-                                  size: 18,
                                 ),
                               ),
                             ),
@@ -283,27 +300,18 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSpacing.borderRadiusSm,
         border: Border.all(
           color: isError
               ? AppColors.error.withValues(alpha: 0.2)
-              : Colors.white.withValues(alpha: 0.1),
+              : Theme.of(context).colorScheme.outline,
         ),
       ),
-      child: TextButton(
+      child: NexusButton(
+        label: label,
         onPressed: onPressed,
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 18),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: AppTypography.labelLarge.copyWith(
-              color: isError ? AppColors.error : AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
+        variant: isError ? NexusButtonVariant.destructive : NexusButtonVariant.tertiary,
+        width: double.infinity,
       ),
     );
   }
@@ -319,7 +327,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
               "Analytics",
               () => _navigate(const ReportsAndAnalyticsScreen()),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.controlGap),
             _expandedTool(
               Icons.category_rounded,
               AppColors.pastelOrange,
@@ -328,7 +336,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.controlGap),
         Row(
           children: [
             _expandedTool(
@@ -337,7 +345,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
               "Family & Friends",
               () => _navigate(const FamilyDashboardScreen()),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.controlGap),
             _expandedTool(
               Icons.call_split_rounded,
               AppColors.success,
@@ -362,12 +370,9 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
   }
 
   Widget _buildSettingsSection() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
+    return NexusCard(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
           Consumer<BiometricProvider>(
@@ -410,24 +415,21 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
   }
 
   Widget _buildSupportSection() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
+    return NexusCard(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
           _buildTile(
             icon: Icons.help_outline_rounded,
-            color: Colors.blueGrey,
+            color: AppColors.info,
             title: "Help & Support",
             onTap: () => _launchEmail(),
           ),
           _divider(),
           _buildTile(
             icon: Icons.info_outline_rounded,
-            color: Colors.blueGrey,
+            color: AppColors.info,
             title: "About Nexus",
             onTap: () => _navigate(const AboutScreen()), 
           ),
@@ -446,19 +448,19 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
   }) {
     return ListTile(
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppSpacing.borderRadiusXs,
         ),
         child: Icon(icon, color: color, size: 22),
       ),
       title: Text(
         title,
         style: AppTypography.bodyLarge.copyWith(
-          color: AppColors.textPrimary,
+          color: Theme.of(context).colorScheme.onSurface,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -482,7 +484,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
 
   Widget _divider() => Divider(
     height: 1,
-    color: Colors.white.withValues(alpha: 0.05),
+    color: AppColors.borderSubtle,
     indent: 70,
     endIndent: 20,
   );
@@ -525,22 +527,33 @@ class _ToolCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SpringTap(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        decoration: BoxDecoration(
-          color: AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-        ),
+      child: NexusCard(
+        variant: NexusCardVariant.base,
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xl2),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              style: AppTypography.labelSmall.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w700,
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.14),
+                borderRadius: AppSpacing.borderRadiusSm,
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: AppSpacing.contentGap),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.labelSmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],

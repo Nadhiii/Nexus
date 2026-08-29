@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/transaction.dart';
@@ -21,6 +21,7 @@ class TransactionProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   bool _isInitialized = false;
+  Future<void>? _initializationFuture;
 
   List<Transaction> get transactions => List.unmodifiable(_transactions);
   bool get isLoading => _isLoading;
@@ -50,6 +51,12 @@ class TransactionProvider with ChangeNotifier {
   }
 
   Future<void> initialize() async {
+    if (_initializationFuture != null) return _initializationFuture!;
+    _initializationFuture = _initialize();
+    return _initializationFuture!;
+  }
+
+  Future<void> _initialize() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) { return; }
 
@@ -68,6 +75,7 @@ class TransactionProvider with ChangeNotifier {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) { return; }
 
+    final firstSnapshot = Completer<void>();
     try {
       // Cancel previous subscription to avoid multiple listeners
       await _transactionSubscription?.cancel();
@@ -77,19 +85,23 @@ class TransactionProvider with ChangeNotifier {
           .listen(
             (transactions) {
               debugPrint(
-                '📊 TransactionProvider: Loaded ${transactions.length} transactions',
+                '≡ƒôè TransactionProvider: Loaded ${transactions.length} transactions',
               );
               _transactions = transactions;
               notifyListeners();
+              if (!firstSnapshot.isCompleted) firstSnapshot.complete();
             },
             onError: (error) {
-              debugPrint('❌ TransactionProvider Error: $error');
+              debugPrint('Γ¥î TransactionProvider Error: $error');
               _setError('Failed to load transactions: $error');
+              if (!firstSnapshot.isCompleted) firstSnapshot.complete();
             },
           );
+      await firstSnapshot.future;
     } catch (e) {
-      debugPrint('❌ TransactionProvider Catch: $e');
+      debugPrint('Γ¥î TransactionProvider Catch: $e');
       _setError('Failed to load transactions: $e');
+      if (!firstSnapshot.isCompleted) firstSnapshot.complete();
     }
   }
 
@@ -104,12 +116,12 @@ class TransactionProvider with ChangeNotifier {
       _setLoading(true);
 
       debugPrint(
-        '➕ Adding transaction: ${transaction.description}, amount: ${transaction.amount}, userId: ${transaction.userId}',
+        'Γ₧ò Adding transaction: ${transaction.description}, amount: ${transaction.amount}, userId: ${transaction.userId}',
       );
       // Atomic transaction + account update
       if (transaction.type == TransactionType.transfer &&
           transaction.toAccountId != null) {
-        debugPrint('💸 Processing TRANSFER');
+        debugPrint('≡ƒÆ╕ Processing TRANSFER');
         final sourceAccount = _accountProvider!.getAccountById(
           transaction.accountId,
         );
@@ -128,9 +140,9 @@ class TransactionProvider with ChangeNotifier {
           sourceNewBalance: sourceNewBalance,
           destNewBalance: destNewBalance,
         );
-        debugPrint('✅ Transfer and balances committed atomically');
+        debugPrint('Γ£à Transfer and balances committed atomically');
       } else {
-        debugPrint('💰 Processing regular ${transaction.type}');
+        debugPrint('≡ƒÆ░ Processing regular ${transaction.type}');
         final account = _accountProvider!.getAccountById(transaction.accountId);
         if (account == null) {
           _setError('Account not found');
@@ -144,7 +156,7 @@ class TransactionProvider with ChangeNotifier {
           transaction: transaction,
           newBalance: newBalance,
         );
-        debugPrint('✅ Transaction and balance committed atomically');
+        debugPrint('Γ£à Transaction and balance committed atomically');
       }
 
       _notificationProvider?.notifyTransaction(
@@ -178,14 +190,14 @@ class TransactionProvider with ChangeNotifier {
 
     try {
       debugPrint(
-        '🔄 Restoring transaction: ${transaction.description}, id: ${transaction.id}',
+        '≡ƒöä Restoring transaction: ${transaction.description}, id: ${transaction.id}',
       );
-      debugPrint('📊 Current transactions count: ${_transactions.length}');
+      debugPrint('≡ƒôè Current transactions count: ${_transactions.length}');
 
       // Use the same logic as addTransaction to restore atomically
       if (transaction.type == TransactionType.transfer &&
           transaction.toAccountId != null) {
-        debugPrint('💸 Restoring TRANSFER');
+        debugPrint('≡ƒÆ╕ Restoring TRANSFER');
         final sourceAccount = _accountProvider!.getAccountById(
           transaction.accountId,
         );
@@ -203,9 +215,9 @@ class TransactionProvider with ChangeNotifier {
           sourceNewBalance: sourceNewBalance,
           destNewBalance: destNewBalance,
         );
-        debugPrint('✅ Transfer restore committed atomically');
+        debugPrint('Γ£à Transfer restore committed atomically');
       } else {
-        debugPrint('💰 Restoring regular ${transaction.type}');
+        debugPrint('≡ƒÆ░ Restoring regular ${transaction.type}');
         final account = _accountProvider!.getAccountById(transaction.accountId);
         if (account == null) {
           _setError('Account not found');
@@ -218,7 +230,7 @@ class TransactionProvider with ChangeNotifier {
           transaction: transaction,
           newBalance: newBalance,
         );
-        debugPrint('✅ Transaction restore committed atomically');
+        debugPrint('Γ£à Transaction restore committed atomically');
       }
 
       // Manually add to local list if not already present (stream may be delayed)
@@ -230,12 +242,12 @@ class TransactionProvider with ChangeNotifier {
 
       // Always notify listeners to ensure UI updates
       debugPrint(
-        '🔔 Calling notifyListeners() - transaction count: ${_transactions.length}',
+        '≡ƒöö Calling notifyListeners() - transaction count: ${_transactions.length}',
       );
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('❌ Restore failed: $e');
+      debugPrint('Γ¥î Restore failed: $e');
       _setError('Failed to restore transaction: $e');
       return false;
     }
@@ -372,16 +384,16 @@ class TransactionProvider with ChangeNotifier {
   /// Recalculates account balance from all transactions for a specific account
   Future<void> recalculateAccountBalance(String accountId) async {
     if (_accountProvider == null) {
-      debugPrint('❌ AccountProvider not available');
+      debugPrint('Γ¥î AccountProvider not available');
       return;
     }
     if (accountId.isEmpty) {
-      debugPrint('⚠️ Skipping recalculation: empty accountId');
+      debugPrint('ΓÜá∩╕Å Skipping recalculation: empty accountId');
       return;
     }
 
     try {
-      debugPrint('🔢 Recalculating balance for account: $accountId');
+      debugPrint('≡ƒöó Recalculating balance for account: $accountId');
 
       // Get all transactions for this account
       final accountTransactions = _transactions
@@ -389,7 +401,7 @@ class TransactionProvider with ChangeNotifier {
           .toList();
 
       debugPrint(
-        '📊 Found ${accountTransactions.length} transactions for this account',
+        '≡ƒôè Found ${accountTransactions.length} transactions for this account',
       );
 
       // Calculate balance from transactions
@@ -399,40 +411,40 @@ class TransactionProvider with ChangeNotifier {
         if (transaction.type == TransactionType.income) {
           calculatedBalance += transaction.amount;
           debugPrint(
-            '  ➕ Income: +${transaction.amount} (${transaction.description})',
+            '  Γ₧ò Income: +${transaction.amount} (${transaction.description})',
           );
         } else if (transaction.type == TransactionType.expense) {
           calculatedBalance -= transaction.amount;
           debugPrint(
-            '  ➖ Expense: -${transaction.amount} (${transaction.description})',
+            '  Γ₧û Expense: -${transaction.amount} (${transaction.description})',
           );
         } else if (transaction.type == TransactionType.transfer) {
           if (transaction.accountId == accountId) {
             // Money going out (source account)
             calculatedBalance -= transaction.amount;
             debugPrint(
-              '  ➖ Transfer Out: -${transaction.amount} (${transaction.description})',
+              '  Γ₧û Transfer Out: -${transaction.amount} (${transaction.description})',
             );
           } else if (transaction.toAccountId == accountId) {
             // Money coming in (destination account)
             calculatedBalance += transaction.amount;
             debugPrint(
-              '  ➕ Transfer In: +${transaction.amount} (${transaction.description})',
+              '  Γ₧ò Transfer In: +${transaction.amount} (${transaction.description})',
             );
           }
         }
       }
 
-      debugPrint('💰 Calculated balance: $calculatedBalance');
+      debugPrint('≡ƒÆ░ Calculated balance: $calculatedBalance');
 
       // Update the account balance
       await _accountProvider!.updateAccountBalance(
         accountId,
         calculatedBalance,
       );
-      debugPrint('✅ Account balance recalculated and updated');
+      debugPrint('Γ£à Account balance recalculated and updated');
     } catch (e) {
-      debugPrint('❌ Error recalculating balance: $e');
+      debugPrint('Γ¥î Error recalculating balance: $e');
       _setError('Failed to recalculate balance: $e');
     }
   }
@@ -448,7 +460,7 @@ class TransactionProvider with ChangeNotifier {
           ..sort((a, b) => a.date.compareTo(b.date));
 
     double running = 0.0;
-    debugPrint('📒 Ledger for account=$accountId, total txns=${txns.length}');
+    debugPrint('≡ƒôÆ Ledger for account=$accountId, total txns=${txns.length}');
 
     for (final t in txns) {
       double delta = 0.0;
@@ -477,13 +489,13 @@ class TransactionProvider with ChangeNotifier {
     // Print last N for quick view
     final start = (txns.length - lastN) < 0 ? 0 : (txns.length - lastN);
     final recent = txns.sublist(start);
-    debugPrint('🧾 Last $lastN entries:');
+    debugPrint('≡ƒº╛ Last $lastN entries:');
     for (final t in recent) {
       final isDst = t.toAccountId == accountId;
       final sign = t.type == TransactionType.income || isDst ? '+' : '-';
       debugPrint('  $sign${t.amount.toStringAsFixed(2)}  ${t.description ?? ''}');
     }
-    debugPrint('✅ Computed balance from ledger: ${running.toStringAsFixed(2)}');
+    debugPrint('Γ£à Computed balance from ledger: ${running.toStringAsFixed(2)}');
   }
 
   void clear() {

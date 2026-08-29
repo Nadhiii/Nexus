@@ -1,6 +1,24 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class AppColors {
+  // --- Semantic Design Tokens ---
+  // Prefer these names in new shared components and future screen migrations.
+  static const Color surfaceBackground = backgroundBlack;
+  static const Color surfaceDefault = cardSurface;
+  static const Color surfaceElevated = cardElevated;
+  static const Color borderSubtle = white12;
+  static const Color borderDefault = white38;
+  static const Color textOnPrimary = white;
+  static const Color textOnSurface = textPrimary;
+  static const Color actionPrimary = primaryBlue;
+  static const Color actionPrimaryPressed = primaryBlueDark;
+  static const Color actionSecondary = cardElevated;
+  static const Color actionDestructive = error;
+  static const Color feedbackPositive = success;
+  static const Color feedbackWarning = warning;
+  static const Color feedbackNegative = error;
+  static const Color feedbackInformative = info;
+
   // --- Kuvera Light Palette Extensions ---
   static const Color kuveraBgLight = Color(0xFFF9FAFB);
   static const Color kuveraCardLight = Color(0xFFFFFFFF);

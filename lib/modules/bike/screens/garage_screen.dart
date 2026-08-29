@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/models/bike.dart';
 import '../../../core/providers/bike_provider.dart';
@@ -174,6 +174,8 @@ class _GarageManagementScreenState extends State<GarageManagementScreen> {
                 ),
                 title: Text(
                   bike.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTypography.titleMedium.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -181,6 +183,8 @@ class _GarageManagementScreenState extends State<GarageManagementScreen> {
                 ),
                 subtitle: Text(
                   '${bike.make} ${bike.model}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,

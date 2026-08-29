@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/bike.dart';
@@ -158,7 +158,9 @@ class BikeListWidget extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.cardSurface,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.05),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,7 +179,7 @@ class BikeListWidget extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              "₹${entry.fuelAmount.toStringAsFixed(0)}",
+                              "Γé╣${entry.fuelAmount.toStringAsFixed(0)}",
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -208,8 +210,8 @@ class BikeListWidget extends StatelessWidget {
                                   color: AppColors.backgroundBlack,
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: AppColors.primaryBlue.withValues(alpha: 
-                                      0.3,
+                                    color: AppColors.primaryBlue.withValues(
+                                      alpha: 0.3,
                                     ),
                                   ),
                                 ),
@@ -227,7 +229,9 @@ class BikeListWidget extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           isFuel
-                              ? "${entry.fuelQuantity} Litres @ ₹${(entry.fuelAmount / entry.fuelQuantity).toStringAsFixed(2)}/L"
+                              ? (entry.fuelQuantity > 0
+                                    ? "${entry.fuelQuantity} Litres @ Γé╣${(entry.fuelAmount / entry.fuelQuantity).toStringAsFixed(2)}/L"
+                                    : "${entry.fuelQuantity} Litres")
                               : entry.notes ?? "",
                           style: TextStyle(
                             color: AppColors.textTertiary,
@@ -278,7 +282,9 @@ class BikeListWidget extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.cardSurface.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.02)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.02),
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

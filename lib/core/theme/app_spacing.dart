@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class AppSpacing {
   // Base unit: 4px
@@ -22,6 +22,16 @@ class AppSpacing {
   static const double radiusLg = 32.0; // For Modals/Dialogs
   static const double radiusXl = 40.0;
   static const double radiusFull = 999.0; // Perfect circle/pill
+
+  // --- Canonical Semantic Roles ---
+  static const double controlRadius = radiusSm;
+  static const double cardRadius = radiusMd;
+  static const double dialogRadius = radiusLg;
+  static const double pillRadius = radiusFull;
+  static const double screenHorizontal = xl;
+  static const double sectionGap = lg;
+  static const double contentGap = md;
+  static const double controlGap = sm;
 
   // --- Pre-built BorderRadius (for consistency) ---
   static final BorderRadius borderRadiusXs = BorderRadius.circular(radiusXs);
@@ -50,6 +60,9 @@ class AppSpacing {
   static const EdgeInsets cardPaddingLg = EdgeInsets.all(24.0);
   static const EdgeInsets cardPaddingXl = EdgeInsets.all(32.0);
   static const EdgeInsets screenPadding = EdgeInsets.all(20.0);
+  static const EdgeInsets screenHorizontalPadding = EdgeInsets.symmetric(
+    horizontal: screenHorizontal,
+  );
 
   // --- Standard App Bar ---
   static const double appBarExpandedHeight = 110.0;

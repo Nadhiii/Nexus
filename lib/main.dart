@@ -1,4 +1,5 @@
-import 'core/services/ota_update_service.dart';
+﻿import 'core/services/ota_update_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -27,12 +28,24 @@ import 'core/auth/auth_gate.dart';
 import 'core/services/crash_reporting_service.dart';
 import 'core/services/widget_sync_service.dart';
 import 'core/services/intent_navigation_service.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+// REMOVED: flutter_dotenv import ΓÇö no env vars exist, migrated to --dart-define
+import 'package:another_telephony/telephony.dart';
+import 'core/services/nbox_background_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Only Firebase is truly required before runApp — and even this
+  // Register this before the widget tree starts. The top-level background
+  // handler is retained by another_telephony for SMS_RECEIVED broadcasts when
+  // Android has to start a fresh Flutter isolate.
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    Telephony.instance.listenIncomingSms(
+      onNewMessage: nboxForegroundSmsHandler,
+      onBackgroundMessage: nboxBackgroundSmsHandler,
+    );
+  }
+
+  // Only Firebase is truly required before runApp ΓÇö and even this
   // can be done faster with a loading screen
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
@@ -63,20 +76,23 @@ class NexusApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SharedExpenseProvider()),
         ChangeNotifierProvider(create: (_) => FamilyDebtProvider()),
         ChangeNotifierProxyProvider<CategoryProvider, GmailProvider>(
-          create: (context) => GmailProvider(
-            categoryProvider: context.read<CategoryProvider>(),
-          ),
+          create: (context) =>
+              GmailProvider(categoryProvider: context.read<CategoryProvider>()),
           update: (context, categoryProvider, gmailProvider) {
             return gmailProvider ??
                 GmailProvider(categoryProvider: categoryProvider);
           },
         ),
-        ChangeNotifierProxyProvider2<GmailProvider, CategoryProvider, NewNboxProvider>(
+        ChangeNotifierProxyProvider2<
+          GmailProvider,
+          CategoryProvider,
+          NewNboxProvider
+        >(
           create: (context) => NewNboxProvider(
             gmailProvider: context.read<GmailProvider>(),
             categoryProvider: context.read<CategoryProvider>(),
           ),
-          // update must ALWAYS return the existing instance — never create a
+          // update must ALWAYS return the existing instance ΓÇö never create a
           // second one. Creating a second NewNboxProvider triggers a parallel
           // initialize()/scanSmsInbox() which causes a permission deadlock/ANR.
           update: (context, gmailProvider, categoryProvider, nboxProvider) {
@@ -105,31 +121,33 @@ class NexusApp extends StatelessWidget {
           TransactionProvider
         >(
           create: (context) => TransactionProvider(),
-          update: (context, accountProvider, budgetProvider, notificationProvider, transactionProvider) {
-            transactionProvider?.update(
-              accountProvider,
-              budgetProvider,
-              notificationProvider,
-            );
-            return transactionProvider!;
-          },
+          update:
+              (
+                context,
+                accountProvider,
+                budgetProvider,
+                notificationProvider,
+                transactionProvider,
+              ) {
+                transactionProvider?.update(
+                  accountProvider,
+                  budgetProvider,
+                  notificationProvider,
+                );
+                return transactionProvider!;
+              },
         ),
       ],
       child: _AppInitializer(
-        child: Consumer4<ThemeProvider, TransactionProvider, AccountProvider, SubscriptionProvider>(
-          builder: (context, themeProvider, transactionProvider, accountProvider, subscriptionProvider, child) {
-            WidgetSyncService.instance.initialize(
-              transactionProvider: transactionProvider,
-              accountProvider: accountProvider,
-              subscriptionProvider: subscriptionProvider,
-              debtProvider: Provider.of<DebtProvider>(context, listen: false),
-            );
-
+        child: Selector<ThemeProvider, ThemeMode>(
+          selector: (context, themeProvider) => themeProvider.themeMode,
+          builder: (context, themeMode, child) {
             return MaterialApp(
               title: 'Nexus',
               debugShowCheckedModeBanner: false,
-              theme: AppTheme.darkTheme,
-              themeMode: ThemeMode.dark,
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: themeMode,
               home: const AuthGate(),
             );
           },
@@ -160,17 +178,22 @@ class _AppInitializerState extends State<_AppInitializer> {
       _initialized = true;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
-        
+
+        WidgetSyncService.instance.initialize(
+          transactionProvider: context.read<TransactionProvider>(),
+          accountProvider: context.read<AccountProvider>(),
+          subscriptionProvider: context.read<SubscriptionProvider>(),
+          debtProvider: context.read<DebtProvider>(),
+        );
+
         // Initialize secondary services after the first frame paints
         await CrashReportingService().initialize();
-        
-        try {
-          await dotenv.load(fileName: ".env");
-        } catch (e) {
-          debugPrint('dotenv load skipped: $e');
-        }
 
-        // ONLY initialize notifications here — version check lives in More Screen
+        // Environment config: use --dart-define flags at build time
+        // e.g. flutter run --dart-define=GEMINI_API_KEY=xxx
+        // Access via: const String.fromEnvironment('GEMINI_API_KEY')
+
+        // ONLY initialize notifications here ΓÇö version check lives in More Screen
         // to avoid the "Reply already submitted" crash during login/SMS scan.
         await _otaService.initNotifications();
       });

@@ -1,4 +1,5 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,6 +8,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../firebase_options.dart';
 import '../models/detected_transaction.dart';
 import '../models/notification.dart';
@@ -15,12 +17,12 @@ import '../widgets/top_snackbar.dart';
 
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  log('📨 FCM background message: ${message.messageId}');
+  log('≡ƒô¿ FCM background message: ${message.messageId}');
 }
 
 @pragma('vm:entry-point')
 void onDidReceiveBackgroundNotificationResponse(NotificationResponse response) {
-  NotificationService().handleNotificationPayload(response.payload);
+  unawaited(NotificationService().handleNotificationPayload(response.payload));
 }
 
 class DetectionApprovalRequest {
@@ -46,6 +48,9 @@ class NotificationService {
   final StreamController<DetectionApprovalRequest> _approvalRequestController =
       StreamController<DetectionApprovalRequest>.broadcast();
   bool _initialized = false;
+  bool _localNotificationsInitialized = false;
+  static const String _pendingApprovalStorageKey =
+      'nbox_pending_approval_request';
 
   static const AndroidNotificationChannel _defaultChannel =
       AndroidNotificationChannel(
@@ -100,14 +105,15 @@ class NotificationService {
         sound: true,
         provisional: false,
       );
-      log('🔔 Notification permission: ${settings.authorizationStatus}');
+      log('≡ƒöö Notification permission: ${settings.authorizationStatus}');
     } catch (e) {
-      log('❌ Error requesting notification permission: $e');
+      log('Γ¥î Error requesting notification permission: $e');
       // Permission request failed, but don't crash - app can work without notifications
     }
   }
 
-  Future<void> _setupLocalNotifications() async {
+  Future<void> _setupLocalNotifications({bool handleLaunch = true}) async {
+    if (_localNotificationsInitialized) return;
     try {
       const androidSettings = AndroidInitializationSettings(
         '@mipmap/ic_launcher',
@@ -159,13 +165,18 @@ class NotificationService {
           >()
           ?.createNotificationChannel(_detectedPromptChannel);
 
-      final launchDetails = await _localNotifications
-          .getNotificationAppLaunchDetails();
-      if (launchDetails?.didNotificationLaunchApp == true) {
-        handleNotificationPayload(launchDetails?.notificationResponse?.payload);
+      if (handleLaunch) {
+        final launchDetails = await _localNotifications
+            .getNotificationAppLaunchDetails();
+        if (launchDetails?.didNotificationLaunchApp == true) {
+          await handleNotificationPayload(
+            launchDetails?.notificationResponse?.payload,
+          );
+        }
       }
+      _localNotificationsInitialized = true;
     } catch (e) {
-      log('❌ Error setting up local notifications: $e');
+      log('Γ¥î Error setting up local notifications: $e');
       // Non-critical error - app can continue without local notifications
     }
   }
@@ -303,30 +314,57 @@ class NotificationService {
     if (!_initialized || !_isDetectedPromptEnabled()) {
       return;
     }
+    await _showDetectedTransactionPrompt(transaction, addToInAppFeed: true);
+  }
 
+  /// Notification-only path for another_telephony's background isolate. It
+  /// intentionally avoids Firebase, Provider and permission prompts.
+  Future<bool> showDetectedTransactionPromptFromBackground(
+    DetectedTransaction transaction,
+  ) async {
+    try {
+      await _setupLocalNotifications(handleLaunch: false);
+      await _showDetectedTransactionPrompt(transaction, addToInAppFeed: false);
+      return true;
+    } catch (error, stackTrace) {
+      log(
+        'Unable to show background NBox notification',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+
+  Future<void> _showDetectedTransactionPrompt(
+    DetectedTransaction transaction, {
+    required bool addToInAppFeed,
+  }) async {
     final payload = 'nbox_approve|${transaction.source}|${transaction.id}';
     final localId =
         (transaction.id.hashCode ^ transaction.source.hashCode) & 0x7fffffff;
     final title = 'New transaction detected';
     final body =
-        '₹${transaction.amount.toStringAsFixed(0)} at ${transaction.merchant}. Log it?';
+        'Γé╣${transaction.amount.toStringAsFixed(0)} at ${transaction.merchant}. Log it?';
 
-    _notificationProvider?.addNotification(
-      AppNotification(
-        id: 'detected_${transaction.source}_${transaction.id}',
-        type: NotificationType.transactionAlert,
-        title: title,
-        message: body,
-        createdAt: DateTime.now(),
-        actionText: 'Log It',
-        actionRoute: '/nbox',
-        data: {
-          'source': transaction.source,
-          'detectedId': transaction.id,
-          'type': 'detected_prompt',
-        },
-      ),
-    );
+    if (addToInAppFeed) {
+      _notificationProvider?.addNotification(
+        AppNotification(
+          id: 'detected_${transaction.source}_${transaction.id}',
+          type: NotificationType.transactionAlert,
+          title: title,
+          message: body,
+          createdAt: DateTime.now(),
+          actionText: 'Log It',
+          actionRoute: '/nbox',
+          data: {
+            'source': transaction.source,
+            'detectedId': transaction.id,
+            'type': 'detected_prompt',
+          },
+        ),
+      );
+    }
 
     const details = NotificationDetails(
       android: AndroidNotificationDetails(
@@ -352,7 +390,7 @@ class NotificationService {
     );
   }
 
-  void handleNotificationPayload(String? payload) {
+  Future<void> handleNotificationPayload(String? payload) async {
     if (payload == null || payload.isEmpty) {
       return;
     }
@@ -360,13 +398,58 @@ class NotificationService {
     if (payload.startsWith('nbox_approve|')) {
       final parts = payload.split('|');
       if (parts.length >= 3) {
-        _approvalRequestController.add(
-          DetectionApprovalRequest(
-            source: parts[1],
-            transactionId: parts.sublist(2).join('|'),
-          ),
+        final request = DetectionApprovalRequest(
+          source: parts[1],
+          transactionId: parts.sublist(2).join('|'),
         );
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+          _pendingApprovalStorageKey,
+          jsonEncode({
+            'source': request.source,
+            'transactionId': request.transactionId,
+          }),
+        );
+        _approvalRequestController.add(request);
       }
+    }
+  }
+
+  /// Returns and clears an approval request that arrived while no UI isolate
+  /// was listening (for example after a notification launches the app).
+  Future<DetectionApprovalRequest?> takePersistedApprovalRequest() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_pendingApprovalStorageKey);
+    if (raw == null || raw.isEmpty) return null;
+    await prefs.remove(_pendingApprovalStorageKey);
+    try {
+      final json = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+      final source = json['source'] as String?;
+      final transactionId = json['transactionId'] as String?;
+      if (source == null || transactionId == null) return null;
+      return DetectionApprovalRequest(
+        source: source,
+        transactionId: transactionId,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> clearPersistedApprovalRequest({
+    required String source,
+    required String transactionId,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_pendingApprovalStorageKey);
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final json = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+      if (json['source'] == source && json['transactionId'] == transactionId) {
+        await prefs.remove(_pendingApprovalStorageKey);
+      }
+    } catch (_) {
+      await prefs.remove(_pendingApprovalStorageKey);
     }
   }
 
@@ -413,7 +496,7 @@ class NotificationService {
       }
       _messaging.onTokenRefresh.listen(_storeToken);
     } catch (e) {
-      log('⚠️ Error syncing FCM token: $e');
+      log('ΓÜá∩╕Å Error syncing FCM token: $e');
       // Non-critical error
     }
   }
@@ -436,9 +519,9 @@ class NotificationService {
         'platform': defaultTargetPlatform.toString(),
         'updatedAt': DateTime.now().toIso8601String(),
       });
-      log('✅ FCM token stored: $token');
+      log('Γ£à FCM token stored: $token');
     } catch (e) {
-      log('⚠️ Error storing FCM token: $e');
+      log('ΓÜá∩╕Å Error storing FCM token: $e');
       // Non-critical error
     }
   }
@@ -471,13 +554,13 @@ class NotificationService {
       String message;
       if (days == 0) {
         message =
-            'EMI payment for ${debt.name} is due today! Amount: ₹${debt.monthlyEMI.toStringAsFixed(0)}';
+            'EMI payment for ${debt.name} is due today! Amount: Γé╣${debt.monthlyEMI.toStringAsFixed(0)}';
       } else if (days == 1) {
         message =
-            'EMI payment for ${debt.name} is due tomorrow! Amount: ₹${debt.monthlyEMI.toStringAsFixed(0)}';
+            'EMI payment for ${debt.name} is due tomorrow! Amount: Γé╣${debt.monthlyEMI.toStringAsFixed(0)}';
       } else {
         message =
-            'EMI payment for ${debt.name} is due in $days days! Amount: ₹${debt.monthlyEMI.toStringAsFixed(0)}';
+            'EMI payment for ${debt.name} is due in $days days! Amount: Γé╣${debt.monthlyEMI.toStringAsFixed(0)}';
       }
 
       log('Notification: $message');

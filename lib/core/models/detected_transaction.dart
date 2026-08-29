@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 
 @immutable
 class DetectedTransaction {
@@ -15,7 +15,8 @@ class DetectedTransaction {
   warnings; // e.g., ["Merchant unclear", "Amount incomplete"]
   final String? detectedCategory; // Auto-detected category, if any
   final String? bankName; // e.g., "IDFC FIRST Bank" - identified source bank
-  final double? balanceAfter; // Account balance after this transaction, if the alert included one
+  final double?
+  balanceAfter; // Account balance after this transaction, if the alert included one
   final String? accountNumber; // Last-4 digits of account/card, if present
 
   const DetectedTransaction({
@@ -39,6 +40,42 @@ class DetectedTransaction {
   bool get isHighConfidence => confidence >= 0.85;
   bool get isLowConfidence => confidence < 0.65;
   bool get needsReview => isLowConfidence || warnings.isNotEmpty;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'fingerprint': fingerprint,
+    'amount': amount,
+    'merchant': merchant,
+    'date': date.toIso8601String(),
+    'type': type,
+    'source': source,
+    'body': body,
+    'confidence': confidence,
+    'warnings': warnings,
+    'detectedCategory': detectedCategory,
+    'bankName': bankName,
+    'balanceAfter': balanceAfter,
+    'accountNumber': accountNumber,
+  };
+
+  factory DetectedTransaction.fromJson(Map<String, dynamic> json) {
+    return DetectedTransaction(
+      id: json['id'] as String,
+      fingerprint: json['fingerprint'] as String,
+      amount: (json['amount'] as num).toDouble(),
+      merchant: json['merchant'] as String,
+      date: DateTime.parse(json['date'] as String),
+      type: json['type'] as String,
+      source: json['source'] as String,
+      body: json['body'] as String?,
+      confidence: (json['confidence'] as num?)?.toDouble() ?? 0.8,
+      warnings: List<String>.from(json['warnings'] as List? ?? const []),
+      detectedCategory: json['detectedCategory'] as String?,
+      bankName: json['bankName'] as String?,
+      balanceAfter: (json['balanceAfter'] as num?)?.toDouble(),
+      accountNumber: json['accountNumber'] as String?,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>

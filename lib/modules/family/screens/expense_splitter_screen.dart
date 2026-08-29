@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/nexus_switch.dart';
+import '../../../core/widgets/nexus_card.dart';
 import '../../../core/widgets/top_snackbar.dart';
 
 /// Expense Splitter Screen - For quick expense splitting calculations
@@ -166,7 +168,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                '₹',
+                'Γé╣',
                 style: TextStyle(
                   color: AppColors.primaryBlue,
                   fontSize: 28,
@@ -314,7 +316,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
             ),
             if (_isCustomTip) ...[
               const SizedBox(height: 12),
-              // Mode toggle: % vs ₹
+              // Mode toggle: % vs Γé╣
               Row(
                 children: [
                   Expanded(
@@ -365,7 +367,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                           ),
                         ),
                         child: Text(
-                          '₹ Amount',
+                          'Γé╣ Amount',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: _customTipIsAmount
@@ -396,7 +398,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                     color: AppColors.textTertiary,
                     fontSize: 13,
                   ),
-                  suffixText: _customTipIsAmount ? '₹' : '%',
+                  suffixText: _customTipIsAmount ? 'Γé╣' : '%',
                   suffixStyle: const TextStyle(color: AppColors.primaryBlue),
                   filled: true,
                   fillColor: AppColors.backgroundBlack,
@@ -649,15 +651,15 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
 
   String _buildSplitMessage() {
     final participants = _participants
-        .map((p) => '- $p: ₹${_perPersonAmount.toStringAsFixed(2)}')
+        .map((p) => '- $p: Γé╣${_perPersonAmount.toStringAsFixed(2)}')
         .join('\n');
     final baseAmount = double.tryParse(_amountController.text) ?? 0;
 
     return 'Split summary\n\n'
-        'Bill: ₹${baseAmount.toStringAsFixed(2)}\n'
+        'Bill: Γé╣${baseAmount.toStringAsFixed(2)}\n'
         'Tip: ${_effectiveTip.toStringAsFixed(_effectiveTip % 1 == 0 ? 0 : 1)}%\n'
-        'Total: ₹${_totalAmount.toStringAsFixed(2)}\n'
-        'Each person pays: ₹${_perPersonAmount.toStringAsFixed(2)}\n\n'
+        'Total: Γé╣${_totalAmount.toStringAsFixed(2)}\n'
+        'Each person pays: Γé╣${_perPersonAmount.toStringAsFixed(2)}\n\n'
         '$participants';
   }
 
@@ -665,16 +667,16 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
     if (_amountController.text.isEmpty || _participants.isEmpty) return;
 
     final StringBuffer buffer = StringBuffer();
-    buffer.writeln("=== 🧾 Quick Split Bill Breakdown ===");
-    buffer.writeln("Total Bill: ₹${_totalAmount.toStringAsFixed(2)}");
+    buffer.writeln("=== ≡ƒº╛ Quick Split Bill Breakdown ===");
+    buffer.writeln("Total Bill: Γé╣${_totalAmount.toStringAsFixed(2)}");
     buffer.writeln(
-      "Per Person Share: ₹${_perPersonAmount.toStringAsFixed(2)}\n",
+      "Per Person Share: Γé╣${_perPersonAmount.toStringAsFixed(2)}\n",
     );
-    buffer.writeln("👤 Split Details:");
+    buffer.writeln("≡ƒæñ Split Details:");
 
     for (var participant in _participants) {
       buffer.writeln(
-        "• $participant owes: ₹${_perPersonAmount.toStringAsFixed(2)}",
+        "ΓÇó $participant owes: Γé╣${_perPersonAmount.toStringAsFixed(2)}",
       );
     }
 
@@ -683,20 +685,9 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
   }
 
   Widget _buildResultCard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primaryBlue.withValues(alpha: 0.3),
-            AppColors.primaryBlue.withValues(alpha: 0.1),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.3)),
-      ),
+    return NexusCard(
+      variant: NexusCardVariant.accent,
+      padding: AppSpacing.cardPaddingLg,
       child: Column(
         children: [
           Text(
@@ -709,7 +700,9 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '₹${_perPersonAmount.toStringAsFixed(2)}',
+            'Γé╣${_perPersonAmount.toStringAsFixed(2)}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppColors.primaryBlue,
               fontSize: 40,
@@ -736,7 +729,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '(₹${((double.tryParse(_amountController.text) ?? 0) * _effectiveTip / 100 / _participantControllers.length).toStringAsFixed(2)})',
+                    '(Γé╣${((double.tryParse(_amountController.text) ?? 0) * _effectiveTip / 100 / _participantControllers.length).toStringAsFixed(2)})',
                     style: const TextStyle(
                       color: AppColors.success,
                       fontSize: 12,
@@ -753,7 +746,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
             children: [
               _buildSummaryItem(
                 'Bill',
-                '₹${(double.tryParse(_amountController.text) ?? 0).toStringAsFixed(0)}',
+                'Γé╣${(double.tryParse(_amountController.text) ?? 0).toStringAsFixed(0)}',
               ),
               Container(
                 width: 1,
@@ -763,7 +756,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
               ),
               _buildSummaryItem(
                 'Tip',
-                '₹${((double.tryParse(_amountController.text) ?? 0) * _effectiveTip / 100).toStringAsFixed(0)}',
+                'Γé╣${((double.tryParse(_amountController.text) ?? 0) * _effectiveTip / 100).toStringAsFixed(0)}',
               ),
               Container(
                 width: 1,
@@ -771,7 +764,7 @@ class _ExpenseSplitterScreenState extends State<ExpenseSplitterScreen> {
                 color: Colors.white.withValues(alpha: 0.1),
                 margin: const EdgeInsets.symmetric(horizontal: 20),
               ),
-              _buildSummaryItem('Total', '₹${_totalAmount.toStringAsFixed(0)}'),
+              _buildSummaryItem('Total', 'Γé╣${_totalAmount.toStringAsFixed(0)}'),
             ],
           ),
         ],

@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_animations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/providers/fuel_price_provider.dart';
+import '../../../core/widgets/nexus_inline_loading.dart';
 
 class FuelPriceWidget extends StatefulWidget {
   final Function(double) onPriceSelected;
@@ -68,9 +69,9 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
         double displayPrice = base + variance;
 
         return Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           decoration: BoxDecoration(
-            color: AppColors.cardSurface,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
             boxShadow: [
@@ -86,10 +87,10 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
                       color: AppColors.primaryBlue.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppSpacing.borderRadiusSm,
                     ),
                     child: const Icon(
                       Icons.location_on_rounded,
@@ -97,7 +98,7 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
                       size: 20,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,13 +168,7 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
                                 }
                               },
                         icon: isLoading
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
+                              ? const NexusInlineLoading(size: AppSpacing.iconSm)
                             : const Icon(
                                 Icons.my_location,
                                 color: AppColors.primaryBlue,
@@ -199,7 +194,7 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
                   ),
                 ],
               ),
-              const Divider(height: 32, color: Colors.white10),
+              const Divider(height: AppSpacing.xl3, color: Colors.white10),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -215,9 +210,9 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
                             ),
                           ),
                           if (currentPrice?.lastUpdated != null) ...[
-                            const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                             Text(
-                              '• Updated today',
+                              'ΓÇó Updated today',
                               style: AppTypography.labelSmall.copyWith(
                                 color: AppColors.pastelGreen,
                                 fontSize: 10,
@@ -231,7 +226,7 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
                         textBaseline: TextBaseline.alphabetic,
                         children: [
                           Text(
-                            '₹',
+                            'Γé╣',
                             style: AppTypography.headlineSmall.copyWith(
                               color: AppColors.textSecondary,
                             ),
@@ -269,7 +264,7 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl),
               SizedBox(
                 height: 36,
                 child: ListView(
@@ -277,14 +272,14 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
                   children: _brandVariance.keys.map((brand) {
                     bool isSelected = _selectedBrand == brand;
                     return Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.only(right: AppSpacing.sm),
                       child: GestureDetector(
                         onTap: () {
                           setState(() => _selectedBrand = brand);
                           _calculateFinalPrice();
                         },
                         child: AnimatedContainer(
-                          duration: AppAnimations.standard,
+                            duration: AppAnimations.interactionDuration,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(

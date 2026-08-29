@@ -1,3 +1,4 @@
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/account.dart';
@@ -16,6 +17,7 @@ class AccountProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   bool _isInitialized = false;
+  Future<void>? _initializationFuture;
 
   // Undo support
   Account? _lastDeletedAccount;
@@ -34,7 +36,12 @@ class AccountProvider with ChangeNotifier {
     initialize();
   }
 
-  Future<void> initialize() async {
+  Future<void> initialize() {
+    if (_auth.currentUser == null) return Future.value();
+    return _initializationFuture ??= _initialize();
+  }
+
+  Future<void> _initialize() async {
     final user = _auth.currentUser;
     if (user != null && !_isInitialized) {
       await _loadAccounts(user.uid);
@@ -43,6 +50,7 @@ class AccountProvider with ChangeNotifier {
   }
 
   Future<void> _loadAccounts(String userId) async {
+    final firstSnapshot = Completer<void>();
     _setLoading(true);
     try {
       _accountService
@@ -52,16 +60,20 @@ class AccountProvider with ChangeNotifier {
               _accounts = accounts;
               _setLoading(false);
               notifyListeners();
+              if (!firstSnapshot.isCompleted) firstSnapshot.complete();
             },
             onError: (e) {
               _setError('Error loading accounts: $e');
               _setLoading(false);
+              if (!firstSnapshot.isCompleted) firstSnapshot.complete();
             },
           );
     } catch (e) {
       _setError(e.toString());
       _setLoading(false);
+      if (!firstSnapshot.isCompleted) firstSnapshot.complete();
     }
+    await firstSnapshot.future;
   }
 
   Future<void> addAccount(Account account) async {
@@ -97,16 +109,16 @@ class AccountProvider with ChangeNotifier {
     if (user == null) { return; }
     try {
       debugPrint(
-        '💰 AccountProvider.updateAccountBalance: accountId=$accountId, newBalance=$newBalance',
+        '≡ƒÆ░ AccountProvider.updateAccountBalance: accountId=$accountId, newBalance=$newBalance',
       );
       await _accountService.updateAccountBalance(
         user.uid,
         accountId,
         newBalance,
       );
-      debugPrint('✅ AccountProvider: Balance updated in Firestore');
+      debugPrint('Γ£à AccountProvider: Balance updated in Firestore');
     } catch (e) {
-      debugPrint('❌ AccountProvider: Failed to update balance: $e');
+      debugPrint('Γ¥î AccountProvider: Failed to update balance: $e');
       _setError('Failed to update account balance: $e');
     }
   }
@@ -132,11 +144,11 @@ class AccountProvider with ChangeNotifier {
         accountId: accountId,
       );
       debugPrint(
-        '🗑️ Cascade deleted account and all related transactions for account $accountId',
+        '≡ƒùæ∩╕Å Cascade deleted account and all related transactions for account $accountId',
       );
     } catch (e) {
       _setError(e.toString());
-      // Deletion failed — clear any staged undo data so a stale restore
+      // Deletion failed ΓÇö clear any staged undo data so a stale restore
       // isn't offered for an account that was never actually removed.
       _lastDeletedAccount = null;
       _lastDeletedTransactions = [];
@@ -162,7 +174,7 @@ class AccountProvider with ChangeNotifier {
 
       // Restore the account
       await _accountService.addAccount(user.uid, accountToRestore);
-      debugPrint('✅ Restored account: ${accountToRestore.name}');
+      debugPrint('Γ£à Restored account: ${accountToRestore.name}');
 
       // Restore its transactions
       if (transactionsToRestore.isNotEmpty) {
@@ -170,7 +182,7 @@ class AccountProvider with ChangeNotifier {
           user.uid,
           transactionsToRestore,
         );
-        debugPrint('✅ Restored ${transactionsToRestore.length} transactions');
+        debugPrint('Γ£à Restored ${transactionsToRestore.length} transactions');
       }
 
       // Clear the stored deleted data
@@ -178,7 +190,7 @@ class AccountProvider with ChangeNotifier {
       _lastDeletedTransactions = [];
     } catch (e) {
       _setError('Failed to restore account: $e');
-      debugPrint('❌ Error restoring account: $e');
+      debugPrint('Γ¥î Error restoring account: $e');
     } finally {
       _setLoading(false);
     }
@@ -191,26 +203,26 @@ class AccountProvider with ChangeNotifier {
     if (user == null) { return 0; }
     try {
       final count = await _accountService.purgeAccountsByName(user.uid, name);
-      debugPrint('🧹 Purged $count account(s) named "$name"');
+      debugPrint('≡ƒº╣ Purged $count account(s) named "$name"');
       return count;
     } catch (e) {
-      debugPrint('❌ Failed to purge account "$name": $e');
+      debugPrint('Γ¥î Failed to purge account "$name": $e');
       _setError('Failed to purge account "$name": $e');
       return 0;
     }
   }
 
   Account? getAccountById(String id) {
-    debugPrint('🔍 getAccountById called with id: "$id"');
+    debugPrint('≡ƒöì getAccountById called with id: "$id"');
     debugPrint(
-      '📋 Available accounts: ${_accounts.map((a) => '"${a.id}":${a.name}').toList()}',
+      '≡ƒôï Available accounts: ${_accounts.map((a) => '"${a.id}":${a.name}').toList()}',
     );
     try {
       final account = _accounts.firstWhere((acc) => acc.id == id);
-      debugPrint('✅ Found account: ${account.name}');
+      debugPrint('Γ£à Found account: ${account.name}');
       return account;
     } catch (e) {
-      debugPrint('❌ Account not found for id: "$id"');
+      debugPrint('Γ¥î Account not found for id: "$id"');
       return null;
     }
   }

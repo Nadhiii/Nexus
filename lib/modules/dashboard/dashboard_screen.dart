@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -10,7 +10,8 @@ import '../../core/providers/transaction_provider.dart';
 import '../../core/providers/notification_provider.dart';
 import '../../core/models/transaction.dart';
 import '../../core/widgets/animated_list_item.dart';
-import '../../core/widgets/spring_tap.dart';
+import '../../core/widgets/nexus_button.dart';
+import '../../core/widgets/nexus_card.dart';
 import '../../core/widgets/total_balance_card.dart';
 import '../../core/widgets/upcoming_week_widget.dart';
 import '../../core/providers/user_provider.dart';
@@ -37,14 +38,14 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-      backgroundColor: AppColors.backgroundBlack,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // ── 1. APP BAR ─────────────────────────────────────────────────
+          // ΓöÇΓöÇ 1. APP BAR ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
           const _DashboardAppBar(),
 
-          // ── 2. BALANCE CARD ────────────────────────────────────────────
+          // ΓöÇΓöÇ 2. BALANCE CARD ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(
@@ -57,7 +58,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
             ),
           ),
 
-          // ── 3. ACTION BAR ──────────────────────────────────────────────
+          // ΓöÇΓöÇ 3. ACTION BAR ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(
@@ -70,7 +71,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
             ),
           ),
 
-          // ── 4. UPCOMING WEEK ───────────────────────────────────────────
+          // ΓöÇΓöÇ 4. UPCOMING WEEK ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -87,7 +88,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
             ),
           ),
 
-          // ── 5. GARAGE WIDGET ───────────────────────────────────────────
+          // ΓöÇΓöÇ 5. GARAGE WIDGET ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -102,7 +103,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
             ),
           ),
 
-          // ── 6. RECENT ACTIVITY ─────────────────────────────────────────
+          // ΓöÇΓöÇ 6. RECENT ACTIVITY ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(
@@ -122,9 +123,9 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // App Bar
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 class _DashboardAppBar extends StatelessWidget {
   const _DashboardAppBar();
@@ -133,8 +134,8 @@ class _DashboardAppBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverAppBar(
       pinned: true,
-      backgroundColor: AppColors.backgroundBlack,
-      surfaceTintColor: AppColors.backgroundBlack,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
       automaticallyImplyLeading: false,
       title: const _GreetingTitle(),
@@ -142,27 +143,21 @@ class _DashboardAppBar extends StatelessWidget {
         Consumer<NotificationProvider>(
           builder: (context, notifProvider, _) {
             final unread = notifProvider.unreadCount;
-            return GestureDetector(
-              onTap: () => Navigator.push(
+            return IconButton(
+              onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => const ModernNotificationsScreen(),
                 ),
               ),
-              child: Container(
-                margin: const EdgeInsets.only(right: 20),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.white12),
-                ),
-                child: Stack(
+              tooltip: 'Notifications',
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              icon: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.notifications_outlined,
-                      color: AppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       size: 20,
                     ),
                     if (unread > 0)
@@ -172,15 +167,15 @@ class _DashboardAppBar extends StatelessWidget {
                         child: Container(
                           width: 14,
                           height: 14,
-                          decoration: const BoxDecoration(
-                            color: AppColors.error,
+                            decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.error,
                             shape: BoxShape.circle,
                           ),
                           child: Center(
                             child: Text(
                               unread > 9 ? '9+' : '$unread',
                               style: AppTypography.labelSmall.copyWith(
-                                color: AppColors.textPrimary,
+                                color: Theme.of(context).colorScheme.onError,
                                 fontSize: 8,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -190,7 +185,6 @@ class _DashboardAppBar extends StatelessWidget {
                       ),
                   ],
                 ),
-              ),
             );
           },
         ),
@@ -199,9 +193,9 @@ class _DashboardAppBar extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // Greeting
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 class _GreetingTitle extends StatelessWidget {
   const _GreetingTitle();
@@ -245,9 +239,9 @@ class _GreetingTitle extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // Action Bar
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 class _ActionBar extends StatelessWidget {
   const _ActionBar();
@@ -261,52 +255,25 @@ class _ActionBar extends StatelessWidget {
             // Primary: Add Transaction
             Expanded(
               flex: 3,
-              child: SpringTap(
-                onTap: () => Navigator.push(
+                child: NexusButton(
+                onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => const ModernAddTransactionScreen(),
                   ),
                 ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primaryBlue.withValues(alpha: 0.35),
-                        blurRadius: 14,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add_rounded, color: Colors.white, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Add Transaction',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                variant: NexusButtonVariant.primary,
+                emphasizedPrimary: true,
+                icon: const Icon(Icons.add_rounded),
+                label: 'Add Transaction',
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: AppSpacing.controlGap),
             // Secondary: Transfer
             Expanded(
               flex: 2,
-              child: SpringTap(
-                onTap: () => Navigator.push(
+              child: NexusButton(
+                onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => const ModernAddTransactionScreen(
@@ -314,84 +281,32 @@ class _ActionBar extends StatelessWidget {
                     ),
                   ),
                 ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardSurface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.swap_horiz_rounded,
-                        color: AppColors.textSecondary,
-                        size: 18,
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        'Transfer',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                variant: NexusButtonVariant.secondary,
+                icon: const Icon(Icons.swap_horiz_rounded),
+                label: 'Transfer',
               ),
             ),
           ],
         ),
-        const SizedBox(height: 10),
-        SpringTap(
-          onTap: () => Navigator.push(
+        const SizedBox(height: AppSpacing.controlGap),
+        NexusButton(
+          width: double.infinity,
+          onPressed: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const ExpenseSplitterScreen()),
           ),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
-            decoration: BoxDecoration(
-              color: AppColors.cardSurface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppColors.success.withValues(alpha: 0.3),
-              ),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.call_split_rounded,
-                  color: AppColors.success,
-                  size: 18,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  'Quick Split (No Save)',
-                  style: TextStyle(
-                    color: AppColors.success,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          variant: NexusButtonVariant.tertiary,
+          icon: const Icon(Icons.call_split_rounded),
+          label: 'Quick Split (No Save)',
         ),
       ],
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // Recent Activity
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 class _RecentActivitySectionWrapper extends StatelessWidget {
   const _RecentActivitySectionWrapper();
@@ -419,41 +334,31 @@ class _RecentActivitySection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'RECENT ACTIVITY',
-              style: TextStyle(
-                color: AppColors.textTertiary,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
+              style: AppTypography.labelSmall.copyWith(letterSpacing: 1.2),
             ),
             GestureDetector(
               onTap: () {
                 // Navigate to full transactions screen via bottom nav
                 // handled by parent scaffold tab switching
               },
-              child: const Text(
+              child: Text(
                 'View all',
-                style: TextStyle(
+                style: AppTypography.labelMedium.copyWith(
                   color: AppColors.primaryBlue,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
                 ),
+              
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.contentGap),
         if (recentTransactions.isEmpty)
           const _EmptyState()
         else
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.cardSurface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-            ),
+          NexusCard(
+            padding: EdgeInsets.zero,
             child: Column(
               children: recentTransactions.asMap().entries.map((entry) {
                 final i = entry.key;
@@ -486,12 +391,7 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
+      padding: const EdgeInsets.all(AppSpacing.xl2),
       child: const Center(
         child: Column(
           children: [
@@ -500,10 +400,10 @@ class _EmptyState extends StatelessWidget {
               color: AppColors.textTertiary,
               size: 32,
             ),
-            SizedBox(height: 12),
+            SizedBox(height: AppSpacing.contentGap),
             Text(
               'No transactions yet',
-              style: TextStyle(color: AppColors.textTertiary, fontSize: 13),
+              style: AppTypography.bodySmall,
             ),
           ],
         ),
@@ -534,7 +434,7 @@ class _TransactionTile extends StatelessWidget {
       case TransactionType.expense:
         return '-';
       case TransactionType.transfer:
-        return '↔';
+        return 'Γåö';
     }
   }
 
@@ -556,12 +456,12 @@ class _TransactionTile extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppSpacing.borderRadiusSm,
             ),
             child: Center(
               child: Text(
                 _categoryEmoji(transaction.categoryId),
-                style: const TextStyle(fontSize: 18),
+                style: AppTypography.titleMedium,
               ),
             ),
           ),
@@ -573,9 +473,8 @@ class _TransactionTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: AppTypography.bodyMedium.copyWith(
                     color: AppColors.textPrimary,
-                    fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
@@ -584,21 +483,18 @@ class _TransactionTile extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   DateFormat('dd MMM').format(transaction.date),
-                  style: const TextStyle(
-                    color: AppColors.textTertiary,
-                    fontSize: 11,
-                  ),
+                  style: AppTypography.labelSmall,
                 ),
               ],
             ),
           ),
           // Amount
           Text(
-            '${_sign()}₹${NumberFormat('#,##,###').format(transaction.amount)}',
+            '${_sign()}Γé╣${NumberFormat('#,##,###').format(transaction.amount)}',
             style: TextStyle(
               color: color,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+              fontSize: AppTypography.labelLarge.fontSize,
+              fontWeight: AppTypography.labelLarge.fontWeight,
             ),
           ),
         ],
@@ -609,35 +505,35 @@ class _TransactionTile extends StatelessWidget {
   String _categoryEmoji(String? categoryId) {
     switch (categoryId) {
       case 'food':
-        return '🍔';
+        return '≡ƒìö';
       case 'groceries':
-        return '🛒';
+        return '≡ƒ¢Æ';
       case 'transport':
-        return '🚌';
+        return '≡ƒÜî';
       case 'garage':
-        return '⛽';
+        return 'Γ¢╜';
       case 'bills':
-        return '🏦';
+        return '≡ƒÅª';
       case 'entertainment':
-        return '🎬';
+        return '≡ƒÄ¼';
       case 'health':
-        return '💊';
+        return '≡ƒÆè';
       case 'education':
-        return '📚';
+        return '≡ƒôÜ';
       case 'shopping':
-        return '🛍️';
+        return '≡ƒ¢ì∩╕Å';
       case 'investment':
-        return '📈';
+        return '≡ƒôê';
       case 'salary':
-        return '💰';
+        return '≡ƒÆ░';
       case 'travel':
-        return '✈️';
+        return 'Γ£ê∩╕Å';
       case 'transfer':
-        return '↔️';
+        return 'Γåö∩╕Å';
       case 'shared':
-        return '👥';
+        return '≡ƒæÑ';
       default:
-        return '💸';
+        return '≡ƒÆ╕';
     }
   }
 }

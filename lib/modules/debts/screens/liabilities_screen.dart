@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +7,7 @@ import '../../../core/models/debt.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_animations.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/logo_utils.dart';
 import '../../../core/widgets/swipe_to_delete.dart';
 import '../utils/debt_logo_utils.dart';
@@ -291,7 +292,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '₹${_formatAmount(totalPaid)}',
+                      'Γé╣${_formatAmount(totalPaid)}',
                       style: const TextStyle(
                         color: AppColors.success,
                         fontSize: 22,
@@ -410,7 +411,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              '₹${_formatCompact(debt.originalAmount)}',
+              'Γé╣${_formatCompact(debt.originalAmount)}',
               style: const TextStyle(
                 color: AppColors.success,
                 fontSize: 18,
@@ -527,7 +528,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '₹${_formatAmount(totalDebt)}',
+                            'Γé╣${_formatAmount(totalDebt)}',
                             style: AppTypography.currencyMedium,
                           ),
                           const SizedBox(height: 6),
@@ -554,7 +555,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '₹${_formatCompact(totalPaid)} paid',
+                                      'Γé╣${_formatCompact(totalPaid)} paid',
                                       style: const TextStyle(
                                         color: AppColors.success,
                                         fontSize: 11,
@@ -611,7 +612,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                     _buildStatChip(
                       icon: Icons.calendar_today_outlined,
                       label: 'Monthly EMI',
-                      value: '₹${_formatCompact(totalEMI)}',
+                      value: 'Γé╣${_formatCompact(totalEMI)}',
                     ),
                     const SizedBox(width: 12),
                     if (nextDue != null)
@@ -638,51 +639,10 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
     required String value,
     bool isWarning = false,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: isWarning
-            ? AppColors.warning.withValues(alpha: 0.15)
-            : Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isWarning
-              ? AppColors.warning.withValues(alpha: 0.3)
-              : Colors.white.withValues(alpha: 0.1),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 14,
-            color: isWarning ? AppColors.warning : Colors.white60,
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 9,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                value,
-                style: TextStyle(
-                  color: isWarning ? AppColors.warning : Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+    return Chip(
+      avatar: Icon(icon, size: AppSpacing.iconSm, color: isWarning ? AppColors.warning : AppColors.textSecondary),
+      label: Text('$label: $value'),
+      labelStyle: AppTypography.labelSmall.copyWith(color: isWarning ? AppColors.warning : AppColors.textSecondary),
     );
   }
 
@@ -890,7 +850,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          '₹${_formatAmount(debt.currentBalance)}',
+          'Γé╣${_formatAmount(debt.currentBalance)}',
           style: TextStyle(
             color: Colors.white,
             fontSize: isLarge ? 22 : 18,
@@ -900,7 +860,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
         if ((debt.monthlyEMI ?? 0) > 0) ...[
           const SizedBox(height: 2),
           Text(
-            'EMI ₹${_formatCompact(debt.monthlyEMI ?? 0)} /mo',
+            'EMI Γé╣${_formatCompact(debt.monthlyEMI ?? 0)} /mo',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.5),
               fontSize: 10,

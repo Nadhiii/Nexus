@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/category_provider.dart';
 import '../../core/models/category.dart';
@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/swipe_to_delete.dart';
 import '../../core/widgets/collapsible_fab.dart';
+import '../../core/widgets/nexus_card.dart';
 import 'widgets/edit_category.dart';
 
 class ManageCategoriesScreen extends StatefulWidget {
@@ -107,7 +108,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                   child: Center(
                     child: Text(
                       isHiddenView
-                          ? "Nothing hidden — deleted defaults show up here"
+                          ? "Nothing hidden ΓÇö deleted defaults show up here"
                           : "No categories found",
                       style: TextStyle(color: AppColors.textTertiary),
                     ),
@@ -126,7 +127,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                       final category = displayedCategories[index];
 
                       if (isHiddenView) {
-                        // Hidden defaults aren't swipeable/editable here —
+                        // Hidden defaults aren't swipeable/editable here ΓÇö
                         // just show them with an explicit restore action.
                         return Padding(
                           padding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -290,80 +291,21 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
 
   Widget _buildFilterChip(String label, {int? badgeCount}) {
     final isActive = _activeFilter == label;
-    return GestureDetector(
-      onTap: () => setState(() => _activeFilter = label),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive
-              ? AppColors.primaryBlue.withValues(alpha: 0.2)
-              : Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isActive
-                ? AppColors.primaryBlue.withValues(alpha: 0.5)
-                : Colors.white.withValues(alpha: 0.1),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: isActive ? AppColors.primaryBlue : Colors.white70,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (badgeCount != null && badgeCount > 0) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? AppColors.primaryBlue
-                      : Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$badgeCount',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return FilterChip(
+      label: Text(badgeCount != null && badgeCount > 0 ? '$label  $badgeCount' : label),
+      selected: isActive,
+      showCheckmark: false,
+      onSelected: (_) => setState(() => _activeFilter = label),
     );
   }
 
  Widget _buildCategoryTile(BuildContext context, Category category) {
     return GestureDetector(
       onTap: () => showEditCategoryModal(context, category: category),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.cardElevated,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          border: Border.all(
-            color: category.isCustom
-                ? category.color.withValues(alpha: 0.3)
-                : Colors.white.withValues(alpha: 0.05),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+      child: NexusCard(
+        color: AppColors.cardElevated,
+        border: Border.all(color: category.isCustom ? category.color.withValues(alpha: 0.3) : AppColors.borderSubtle),
+        padding: AppSpacing.cardPaddingMd,
         child: Row(
           children: [
             // Glowing Icon Container
@@ -398,6 +340,8 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                 children: [
                   Text(
                     category.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTypography.titleMedium.copyWith(
                       color: AppColors.white,
                       fontWeight: FontWeight.bold,

@@ -1,17 +1,14 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/models/bike.dart'; // <-- Added import to fix the typing crash
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_spacing.dart';
 
-/// Dashboard-level garage card.
-/// Shows the active bike's live stats (mileage, odometer, fuel cost).
-/// Tapping "Open" switches to the Garage tab via [onNavigate] instead of
-/// pushing a new route, so the user lands on the same screen as the nav-bar.
+
 class GarageDashboardWidget extends StatelessWidget {
-  /// Callback wired up in ModernDashboardScreen to switch the bottom-nav
-  /// index to the Garage tab (pass the index your app uses, e.g. 2).
+
   final VoidCallback? onOpenGarage;
 
   const GarageDashboardWidget({super.key, this.onOpenGarage});
@@ -20,14 +17,14 @@ class GarageDashboardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<BikeProvider>(
       builder: (context, provider, _) {
-        final bike = provider.selectedBike;
+        final bike = provider.dashboardDisplayBike;
 
         if (bike == null) {
           return _EmptyGarageCard(onOpenGarage: onOpenGarage);
         }
 
-        // ── Derived stats ──────────────────────────────────────────────
-        final fuelEntries = provider.currentBikeEntries
+        // ΓöÇΓöÇ Derived stats ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+        final fuelEntries = provider.dashboardBikeEntries
             .where((e) => (e.category ?? 'fuel').toLowerCase() == 'fuel')
             .toList();
 
@@ -44,32 +41,32 @@ class GarageDashboardWidget extends StatelessWidget {
           (sum, e) => sum + e.fuelAmount,
         );
 
-        final double mileage = provider.getReliableAverageMileage();
+        final double mileage = provider.getDashboardReliableAverageMileage();
 
         return Container(
           decoration: BoxDecoration(
-            color: AppColors.cardSurface,
-            borderRadius: BorderRadius.circular(20),
+            color: Theme.of(context).cardColor,
+            borderRadius: AppSpacing.borderRadiusMd,
             border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header ───────────────────────────────────────────────
+              // ΓöÇΓöÇ Header ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(AppSpacing.sm),
                           decoration: BoxDecoration(
                             color: AppColors.primaryBlue.withValues(
                               alpha: 0.12,
                             ),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: AppSpacing.borderRadiusXs,
                           ),
                           child: Icon(
                             Icons.two_wheeler_rounded,
@@ -77,41 +74,36 @@ class GarageDashboardWidget extends StatelessWidget {
                             size: 16,
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: AppSpacing.controlGap),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'GARAGE',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.2,
-                                color: AppColors.textTertiary,
-                              ),
+                              style: AppTypography.labelSmall.copyWith(letterSpacing: 1.2),
                             ),
                             Text(
                               bike.name,
                               style: AppTypography.bodyLarge.copyWith(
                                 color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: AppTypography.titleSmall.fontWeight,
                               ),
                             ),
                           ],
                         ),
                       ],
                     ),
-                    // Open button — uses callback instead of Navigator.push
+                    // Open button ΓÇö uses callback instead of Navigator.push
                     GestureDetector(
                       onTap: onOpenGarage,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.xs,
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryBlue.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppSpacing.borderRadiusXs,
                           border: Border.all(
                             color: AppColors.primaryBlue.withValues(
                               alpha: 0.25,
@@ -122,8 +114,8 @@ class GarageDashboardWidget extends StatelessWidget {
                           'Open',
                           style: TextStyle(
                             color: AppColors.primaryBlue,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
+                            fontSize: AppTypography.labelMedium.fontSize,
+                            fontWeight: AppTypography.labelMedium.fontWeight,
                           ),
                         ),
                       ),
@@ -132,13 +124,13 @@ class GarageDashboardWidget extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.contentGap),
               const Divider(height: 1, color: Colors.white10),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.contentGap),
 
-              // ── Stats row ─────────────────────────────────────────────
+              // ΓöÇΓöÇ Stats row ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
                 child: Row(
                   children: [
                     _StatCell(
@@ -160,7 +152,7 @@ class GarageDashboardWidget extends StatelessWidget {
                     _StatCell(
                       label: 'FUEL COST',
                       value: totalCost > 0
-                          ? '₹${_formatCost(totalCost)}'
+                          ? 'Γé╣${_formatCost(totalCost)}'
                           : '--',
                       unit: 'total',
                       color: AppColors.pastelOrange,
@@ -170,7 +162,7 @@ class GarageDashboardWidget extends StatelessWidget {
                 ),
               ),
 
-              // ── Last fill chip ────────────────────────────────────────
+              // ΓöÇΓöÇ Last fill chip ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
               if (fuelEntries.isNotEmpty) ...[
                 _LastFillBanner(provider: provider, fuelEntries: fuelEntries),
               ],
@@ -183,9 +175,9 @@ class GarageDashboardWidget extends StatelessWidget {
 
   Widget _vDivider() => Container(
     width: 1,
-    height: 44,
+    height: AppSpacing.xl3,
     color: Colors.white.withValues(alpha: 0.06),
-    margin: const EdgeInsets.symmetric(horizontal: 4),
+    margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
   );
 
   String _formatOdo(double v) =>
@@ -195,9 +187,9 @@ class GarageDashboardWidget extends StatelessWidget {
       v >= 1000 ? '${(v / 1000).toStringAsFixed(1)}k' : v.toStringAsFixed(0);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // Last fill banner
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 class _LastFillBanner extends StatelessWidget {
   final BikeProvider provider;
@@ -220,22 +212,18 @@ class _LastFillBanner extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
       decoration: BoxDecoration(
         color: AppColors.primaryBlue.withValues(alpha: 0.06),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(AppSpacing.radiusMd)),
       ),
       child: Row(
         children: [
           Icon(Icons.history_rounded, size: 13, color: AppColors.textTertiary),
-          const SizedBox(width: 6),
+          const SizedBox(width: AppSpacing.xs),
           Text(
-            'Last fill: ${last.odometerReading.toStringAsFixed(0)} km  ·  ${last.fuelQuantity.toStringAsFixed(1)} L  ·  $daysLabel',
-            style: TextStyle(
-              fontSize: 11,
-              color: AppColors.textTertiary,
-              fontWeight: FontWeight.w500,
-            ),
+            'Last fill: ${last.odometerReading.toStringAsFixed(0)} km  ┬╖  ${last.fuelQuantity.toStringAsFixed(1)} L  ┬╖  $daysLabel',
+            style: AppTypography.labelSmall,
           ),
         ],
       ),
@@ -243,9 +231,9 @@ class _LastFillBanner extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // Stat cell
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 class _StatCell extends StatelessWidget {
   final String label;
@@ -270,40 +258,29 @@ class _StatCell extends StatelessWidget {
         children: [
           // Icon
           Icon(icon, size: 14, color: color),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           // Value + unit
           RichText(
             text: TextSpan(
               children: [
                 TextSpan(
                   text: value,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    height: 1.1,
-                  ),
+              style: AppTypography.titleLarge.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+                height: 1.1,
+              ),
                 ),
               ],
             ),
           ),
           Text(
             unit,
-            style: TextStyle(
-              fontSize: 10,
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
+            style: AppTypography.labelSmall.copyWith(color: color),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: AppSpacing.xs / 2),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 9,
-              letterSpacing: 0.8,
-              color: AppColors.textTertiary,
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTypography.labelSmall.copyWith(letterSpacing: 0.8),
           ),
         ],
       ),
@@ -311,9 +288,9 @@ class _StatCell extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // Empty state
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 class _EmptyGarageCard extends StatelessWidget {
   final VoidCallback? onOpenGarage;
@@ -324,10 +301,10 @@ class _EmptyGarageCard extends StatelessWidget {
     return GestureDetector(
       onTap: onOpenGarage,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         decoration: BoxDecoration(
-          color: AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(20),
+          color: Theme.of(context).cardColor,
+          borderRadius: AppSpacing.borderRadiusMd,
           border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Row(
@@ -337,7 +314,7 @@ class _EmptyGarageCard extends StatelessWidget {
               color: AppColors.textTertiary,
               size: 28,
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: AppSpacing.md),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -345,12 +322,12 @@ class _EmptyGarageCard extends StatelessWidget {
                   'No bike added yet',
                   style: TextStyle(
                     color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppTypography.titleSmall.fontWeight,
                   ),
                 ),
                 Text(
                   'Tap to open Garage',
-                  style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.textTertiary),
                 ),
               ],
             ),

@@ -1,7 +1,9 @@
-import 'dart:math';
+﻿import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../core/models/bike.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_animations.dart';
 import 'add_bike.dart';
 
@@ -81,7 +83,7 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
       height: 240, // Increased from 220 to give the text breathing room
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: AppSpacing.borderRadiusMd,
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -132,7 +134,7 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
   Widget _buildFront() {
     return _buildCardBase(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xl2),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -219,7 +221,7 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
                   ),
                 ),
                 Text(
-                  '2-WHEELER • ${widget.bike.fuelType?.toUpperCase() ?? 'PETROL'}',
+                  '2-WHEELER ΓÇó ${widget.bike.fuelType?.toUpperCase() ?? 'PETROL'}',
                   style: TextStyle(
                     color: AppColors.textTertiary,
                     fontSize: 10,
@@ -329,7 +331,7 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
                 ),
               ],
             ),
-            const SizedBox(height: 12), // Reduced from 16
+            const SizedBox(height: AppSpacing.md),
             Expanded(
               child: Column(
                 // Changed from spaceEvenly to spaceBetween to prevent overflow

@@ -1,3 +1,4 @@
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/subscription.dart';
 import '../services/subscription_service.dart';
@@ -13,6 +14,9 @@ class SubscriptionProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   String _filterFrequency = 'all';
+  Future<void>? _initializationFuture;
+  StreamSubscription<List<Subscription>>? _subscriptionsSubscription;
+  StreamSubscription<List<Subscription>>? _dueTodaySubscription;
 
   SubscriptionProvider();
 
@@ -71,11 +75,15 @@ class SubscriptionProvider extends ChangeNotifier {
 
   // Formatted getters
   String get formattedTotalMonthlyCost =>
-      '₹${totalMonthlyCost.toStringAsFixed(2)}';
+      'Γé╣${totalMonthlyCost.toStringAsFixed(2)}';
   String get formattedTotalYearlyCost =>
-      '₹${totalYearlyCost.toStringAsFixed(2)}';
+      'Γé╣${totalYearlyCost.toStringAsFixed(2)}';
 
-  void initialize() {
+  Future<void> initialize() {
+    return _initializationFuture ??= _initialize();
+  }
+
+  Future<void> _initialize() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       _loadSubscriptions(user.uid);
@@ -85,7 +93,7 @@ class SubscriptionProvider extends ChangeNotifier {
 
   void _loadSubscriptions(String userId) {
     _setLoading(true);
-    _subscriptionService
+    _subscriptionsSubscription = _subscriptionService
         .watchActiveSubscriptions(userId)
         .listen(
           (subscriptions) {
@@ -102,7 +110,7 @@ class SubscriptionProvider extends ChangeNotifier {
   }
 
   void _loadDueToday(String userId) {
-    _subscriptionService
+    _dueTodaySubscription = _subscriptionService
         .watchDueToday(userId)
         .listen(
           (subscriptions) {

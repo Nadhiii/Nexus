@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,12 +10,13 @@ import 'package:permission_handler/permission_handler.dart';
 import '../models/detected_transaction.dart';
 import '../utils/sms_parser.dart';
 import '../services/notification_service.dart';
+import '../services/nbox_background_service.dart';
 import 'category_provider.dart';
 import 'gmail_provider.dart';
 import '../models/nbox_settings.dart';
 
 // ---------------------------------------------------------------------------
-// Isolate helpers — must be top-level (not inside a class) for compute()
+// Isolate helpers ΓÇö must be top-level (not inside a class) for compute()
 // ---------------------------------------------------------------------------
 
 class _SmsBatchPayload {
@@ -55,9 +56,10 @@ List<Map<String, dynamic>> _parseSmsInIsolate(_SmsBatchPayload payload) {
 // ---------------------------------------------------------------------------
 
 class NewNboxProvider extends ChangeNotifier {
-  static const String _processedIdsStorageKey = 'nbox_processed_ids';
+  static const String _processedIdsStorageKey =
+      NboxBackgroundService.processedIdsStorageKey;
   static const String _notifiedDetectionsStorageKey =
-      'nbox_notified_detection_ids';
+      NboxBackgroundService.notifiedDetectionsStorageKey;
   static const int _maxPromptsPerScan = 3;
 
   GmailProvider? _gmailProvider;
@@ -77,6 +79,7 @@ class NewNboxProvider extends ChangeNotifier {
   Set<String> _notifiedDetectionIds = {};
   String? _pendingApprovalSource;
   String? _pendingApprovalId;
+  StreamSubscription<DetectedTransaction>? _backgroundDetectionSubscription;
 
   bool get isLoading => _isLoading;
   bool get isGmailLinked => _gmailProvider?.isLinked ?? false;
@@ -99,6 +102,11 @@ class NewNboxProvider extends ChangeNotifier {
     CategoryProvider? categoryProvider,
   }) : _categoryProvider = categoryProvider {
     update(gmailProvider);
+    _backgroundDetectionSubscription = NboxBackgroundService.detectionStream
+        .listen((transaction) {
+          _processTransactions([transaction], transaction.source);
+          notifyListeners();
+        });
     initialize();
   }
 
@@ -107,7 +115,10 @@ class NewNboxProvider extends ChangeNotifier {
     await _loadSettings();
     await _loadNotifiedDetectionIds();
     await _loadProcessedIds();
+    await _restorePendingTransactions();
+    await restorePendingApprovalRequest();
     _isInitialized = true;
+    notifyListeners();
   }
 
   Future<void> _loadSettings() async {
@@ -142,6 +153,7 @@ class NewNboxProvider extends ChangeNotifier {
   @override
   void dispose() {
     _gmailProvider?.removeListener(_onGmailProviderChanged);
+    _backgroundDetectionSubscription?.cancel();
     super.dispose();
   }
 
@@ -195,7 +207,7 @@ class NewNboxProvider extends ChangeNotifier {
     _setLoading(true);
     await NotificationService().showTransactionScanStatus(source: 'sms');
 
-    // 2. 🛑 IPC COLLISION SHIELD
+    // 2. ≡ƒ¢æ IPC COLLISION SHIELD
     // Wait a full 3 seconds before querying the Android ContentResolver.
     // This allows Firebase, Google Play Services, and Auto-Backup to finish
     // their native Android background handshakes. Without this shield, the Binder
@@ -380,6 +392,7 @@ class NewNboxProvider extends ChangeNotifier {
     _rejected.addAll(freshRejected);
 
     _sortLists();
+    unawaited(_persistPendingTransactions());
     unawaited(_notifyFreshDetections(freshPending));
   }
 
@@ -414,7 +427,12 @@ class NewNboxProvider extends ChangeNotifier {
   }) {
     _pendingApprovalSource = source;
     _pendingApprovalId = transactionId;
-    unawaited(scanAll());
+    unawaited(
+      NotificationService().clearPersistedApprovalRequest(
+        source: source,
+        transactionId: transactionId,
+      ),
+    );
     notifyListeners();
   }
 
@@ -457,6 +475,7 @@ class NewNboxProvider extends ChangeNotifier {
     notifyListeners();
     await _persistIds();
     await _persistNotifiedDetectionIds();
+    await _persistPendingTransactions();
   }
 
   Future<void> rejectTransaction(
@@ -497,6 +516,7 @@ class NewNboxProvider extends ChangeNotifier {
       notifyListeners();
       await _persistIds();
       await _persistNotifiedDetectionIds();
+      await _persistPendingTransactions();
     }
   }
 
@@ -526,6 +546,7 @@ class NewNboxProvider extends ChangeNotifier {
       _sortLists();
       notifyListeners();
       await _persistIds();
+      await _persistPendingTransactions();
     }
   }
 
@@ -559,6 +580,41 @@ class NewNboxProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _notifiedDetectionIds =
         (prefs.getStringList(_notifiedDetectionsStorageKey) ?? []).toSet();
+  }
+
+  Future<void> _restorePendingTransactions() async {
+    final stored = await NboxBackgroundService.loadPendingTransactions();
+    for (final transaction in stored) {
+      final key = '${transaction.source}:${transaction.fingerprint}';
+      if (_processedIds.contains(key) ||
+          _processedIds.contains('$key:rejected')) {
+        continue;
+      }
+      if (transaction.source == 'sms') {
+        _pendingSms.add(transaction);
+      } else if (transaction.source == 'email') {
+        _pendingEmails.add(transaction);
+      } else if (transaction.source == 'pdf') {
+        _pendingPdf.add(transaction);
+      }
+    }
+    _sortLists();
+  }
+
+  Future<void> _persistPendingTransactions() {
+    return NboxBackgroundService.savePendingTransactions([
+      ..._pendingSms,
+      ..._pendingEmails,
+      ..._pendingPdf,
+    ]);
+  }
+
+  Future<void> restorePendingApprovalRequest() async {
+    final request = await NotificationService().takePersistedApprovalRequest();
+    if (request == null) return;
+    _pendingApprovalSource = request.source;
+    _pendingApprovalId = request.transactionId;
+    notifyListeners();
   }
 
   Future<bool> _checkSmsPermission() async {

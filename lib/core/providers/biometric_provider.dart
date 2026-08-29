@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import '../services/biometric_service.dart';
 
@@ -14,7 +14,6 @@ class BiometricProvider extends ChangeNotifier {
   String? _error;
   bool _isInitialized = false;
 
-  // Getters
   bool get isBiometricAvailable => _isBiometricAvailable;
   bool get isBiometricEnabled => _isBiometricEnabled;
   bool get isAppLockEnabled => _isAppLockEnabled;
@@ -30,7 +29,6 @@ class BiometricProvider extends ChangeNotifier {
   String get biometricIcon =>
       _biometricService.getBiometricIcon(_availableBiometrics);
 
-  /// Initialize biometric settings
   Future<void> initialize() async {
     _setLoading(true);
     try {
@@ -45,24 +43,27 @@ class BiometricProvider extends ChangeNotifier {
     }
   }
 
-  /// Load biometric capabilities from device
   Future<void> _loadBiometricCapabilities() async {
     _isBiometricAvailable = await _biometricService.isBiometricAvailable();
-    if (_isBiometricAvailable) {
-      _availableBiometrics = await _biometricService.getAvailableBiometrics();
-    }
+    _availableBiometrics = _isBiometricAvailable
+        ? await _biometricService.getAvailableBiometrics()
+        : [];
   }
 
-  /// Load current settings
   Future<void> _loadSettings() async {
     _isBiometricEnabled = await _biometricService.isBiometricEnabled();
     _isAppLockEnabled = await _biometricService.isAppLockEnabled();
-    _isSensitiveOperationsEnabled = await _biometricService
-        .isSensitiveOperationsBiometricEnabled();
-    // Don't call notifyListeners here - it will be called by _setLoading(false) in initialize()
+    _isSensitiveOperationsEnabled =
+        await _biometricService.isSensitiveOperationsBiometricEnabled();
+
+    // Repair older/inconsistent preference states. The app-lock switch is
+    // controlled by the single "Biometric Lock" setting in MoreScreen.
+    if (_isBiometricEnabled != _isAppLockEnabled) {
+      _isAppLockEnabled = _isBiometricEnabled;
+      await _biometricService.setAppLockEnabled(_isBiometricEnabled);
+    }
   }
 
-  /// Setup biometric authentication
   Future<bool> setupBiometric() async {
     _setLoading(true);
     try {
@@ -71,10 +72,10 @@ class BiometricProvider extends ChangeNotifier {
         await _loadSettings();
         _clearError();
         return true;
-      } else {
-        _setError(result.message);
-        return false;
       }
+
+      _setError(result.message);
+      return false;
     } catch (e) {
       _setError('Failed to setup biometric: $e');
       return false;
@@ -83,23 +84,20 @@ class BiometricProvider extends ChangeNotifier {
     }
   }
 
-  /// Enable/disable all biometric features with single authentication
   Future<void> setAllBiometricFeatures(bool enabled) async {
     if (!_isBiometricAvailable) {
       _setError('Biometric authentication is not available on this device');
       return;
     }
 
-    // Always require authentication to change security settings.
-    final reason = enabled
-        ? 'Please authenticate to enable biometric security features'
-        : 'Please authenticate to disable biometric security features';
-
-    final authenticated = await _biometricService.authenticate(reason: reason);
+    final authenticated = await _biometricService.authenticate(
+      reason: enabled
+          ? 'Please authenticate to enable biometric security features'
+          : 'Please authenticate to disable biometric security features',
+    );
 
     if (!authenticated) {
       _setError('Authentication failed. Settings remain unchanged.');
-      // Important: Do not proceed if authentication fails.
       return;
     }
 
@@ -119,9 +117,12 @@ class BiometricProvider extends ChangeNotifier {
     }
   }
 
-  /// Authenticate for app access
   Future<bool> authenticateForAppAccess() async {
     try {
+      if (!_isBiometricEnabled && !_isAppLockEnabled) {
+        return true;
+      }
+
       return await _biometricService.authenticateForAppAccess();
     } catch (e) {
       _setError('Authentication failed: $e');
@@ -129,7 +130,6 @@ class BiometricProvider extends ChangeNotifier {
     }
   }
 
-  /// Authenticate for sensitive operations
   Future<bool> authenticateForSensitiveOperation({
     String operation = 'sensitive operation',
   }) async {
@@ -143,12 +143,8 @@ class BiometricProvider extends ChangeNotifier {
     }
   }
 
-  /// Refresh biometric capabilities and settings
-  Future<void> refresh() async {
-    await initialize();
-  }
+  Future<void> refresh() => initialize();
 
-  // Helper methods
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
@@ -161,6 +157,9 @@ class BiometricProvider extends ChangeNotifier {
 
   void _clearError() {
     _error = null;
-    notifyListeners();
   }
+}
+
+extension on BiometricSetupResult {
+  bool get isSuccess => this == BiometricSetupResult.success;
 }

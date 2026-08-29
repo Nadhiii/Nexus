@@ -1,9 +1,13 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/nexus_switch.dart';
+import '../../core/widgets/nexus_button.dart';
+import '../../core/widgets/nexus_card.dart';
+import '../../core/widgets/nexus_initial_loading.dart';
+import '../../core/widgets/nexus_empty_state.dart';
 import '../../core/services/backup_service.dart';
 
 class BackupSettingsScreen extends StatefulWidget {
@@ -76,7 +80,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: AppColors.cardSurface,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
         shape: RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusLg),
         insetPadding: const EdgeInsets.all(AppSpacing.lg),
         child: Padding(
@@ -130,36 +134,22 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.md,
-                        ),
-                        side: BorderSide(color: AppColors.textTertiary),
-                        shape: const StadiumBorder(),
-                      ),
-                      child: Text(
-                        'Cancel',
-                        style: AppTypography.labelLarge.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
+                  child: NexusButton(
+                    label: 'Cancel',
+                    onPressed: () => Navigator.pop(context, false),
+                    variant: NexusButtonVariant.secondary,
+                    width: double.infinity,
+                  ),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: replace
-                            ? AppColors.lossRose
-                            : AppColors.primaryBlue,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.md,
-                        ),
-                      ),
-                      child: const Text('Restore'),
+                  child: NexusButton(
+                    label: 'Restore',
+                    onPressed: () => Navigator.pop(context, true),
+                    variant: replace
+                        ? NexusButtonVariant.destructive
+                        : NexusButtonVariant.primary,
+                    width: double.infinity,
                     ),
                   ),
                 ],
@@ -191,7 +181,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: AppColors.cardSurface,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
         shape: RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusLg),
         insetPadding: const EdgeInsets.all(AppSpacing.lg),
         child: Padding(
@@ -210,34 +200,20 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.md,
-                        ),
-                        side: BorderSide(color: AppColors.textTertiary),
-                        shape: const StadiumBorder(),
-                      ),
-                      child: Text(
-                        'Cancel',
-                        style: AppTypography.labelLarge.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
+                  child: NexusButton(
+                    label: 'Cancel',
+                    onPressed: () => Navigator.pop(context, false),
+                    variant: NexusButtonVariant.secondary,
+                    width: double.infinity,
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.lossRose,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.md,
-                        ),
-                      ),
-                      child: const Text('Delete'),
+                  child: NexusButton(
+                    label: 'Delete',
+                    onPressed: () => Navigator.pop(context, true),
+                    variant: NexusButtonVariant.destructive,
+                    width: double.infinity,
                     ),
                   ),
                 ],
@@ -336,22 +312,10 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
     required VoidCallback onTap,
     bool isDangerous = false,
   }) {
-    return InkWell(
+    return NexusCard(
       onTap: onTap,
-      borderRadius: AppSpacing.borderRadiusMd,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        decoration: BoxDecoration(
-          color: isDangerous
-              ? AppColors.lossRose.withValues(alpha: 0.05)
-              : AppColors.cardSurface,
-          border: Border.all(
-            color: isDangerous
-                ? AppColors.lossRose.withValues(alpha: 0.3)
-                : AppColors.cardElevated,
-          ),
-          borderRadius: AppSpacing.borderRadiusMd,
-        ),
+      variant: isDangerous ? NexusCardVariant.error : NexusCardVariant.base,
+      padding: AppSpacing.cardPaddingMd,
         child: Row(
           children: [
             Container(
@@ -391,8 +355,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
             Icon(Icons.chevron_right, color: AppColors.textTertiary),
           ],
         ),
-      ),
-    );
+      );
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -414,7 +377,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundBlack,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: const Text('Backup & Restore'),
         actions: [
@@ -427,7 +390,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
       ),
       body: _isLoading && _backups == null
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryBlue),
+              child: NexusInitialLoading(),
             )
           : Column(
               children: [
@@ -472,21 +435,13 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.lg,
                   ),
-                  child: ElevatedButton.icon(
+                  child: NexusButton(
                     onPressed: _isCreatingBackup ? null : _createBackup,
-                    icon: _isCreatingBackup
-                        ? const SizedBox(
-                            width: AppSpacing.xl,
-                            height: AppSpacing.xl,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.cloud_upload_rounded),
-                    label: Text(
-                      _isCreatingBackup ? 'Creating...' : 'Create Backup',
-                    ),
+                    icon: const Icon(Icons.cloud_upload_rounded),
+                    label: 'Create Backup',
+                    isLoading: _isCreatingBackup,
+                    emphasizedPrimary: true,
+                    width: double.infinity,
                   ),
                 ),
 
@@ -496,25 +451,11 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                 Expanded(
                   child: _backups == null || _backups!.isEmpty
                       ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.cloud_off_rounded,
-                                size: 80,
-                                color: AppColors.textTertiary,
-                              ),
-                              const SizedBox(height: AppSpacing.lg),
-                              Text(
-                                'No backups yet',
-                                style: AppTypography.titleLarge,
-                              ),
-                              const SizedBox(height: AppSpacing.sm),
-                              Text(
-                                'Create your first backup to secure your data',
-                                style: AppTypography.bodyMedium,
-                              ),
-                            ],
+                          child: NexusEmptyState(
+                            icon: Icons.cloud_off_rounded,
+                            title: 'No backups yet',
+                            message: 'Create your first backup to secure your data',
+                            inCard: false,
                           ),
                         )
                       : ListView.builder(
@@ -525,7 +466,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                           itemBuilder: (context, index) {
                             final backup = _backups![index];
                             final dateFormat = DateFormat(
-                              'MMM dd, yyyy • HH:mm',
+                              'MMM dd, yyyy ΓÇó HH:mm',
                             );
                             final totalItems = backup.counts.values.fold<int>(
                               0,

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
@@ -27,7 +27,7 @@ class ModernInsightsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundBlack,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body:
           Consumer4<
             AccountProvider,
@@ -84,13 +84,13 @@ class ModernInsightsScreen extends StatelessWidget {
                   SliverAppBar(
                     pinned: true,
                     expandedHeight: 110,
-                    backgroundColor: AppColors.backgroundBlack,
-                    surfaceTintColor: AppColors.backgroundBlack,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                    surfaceTintColor: Colors.transparent,
                     elevation: 0,
                     automaticallyImplyLeading: false, // Top-level tab
                     flexibleSpace: FlexibleSpaceBar(
                       centerTitle: false,
-                      titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
+                      titlePadding: const EdgeInsets.only(left: AppSpacing.xl, bottom: AppSpacing.xl2),
                       title: Text(
                         'Wealth',
                         style: AppTypography.headlineMedium.copyWith(
@@ -104,7 +104,7 @@ class ModernInsightsScreen extends StatelessWidget {
                   // 1. HERO SECTION (Net Worth + Burn)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
                       child: Column(
                         children: [
                           _buildNetWorthCard(
@@ -114,7 +114,7 @@ class ModernInsightsScreen extends StatelessWidget {
                             totalLiabilities,
                           ),
                           const SizedBox(height: 12),
-                          _buildBurnRateTicker(monthlyBurn),
+                          _buildBurnRateTicker(context, monthlyBurn),
                         ],
                       ),
                     ),
@@ -122,7 +122,7 @@ class ModernInsightsScreen extends StatelessWidget {
 
                   // 2. BENTO GRID - Financial Tools
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 130),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl2, AppSpacing.xl, 130),
                     sliver: SliverToBoxAdapter(
                       child: _buildBentoGrid(
                         context,
@@ -151,7 +151,7 @@ class ModernInsightsScreen extends StatelessWidget {
     final isPositive = netWorth >= 0;
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.xl2),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -160,7 +160,7 @@ class ModernInsightsScreen extends StatelessWidget {
               ? AppColors.netWorthPositiveGradient
               : AppColors.netWorthNegativeGradient,
         ),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: AppSpacing.borderRadiusLg,
         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
@@ -192,20 +192,20 @@ class ModernInsightsScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
-            '₹${NumberFormat('#,##,###').format(netWorth)}',
+            'Γé╣${NumberFormat('#,##,###').format(netWorth)}',
             style: AppTypography.currencyLarge,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xl2),
 
           // Mini Breakdown
           Row(
             children: [
               _buildMiniStat("Liquid", cash, AppColors.info),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.lg),
               _buildMiniStat("Invested", invested, AppColors.investmentIndigo),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.lg),
               _buildMiniStat("Debt", debt, AppColors.error),
             ],
           ),
@@ -214,12 +214,12 @@ class ModernInsightsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBurnRateTicker(double monthlyBurn) {
+  Widget _buildBurnRateTicker(BuildContext context, double monthlyBurn) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
+        color: Theme.of(context).cardColor,
+        borderRadius: AppSpacing.borderRadiusMd,
         border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(
@@ -230,18 +230,14 @@ class ModernInsightsScreen extends StatelessWidget {
             color: AppColors.accentOrange,
             size: 18,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Text(
             "Monthly Burn: ",
-            style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
+            style: AppTypography.bodySmall,
           ),
           Text(
-            "₹${NumberFormat('#,##,###').format(monthlyBurn)}",
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
+            "Γé╣${NumberFormat('#,##,###').format(monthlyBurn)}",
+            style: AppTypography.labelLarge,
           ),
         ],
       ),
@@ -257,7 +253,7 @@ class ModernInsightsScreen extends StatelessWidget {
     required double subCost,
     required int activeSubCount,
   }) {
-    const double spacing = 12;
+    const double spacing = AppSpacing.md;
 
     return Column(
       children: [
@@ -270,7 +266,7 @@ class ModernInsightsScreen extends StatelessWidget {
               child: _buildBentoTile(
                 context,
                 title: "Investments",
-                value: "₹${NumberFormat.compact().format(totalInvestments)}",
+                value: "Γé╣${NumberFormat.compact().format(totalInvestments)}",
                 subtitle: "$investmentCount Assets",
                 icon: Icons.show_chart,
                 color: AppColors.investmentIndigo,
@@ -291,7 +287,7 @@ class ModernInsightsScreen extends StatelessWidget {
               child: _buildBentoTile(
                 context,
                 title: "Liabilities",
-                value: "₹${NumberFormat.compact().format(totalLiabilities)}",
+                value: "Γé╣${NumberFormat.compact().format(totalLiabilities)}",
                 subtitle: "$activeDebtCount Loans",
                 icon: Icons.warning_amber_rounded,
                 color: AppColors.error,
@@ -310,7 +306,7 @@ class ModernInsightsScreen extends StatelessWidget {
         _buildBentoTile(
           context,
           title: "Subscriptions",
-          value: "₹${NumberFormat.compact().format(subCost)}/mo",
+          value: "Γé╣${NumberFormat.compact().format(subCost)}/mo",
           subtitle: "$activeSubCount Active",
           icon: Icons.autorenew,
           color: AppColors.accentOrange,
@@ -383,10 +379,10 @@ class ModernInsightsScreen extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: height,
-        padding: EdgeInsets.all(isWide ? 16 : 14),
+        padding: EdgeInsets.all(isWide ? AppSpacing.lg : AppSpacing.md),
         decoration: BoxDecoration(
-          color: AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          color: Theme.of(context).cardColor,
+        borderRadius: AppSpacing.borderRadiusLg,
           border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: isWide
@@ -420,7 +416,7 @@ class ModernInsightsScreen extends StatelessWidget {
           ),
           child: Icon(icon, color: color, size: 24),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: AppSpacing.lg),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,7 +430,7 @@ class ModernInsightsScreen extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 value,
                 style: const TextStyle(
@@ -461,7 +457,7 @@ class ModernInsightsScreen extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 20),
       ],
     );
@@ -525,15 +521,11 @@ class ModernInsightsScreen extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(color: AppColors.textTertiary, fontSize: 10),
+          style: AppTypography.labelSmall,
         ),
         Text(
-          "₹${NumberFormat.compact().format(value)}",
-          style: TextStyle(
-            color: color,
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-          ),
+          "Γé╣${NumberFormat.compact().format(value)}",
+          style: AppTypography.labelLarge.copyWith(color: color),
         ),
       ],
     );

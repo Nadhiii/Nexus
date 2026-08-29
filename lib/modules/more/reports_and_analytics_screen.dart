@@ -1,10 +1,13 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/transaction.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_animations.dart';
+import '../../core/widgets/nexus_initial_loading.dart';
+import '../../core/widgets/nexus_empty_state.dart';
+import '../../core/widgets/nexus_error_state.dart';
 import 'widgets/chart_widgets.dart';
 import 'widgets/report_widgets.dart';
 
@@ -53,6 +56,7 @@ class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isLoading = context.select<TransactionProvider, bool>(
       (p) => p.isLoading && !p.isInitialized,
     );
@@ -65,15 +69,15 @@ class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
     final filteredTransactions = _getFilteredTransactions(allTransactions);
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundBlack,
+      backgroundColor: colorScheme.surface,
       body: CustomScrollView(
         slivers: [
           // 1. HEADER
           SliverAppBar(
             pinned: true,
             expandedHeight: 110,
-            backgroundColor: AppColors.backgroundBlack,
-            surfaceTintColor: AppColors.backgroundBlack,
+            backgroundColor: colorScheme.surface,
+            surfaceTintColor: colorScheme.surface,
             elevation: 0,
             automaticallyImplyLeading: false, // Prevent overlap
             flexibleSpace: FlexibleSpaceBar(
@@ -98,11 +102,23 @@ class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
           ),
 
           if (isLoading)
-            const SliverFillRemaining(child: _LoadingState())
+            const SliverFillRemaining(child: NexusInitialLoading())
           else if (error != null)
-            SliverFillRemaining(child: _ErrorState(message: error))
+            SliverFillRemaining(
+              child: NexusErrorState(
+                message: "Couldn't load analytics\n$error",
+                inCard: false,
+              ),
+            )
           else if (filteredTransactions.isEmpty)
-            const SliverFillRemaining(child: _EmptyState())
+            const SliverFillRemaining(
+              child: NexusEmptyState(
+                icon: Icons.pie_chart_outline,
+                title: 'No data available',
+                message: 'Try selecting a different time range',
+                inCard: false,
+              ),
+            )
           else
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -199,85 +215,3 @@ class _ReportsAndAnalyticsScreenState extends State<ReportsAndAnalyticsScreen> {
   }
 }
 
-class _LoadingState extends StatelessWidget {
-  const _LoadingState();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(color: AppColors.primaryBlue),
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  final String message;
-
-  const _ErrorState({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppColors.error.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              "Couldn't load analytics",
-              style: TextStyle(color: AppColors.textTertiary),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.textTertiary.withValues(alpha: 0.5),
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.pie_chart_outline,
-            size: 64,
-            color: AppColors.textTertiary.withValues(alpha: 0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            "No data available",
-            style: TextStyle(color: AppColors.textTertiary),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "Try selecting a different time range",
-            style: TextStyle(
-              color: AppColors.textTertiary.withValues(alpha: 0.5),
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

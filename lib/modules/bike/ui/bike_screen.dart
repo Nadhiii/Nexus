@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/theme/app_animations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/models/bike.dart';
@@ -8,6 +8,8 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/collapsible_fab.dart';
 import '../../../core/widgets/top_snackbar.dart';
+import '../../../core/widgets/nexus_button.dart';
+import '../../../core/widgets/nexus_empty_state.dart';
 
 import '../widgets/bike_stats_widget.dart';
 import '../widgets/add_bike.dart';
@@ -81,7 +83,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
         final isDashboardBike = selectedBike?.isDashboardBike ?? false;
 
         return Scaffold(
-          backgroundColor: AppColors.backgroundBlack,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           floatingActionButton: selectedBike != null
               ? CollapsibleFab(
                   onPressed: () =>
@@ -98,7 +100,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
               SliverAppBar(
                 pinned: true,
                 floating: true,
-                backgroundColor: AppColors.backgroundBlack,
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                 elevation: 0,
                 expandedHeight: 80,
                 flexibleSpace: FlexibleSpaceBar(
@@ -147,7 +149,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                     ),
                     onPressed: () => _showAddBikeDialog(context),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                 ],
               ),
               if (provider.bikes.isEmpty)
@@ -894,7 +896,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
-                                    "₹${entry.fuelAmount.toStringAsFixed(0)}",
+                                    "Γé╣${entry.fuelAmount.toStringAsFixed(0)}",
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -1021,8 +1023,10 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return const Center(
-      child: Text('No Vehicles Found', style: TextStyle(color: Colors.white)),
+    return const NexusEmptyState(
+      icon: Icons.two_wheeler_outlined,
+      title: 'No Vehicles Found',
+      message: 'Add a vehicle to start tracking your Garage.',
     );
   }
 
@@ -1088,7 +1092,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.cardSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusMd),
         title: const Text(
           'Delete Entry',
           style: TextStyle(color: Colors.white),
@@ -1098,14 +1102,13 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
-          TextButton(
+          NexusButton(
+            variant: NexusButtonVariant.secondary,
             onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
+            label: 'Cancel',
           ),
-          ElevatedButton(
+          NexusButton(
+            variant: NexusButtonVariant.destructive,
             onPressed: () {
               Navigator.pop(ctx);
               provider.deleteBikeEntry(entry.id);
@@ -1116,8 +1119,7 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
                 icon: Icons.delete_outline_rounded,
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            label: 'Delete',
           ),
         ],
       ),

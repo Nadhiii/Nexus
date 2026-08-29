@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_types_as_parameter_names
+﻿// ignore_for_file: avoid_types_as_parameter_names
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,6 +9,7 @@ import '../../core/models/goal.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/widgets/collapsible_fab.dart';
+import '../../core/widgets/nexus_card.dart';
 import 'widgets/add_goal.dart';
 
 class ModernGoalsScreen extends StatefulWidget {
@@ -233,41 +234,26 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
         .where((g) => g.currentAmount >= g.targetAmount)
         .length;
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.accentTeal.withValues(alpha: 0.25),
-            AppColors.accentPurple.withValues(alpha: 0.15),
-            AppColors.cardSurface,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.accentTeal.withValues(alpha: 0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accentTeal.withValues(alpha: 0.15),
-            blurRadius: 30,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+    return NexusCard(
+      variant: NexusCardVariant.accent,
+      padding: AppSpacing.cardPaddingLg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              Flexible(
+                child: Text(
                 'TOTAL SAVINGS',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
+                ),
                 ),
               ),
               Container(
@@ -308,9 +294,13 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                '₹${_formatAmount(totalSaved)}',
+              Flexible(
+                child: Text(
+                'Γé╣${_formatAmount(totalSaved)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: AppTypography.currencyLarge,
+                ),
               ),
               const SizedBox(width: 8),
               Padding(
@@ -364,7 +354,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Remaining: ₹${_formatAmount(totalTarget - totalSaved)}',
+                'Remaining: Γé╣${_formatAmount(totalTarget - totalSaved)}',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 12,
@@ -650,7 +640,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '₹${_formatAmount(goal.currentAmount)} / ${_formatAmount(goal.targetAmount)}',
+                  'Γé╣${_formatAmount(goal.currentAmount)} / ${_formatAmount(goal.targetAmount)}',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 13,
@@ -698,8 +688,8 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                 const SizedBox(height: 8),
                 Text(
                   isCompleted
-                      ? 'Goal achieved! 🎉'
-                      : '₹${_formatAmount(goal.targetAmount - goal.currentAmount)} to go',
+                      ? 'Goal achieved! ≡ƒÄë'
+                      : 'Γé╣${_formatAmount(goal.targetAmount - goal.currentAmount)} to go',
                   style: TextStyle(
                     color: isCompleted
                         ? AppColors.success
@@ -804,7 +794,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '₹${_formatAmount(goal.currentAmount)} of ₹${_formatAmount(goal.targetAmount)}',
+                      'Γé╣${_formatAmount(goal.currentAmount)} of Γé╣${_formatAmount(goal.targetAmount)}',
                       style: TextStyle(
                         color: AppColors.textTertiary,
                         fontSize: 11,
@@ -868,17 +858,12 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
       return GestureDetector(
         onTap: () => _showEditGoalModal(goal),
         onLongPress: () => _showDeleteConfirmation(goal),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.cardSurface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: (isCompleted ? AppColors.success : goalColor).withValues(alpha: 
-                0.15,
-              ),
-            ),
+        child: NexusCard(
+          color: AppColors.cardSurface,
+          border: Border.all(
+            color: (isCompleted ? AppColors.success : goalColor).withValues(alpha: 0.24),
           ),
+          padding: AppSpacing.cardPaddingMd,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -934,7 +919,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '₹${_formatAmount(goal.targetAmount)}',
+                    'Γé╣${_formatAmount(goal.targetAmount)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -952,7 +937,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      isCompleted ? '✓' : '$percentage%',
+                      isCompleted ? 'Γ£ô' : '$percentage%',
                       style: TextStyle(
                         color: isCompleted ? AppColors.success : goalColor,
                         fontWeight: FontWeight.bold,
@@ -1099,31 +1084,10 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
   }
 
   Widget _buildSuggestionChip(String label, IconData icon) {
-    return GestureDetector(
-      onTap: () => showAddGoalModal(context, _addGoal),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: AppColors.textTertiary),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return ActionChip(
+      avatar: Icon(icon, size: AppSpacing.iconSm, color: AppColors.textTertiary),
+      label: Text(label),
+      onPressed: () => showAddGoalModal(context, _addGoal),
     );
   }
 

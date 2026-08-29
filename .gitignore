@@ -1,4 +1,4 @@
-# Miscellaneous
+﻿# Miscellaneous
 .DS_Store
 *.class
 *.lock
@@ -12,7 +12,15 @@
 .env
 .env.*
 
+# IDE files
+*.iml
+.idea/
 
+# Crash reports & build artifacts (may contain sensitive data)
+crash_report*
+*.zip
+*_output.txt
+analyze.txt
 
 # Flutter repo-specific
 /bin/cache/

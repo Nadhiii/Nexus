@@ -1,4 +1,4 @@
-// ────────────────────────────────────────────────────────────────────────────
+﻿// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // upcoming_week_widget.dart
 //
 // BUG FIX: The old widget called provider.upcomingObligations which returned []
@@ -7,7 +7,7 @@
 //
 // This version reads from DebtProvider + SubscriptionProvider directly and
 // shows everything due in the next 7 days that is NOT yet paid/settled.
-// ────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +16,9 @@ import 'package:intl/intl.dart';
 import '../providers/debt_provider.dart';
 import '../providers/subscription_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import 'nexus_card.dart';
 
 class UpcomingWeekWidget extends StatelessWidget {
   final VoidCallback? onViewAll;
@@ -39,8 +42,8 @@ class UpcomingWeekWidget extends StatelessWidget {
                   'PAYMENTS DUE',
                   style: TextStyle(
                     color: AppColors.textTertiary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                    fontSize: AppTypography.labelSmall.fontSize,
+                    fontWeight: AppTypography.labelSmall.fontWeight,
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -51,26 +54,20 @@ class UpcomingWeekWidget extends StatelessWidget {
                       'View all',
                       style: TextStyle(
                         color: AppColors.primaryBlue,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                        fontSize: AppTypography.labelMedium.fontSize,
+                        fontWeight: AppTypography.labelMedium.fontWeight,
                       ),
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.contentGap),
 
             if (items.isEmpty)
               _AllCaughtUp()
             else
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.05),
-                  ),
-                ),
+              NexusCard(
+                padding: EdgeInsets.zero,
                 child: Column(
                   children: items.asMap().entries.map((e) {
                     final isLast = e.key == items.length - 1;
@@ -102,12 +99,12 @@ class UpcomingWeekWidget extends StatelessWidget {
     final cutoff = now.add(const Duration(days: 7));
     final items = <_ObligationItem>[];
 
-    // ── Debts with upcoming EMI ──────────────────────────────────────
+    // ΓöÇΓöÇ Debts with upcoming EMI ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     for (final debt in debtProvider.debts) {
       if (debt.currentBalance <= 0) continue;
       final due = debt.nextPaymentDate;
       if (due == null) continue;
-      if (due.isBefore(now.subtract(const Duration(days: 1)))) continue; // overdue — still show
+      if (due.isBefore(now.subtract(const Duration(days: 1)))) continue; // overdue ΓÇö still show
       if (due.isAfter(cutoff)) continue;
 
       final daysUntil = due.difference(now).inDays;
@@ -120,7 +117,7 @@ class UpcomingWeekWidget extends StatelessWidget {
       ));
     }
 
-    // ── Subscriptions due this week ──────────────────────────────────
+    // ΓöÇΓöÇ Subscriptions due this week ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     for (final sub in subProvider.subscriptions) {
       if (!sub.isActive) continue;
       final due = sub.calculateNextDueDate();
@@ -143,25 +140,20 @@ class UpcomingWeekWidget extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 class _AllCaughtUp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
+      padding: const EdgeInsets.all(AppSpacing.xl2),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
               color: AppColors.pastelGreen.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+            borderRadius: AppSpacing.borderRadiusSm,
             ),
             child: Icon(
               Icons.check_circle_outline_rounded,
@@ -169,7 +161,7 @@ class _AllCaughtUp extends StatelessWidget {
               size: 22,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: AppSpacing.md),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -177,15 +169,15 @@ class _AllCaughtUp extends StatelessWidget {
                 'All caught up!',
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
+                  fontWeight: AppTypography.titleSmall.fontWeight,
+                  fontSize: AppTypography.titleSmall.fontSize,
                 ),
               ),
               Text(
                 'No payments due in the next 7 days',
                 style: TextStyle(
                   color: AppColors.textTertiary,
-                  fontSize: 12,
+                  fontSize: AppTypography.bodySmall.fontSize,
                 ),
               ),
             ],
@@ -196,7 +188,7 @@ class _AllCaughtUp extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 enum _ObligationType { emi, subscription }
 
@@ -248,7 +240,7 @@ class _ObligationTile extends StatelessWidget {
         : Icons.repeat_rounded;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       child: Row(
         children: [
           Container(
@@ -256,11 +248,11 @@ class _ObligationTile extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               color: urgencyColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppSpacing.borderRadiusSm,
             ),
             child: Icon(iconData, color: urgencyColor, size: 18),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,26 +261,26 @@ class _ObligationTile extends StatelessWidget {
                   item.name,
                   style: TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 13,
+                    fontSize: AppTypography.titleSmall.fontSize,
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.xs / 2),
                 Text(
                   dueLine,
-                  style: TextStyle(color: urgencyColor, fontSize: 11),
+                  style: AppTypography.labelSmall.copyWith(color: urgencyColor),
                 ),
               ],
             ),
           ),
           Text(
-            '₹${NumberFormat('#,##,###').format(item.amount)}',
+            'Γé╣${NumberFormat('#,##,###').format(item.amount)}',
             style: TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+              fontSize: AppTypography.labelLarge.fontSize,
+              fontWeight: AppTypography.labelLarge.fontWeight,
             ),
           ),
         ],

@@ -1,11 +1,13 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/providers/shared_expense_provider.dart';
 import '../../../core/models/shared_expense.dart';
 import '../../../core/widgets/collapsible_fab.dart';
+import '../../../core/widgets/nexus_card.dart';
 import '../widgets/add_family_member.dart';
 import '../widgets/add_shared_expense.dart';
 
@@ -178,7 +180,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
           // Balance indicator
           if (balance != 0)
             Text(
-              '${isPositive ? '+' : ''}₹${balance.abs().toStringAsFixed(0)}',
+              '${isPositive ? '+' : ''}Γé╣${balance.abs().toStringAsFixed(0)}',
               style: TextStyle(
                 color: balanceColor,
                 fontSize: 10,
@@ -358,7 +360,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
         Expanded(
           child: _buildStatCard(
             'You Owe',
-            '₹${youOwe.toStringAsFixed(0)}',
+            'Γé╣${youOwe.toStringAsFixed(0)}',
             AppColors.error,
             Icons.arrow_upward,
           ),
@@ -367,7 +369,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
         Expanded(
           child: _buildStatCard(
             'You\'re Owed',
-            '₹${youAreOwed.toStringAsFixed(0)}',
+            'Γé╣${youAreOwed.toStringAsFixed(0)}',
             AppColors.success,
             Icons.arrow_downward,
           ),
@@ -441,14 +443,9 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
   }
 
   Widget _buildSettlementCard(SettlementSummary settlement) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
+    return NexusCard(
+      color: AppColors.cardSurface,
+      padding: AppSpacing.cardPaddingMd,
       child: Row(
         children: [
           // Person who owes
@@ -498,7 +495,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
             ),
           ),
           Text(
-            '₹${settlement.netAmount.toStringAsFixed(0)}',
+            'Γé╣${settlement.netAmount.toStringAsFixed(0)}',
             style: TextStyle(
               color: AppColors.error,
               fontWeight: FontWeight.bold,
@@ -547,7 +544,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
                   ),
                 ),
                 Text(
-                  'Paid by ${expense.paidByName} • ${DateFormat('MMM d').format(expense.date)}',
+                  'Paid by ${expense.paidByName} ΓÇó ${DateFormat('MMM d').format(expense.date)}',
                   style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
                 ),
               ],
@@ -557,7 +554,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '₹${expense.totalAmount.toStringAsFixed(0)}',
+                'Γé╣${expense.totalAmount.toStringAsFixed(0)}',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -633,7 +630,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
                         ),
                       ),
                       Text(
-                        '₹${total.toStringAsFixed(0)}',
+                        'Γé╣${total.toStringAsFixed(0)}',
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w500,
@@ -741,6 +738,8 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
               children: [
                 Text(
                   member.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -763,8 +762,8 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
             children: [
               Text(
                 net >= 0
-                    ? '+₹${net.toStringAsFixed(0)}'
-                    : '-₹${net.abs().toStringAsFixed(0)}',
+                    ? '+Γé╣${net.toStringAsFixed(0)}'
+                    : '-Γé╣${net.abs().toStringAsFixed(0)}',
                 style: TextStyle(
                   color: net >= 0 ? AppColors.success : AppColors.error,
                   fontWeight: FontWeight.bold,

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app_colors.dart';
 import 'app_typography.dart';
@@ -80,9 +80,23 @@ class AppTheme {
 
   // --- Dark Theme (Nexus Pitch Dark) ---
   static ThemeData get darkTheme {
+    const colorScheme = ColorScheme.dark(
+      primary: AppColors.primaryBlue,
+      onPrimary: AppColors.white,
+      secondary: AppColors.pastelPurple,
+      onSecondary: AppColors.white,
+      surface: AppColors.cardSurface,
+      onSurface: AppColors.textPrimary,
+      surfaceContainerHighest: AppColors.cardElevated,
+      onSurfaceVariant: AppColors.textSecondary,
+      outline: AppColors.white38,
+      error: AppColors.error,
+      onError: AppColors.white,
+    );
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.backgroundBlack,
       textTheme: AppTypography.textTheme,
       cardTheme: CardThemeData(
@@ -111,6 +125,22 @@ class AppTheme {
           horizontal: AppSpacing.xl,
           vertical: AppSpacing.lg,
         ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: AppColors.cardElevated,
+        selectedColor: AppColors.primaryBlue.withValues(alpha: 0.24),
+        disabledColor: AppColors.cardElevated.withValues(alpha: 0.5),
+        side: const BorderSide(color: AppColors.white12),
+        shape: RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusXs),
+        labelStyle: AppTypography.labelMedium,
+        secondaryLabelStyle: AppTypography.labelSmall,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+      ),
+      dividerTheme: const DividerThemeData(color: AppColors.white12, thickness: 1, space: 1),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? AppColors.white : AppColors.textSecondary),
+        trackColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? AppColors.primaryBlue : AppColors.cardElevated),
+        trackOutlineColor: WidgetStateProperty.all(AppColors.white12),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: AppColors.cardElevated,

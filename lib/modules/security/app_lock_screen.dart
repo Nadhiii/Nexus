@@ -1,7 +1,5 @@
-// ignore_for_file: library_private_types_in_public_api
+﻿// ignore_for_file: library_private_types_in_public_api
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/biometric_provider.dart';
 
@@ -16,6 +14,7 @@ class AppLockScreen extends StatefulWidget {
 
 class _AppLockScreenState extends State<AppLockScreen> {
   bool _isUnlocked = false;
+  bool _isAuthenticating = false;
 
   @override
   void initState() {
@@ -24,31 +23,20 @@ class _AppLockScreenState extends State<AppLockScreen> {
       context,
       listen: false,
     );
-    if (biometricProvider.isBiometricEnabled) {
-      _authenticate();
-    } else {
-      setState(() {
-        _isUnlocked = true;
-      });
-    }
+    _authenticate(biometricProvider);
   }
 
-  Future<void> _authenticate() async {
-    final localAuth = LocalAuthentication();
-    try {
-      bool didAuthenticate = await localAuth.authenticate(
-        localizedReason: 'Please authenticate to access your financial data',
-        biometricOnly: true, // Passed directly here
-      );
-      setState(() {
-        _isUnlocked = didAuthenticate;
-      });
-    } on PlatformException {
-      // Handle error
-      setState(() {
-        _isUnlocked = false;
-      });
-    }
+  Future<void> _authenticate(BiometricProvider biometricProvider) async {
+    if (_isAuthenticating || _isUnlocked) return;
+
+    _isAuthenticating = true;
+    final didAuthenticate = await biometricProvider.authenticateForAppAccess();
+    if (!mounted) return;
+
+    setState(() {
+      _isAuthenticating = false;
+      _isUnlocked = didAuthenticate;
+    });
   }
 
   @override
@@ -84,7 +72,11 @@ class _AppLockScreenState extends State<AppLockScreen> {
               ),
               const SizedBox(height: 40),
               ElevatedButton.icon(
-                onPressed: _authenticate,
+                onPressed: _isAuthenticating
+                    ? null
+                    : () => _authenticate(
+                          context.read<BiometricProvider>(),
+                        ),
                 icon: const Icon(Icons.fingerprint),
                 label: const Text('Authenticate'),
               ),

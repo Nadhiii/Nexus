@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,13 +11,10 @@ class BiometricService {
 
   final LocalAuthentication _localAuth = LocalAuthentication();
 
-  /// Check if biometric authentication is available on this device
   Future<bool> isBiometricAvailable() async {
     try {
-      // For mobile platforms, check actual biometric availability
       if (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS) {
-        // First try to get available biometrics (sometimes this works when canCheckBiometrics doesn't)
         try {
           final biometrics = await _localAuth.getAvailableBiometrics();
           if (biometrics.isNotEmpty) {
@@ -28,62 +25,45 @@ class BiometricService {
           debugPrint('getAvailableBiometrics failed: $e');
         }
 
-        // Then try the standard checks
         try {
-          final bool isAvailable = await _localAuth.canCheckBiometrics;
-          final bool isDeviceSupported = await _localAuth.isDeviceSupported();
+          final canCheck = await _localAuth.canCheckBiometrics;
+          final supported = await _localAuth.isDeviceSupported();
           debugPrint(
-            'Biometric availability - canCheckBiometrics: $isAvailable, isDeviceSupported: $isDeviceSupported',
+            'Biometric availability - canCheckBiometrics: $canCheck, '
+            'isDeviceSupported: $supported',
           );
-          return isAvailable || isDeviceSupported; // Either should work
+          return canCheck || supported;
         } catch (e) {
           debugPrint('Standard biometric checks failed: $e');
         }
 
-        // If all else fails, assume biometrics are available on Android devices
-        // since most modern Android devices have some form of biometric authentication
-        if (defaultTargetPlatform == TargetPlatform.android) {
-          debugPrint('Assuming biometrics available on Android device');
-          return true;
-        }
+        return defaultTargetPlatform == TargetPlatform.android;
       }
 
-      // For desktop platforms (during development), simulate availability in debug mode
       if (kIsWeb ||
           defaultTargetPlatform == TargetPlatform.windows ||
           defaultTargetPlatform == TargetPlatform.linux ||
           defaultTargetPlatform == TargetPlatform.macOS) {
-        return kDebugMode; // Only available in debug mode for desktop
+        return kDebugMode;
       }
 
       return false;
     } on PlatformException catch (e) {
       debugPrint('PlatformException checking biometric availability: $e');
-      // On Android, if we get a channel error but we're on a mobile platform,
-      // let's assume biometrics might still work and let the user try
-      if (defaultTargetPlatform == TargetPlatform.android) {
-        debugPrint('Assuming biometrics might work despite channel error');
-        return true;
-      }
-      return false;
+      return defaultTargetPlatform == TargetPlatform.android;
     } catch (e) {
       debugPrint('Unexpected error checking biometric availability: $e');
       return false;
     }
   }
 
-  /// Get list of available biometric types
   Future<List<BiometricType>> getAvailableBiometrics() async {
     try {
-      // For mobile platforms, get actual available biometrics
       if (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS) {
-        final biometrics = await _localAuth.getAvailableBiometrics();
-        debugPrint('Available biometrics: $biometrics');
-        return biometrics;
+        return await _localAuth.getAvailableBiometrics();
       }
 
-      // For desktop in debug mode, simulate fingerprint availability
       if (kDebugMode &&
           (kIsWeb ||
               defaultTargetPlatform == TargetPlatform.windows ||
@@ -95,204 +75,163 @@ class BiometricService {
       return [];
     } on PlatformException catch (e) {
       debugPrint('PlatformException getting available biometrics: $e');
-      // If we get a channel error on Android, assume common biometric types are available
-      if (defaultTargetPlatform == TargetPlatform.android) {
-        debugPrint(
-          'Assuming fingerprint available on Android despite channel error',
-        );
-        return [BiometricType.fingerprint];
-      }
-      return [];
+      return defaultTargetPlatform == TargetPlatform.android
+          ? [BiometricType.fingerprint]
+          : [];
     } catch (e) {
       debugPrint('Unexpected error getting available biometrics: $e');
-      // Return a default list if we can't determine available types
-      if (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS) {
-        return [BiometricType.fingerprint]; // Assume fingerprint as fallback
-      }
-      return [];
+      return defaultTargetPlatform == TargetPlatform.android ||
+              defaultTargetPlatform == TargetPlatform.iOS
+          ? [BiometricType.fingerprint]
+          : [];
     }
   }
 
-  /// Authenticate using biometrics
   Future<bool> authenticate({
-  String reason = 'Please authenticate to access this feature',
-  bool biometricOnly = false, // kept for API compatibility, no longer passed to local_auth
-}) async {
-  try {
-    // Desktop debug simulation — unchanged
-    if (kDebugMode &&
-        (kIsWeb ||
-            defaultTargetPlatform == TargetPlatform.windows ||
-            defaultTargetPlatform == TargetPlatform.linux ||
-            defaultTargetPlatform == TargetPlatform.macOS)) {
-      await Future.delayed(const Duration(seconds: 1));
-      return true;
-    }
+    String reason = 'Please authenticate to access this feature',
+    bool biometricOnly = false,
+  }) async {
+    try {
+      if (kDebugMode &&
+          (kIsWeb ||
+              defaultTargetPlatform == TargetPlatform.windows ||
+              defaultTargetPlatform == TargetPlatform.linux ||
+              defaultTargetPlatform == TargetPlatform.macOS)) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        return true;
+      }
 
-    if (defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS) {
-      debugPrint('Attempting biometric authentication with reason: $reason');
+      if (defaultTargetPlatform != TargetPlatform.android &&
+          defaultTargetPlatform != TargetPlatform.iOS) {
+        return false;
+      }
 
-      // v3: options parameter removed, no AuthenticationOptions
-      final bool didAuthenticate = await _localAuth.authenticate(
+      debugPrint('Attempting biometric authentication: $reason');
+
+      final didAuthenticate = await _localAuth.authenticate(
         localizedReason: reason,
       );
 
       debugPrint('Authentication result: $didAuthenticate');
       return didAuthenticate;
+    } on PlatformException catch (e) {
+      debugPrint('PlatformException during authentication: $e');
+      switch (e.code) {
+        case 'NotAvailable':
+          debugPrint('Biometric authentication is not available.');
+          break;
+        case 'NotEnrolled':
+          debugPrint('No biometric credentials are enrolled.');
+          break;
+        case 'LockedOut':
+          debugPrint('Biometric authentication is temporarily locked out.');
+          break;
+        case 'channel-error':
+          debugPrint('Channel communication error.');
+          break;
+        case 'no_fragment_activity':
+          debugPrint(
+            'MainActivity must extend FlutterFragmentActivity for local_auth.',
+          );
+          break;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Unexpected error during authentication: $e');
+      return false;
     }
-
-    return false;
-  } on PlatformException catch (e) {
-    debugPrint('PlatformException during authentication: $e');
-    if (e.code == 'NotAvailable') {
-      debugPrint('Biometric authentication is not available on this device');
-    } else if (e.code == 'NotEnrolled') {
-      debugPrint('No biometric credentials are enrolled');
-    } else if (e.code == 'LockedOut') {
-      debugPrint('Biometric authentication is temporarily locked out');
-    } else if (e.code == 'channel-error') {
-      debugPrint('Channel communication error');
-    } else if (e.code == 'no_fragment_activity') {
-      debugPrint('MainActivity needs to extend FlutterFragmentActivity');
-    }
-    return false;
-  } catch (e) {
-    debugPrint('Unexpected error during authentication: $e');
-    return false;
   }
-}
-  /// Check if biometric authentication is enabled for the app
+
   Future<bool> isBiometricEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_biometricEnabledKey) ?? false;
   }
 
-  /// Enable/disable biometric authentication for the app
   Future<void> setBiometricEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_biometricEnabledKey, enabled);
   }
 
-  /// Check if app lock is enabled
   Future<bool> isAppLockEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_appLockEnabledKey) ?? false;
   }
 
-  /// Enable/disable app lock
   Future<void> setAppLockEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_appLockEnabledKey, enabled);
   }
 
-  /// Check if biometric authentication is required for sensitive operations
   Future<bool> isSensitiveOperationsBiometricEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_sensitiveOperationsKey) ?? false;
   }
 
-  /// Enable/disable biometric authentication for sensitive operations
   Future<void> setSensitiveOperationsBiometricEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_sensitiveOperationsKey, enabled);
-  }
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool(_sensitiveOperationsKey, enabled);
+}
 
-  /// Get user-friendly biometric type description
   String getBiometricTypeDescription(List<BiometricType> types) {
-    if (types.isEmpty) {
-      return 'No biometric authentication available';
-    }
-
-    if (types.contains(BiometricType.face)) {
-      return 'Face ID';
-    } else if (types.contains(BiometricType.fingerprint)) {
-      return 'Fingerprint';
-    } else if (types.contains(BiometricType.iris)) {
-      return 'Iris scan';
-    } else if (types.contains(BiometricType.strong)) {
-      return 'Biometric authentication';
-    } else if (types.contains(BiometricType.weak)) {
-      return 'Biometric authentication (weak)';
-    } else {
-      return 'Biometric authentication';
-    }
+    if (types.isEmpty) return 'No biometric authentication available';
+    if (types.contains(BiometricType.face)) return 'Face ID';
+    if (types.contains(BiometricType.fingerprint)) return 'Fingerprint';
+    if (types.contains(BiometricType.iris)) return 'Iris scan';
+    return 'Biometric authentication';
   }
 
-  /// Get biometric icon based on available types
   String getBiometricIcon(List<BiometricType> types) {
-    if (types.isEmpty) {
-      return '🔒';
-    }
-
-    if (types.contains(BiometricType.face)) {
-      return '👤';
-    } else if (types.contains(BiometricType.fingerprint)) {
-      return '👆';
-    } else if (types.contains(BiometricType.iris)) {
-      return '👁️';
-    } else {
-      return '🔐';
-    }
+    if (types.isEmpty) return '≡ƒöÆ';
+    if (types.contains(BiometricType.face)) return '≡ƒæñ';
+    if (types.contains(BiometricType.fingerprint)) return '≡ƒæå';
+    if (types.contains(BiometricType.iris)) return '≡ƒæü∩╕Å';
+    return '≡ƒöÉ';
   }
 
-  /// Authenticate for sensitive operations (transactions, account changes, etc.)
   Future<bool> authenticateForSensitiveOperation({
     String operation = 'sensitive operation',
   }) async {
-    final bool isEnabled = await isSensitiveOperationsBiometricEnabled();
-    if (!isEnabled) {
-      return true; // Allow operation if biometric is not required
+    if (!await isSensitiveOperationsBiometricEnabled()) {
+      return true;
     }
 
-    return await authenticate(
+    return authenticate(
       reason: 'Please authenticate to proceed with $operation',
-      biometricOnly: false,
     );
   }
 
-  /// Authenticate for app access
-  Future<bool> authenticateForAppAccess() async {
-    final bool isEnabled = await isAppLockEnabled();
-    if (!isEnabled) {
-      return true; // Allow access if app lock is not enabled
-    }
-
-    return await authenticate(
-      reason: 'Please authenticate to access Nexus',
-      biometricOnly: false,
-    );
+  /// Performs the actual app-unlock authentication.
+  ///
+  /// The caller decides whether app lock is enabled. This method must never
+  /// silently bypass authentication because a second preference flag is false.
+  Future<bool> authenticateForAppAccess() {
+    return authenticate(reason: 'Please authenticate to access Nexus');
   }
 
-  /// Setup biometric authentication (guide user through enabling it)
   Future<BiometricSetupResult> setupBiometric() async {
     try {
-      // Check if biometric is available
-      final bool isAvailable = await isBiometricAvailable();
-      if (!isAvailable) {
+      if (!await isBiometricAvailable()) {
         return BiometricSetupResult.notAvailable;
       }
 
-      // Check if any biometrics are enrolled
-      final List<BiometricType> availableBiometrics =
-          await getAvailableBiometrics();
-      if (availableBiometrics.isEmpty) {
+      final available = await getAvailableBiometrics();
+      if (available.isEmpty) {
         return BiometricSetupResult.notEnrolled;
       }
 
-      // Test authentication
-      final bool authenticated = await authenticate(
+      final authenticated = await authenticate(
         reason: 'Please authenticate to enable biometric security for Nexus',
-        biometricOnly: false,
       );
 
-      if (authenticated) {
-        await setBiometricEnabled(true);
-        return BiometricSetupResult.success;
-      } else {
+      if (!authenticated) {
         return BiometricSetupResult.authenticationFailed;
       }
+
+      await setBiometricEnabled(true);
+      await setAppLockEnabled(true);
+      await setSensitiveOperationsBiometricEnabled(true);
+
+      return BiometricSetupResult.success;
     } catch (e) {
       debugPrint('Error setting up biometric: $e');
       return BiometricSetupResult.error;
@@ -318,11 +257,9 @@ extension BiometricSetupResultExtension on BiometricSetupResult {
       case BiometricSetupResult.notEnrolled:
         return 'No biometric credentials are enrolled. Please set up fingerprint or face recognition in your device settings.';
       case BiometricSetupResult.authenticationFailed:
-        return 'Authentication failed. Please try again.';
+        return 'Biometric authentication failed.';
       case BiometricSetupResult.error:
-        return 'An error occurred while setting up biometric authentication.';
+        return 'Unable to configure biometric authentication.';
     }
   }
-
-  bool get isSuccess => this == BiometricSetupResult.success;
 }

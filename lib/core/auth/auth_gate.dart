@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+﻿import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../screens/main_screen.dart';
@@ -14,6 +14,8 @@ import '../providers/investment_provider.dart';
 import '../providers/bike_provider.dart';
 import '../providers/notification_provider.dart';
 import '../providers/gmail_provider.dart';
+import '../providers/biometric_provider.dart';
+import 'biometric_auth_wrapper.dart';
 import '../services/notification_service.dart';
 import '../services/backup_service.dart';
 import '../services/legacy_data_migration_service.dart';
@@ -59,9 +61,9 @@ class _AuthGateState extends State<AuthGate> {
       Provider.of<DebtProvider>(context, listen: false).clear();
       Provider.of<InvestmentProvider>(context, listen: false).clear();
       Provider.of<BikeProvider>(context, listen: false).clear();
-      debugPrint('✅ All providers cleared on logout');
+      debugPrint('Γ£à All providers cleared on logout');
     } catch (e) {
-      debugPrint('⚠️ Error clearing providers: $e');
+      debugPrint('ΓÜá∩╕Å Error clearing providers: $e');
     }
   }
 }
@@ -77,24 +79,45 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
   bool _ranAutoBackupRestore = false;
   bool _initializedNotifications = false;
   bool _ranLegacyMigration = false;
+  bool _biometricInitializationComplete = false;
+  bool _deferredInitializationScheduled = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeProviders(context);
+      _initializeAuthenticatedApp(context);
     });
   }
 
-  Future<void> _initializeProviders(BuildContext context) async {
+  Future<void> _initializeAuthenticatedApp(BuildContext context) async {
+    final biometricProvider = Provider.of<BiometricProvider>(
+      context,
+      listen: false,
+    );
+    await biometricProvider.initialize();
+
+    if (!mounted) return;
+    await _initializeCriticalProviders(context);
+
+    if (!mounted) return;
+    setState(() {
+      _biometricInitializationComplete = true;
+    });
+
+    if (!mounted || _deferredInitializationScheduled) return;
+    _deferredInitializationScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _initializeDeferredProviders(context);
+      }
+    });
+  }
+
+  Future<void> _initializeCriticalProviders(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return;
-    }
-
-    if (!_ranLegacyMigration) {
-      _ranLegacyMigration = true;
-      await LegacyDataMigrationService().migrateIfNeeded();
     }
 
     final accountProvider = Provider.of<AccountProvider>(
@@ -109,6 +132,23 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
       context,
       listen: false,
     );
+    final bikeProvider = Provider.of<BikeProvider>(context, listen: false);
+
+    // Dashboard dependencies: wait for account and transaction data before
+    // exposing the authenticated shell. Subscription and bike providers use
+    // stream-backed initialization APIs and begin loading here.
+    await Future.wait([
+      accountProvider.initialize(),
+      transactionProvider.initialize(),
+    ]);
+    subscriptionProvider.initialize();
+    bikeProvider.fetchBikes();
+  }
+
+  Future<void> _initializeDeferredProviders(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
     final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
     final goalProvider = Provider.of<GoalProvider>(context, listen: false);
     final categoryProvider = Provider.of<CategoryProvider>(
@@ -119,21 +159,42 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
       context,
       listen: false,
     );
-    final bikeProvider = Provider.of<BikeProvider>(context, listen: false);
     final gmailProvider = Provider.of<GmailProvider>(context, listen: false);
 
-    // Initialize all standard providers synchronously
-    accountProvider.initialize();
-    transactionProvider.initialize();
-    subscriptionProvider.initialize();
-    budgetProvider.initialize();
-    goalProvider.loadGoals(user.uid);
-    categoryProvider.refresh();
-    bikeProvider.fetchBikes();
+    if (!_ranLegacyMigration) {
+      _ranLegacyMigration = true;
+      try {
+        await LegacyDataMigrationService().migrateIfNeeded();
+      } catch (e) {
+        debugPrint('Legacy data migration error: $e');
+      }
+    }
+
+    try {
+      budgetProvider.initialize();
+    } catch (e) {
+      debugPrint('Budget initialization error: $e');
+    }
+
+    try {
+      await goalProvider.loadGoals(user.uid);
+    } catch (e) {
+      debugPrint('Goal initialization error: $e');
+    }
+
+    try {
+      await categoryProvider.refresh();
+    } catch (e) {
+      debugPrint('Category initialization error: $e');
+    }
 
     if (!_initializedNotifications) {
       _initializedNotifications = true;
-      await NotificationService().initialize(notificationProvider);
+      try {
+        await NotificationService().initialize(notificationProvider);
+      } catch (e) {
+        debugPrint('Notification initialization error: $e');
+      }
     }
 
     // FIX: STRICT SEQUENCING for Google Play Services
@@ -145,7 +206,11 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
 
     // Step 2: ONLY once Backup is complete, initialize Gmail API calls.
     // This prevents the Google Play Services broker from crashing the Android Binder.
-    await gmailProvider.initialize();
+    try {
+      await gmailProvider.initialize();
+    } catch (e) {
+      debugPrint('Gmail initialization error: $e');
+    }
   }
 
   Future<void> _maybeAutoBackupAndRestore() async {
@@ -159,9 +224,6 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
       // If data was restored, reload all providers to refresh their caches
       if (restored && mounted) {
         debugPrint('[Backup] Data restored, refreshing providers...');
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _initializeProviders(context);
-        });
         return;
       }
 
@@ -174,6 +236,10 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
 
   @override
   Widget build(BuildContext context) {
-    return const MainScreen();
+    if (!_biometricInitializationComplete) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return const BiometricAuthWrapper(child: MainScreen());
   }
 }

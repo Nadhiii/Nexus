@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_typography.dart';
 
 class BikeStatsWidget extends StatelessWidget {
   final BikeProvider provider;
@@ -11,8 +13,8 @@ class BikeStatsWidget extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Theme.of(context).cardColor,
+        shape: RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusMd),
         title: Row(
           children: [
             const Icon(Icons.info_outline, color: AppColors.primaryBlue),
@@ -20,14 +22,14 @@ class BikeStatsWidget extends StatelessWidget {
             const Expanded(
               child: Text(
                 'Mileage Calculation',
-                style: TextStyle(color: Colors.white, fontSize: 18),
+                style: AppTypography.titleMedium,
               ),
             ),
           ],
         ),
         content: const Text(
           'Your mileage is calculated using the Full Tank to Full Tank method. We measure the distance driven between two full tanks and divide it by the total fuel added, automatically accounting for any partial fill-ups along the way.',
-          style: TextStyle(color: Colors.white70, height: 1.5, fontSize: 14),
+          style: AppTypography.bodyMedium,
         ),
         actions: [
           TextButton(
@@ -96,7 +98,7 @@ class BikeStatsWidget extends StatelessWidget {
           fuelEntries
               .fold<double>(0, (sum, e) => sum + (e.fuelAmount))
               .toStringAsFixed(0),
-          '₹',
+          'Γé╣',
           Icons.currency_rupee,
           subtitle: fuelEntries.isNotEmpty
               ? '${fuelEntries.map((e) => '${e.date.day}/${e.date.month}').toSet().length} days'
@@ -108,7 +110,7 @@ class BikeStatsWidget extends StatelessWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         // Explicitly set tight vertical padding to close the gap between surrounding widgets
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 8,
@@ -122,7 +124,7 @@ class BikeStatsWidget extends StatelessWidget {
           final statColor = _getStatColor(index);
           
           final cardWidget = Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -132,7 +134,7 @@ class BikeStatsWidget extends StatelessWidget {
                   const Color(0xFF1E1E1E),
                 ],
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppSpacing.borderRadiusSm,
               border: Border.all(color: statColor.withValues(alpha: 0.15)),
               boxShadow: [
                 BoxShadow(

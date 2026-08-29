@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 class AppTypography {
@@ -6,6 +6,15 @@ class AppTypography {
   static const String bodyFont = 'Inter';
   static const String headerFont = 'RammettoOne';
   static const String serifHeaderFont = 'PlayfairDisplay'; // Kuvera-style Serif font
+
+  // Semantic roles. Branded display styles are reserved for hero values and
+  // identity; dense content should use the Inter-based title/body roles.
+  static const TextStyle hero = displayLarge;
+  static const TextStyle screenTitle = headlineLarge;
+  static const TextStyle sectionTitle = titleLarge;
+  static const TextStyle body = bodyMedium;
+  static const TextStyle caption = bodySmall;
+  static const TextStyle controlLabel = labelLarge;
 
   // --- Kuvera Serif Hero Titles ---
   static const TextStyle kuveraSerifLarge = TextStyle(

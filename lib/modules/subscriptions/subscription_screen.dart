@@ -1,4 +1,4 @@
-import 'dart:ui';
+﻿import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/subscription_provider.dart';
@@ -8,8 +8,10 @@ import '../../core/models/transaction.dart' as txn;
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_animations.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/swipe_to_delete.dart';
 import '../../core/widgets/collapsible_fab.dart';
+import '../../core/widgets/nexus_card.dart';
 import '../../core/utils/logo_utils.dart';
 import 'widgets/add_subscription.dart';
 
@@ -668,7 +670,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                             children: [
                               Flexible(
                                 child: Text(
-                                  "₹${sub.amount.toStringAsFixed(0)}",
+                                  "Γé╣${sub.amount.toStringAsFixed(0)}",
                                   style: isCompact
                                       ? AppTypography.titleMedium.copyWith(
                                           color: AppColors.textPrimary,
@@ -694,7 +696,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                             Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
-                                "~₹${(sub.amount * (sub.frequency == 'monthly' ? 12 : 1)).toStringAsFixed(0)}/yr",
+                                "~Γé╣${(sub.amount * (sub.frequency == 'monthly' ? 12 : 1)).toStringAsFixed(0)}/yr",
                                 style: AppTypography.bodySmall,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -705,7 +707,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                             Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
-                                "⚠️ No matching payments in 60 days",
+                                "ΓÜá∩╕Å No matching payments in 60 days",
                                 style: AppTypography.labelSmall.copyWith(
                                   color: Colors.grey,
                                   fontSize: 10,
@@ -752,13 +754,9 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
     final logoPath = LogoUtils.subscriptionLogoFor(sub.name);
     return Opacity(
       opacity: 0.6,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-        ),
+      child: NexusCard(
+        color: AppColors.cardSurface,
+        padding: AppSpacing.cardPaddingMd,
         child: Row(
           children: [
             Container(
@@ -781,6 +779,8 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                 children: [
                   Text(
                     sub.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTypography.bodyLarge.copyWith(
                       decoration: TextDecoration.lineThrough,
                       color: AppColors.textSecondary,
@@ -790,13 +790,15 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                 ],
               ),
             ),
-            Text(
-              "₹${sub.amount.toStringAsFixed(0)}",
+            Flexible(child: Text(
+              "Γé╣${sub.amount.toStringAsFixed(0)}",
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: AppTypography.bodyLarge.copyWith(
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.bold,
               ),
-            ),
+            )),
           ],
         ),
       ),
@@ -941,25 +943,9 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
   }
 
   Widget _buildTotalSummaryCard(double monthly, double yearly) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        // Aligned with Dashboard: Dark Gradient or Card Surface
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: AppColors.summaryCardGradient,
-        ),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+    return NexusCard(
+      variant: NexusCardVariant.hero,
+      padding: AppSpacing.cardPaddingLg,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -976,7 +962,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                "₹${monthly.toStringAsFixed(0)}",
+                "Γé╣${monthly.toStringAsFixed(0)}",
                 style: AppTypography.currencyLarge.copyWith(
                   color: AppColors.textPrimary, // White text
                 ),
@@ -1001,7 +987,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                "₹${yearly.toStringAsFixed(0)}",
+                "Γé╣${yearly.toStringAsFixed(0)}",
                 style: AppTypography.headlineSmall.copyWith(
                   color: AppColors.pastelTeal, // Subtle pop of color
                   fontWeight: FontWeight.bold,

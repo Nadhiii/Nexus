@@ -1,4 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import 'nexus_card.dart';
 
 class DashboardCard extends StatelessWidget {
   final String title;
@@ -22,78 +26,42 @@ class DashboardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return NexusCard(
+      onTap: onTap,
+      variant: trendPositive ? NexusCardVariant.success : NexusCardVariant.error,
+      padding: AppSpacing.cardPaddingMd,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: (trendPositive ? AppColors.success : AppColors.error).withValues(alpha: 0.14),
+              borderRadius: AppSpacing.borderRadiusXs,
+            ),
+            child: Icon(icon, color: trendPositive ? AppColors.success : AppColors.error),
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppTypography.titleMedium),
+                const SizedBox(height: AppSpacing.xs),
+                Text(subtitle, style: AppTypography.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: AppSpacing.sm),
+                Text(value, style: AppTypography.currencyMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: AppSpacing.xs),
+                Row(
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      value,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          trendPositive ? Icons.trending_up : Icons.trending_down,
-                          size: 16,
-                          color: trendPositive ? Colors.green : Colors.red,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          trend,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: trendPositive ? Colors.green : Colors.red,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
+                    Icon(trendPositive ? Icons.trending_up : Icons.trending_down, size: 16, color: trendPositive ? AppColors.success : AppColors.error),
+                    const SizedBox(width: AppSpacing.xs),
+                    Flexible(child: Text(trend, style: AppTypography.labelSmall.copyWith(color: trendPositive ? AppColors.success : AppColors.error), overflow: TextOverflow.ellipsis)),
                   ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

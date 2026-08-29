@@ -1,4 +1,4 @@
-name: nexus
+﻿name: nexus
 description: "Nexus"
 publish_to: 'none'
 version: 1.2.0+4
@@ -62,8 +62,8 @@ dependencies:
   pdf: ^3.10.8
   path_provider: ^2.1.2
   share_plus: ^12.0.2
-  flutter_markdown_plus: ^1.0.7
-  google_generative_ai: ^0.4.0
+  # REMOVED: flutter_markdown_plus (never imported ΓÇö dead code from deleted Nex AI module)
+  # REMOVED: google_generative_ai (Nex AI module was deleted)
   file_picker: ^11.0.2
   
   # Location & Geolocation
@@ -82,9 +82,9 @@ dependencies:
   googleapis: ^16.0.0
   googleapis_auth: ^2.3.1
   extension_google_sign_in_as_googleapis_auth: ^3.0.0
-  flutter_dotenv: ^6.0.0
+  # REMOVED: flutter_dotenv (no env vars exist ΓÇö .env was empty/stale)
   syncfusion_flutter_pdf: ^33.2.10
-  # FIX: Removed ota_update — not used, conflicts with custom OTA service
+  # FIX: Removed ota_update ΓÇö not used, conflicts with custom OTA service
 
   # App Info
   package_info_plus: ^8.2.0
@@ -113,9 +113,9 @@ flutter:
   uses-material-design: true
 
   assets:
-    - .env
+    # REMOVED: .env (no env vars ΓÇö migrated to --dart-define)
     - assets/fonts/Rammetto_One/
-    - assets/fonts/Inter/static/
+    # REMOVED: assets/fonts/Inter/static/ (54 unused TTF files, ~18.6 MB ΓÇö only variable font is needed)
     - assets/icons/
     - assets/images/
     - assets/images/banks/

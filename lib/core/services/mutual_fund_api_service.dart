@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
@@ -7,27 +7,25 @@ import 'package:flutter/foundation.dart';
 class MutualFundApiService {
   static const String baseUrl = 'https://api.mfapi.in/mf';
 
-  /// Search for mutual funds by scheme name
-  /// Returns list of schemes with their codes
+  /// Search for mutual funds by scheme name.
+  ///
+  /// FIX: this previously downloaded the entire scheme list (~30,000
+  /// entries, no NAV data) from `baseUrl` and filtered it client-side on
+  /// every keystroke. That's slow, wasteful, and was never actually being
+  /// used anyway ΓÇö add_investment_screen.dart bypassed this method and
+  /// called the real search endpoint directly. This now uses that same
+  /// endpoint, matching what's already proven to work in the UI.
   Future<List<MutualFundScheme>> searchSchemes(String query) async {
     try {
-      final response = await http.get(Uri.parse(baseUrl));
+      final response = await http.get(
+        Uri.parse('$baseUrl/search?q=${Uri.encodeQueryComponent(query)}'),
+      );
 
       if (response.statusCode == 200) {
         final List<dynamic> schemes = json.decode(response.body);
-
-        // Filter schemes by query
-        final filtered = schemes
-            .where(
-              (scheme) => scheme['schemeName']
-                  .toString()
-                  .toLowerCase()
-                  .contains(query.toLowerCase()),
-            )
+        return schemes
             .map((scheme) => MutualFundScheme.fromJson(scheme))
             .toList();
-
-        return filtered;
       } else {
         throw Exception('Failed to search schemes: ${response.statusCode}');
       }
@@ -37,7 +35,10 @@ class MutualFundApiService {
     }
   }
 
-  /// Get all available mutual fund schemes
+  /// Get all available mutual fund schemes.
+  /// (This one intentionally still hits the full-list endpoint ΓÇö it's
+  /// meant for cases where you actually need the complete list, not a
+  /// search-as-you-type flow.)
   Future<List<MutualFundScheme>> getAllSchemes() async {
     try {
       final response = await http.get(Uri.parse(baseUrl));

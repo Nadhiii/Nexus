@@ -1,4 +1,4 @@
-// ignore_for_file: unused_element
+﻿// ignore_for_file: unused_element
 import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
 import '../../core/widgets/collapsible_fab.dart';
@@ -8,6 +8,9 @@ import '../../core/widgets/animated_number_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_animations.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/nexus_button.dart';
+import '../../core/widgets/nexus_card.dart';
 import '../../core/widgets/swipe_to_delete.dart';
 import '../../core/models/transaction.dart';
 import '../../core/providers/account_provider.dart';
@@ -38,9 +41,19 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.initialTabIndex == 1) {
-      _currentView = WalletView.history;
+    _applyInitialTab(widget.initialTabIndex);
+  }
+
+  @override
+  void didUpdateWidget(covariant ModernFinanceScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialTabIndex != widget.initialTabIndex) {
+      _applyInitialTab(widget.initialTabIndex);
     }
+  }
+
+  void _applyInitialTab(int tabIndex) {
+    _currentView = tabIndex == 1 ? WalletView.history : WalletView.accounts;
   }
 
   void _toggleSelectionMode() {
@@ -84,15 +97,9 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.error.withValues(alpha: 0.3),
-                  ),
-                ),
+              NexusCard(
+                variant: NexusCardVariant.error,
+                padding: AppSpacing.cardPaddingMd,
                 child: Row(
                   children: [
                     Icon(Icons.warning_amber, color: AppColors.error, size: 20),
@@ -112,20 +119,11 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                   Expanded(
                     child: SizedBox(
                       height: 52,
-                      child: OutlinedButton(
+                      child: NexusButton(
+                        width: double.infinity,
                         onPressed: () => Navigator.pop(context, false),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.1),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(color: Colors.white),
-                        ),
+                        label: 'Cancel',
+                        variant: NexusButtonVariant.secondary,
                       ),
                     ),
                   ),
@@ -133,21 +131,11 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                   Expanded(
                     child: SizedBox(
                       height: 52,
-                      child: ElevatedButton(
+                      child: NexusButton(
+                        width: double.infinity,
                         onPressed: () => Navigator.pop(context, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: const Text(
-                          'Delete',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                        label: 'Delete',
+                        variant: NexusButtonVariant.destructive,
                       ),
                     ),
                   ),
@@ -173,7 +161,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundBlack,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Consumer2<AccountProvider, TransactionProvider>(
         builder: (context, accountProvider, txnProvider, child) {
           final totalCash = accountProvider.accounts.fold(
@@ -194,8 +182,8 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
               SliverAppBar(
                 pinned: true,
                 expandedHeight: 110,
-                backgroundColor: AppColors.backgroundBlack,
-                surfaceTintColor: AppColors.backgroundBlack,
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                surfaceTintColor: Colors.transparent,
                 elevation: 0,
                 automaticallyImplyLeading: false,
                 flexibleSpace: LayoutBuilder(
@@ -206,7 +194,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                             .clamp(0.0, 1.0);
                     return FlexibleSpaceBar(
                       centerTitle: false,
-                      titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
+                      titlePadding: const EdgeInsets.only(left: AppSpacing.xl, bottom: AppSpacing.xl2),
                       title: _isSelectionMode
                           ? AnimatedOpacity(
                               opacity: percent,
@@ -368,20 +356,13 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
             size: 64,
             color: AppColors.textTertiary.withValues(alpha: 0.3),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Text(text, style: TextStyle(color: AppColors.textTertiary)),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            icon: Icon(icon, size: 20),
-            label: Text(actionLabel),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
+          const SizedBox(height: AppSpacing.xl2),
+          NexusButton(
+            icon: Icon(icon, size: AppSpacing.iconSm),
+            label: actionLabel,
+            variant: NexusButtonVariant.primary,
             onPressed: onPressed,
           ),
         ],
@@ -399,7 +380,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
             size: 64,
             color: AppColors.textTertiary.withValues(alpha: 0.3),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Text(text, style: TextStyle(color: AppColors.textTertiary)),
         ],
       ),
@@ -410,7 +391,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
     return Row(
       children: [
         _buildPill("Accounts", WalletView.accounts),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.md),
         _buildPill("History", WalletView.history),
       ],
     );
@@ -422,10 +403,10 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
       onTap: () => setState(() => _currentView = view),
       child: AnimatedContainer(
         duration: AppAnimations.standard,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primaryBlue : AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: AppSpacing.borderRadiusFull,
           border: Border.all(
             color: isSelected
                 ? Colors.transparent
@@ -434,10 +415,8 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
         ),
         child: Text(
           label,
-          style: TextStyle(
+          style: AppTypography.labelMedium.copyWith(
             color: isSelected ? Colors.white : AppColors.textSecondary,
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
           ),
         ),
       ),
@@ -528,7 +507,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
 
   String _formatSignedCurrency(double amount) {
     final absFormatted = NumberFormat('#,##,###').format(amount.abs());
-    return amount < 0 ? '-₹$absFormatted' : '₹$absFormatted';
+    return amount < 0 ? '-Γé╣$absFormatted' : 'Γé╣$absFormatted';
   }
 
   Widget _buildAccountsList(BuildContext context, AccountProvider provider) {
@@ -634,27 +613,10 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
           builder: (context) => ModernAccountDetailScreen(account: account),
         ),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              account.color.withValues(alpha: 0.15),
-              AppColors.cardSurface,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: account.color.withValues(alpha: 0.2)),
-          boxShadow: [
-            BoxShadow(
-              color: account.color.withValues(alpha: 0.1),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+      child: NexusCard(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        border: Border.all(color: account.color.withValues(alpha: 0.24)),
+        padding: AppSpacing.cardPadding,
         child: Row(
           children: [
             SizedBox(
@@ -666,49 +628,50 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                     : Icon(account.icon, color: account.color, size: 24),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: AppSpacing.lg),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     account.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTypography.titleMedium.copyWith(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppSpacing.xs / 2),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xs / 2,
                     ),
                     decoration: BoxDecoration(
                       color: account.color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: AppSpacing.borderRadiusXs,
                     ),
                     child: Text(
                       account.typeDisplayName,
-                      style: TextStyle(
-                        color: account.color,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTypography.labelSmall.copyWith(color: account.color),
                     ),
                   ),
                 ],
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
                 Text(
-                  "₹${account.balance.toStringAsFixed(0)}",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                  "Γé╣${account.balance.toStringAsFixed(0)}",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: AppTypography.titleLarge.fontSize,
+                    fontWeight: AppTypography.titleLarge.fontWeight,
                   ),
                 ),
                 Row(
@@ -724,17 +687,18 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                         shape: BoxShape.circle,
                       ),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: AppSpacing.xs),
                     Text(
                       account.isActive ? 'Active' : 'Inactive',
                       style: TextStyle(
                         color: AppColors.textTertiary,
-                        fontSize: 10,
+                        fontSize: AppTypography.labelSmall.fontSize,
                       ),
                     ),
                   ],
                 ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -761,7 +725,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
     final isSelected = _selectedTransactionIds.contains(t.id);
 
     final color = isTransfer
-        ? Colors.blue
+        ? Theme.of(context).colorScheme.primary
         : (isIncome ? AppColors.success : AppColors.error);
     final icon = isTransfer
         ? Icons.swap_horiz
@@ -769,8 +733,8 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
     final sign = isIncome ? "+" : (isTransfer ? "" : "-");
 
     Widget tile = Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xs + 2),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         gradient: _isSelectionMode && isSelected
             ? LinearGradient(
@@ -782,9 +746,9 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
             : LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [color.withValues(alpha: 0.05), AppColors.cardSurface],
+                colors: [color.withValues(alpha: 0.05), Theme.of(context).colorScheme.surfaceContainerHighest],
               ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppSpacing.borderRadiusMd,
         border: Border.all(
           color: _isSelectionMode && isSelected
               ? AppColors.primaryBlue
@@ -815,10 +779,10 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
               },
               activeColor: AppColors.primaryBlue,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
           ],
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -826,12 +790,12 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                   color.withValues(alpha: 0.06),
                 ],
               ),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: AppSpacing.borderRadiusSm,
               border: Border.all(color: color.withValues(alpha: 0.12)),
             ),
             child: Icon(icon, color: color, size: 18),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.lg),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -840,10 +804,11 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                   t.description?.isNotEmpty == true
                       ? t.description!
                       : (isTransfer ? "Transfer" : "Transaction"),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                    style: AppTypography.titleSmall.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                 ),
                 const SizedBox(height: 2),
                 Container(
@@ -853,27 +818,27 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: AppSpacing.borderRadiusXs,
                   ),
                   child: Text(
                     categoryLabel,
                     style: TextStyle(
                       color: color,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
+                      fontSize: AppTypography.labelSmall.fontSize,
+                      fontWeight: AppTypography.labelSmall.fontWeight,
                     ),
                   ),
                 ),
                 if (t.metadata?['source'] == 'nexus_tasks')
                   Container(
-                    margin: const EdgeInsets.only(top: 4),
+                    margin: const EdgeInsets.only(top: AppSpacing.xs),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 6,
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: AppSpacing.borderRadiusXs,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -881,14 +846,14 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                         Icon(
                           Icons.check_circle_outline,
                           size: 9,
-                          color: Colors.white54,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         SizedBox(width: 3),
                         Text(
                           'via Tasks',
                           style: TextStyle(
-                            color: Colors.white54,
-                            fontSize: 10,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: AppTypography.labelSmall.fontSize,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -898,18 +863,22 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                "$sign₹${t.amount.toStringAsFixed(0)}",
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                "$signΓé╣${t.amount.toStringAsFixed(0)}",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: color,
                   fontWeight: FontWeight.bold,
-                  fontSize: 17,
+                  fontSize: AppTypography.titleMedium.fontSize,
                 ),
+                ),
+                ],
               ),
-            ],
           ),
         ],
       ),
@@ -1091,14 +1060,14 @@ class _WalletFlipCardState extends State<_WalletFlipCard>
     final borderColor = Colors.white.withValues(alpha: 0.1);
     final boxShadowColor = Colors.black.withValues(alpha: 0.4);
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.xl2),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: gradientColors,
         ),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: AppSpacing.borderRadiusLg,
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
@@ -1150,7 +1119,7 @@ class _WalletFlipCardState extends State<_WalletFlipCard>
           const SizedBox(height: 12),
           AnimatedNumberText(
             number: widget.total,
-            prefix: '₹',
+            prefix: 'Γé╣',
             style: AppTypography.displaySmall.copyWith(
               color: Colors.white,
               fontSize: 36,
@@ -1206,14 +1175,14 @@ class _WalletFlipCardState extends State<_WalletFlipCard>
     final boxShadowColor = Colors.black.withValues(alpha: 0.4);
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.xl2),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: gradientColors,
         ),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: AppSpacing.borderRadiusLg,
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(

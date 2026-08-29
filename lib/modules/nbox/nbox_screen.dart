@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -20,6 +20,11 @@ import 'smart_approval_sheet.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_animations.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/nexus_inline_loading.dart';
+import '../../core/widgets/nexus_empty_state.dart';
+import '../../core/widgets/nexus_button.dart';
+import '../../core/widgets/nexus_card.dart';
 import '../../core/services/pdf_statement_import_service.dart';
 
 enum NBoxFilter { all, sms, email, pdf, trash }
@@ -55,7 +60,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
   late final NewNboxProvider _nboxProvider;
 
-  // ── View mode state ───────────────────────────────────────────────────────
+  // ΓöÇΓöÇ View mode state ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   NBoxViewMode _viewMode = NBoxViewMode.list;
 
   // When set, Focus mode only shows these ids (used after a bulk-approve run
@@ -83,7 +88,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       await nbox.scanEmails();
     } else {
       debugPrint(
-        '[NboxScreen] Gmail not linked — skipping scan. Please sign in again.',
+        '[NboxScreen] Gmail not linked ΓÇö skipping scan. Please sign in again.',
       );
     }
     if (mounted) setState(() => _isGmailLoading = false);
@@ -153,16 +158,16 @@ Future<String?> _showPasswordDialog(BuildContext context) {
           onSubmitted: (val) => Navigator.pop(dialogContext, val),
         ),
         actions: [
-          TextButton(
+          NexusButton(
+            variant: NexusButtonVariant.secondary,
+            width: double.infinity,
             onPressed: () => Navigator.pop(dialogContext, null),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            label: 'Cancel',
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-            ),
+          NexusButton(
+            width: double.infinity,
             onPressed: () => Navigator.pop(dialogContext, enteredPassword),
-            child: const Text('Submit', style: TextStyle(color: Colors.white)),
+            label: 'Submit',
           ),
         ],
       );
@@ -340,7 +345,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                     )
                     .toList();
 
-          // ── FOCUS MODE: single-card review ───────────────────────────────
+          // ΓöÇΓöÇ FOCUS MODE: single-card review ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
           if (inFocusMode) {
             if (focusList.isEmpty) {
               // Queue drained while we were in focus mode -- fall back to
@@ -387,7 +392,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
             );
           }
 
-          // ── LIST / TRASH MODE: Sliver Layout ─────────────────────────────
+          // ΓöÇΓöÇ LIST / TRASH MODE: Sliver Layout ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
           return CustomScrollView(
             slivers: [
               _isSelectionMode
@@ -511,7 +516,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
 
   Widget _buildStandardHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 16, 10),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -528,15 +533,8 @@ Future<String?> _showPasswordDialog(BuildContext context) {
               _buildViewModeToggle(),
               _isSmsLoading
                   ? const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: AppColors.primaryBlue,
-                          strokeWidth: 2.5,
-                        ),
-                      ),
+                      padding: EdgeInsets.all(AppSpacing.sm),
+                      child: NexusInlineLoading(),
                     )
                   : IconButton(
                       tooltip: 'Refresh SMS',
@@ -557,15 +555,8 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                     ),
               _isGmailLoading
                   ? const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: AppColors.primaryBlue,
-                          strokeWidth: 2.5,
-                        ),
-                      ),
+                      padding: EdgeInsets.all(AppSpacing.sm),
+                      child: NexusInlineLoading(),
                     )
                   : IconButton(
                       tooltip: 'Refresh Gmail',
@@ -588,14 +579,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                     _isPdfLoading
     ? const Padding(
         padding: EdgeInsets.all(8.0),
-        child: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(
-            color: AppColors.primaryBlue,
-            strokeWidth: 2.5,
-          ),
-        ),
+        child: NexusInlineLoading(),
       )
     : IconButton(
         tooltip: 'Import PDF Statement',
@@ -708,10 +692,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
         child: SizedBox(
           width: 24,
           height: 24,
-          child: CircularProgressIndicator(
-            color: AppColors.primaryBlue,
-            strokeWidth: 2.5,
-          ),
+          child: NexusInlineLoading(),
         ),
       )
     : IconButton(
@@ -995,7 +976,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      '${isIncome ? '+' : ''}₹${t.amount.toStringAsFixed(0)}',
+                                      '${isIncome ? '+' : ''}Γé╣${t.amount.toStringAsFixed(0)}',
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
@@ -1302,83 +1283,40 @@ Future<String?> _showPasswordDialog(BuildContext context) {
     VoidCallback onTap,
   ) {
     final isPrimary = bg == AppColors.primaryBlue;
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        gradient: isPrimary
-            ? LinearGradient(
-                colors: [
-                  AppColors.primaryBlue,
-                  AppColors.primaryBlue.withValues(alpha: 0.8),
-                ],
-              )
-            : null,
-        boxShadow: isPrimary
-            ? [
-                BoxShadow(
-                  color: AppColors.primaryBlue.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : [],
-      ),
-      child: ElevatedButton.icon(
-        onPressed: onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          foregroundColor: fg,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-        ),
-        icon: Icon(icon, size: 18),
-        label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-      ),
+    return NexusButton(
+      onPressed: onTap,
+      icon: Icon(icon, size: AppSpacing.iconSm),
+      label: label,
+      variant: isPrimary
+          ? NexusButtonVariant.primary
+          : NexusButtonVariant.secondary,
+      emphasizedPrimary: isPrimary,
     );
   }
 
   // --- SUMMARY & FILTERS ---
 
   Widget _buildInboxSummaryCard(int count, double totalValue) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.nboxHeroStart.withValues(alpha: 0.9),
-            AppColors.nboxHeroEnd,
-            AppColors.cardSurface,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.nboxAccent.withValues(alpha: 0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.nboxAccent.withValues(alpha: 0.2),
-            blurRadius: 30,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+    return NexusCard(
+      variant: NexusCardVariant.hero,
+      padding: AppSpacing.cardPaddingLg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              Flexible(
+                child: Text(
                 "PENDING REVIEW",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
+                ),
                 ),
               ),
               Container(
@@ -1417,25 +1355,25 @@ Future<String?> _showPasswordDialog(BuildContext context) {
           ),
           const SizedBox(height: 12),
           Text(
-            '₹${NumberFormat('#,##,###').format(totalValue)}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.w900,
-            ),
+            'Γé╣${NumberFormat('#,##,###').format(totalValue)}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.currencyLarge,
           ),
           const SizedBox(height: 8),
           Row(
             children: [
               Icon(Icons.auto_awesome, color: AppColors.nboxAccent, size: 14),
               const SizedBox(width: 6),
-              Text(
+              Flexible(child: Text(
                 'Detected from SMS and Email',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.5),
                   fontSize: 12,
                 ),
-              ),
+              )),
             ],
           ),
         ],
@@ -1475,7 +1413,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
       padding: const EdgeInsets.only(bottom: 24.0, top: 10.0),
       child: Column(
         children: [
-          // ── Focus mode label ──
+          // ΓöÇΓöÇ Focus mode label ΓöÇΓöÇ
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: Row(
@@ -1488,7 +1426,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'FOCUS REVIEW · ${list.length} LEFT',
+                  'FOCUS REVIEW ┬╖ ${list.length} LEFT',
                   style: const TextStyle(
                     color: AppColors.textTertiary,
                     fontSize: 11,
@@ -1500,8 +1438,8 @@ Future<String?> _showPasswordDialog(BuildContext context) {
             ),
           ),
 
-          // ── Card + real buttons, isolated so drag doesn't rebuild the
-          // whole NBox screen on every frame ──
+          // ΓöÇΓöÇ Card + real buttons, isolated so drag doesn't rebuild the
+          // whole NBox screen on every frame ΓöÇΓöÇ
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(
@@ -1579,7 +1517,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── Top row: source tag + date ─────────────────────────────
+                // ΓöÇΓöÇ Top row: source tag + date ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -1588,8 +1526,9 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                     if (t.source == 'email') _buildConfidenceBadge(t),
                     const Spacer(),
 
-                    // ── The Updated Date Pill ──
-                    Container(
+                    // ΓöÇΓöÇ The Updated Date Pill ΓöÇΓöÇ
+                    Flexible(
+                      child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 6,
@@ -1612,6 +1551,8 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                       ),
                       child: Text(
                         DateFormat('dd MMM, hh:mm a').format(t.date),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11,
@@ -1620,20 +1561,21 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                           height: 1.0,
                         ),
                       ),
+                      ),
                     ),
                   ],
                 ),
 
                 const SizedBox(height: 16),
 
-                // ── Center: amount + merchant + category ───────────────────
+                // ΓöÇΓöÇ Center: amount + merchant + category ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
                 Expanded(
                   flex: 3,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        '${isIncome ? '+' : '−'}₹${NumberFormat('#,##,###').format(t.amount)}',
+                        '${isIncome ? '+' : 'ΓêÆ'}Γé╣${NumberFormat('#,##,###').format(t.amount)}',
                         style: TextStyle(
                           fontSize: 42,
                           fontWeight: FontWeight.w900,
@@ -1670,7 +1612,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                       if (t.balanceAfter != null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          '${t.bankName ?? 'Bank'} bal. ₹${NumberFormat('#,##,###.##').format(t.balanceAfter)}',
+                          '${t.bankName ?? 'Bank'} bal. Γé╣${NumberFormat('#,##,###.##').format(t.balanceAfter)}',
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.textTertiary,
@@ -1682,7 +1624,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                   ),
                 ),
 
-                // ── Bottom: SMS/email body ─────────────────────────────────
+                // ΓöÇΓöÇ Bottom: SMS/email body ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
                 if (t.body != null) ...[
                   Expanded(
                     flex: 2,
@@ -1711,7 +1653,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                   ),
                 ],
 
-                // ── Warning row (if any) ───────────────────────────────────
+                // ΓöÇΓöÇ Warning row (if any) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
                 if (t.warnings.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Row(
@@ -1768,28 +1710,12 @@ Future<String?> _showPasswordDialog(BuildContext context) {
   Widget _buildPill(String label, NBoxFilter value) {
     final isSelected = _currentFilter == value;
     return Padding(
-      padding: const EdgeInsets.only(right: 12),
-      child: GestureDetector(
-        onTap: () => setState(() => _currentFilter = value),
-        child: AnimatedContainer(
-          duration: AppAnimations.standard,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF8B5CF6) : AppColors.cardSurface,
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(
-              color: isSelected ? Colors.transparent : Colors.white10,
-            ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : AppColors.textSecondary,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
-          ),
-        ),
+      padding: const EdgeInsets.only(right: AppSpacing.controlGap),
+      child: FilterChip(
+        label: Text(label),
+        selected: isSelected,
+        showCheckmark: false,
+        onSelected: (_) => setState(() => _currentFilter = value),
       ),
     );
   }
@@ -1852,11 +1778,11 @@ Future<String?> _showPasswordDialog(BuildContext context) {
     if (t.isHighConfidence) {
       bgColor = AppColors.accentTeal.withValues(alpha: 0.15);
       textColor = AppColors.accentTeal;
-      label = '✓ High';
+      label = 'Γ£ô High';
     } else if (t.isLowConfidence) {
       bgColor = AppColors.pastelOrange.withValues(alpha: 0.15);
       textColor = AppColors.pastelOrange;
-      label = '⚠ Low';
+      label = 'ΓÜá Low';
     } else {
       bgColor = Colors.white.withValues(alpha: 0.1);
       textColor = AppColors.textSecondary;
@@ -1910,62 +1836,10 @@ Future<String?> _showPasswordDialog(BuildContext context) {
     );
   }
 
-  Widget _buildEmptyState() => Center(
-    child: Container(
-      padding: const EdgeInsets.all(40),
-      margin: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.nboxAccent.withValues(alpha: 0.1),
-            AppColors.cardSurface,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.nboxAccent.withValues(alpha: 0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.nboxAccent.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.nboxAccent.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.inbox_rounded,
-              size: 48,
-              color: AppColors.nboxAccent,
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            "All Caught Up",
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "No pending transactions to review",
-            style: TextStyle(color: AppColors.textTertiary, fontSize: 14),
-          ),
-        ],
-      ),
-    ),
+  Widget _buildEmptyState() => const NexusEmptyState(
+    icon: Icons.inbox_rounded,
+    title: 'All Caught Up',
+    message: 'No pending transactions to review',
   );
 
   void _rejectTransaction(DetectedTransaction t) {
@@ -2117,7 +1991,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
     if (failed > 0) parts.add('$failed failed');
     showTopNotification(
       context,
-      parts.isEmpty ? 'Nothing to approve' : parts.join(' · '),
+      parts.isEmpty ? 'Nothing to approve' : parts.join(' ┬╖ '),
       isError: quickApproved == 0,
     );
 

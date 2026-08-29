@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../../core/widgets/nexus_card.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/top_snackbar.dart';
 // import '../../core/services/ota_update_service.dart';
@@ -18,16 +20,17 @@ class _AboutScreenState extends State<AboutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.backgroundBlack,
+      backgroundColor: colorScheme.surface,
       body: CustomScrollView(
         slivers: [
           // 1. IMMERSIVE HEADER (With Back Button)
           SliverAppBar(
             pinned: true,
             expandedHeight: 110,
-            backgroundColor: AppColors.backgroundBlack,
-            surfaceTintColor: AppColors.backgroundBlack,
+            backgroundColor: colorScheme.surface,
+            surfaceTintColor: colorScheme.surface,
             elevation: 0,
             leading: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -199,13 +202,8 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Widget _buildGlassCard(BuildContext context, {required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
+    return NexusCard(
+      padding: AppSpacing.cardPadding,
       child: child,
     );
   }

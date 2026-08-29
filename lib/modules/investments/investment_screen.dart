@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../core/widgets/collapsible_fab.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -194,7 +194,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
           AnimatedNumberText(
             number: currentVal,
             decimalPlaces: 2,
-            prefix: '₹',
+            prefix: 'Γé╣',
             style: AppTypography.currencyLarge,
           ),
           const SizedBox(height: 20),
@@ -208,12 +208,16 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                '${isProfitable ? '+' : ''}₹${profit.toStringAsFixed(2)} (${percent.toStringAsFixed(2)}%)',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+              Flexible(
+                child: Text(
+                  '${isProfitable ? '+' : ''}Γé╣${profit.toStringAsFixed(2)} (${percent.toStringAsFixed(2)}%)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ],
@@ -310,26 +314,38 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
         rows.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildPremiumAssetTile(
-                    context,
-                    first,
-                    provider,
-                    isLarge: useLarge,
+            // FIX: this row needs a bounded height, same as the 3-item
+            // branches below. The "large" tile variant uses Spacer()
+            // internally, which requires a bounded height from its
+            // ancestors ΓÇö without this SizedBox, the Column inside the
+            // large tile gets unbounded height constraints and throws a
+            // RenderFlex "incoming height constraints are unbounded"
+            // exception any time useLarge is true (e.g. exactly 2 assets,
+            // one of them a loss position or crypto/stock).
+            child: SizedBox(
+              height: useLarge ? 200 : 168,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _buildPremiumAssetTile(
+                      context,
+                      first,
+                      provider,
+                      isLarge: useLarge,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildPremiumAssetTile(
-                    context,
-                    second,
-                    provider,
-                    isLarge: useLarge,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildPremiumAssetTile(
+                      context,
+                      second,
+                      provider,
+                      isLarge: useLarge,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -562,7 +578,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  '₹${NumberFormat('#,##,###').format(asset.currentAmount)}',
+                  'Γé╣${NumberFormat('#,##,###').format(asset.currentAmount)}',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -638,7 +654,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    '₹${NumberFormat.compact().format(asset.currentAmount)}',
+                    'Γé╣${NumberFormat.compact().format(asset.currentAmount)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -710,7 +726,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '₹${NumberFormat.compact().format(asset.currentAmount)}',
+                    'Γé╣${NumberFormat.compact().format(asset.currentAmount)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

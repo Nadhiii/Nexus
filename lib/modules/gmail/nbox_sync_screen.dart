@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -6,6 +6,7 @@ import '../../core/models/gmail_sync_settings.dart';
 import '../../core/providers/gmail_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/nexus_card.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/providers/nbox_provider.dart';
@@ -230,13 +231,9 @@ class _NboxSyncScreenState extends State<NboxSyncScreen> {
   }
 
   Widget _buildStatusCard(GmailProvider provider) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
+    return NexusCard(
+      variant: NexusCardVariant.success,
+      padding: AppSpacing.cardPaddingMd,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -490,7 +487,7 @@ class _NboxSyncScreenState extends State<NboxSyncScreen> {
                   style: AppTypography.bodyLarge,
                 ),
                 subtitle: Text(
-                  'Confidence ≥ 90%',
+                  'Confidence ΓëÑ 90%',
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -515,7 +512,7 @@ class _NboxSyncScreenState extends State<NboxSyncScreen> {
                   style: AppTypography.bodyLarge,
                 ),
                 subtitle: Text(
-                  'Amount < ₹500',
+                  'Amount < Γé╣500',
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
