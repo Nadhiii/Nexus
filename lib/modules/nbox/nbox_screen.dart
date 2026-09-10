@@ -526,7 +526,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'NBox',
+            'Inbox',
             style: AppTypography.headlineMedium.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w800,
@@ -622,7 +622,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         centerTitle: false,
         titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
         title: Text(
-          'NBox',
+          'Inbox',
           style: AppTypography.headlineMedium.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w800,
@@ -1614,7 +1614,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '$count NBox Items',
+                      '$count items to review',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,

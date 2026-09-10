@@ -10,7 +10,6 @@ import '../notifications/notification_settings_screen.dart';
 import '../gmail/nbox_sync_screen.dart';
 import '../family/screens/family_dashboard_screen.dart';
 import '../family/screens/expense_splitter_screen.dart';
-import '../ai_assistant/screens/ai_settings_screen.dart';
 import '../knowledge/knowledge_dashboard_screen.dart';
 import 'about_screen.dart';
 import 'reports_and_analytics_screen.dart';
@@ -244,16 +243,6 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const NboxSyncScreen()),
-            ),
-          ),
-          _divider(),
-          _buildTile(
-            icon: Icons.auto_awesome,
-            color: const Color(0xFF6366F1),
-            title: "Nex Settings",
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AISettingsScreen()),
             ),
           ),
         ],

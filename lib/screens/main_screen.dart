@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
@@ -172,13 +172,13 @@ class _MainScreenState extends State<MainScreen>
           // Detached Quick Action Button
           Semantics(
             button: true,
-            label: 'Open NBox',
+            label: 'Open Inbox',
             child: Tooltip(
-              message: 'NBox',
+              message: 'Inbox',
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => _navigateToScreen(4), // Quick Jump to NBox
+                  onTap: () => _navigateToScreen(4), // Quick Jump to Inbox
                   borderRadius: AppSpacing.borderRadiusFull,
                   child: Container(
                 width: 56,
@@ -230,7 +230,7 @@ class _MainScreenState extends State<MainScreen>
       {
         'icon': Icons.pie_chart_outline,
         'selectedIcon': Icons.pie_chart_rounded,
-        'label': 'Holdings',
+        'label': 'Wealth',
         'index': 2,
       },
       {
