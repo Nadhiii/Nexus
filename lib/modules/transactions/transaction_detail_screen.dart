@@ -6,7 +6,6 @@ import '../../core/utils/transaction_display.dart';
 import '../../core/widgets/app_dialog.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/widgets/translucent_app_bar.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
   final String transactionId;
@@ -94,18 +93,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     }
   }
 
-  // ADD THIS EXACTLY HERE
-  Future<void> _openInNexusTasks() async {
-    final linkedId = widget.metadata?['linkedId'];
-    if (linkedId == null) { return; }
-
-    final url = Uri.parse('nexustasks://open/tasks/$linkedId');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    } else {
-      if (mounted) { showTopSnackBar(context, 'Could not open Nexus Tasks'); }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -209,19 +196,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         textAlign: TextAlign.center,
                       ),
 
-                      if (widget.metadata?['source'] == 'nexus_tasks' &&
-                          widget.metadata?.containsKey('linkedId') == true)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: TextButton.icon(
-                            onPressed: _openInNexusTasks,
-                            icon: const Icon(Icons.open_in_new, size: 16),
-                            label: const Text('View in Nexus Tasks'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppColors.primaryBlueLight,
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                 ),

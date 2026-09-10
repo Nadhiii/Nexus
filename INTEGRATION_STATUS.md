@@ -1,11 +1,7 @@
 # Nexus — Integration Status
 
 ## Nexus Tasks integration points
-- [x] "via Tasks" chip on transaction tiles — `wallet_screen.dart:841` checks `t.metadata?['source'] == 'nexus_tasks'`, renders "via Tasks" chip
-- [x] "Open in Tasks" on loan modal — `add_loan_sheet.dart` `_buildOpenInTasksButton` (text at line 998)
-- [x] "Open in Tasks" on subscription modal — `add_subscription.dart:548` `_buildOpenInTasksButton`, called at line 470
-- [x] "Open in Tasks" on goal modal — `add_goal.dart:583` `_buildOpenInTasksButton`, called at line 355
-- [ ] Tasks Today dashboard widget — **NOT IMPLEMENTED** (no widget found in any dashboard/home screen)
+- [x] Tasks companion deep-links / chips removed from Core (Tasks deferred per master plan; no half-integrated UI)
 
 ## Lint fixes applied (Phase 2)
 - **2A** `use_build_context_synchronously`: all async context uses already guarded with `if (mounted)` — no changes required

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
@@ -78,7 +77,6 @@ class _ModernAddSubscriptionScreenState
   @override
   Widget build(BuildContext context) {
     final title = _isEditMode ? 'Edit Subscription' : 'New Subscription';
-    final subscriptionId = widget.subscriptionToEdit?.id ?? '';
 
     return Scaffold(
       backgroundColor: AppColors.darkGradient.first,
@@ -340,14 +338,6 @@ class _ModernAddSubscriptionScreenState
                     ),
                     const SizedBox(height: AppSpacing.xl2),
 
-                    if (subscriptionId.isNotEmpty)
-                      Center(
-                        child: _buildOpenInTasksButton(context, subscriptionId),
-                      ),
-
-                    if (subscriptionId.isNotEmpty)
-                      const SizedBox(height: AppSpacing.sm),
-
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -542,32 +532,6 @@ class _ModernAddSubscriptionScreenState
         }
       }
     }
-  }
-
-  Future<void> _launchTasksForItem(String itemId) async {
-    try {
-      final uri = Uri.parse('nexustasks://open/tasks/$itemId');
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      }
-      // If Tasks not installed: silently do nothing
-    } catch (_) {
-      // Swallow all errors silently
-    }
-  }
-
-  Widget _buildOpenInTasksButton(BuildContext context, String itemId) {
-    return TextButton.icon(
-      onPressed: () => _launchTasksForItem(itemId),
-      icon: Icon(Icons.checklist_rounded, size: 14, color: Colors.white38),
-      label: Text(
-        'Open in Tasks →',
-        style: TextStyle(color: Colors.white38, fontSize: 12),
-      ),
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      ),
-    );
   }
 }
 

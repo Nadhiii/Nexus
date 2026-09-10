@@ -846,37 +846,6 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                     ),
                   ),
                 ),
-                if (t.metadata?['source'] == 'nexus_tasks')
-                  Container(
-                    margin: const EdgeInsets.only(top: AppSpacing.xs),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
-                      borderRadius: AppSpacing.borderRadiusXs,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.check_circle_outline,
-                          size: 9,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        SizedBox(width: 3),
-                        Text(
-                          'via Tasks',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: AppTypography.labelSmall.fontSize,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
               ],
             ),
           ),

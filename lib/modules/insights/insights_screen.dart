@@ -10,8 +10,8 @@ import '../../core/providers/account_provider.dart';
 import '../../core/providers/debt_provider.dart';
 import '../../core/providers/investment_provider.dart';
 import '../../core/providers/subscription_provider.dart';
-// import '../../core/providers/budget_provider.dart'; // Uncomment when available
-// import '../../core/providers/goal_provider.dart';   // Uncomment when available
+import '../../core/providers/budget_provider.dart';
+import '../../core/providers/goal_provider.dart';
 
 // Screens
 import '../investments/investment_screen.dart';
@@ -253,6 +253,29 @@ class ModernInsightsScreen extends StatelessWidget {
     required double subCost,
     required int activeSubCount,
   }) {
+    final budgetProvider = context.watch<BudgetProvider>();
+    final goalProvider = context.watch<GoalProvider>();
+    final activeBudgets = budgetProvider.activeBudgets;
+    final budgetUsedPct = budgetProvider.totalAllocated <= 0
+        ? 0.0
+        : (budgetProvider.totalSpent / budgetProvider.totalAllocated) * 100;
+    final budgetValue = activeBudgets.isEmpty
+        ? '—'
+        : '${budgetUsedPct.round()}% used';
+    final budgetSubtitle = activeBudgets.isEmpty
+        ? 'None yet'
+        : '${activeBudgets.length} active';
+    final activeGoals =
+        goalProvider.goals.where((g) => !g.isCompleted).toList();
+    final goalsSaved =
+        activeGoals.fold<double>(0, (sum, g) => sum + g.currentAmount);
+    final goalsValue = activeGoals.isEmpty
+        ? '—'
+        : '₹${NumberFormat.compact().format(goalsSaved)}';
+    final goalsSubtitle = activeGoals.isEmpty
+        ? 'None yet'
+        : '${activeGoals.length} active';
+
     const double spacing = AppSpacing.md;
 
     return Column(
@@ -327,8 +350,8 @@ class ModernInsightsScreen extends StatelessWidget {
               child: _buildBentoTile(
                 context,
                 title: "Budgets",
-                value: "Plan",
-                subtitle: "Spending",
+                value: budgetValue,
+                subtitle: budgetSubtitle,
                 icon: Icons.pie_chart_outline,
                 color: AppColors.pastelTeal,
                 height: 130,
@@ -346,8 +369,8 @@ class ModernInsightsScreen extends StatelessWidget {
               child: _buildBentoTile(
                 context,
                 title: "Goals",
-                value: "Targets",
-                subtitle: "Save",
+                value: goalsValue,
+                subtitle: goalsSubtitle,
                 icon: Icons.flag_outlined,
                 color: AppColors.pastelPink,
                 height: 130,

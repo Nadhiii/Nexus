@@ -4,7 +4,6 @@ import '../../core/providers/biometric_provider.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/widgets/top_snackbar.dart';
 import '../backup/backup_settings_screen.dart';
 import '../notifications/notification_settings_screen.dart';
 import '../gmail/nbox_sync_screen.dart';
@@ -263,7 +262,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             icon: Icons.help_outline_rounded,
             color: AppColors.textSecondary,
             title: "Help & Support",
-            onTap: () => showTopSnackBar(context, "Coming Soon!"),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutScreen())),
           ),
           _divider(),
           _buildTile(

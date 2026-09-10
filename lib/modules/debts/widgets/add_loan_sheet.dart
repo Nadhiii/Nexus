@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
@@ -113,7 +112,6 @@ class _AddLoanModalState extends State<AddLoanModal> {
 
   @override
   Widget build(BuildContext context) {
-    final loanId = widget.debtToEdit?.id ?? '';
     return Scaffold(
       backgroundColor: AppColors.darkGradient.first,
       body: CustomScrollView(
@@ -457,17 +455,6 @@ class _AddLoanModalState extends State<AddLoanModal> {
                                 ),
 
                                 const SizedBox(height: 40),
-
-                                if (loanId.isNotEmpty)
-                                  Center(
-                                    child: _buildOpenInTasksButton(
-                                      context,
-                                      loanId,
-                                    ),
-                                  ),
-
-                                if (loanId.isNotEmpty)
-                                  const SizedBox(height: 8),
 
                                 // 7. SAVE BUTTON
                                 SizedBox(
@@ -992,32 +979,6 @@ class _AddLoanModalState extends State<AddLoanModal> {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  Future<void> _launchTasksForItem(String itemId) async {
-    try {
-      final uri = Uri.parse('nexustasks://open/tasks/$itemId');
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      }
-      // If Tasks not installed: silently do nothing
-    } catch (_) {
-      // Swallow all errors silently
-    }
-  }
-
-  Widget _buildOpenInTasksButton(BuildContext context, String itemId) {
-    return TextButton.icon(
-      onPressed: () => _launchTasksForItem(itemId),
-      icon: Icon(Icons.checklist_rounded, size: 14, color: Colors.white38),
-      label: Text(
-        'Open in Tasks →',
-        style: TextStyle(color: Colors.white38, fontSize: 12),
-      ),
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      ),
-    );
   }
 }
 
