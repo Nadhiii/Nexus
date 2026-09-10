@@ -11,6 +11,7 @@ import '../gmail/gmail_settings_screen.dart';
 import '../family/screens/family_dashboard_screen.dart';
 import '../family/screens/expense_splitter_screen.dart';
 import '../ai_assistant/screens/ai_settings_screen.dart';
+import '../knowledge/knowledge_dashboard_screen.dart';
 import 'about_screen.dart';
 import 'reports_and_analytics_screen.dart';
 import 'manage_categories_screen.dart';
@@ -108,8 +109,22 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
           children: [
             Expanded(
               child: _ToolCard(
-                icon: Icons.pie_chart_rounded,
+                icon: Icons.auto_awesome_rounded,
                 color: AppColors.primaryBlue,
+                label: "Nexus Brain",
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const KnowledgeDashboardScreen(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _ToolCard(
+                icon: Icons.pie_chart_rounded,
+                color: AppColors.accentTeal,
                 label: "Analytics",
                 onTap: () => Navigator.push(
                   context,
@@ -133,11 +148,15 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
             Expanded(
               child: _ToolCard(
                 icon: Icons.cloud_upload_rounded,
-                color: AppColors.accentTeal,
+                color: AppColors.success,
                 label: "Backup",
                 onTap: () => Navigator.push(
                   context,
@@ -147,11 +166,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                 ),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
+            const SizedBox(width: 12),
             Expanded(
               child: _ToolCard(
                 icon: Icons.family_restroom_rounded,
@@ -169,7 +184,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             Expanded(
               child: _ToolCard(
                 icon: Icons.call_split_rounded,
-                color: AppColors.success,
+                color: AppColors.primaryBlue,
                 label: "Split Bill",
                 onTap: () => Navigator.push(
                   context,
@@ -179,9 +194,6 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            // Empty spacer to maintain grid alignment
-            Expanded(child: SizedBox()),
           ],
         ),
       ],

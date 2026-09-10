@@ -9,17 +9,21 @@ import '../../core/providers/notification_provider.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../../core/providers/account_provider.dart';
 import '../../core/providers/bike_provider.dart';
+import '../../core/providers/debt_provider.dart';
+import '../../core/providers/subscription_provider.dart';
 
 // Theme & Widgets
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/firestore_service.dart';
+import '../../core/widgets/upcoming_week_widget.dart';
 import '../../core/models/account.dart';
 import '../../core/models/transaction.dart';
 
 // Screens
 import '../transactions/modern_add_transaction_screen.dart';
 import '../notifications/modern_notifications_screen.dart';
+import '../debts/modern_debts_screen.dart';
 
 class ModernDashboardScreen extends StatefulWidget {
   final Function(int, {int? financeTab}) onNavigate;
@@ -150,6 +154,22 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen> {
                     child: _buildGarageWidget(bikeProvider),
                   );
                 },
+              ),
+            ),
+
+            // PAYMENTS DUE WIDGET
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: UpcomingWeekWidget(
+                  onViewAll: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const ModernDebtsScreen(),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
 
