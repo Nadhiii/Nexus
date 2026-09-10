@@ -88,8 +88,12 @@ class Budget {
 
   /// Get status description
   String get statusDescription {
-    if (isOverspent) { return 'Over Budget'; }
-    if (isNearLimit) { return 'Near Limit'; }
+    if (isOverspent) {
+      return 'Over Budget';
+    }
+    if (isNearLimit) {
+      return 'Near Limit';
+    }
     return 'On Track';
   }
 

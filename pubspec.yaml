@@ -62,7 +62,7 @@ dependencies:
   pdf: ^3.10.8
   path_provider: ^2.1.2
   share_plus: ^13.3.0
-  # REMOVED: flutter_markdown_plus (never imported ΓÇö dead code from deleted Nex AI module)
+  flutter_markdown: ^0.7.7+1
   # REMOVED: google_generative_ai (Nex AI module was deleted)
   file_picker: ^12.2.0
   

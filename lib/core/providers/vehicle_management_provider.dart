@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../models/challan.dart';
+import '../models/vehicle_document.dart';
 import '../services/challan_service.dart';
+import '../services/vehicle_document_service.dart';
 
 class VehicleManagementProvider extends ChangeNotifier {
   final ChallanService _challanService = ChallanService();
+  final VehicleDocumentService _documentService = VehicleDocumentService();
+  List<VehicleDocument> _documents = [];
 
   // State variables
   List<Challan> _challans = [];
@@ -14,6 +19,47 @@ class VehicleManagementProvider extends ChangeNotifier {
   List<Challan> get challans => _challans;
   bool get isLoading => _isLoading;
   String get error => _error;
+  List<VehicleDocument> get documents => List.unmodifiable(_documents);
+  List<VehicleDocument> get rcDocuments => _byType('rc');
+  List<VehicleDocument> get insuranceDocuments => _byType('insurance');
+  List<VehicleDocument> get pollutionDocuments => _byType('pollution');
+  List<VehicleDocument> get expiringDocuments =>
+      _documentService.getExpiringDocuments(_documents);
+  List<VehicleDocument> get expiredDocuments =>
+      _documentService.getExpiredDocuments(_documents);
+
+  List<VehicleDocument> _byType(String type) =>
+      _documents.where((document) => document.documentType == type).toList();
+
+  Future<void> fetchVehicleDocuments(String bikeId) async {
+    _documents = await _documentService.getVehicleDocuments(bikeId);
+    notifyListeners();
+  }
+
+  Future<VehicleDocument?> registerDocument({
+    required String bikeId,
+    required String userId,
+    required String documentType,
+    required String fileName,
+    DateTime? expiryDate,
+    String? description,
+    int fileSizeBytes = 0,
+  }) async {
+    final document = await _documentService.registerDocument(
+      bikeId: bikeId,
+      userId: userId,
+      documentType: documentType,
+      fileName: fileName,
+      expiryDate: expiryDate,
+      description: description,
+      fileSizeBytes: fileSizeBytes,
+    );
+    if (document != null) {
+      _documents = [..._documents, document];
+      notifyListeners();
+    }
+    return document;
+  }
 
   // Challan-specific getters
   List<Challan> get paidChallans => _challans.where((c) => c.isPaid).toList();

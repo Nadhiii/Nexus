@@ -20,6 +20,9 @@ import 'gmail_provider.dart';
 import '../models/nbox_settings.dart';
 import '../models/transaction_understanding.dart';
 import '../services/transaction_automation_service.dart';
+import '../services/ai_categorization_service.dart';
+import '../../modules/ai_assistant/providers/ai_assistant_provider.dart';
+import 'category_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Isolate helpers — must be top-level (not inside a class) for compute()
@@ -69,6 +72,8 @@ class NewNboxProvider extends ChangeNotifier {
   static const int _maxPromptsPerScan = 3;
 
   GmailProvider? _gmailProvider;
+  final AIAssistantProvider? _aiAssistantProvider;
+  final CategoryProvider? _categoryProvider;
   NboxSettings _settings = const NboxSettings();
   NboxSettings get settings => _settings;
 
@@ -116,7 +121,12 @@ class NewNboxProvider extends ChangeNotifier {
 
   bool _isInitialized = false;
 
-  NewNboxProvider({GmailProvider? gmailProvider}) {
+  NewNboxProvider({
+    GmailProvider? gmailProvider,
+    AIAssistantProvider? aiAssistantProvider,
+    CategoryProvider? categoryProvider,
+  }) : _aiAssistantProvider = aiAssistantProvider,
+       _categoryProvider = categoryProvider {
     update(gmailProvider);
     _backgroundDetectionSubscription = NboxBackgroundService.detectionStream
         .listen((transaction) {
@@ -427,6 +437,29 @@ class NewNboxProvider extends ChangeNotifier {
             ),
           )
           .toList();
+
+      if (_categoryProvider != null) {
+        final categorizer = AICategorizationService(
+          aiProvider: _aiAssistantProvider,
+          categoryProvider: _categoryProvider!,
+        );
+        for (var i = 0; i < allSmsTransactions.length; i++) {
+          final transaction = allSmsTransactions[i];
+          final suggestion = await categorizer.suggestCategory(
+            merchantName: transaction.merchant,
+            description: transaction.body,
+            amount: transaction.amount,
+            transactionType: transaction.type,
+            fullMessageBody: transaction.body,
+          );
+          allSmsTransactions[i] = transaction.copyWith(
+            detectedCategory: suggestion.category,
+            confidence: transaction.confidence.copyWith(
+              category: suggestion.confidence,
+            ),
+          );
+        }
+      }
 
       debugPrint(
         '=== [NBOX DEBUG] Successfully mapped ${allSmsTransactions.length} transactions ===',

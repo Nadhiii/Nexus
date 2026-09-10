@@ -6,14 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// facts; knowledge describes how Nexus should interpret those facts.
 enum KnowledgeSource { explicit, observed, correction }
 
-enum KnowledgeKind {
-  entity,
-  purpose,
-  relationship,
-  rule,
-  pattern,
-  exception,
-}
+enum KnowledgeKind { entity, purpose, relationship, rule, pattern, exception }
 
 class KnowledgeEntry {
   final String id;
@@ -72,19 +65,19 @@ class KnowledgeEntry {
   }
 
   Map<String, dynamic> toMap() => {
-        'userId': userId,
-        'kind': kind.name,
-        'source': source.name,
-        'subject': subject,
-        'predicate': predicate,
-        'object': object,
-        'context': context,
-        'evidence': evidence,
-        'confidence': confidence,
-        'active': active,
-        'createdAt': Timestamp.fromDate(createdAt),
-        'updatedAt': Timestamp.fromDate(updatedAt),
-      };
+    'userId': userId,
+    'kind': kind.name,
+    'source': source.name,
+    'subject': subject,
+    'predicate': predicate,
+    'object': object,
+    'context': context,
+    'evidence': evidence,
+    'confidence': confidence,
+    'active': active,
+    'createdAt': Timestamp.fromDate(createdAt),
+    'updatedAt': Timestamp.fromDate(updatedAt),
+  };
 
   KnowledgeEntry copyWith({
     String? id,

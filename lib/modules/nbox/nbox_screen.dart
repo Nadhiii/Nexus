@@ -9,10 +9,10 @@ import '../../core/providers/account_provider.dart';
 import '../../core/providers/knowledge_provider.dart';
 import '../../core/services/transaction_intent_classifier.dart';
 import '../../core/services/transaction_automation_service.dart';
+import '../../core/services/transaction_router.dart';
 import '../../core/widgets/top_notification.dart';
 import '../../core/models/detected_transaction.dart';
 import '../../core/models/transaction.dart';
-import '../../core/models/transaction_draft.dart';
 import '../transactions/add_transaction_screen.dart';
 import '../payday/payday_screen.dart';
 import 'smart_approval_sheet.dart';
@@ -1429,7 +1429,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                 style: const TextStyle(color: AppColors.textPrimary),
               ),
               subtitle: Text(
-                '${t.source} · ${(t.confidence * 100).round()}% confidence\n${entry.understanding.reasons.take(2).join(' ')}',
+                '${t.source} · ${(t.confidence.overall * 100).round()}% confidence\n${entry.understanding.reasons.take(2).join(' ')}',
                 style: const TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 11,
@@ -2086,7 +2086,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     }
 
     return Tooltip(
-      message: 'Confidence: ${(t.confidence * 100).toStringAsFixed(0)}%',
+      message:
+          'Confidence: ${(t.confidence.overall * 100).toStringAsFixed(0)}%',
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
@@ -2302,8 +2303,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   }
 
   /// Silently saves a "simple" detected transaction (no side effects) using
-  /// the same persistence path as the manual Add Transaction form --
-  /// TransactionProvider.addTransaction -- but with sensible defaults
+  /// the same router and draft path as the review form, with sensible defaults
   /// instead of a form: first available account, detected/resolved category.
   /// Returns false (and does nothing) if there's no account to save against,
   /// so the caller can fall back to manual review instead of losing data.
@@ -2322,36 +2322,23 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       if (byName.isNotEmpty) resolvedCategoryId = byName.first.id;
     }
 
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    final now = DateTime.now();
-    final isIncome = t.type.toLowerCase() == 'income';
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return false;
 
-    final transaction = Transaction(
-      id: '',
-      userId: userId,
-      type: isIncome ? TransactionType.income : TransactionType.expense,
-      amount: t.amount,
-      description: t.merchant,
-      categoryId: resolvedCategoryId,
-      accountId: accountId,
-      toAccountId: null,
-      date: t.date,
-      metadata: {
-        'source': t.source,
-        'sourceId': t.id,
-        'sourceFingerprint': t.fingerprint,
-        'entity': t.merchant,
-        'purpose': isIncome ? 'income' : 'expense',
-        'confidence': t.confidence,
-      },
-      createdAt: now,
-      updatedAt: now,
-    );
-
-    return context
-        .read<TransactionProvider>()
-        .commitDraft(TransactionDraft.fromTransaction(transaction))
-        .then((result) => result != null && !result.alreadyExists);
+    try {
+      final result = await TransactionRouter().execute(
+        plan: TransactionRouter.buildSimplePlan(
+          detected: t,
+          accountId: accountId,
+          categoryId: resolvedCategoryId,
+        ),
+        userId: userId,
+        transactionProvider: context.read<TransactionProvider>(),
+      );
+      return result.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
   }
 }
 

@@ -30,9 +30,13 @@ import 'core/auth/auth_gate.dart';
 import 'core/services/crash_reporting_service.dart';
 import 'core/services/widget_sync_service.dart';
 import 'core/services/intent_navigation_service.dart';
+<<<<<<< Updated upstream
 // REMOVED: flutter_dotenv import — no env vars exist, migrated to --dart-define
 import 'package:another_telephony/telephony.dart';
 import 'core/services/nbox_background_service.dart';
+=======
+import 'core/services/transaction_brain_service.dart';
+>>>>>>> Stashed changes
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +55,12 @@ void main() async {
   // can be done faster with a loading screen
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+<<<<<<< Updated upstream
+=======
+  // Initialize Crashlytics for error reporting
+  await CrashReportingService().initialize();
+
+>>>>>>> Stashed changes
   IntentNavigationService.initialize();
 
   runApp(const NexusApp());
@@ -80,10 +90,23 @@ class NexusApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => VehicleManagementProvider()),
         ChangeNotifierProvider(create: (_) => FuelPriceProvider()),
         ChangeNotifierProvider(create: (_) => SharedExpenseProvider()),
+<<<<<<< Updated upstream
         ChangeNotifierProvider(create: (_) => FamilyDebtProvider()),
         ChangeNotifierProxyProvider<CategoryProvider, GmailProvider>(
           create: (context) => GmailProvider(),
           update: (context, categoryProvider, gmailProvider) {
+=======
+        ChangeNotifierProvider(create: (_) => FinancialHealthProvider()),
+        ChangeNotifierProvider(create: (_) => AIAssistantProvider()),
+        // GmailProvider with AI dependencies
+        ChangeNotifierProxyProvider2<
+          AIAssistantProvider,
+          CategoryProvider,
+          GmailProvider
+        >(
+          create: (context) => GmailProvider(),
+          update: (context, aiProvider, categoryProvider, gmailProvider) {
+>>>>>>> Stashed changes
             return gmailProvider ?? GmailProvider();
           },
         ),
@@ -140,6 +163,7 @@ class NexusApp extends StatelessWidget {
               },
         ),
       ],
+<<<<<<< Updated upstream
       child: _AppInitializer(
         child: MaterialApp(
           title: 'Nexus',
@@ -148,6 +172,78 @@ class NexusApp extends StatelessWidget {
           themeMode: ThemeMode.dark,
           home: const AuthGate(),
         ),
+=======
+      child: Consumer<AIAssistantProvider>(
+        builder: (context, aiProvider, _) {
+          // Initialize AI context providers after all providers are ready
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!aiProvider.isInitialized) {
+              _initializeAIProvider(context);
+            }
+          });
+
+          return Consumer4<
+            ThemeProvider,
+            TransactionProvider,
+            AccountProvider,
+            SubscriptionProvider
+          >(
+            builder:
+                (
+                  context,
+                  themeProvider,
+                  transactionProvider,
+                  accountProvider,
+                  subscriptionProvider,
+                  child,
+                ) {
+                  // Initialize WidgetSyncService with providers
+                  final debtProvider = Provider.of<DebtProvider>(
+                    context,
+                    listen: false,
+                  );
+                  WidgetSyncService.instance.initialize(
+                    transactionProvider: transactionProvider,
+                    accountProvider: accountProvider,
+                    subscriptionProvider: subscriptionProvider,
+                    debtProvider: debtProvider,
+                  );
+
+                  // Initialize TransactionBrain - the central "brain" for all transactions
+                  TransactionBrainService.instance.initialize(
+                    transactionProvider: transactionProvider,
+                    accountProvider: accountProvider,
+                    budgetProvider: Provider.of<BudgetProvider>(
+                      context,
+                      listen: false,
+                    ),
+                    debtProvider: debtProvider,
+                    subscriptionProvider: subscriptionProvider,
+                    goalProvider: Provider.of<GoalProvider>(
+                      context,
+                      listen: false,
+                    ),
+                    investmentProvider: Provider.of<InvestmentProvider>(
+                      context,
+                      listen: false,
+                    ),
+                    bikeProvider: Provider.of<BikeProvider>(
+                      context,
+                      listen: false,
+                    ),
+                  );
+
+                  return MaterialApp(
+                    title: 'Nexus',
+                    debugShowCheckedModeBanner: false,
+                    theme: AppTheme.darkTheme,
+                    themeMode: ThemeMode.dark,
+                    home: const AuthGate(),
+                  );
+                },
+          );
+        },
+>>>>>>> Stashed changes
       ),
     );
   }
@@ -195,7 +291,10 @@ class _AppInitializerState extends State<_AppInitializer> {
       });
     }
   }
+<<<<<<< Updated upstream
 
   @override
   Widget build(BuildContext context) => widget.child;
+=======
+>>>>>>> Stashed changes
 }

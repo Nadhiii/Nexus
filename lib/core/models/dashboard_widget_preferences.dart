@@ -12,9 +12,9 @@ enum DashboardWidgetType {
 }
 
 enum DashboardWidgetSize {
-  small,   // 1/2 width
-  medium,  // full width, compact height
-  large,   // full width, expanded height
+  small, // 1/2 width
+  medium, // full width, compact height
+  large, // full width, expanded height
 }
 
 class DashboardWidget {
@@ -194,7 +194,8 @@ class DashboardPreferences {
 
   factory DashboardPreferences.fromMap(Map<String, dynamic> map) {
     return DashboardPreferences(
-      widgets: (map['widgets'] as List<dynamic>?)
+      widgets:
+          (map['widgets'] as List<dynamic>?)
               ?.map((w) => DashboardWidget.fromMap(w as Map<String, dynamic>))
               .toList() ??
           getDefaultWidgets(),
@@ -204,8 +205,6 @@ class DashboardPreferences {
   }
 
   static DashboardPreferences getDefault() {
-    return DashboardPreferences(
-      widgets: getDefaultWidgets(),
-    );
+    return DashboardPreferences(widgets: getDefaultWidgets());
   }
 }

@@ -64,6 +64,48 @@ class ApprovedTransactionPlan {
 
 class TransactionRouter {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// Builds the canonical plan for a simple detected transaction. This is
+  /// used by both bulk/quick approval and the review form so they preserve
+  /// the same source evidence before committing.
+  static ApprovedTransactionPlan buildSimplePlan({
+    required DetectedTransaction detected,
+    required String accountId,
+    required String categoryId,
+  }) {
+    final isIncome = detected.type.toLowerCase() == 'income';
+    final draft = TransactionDraft.fromDetected(
+      detected,
+      accountId: accountId,
+      categoryId: categoryId,
+    );
+    final enrichedDraft = TransactionDraft(
+      amount: draft.amount,
+      description: draft.description,
+      date: draft.date,
+      type: draft.type,
+      accountId: draft.accountId,
+      sourceId: draft.sourceId,
+      source: draft.source,
+      sourceFingerprint: draft.sourceFingerprint,
+      categoryId: draft.categoryId,
+      destinationAccountId: draft.destinationAccountId,
+      confidence: draft.confidence,
+      warnings: draft.warnings,
+      metadata: {
+        ...draft.metadata,
+        'intent': isIncome ? 'income' : 'expense',
+        'purpose': isIncome ? 'income' : 'expense',
+      },
+    );
+    return ApprovedTransactionPlan(
+      source: detected,
+      intent: isIncome ? TransactionIntent.salary : TransactionIntent.general,
+      draft: enrichedDraft,
+      sideEffects: const [],
+    );
+  }
+
   /// Executes an [ApprovedTransactionPlan]:
   ///   - Routes through LedgerService for the main transaction
   ///     (handles account balance + budget spentAmount atomically)
@@ -316,7 +358,7 @@ class TransactionRouter {
       source: detected.source,
       sourceId: detected.id,
       sourceFingerprint: detected.fingerprint,
-      confidence: detected.confidence,
+      confidence: detected.confidence.overall,
       warnings: detected.warnings,
     );
 
@@ -393,7 +435,7 @@ class TransactionRouter {
       source: detected.source,
       sourceId: detected.id,
       sourceFingerprint: detected.fingerprint,
-      confidence: detected.confidence,
+      confidence: detected.confidence.overall,
       warnings: detected.warnings,
     );
 
@@ -443,7 +485,7 @@ class TransactionRouter {
       source: detected.source,
       sourceId: detected.id,
       sourceFingerprint: detected.fingerprint,
-      confidence: detected.confidence,
+      confidence: detected.confidence.overall,
       warnings: detected.warnings,
     );
 
@@ -485,7 +527,7 @@ class TransactionRouter {
       source: detected.source,
       sourceId: detected.id,
       sourceFingerprint: detected.fingerprint,
-      confidence: detected.confidence,
+      confidence: detected.confidence.overall,
       warnings: detected.warnings,
     );
 

@@ -133,6 +133,7 @@ class Debt {
 
   final DateTime createdAt;
   final DateTime updatedAt;
+  double get outstandingAmount => currentBalance;
 
   Debt({
     required this.id,
@@ -169,37 +170,51 @@ class Debt {
   // --- LOGIC GETTERS (Restored for your UI) ---
 
   int? get remainingMonths {
-    if (totalMonths == null) { return null; }
+    if (totalMonths == null) {
+      return null;
+    }
     final paid = paidMonths ?? 0;
     return (totalMonths! - paid).clamp(0, totalMonths!);
   }
 
   double get progressByMonths {
-    if (totalMonths == null || totalMonths == 0) { return 0; }
+    if (totalMonths == null || totalMonths == 0) {
+      return 0;
+    }
     final paid = paidMonths ?? 0;
     return (paid / totalMonths!).clamp(0.0, 1.0);
   }
 
   bool get isPaymentDueSoon {
-    if (nextPaymentDate == null) { return false; }
+    if (nextPaymentDate == null) {
+      return false;
+    }
     final daysUntilDue = nextPaymentDate!.difference(DateTime.now()).inDays;
     return daysUntilDue >= 0 && daysUntilDue <= 5;
   }
 
   bool get isPaymentOverdue {
-    if (nextPaymentDate == null) { return false; }
+    if (nextPaymentDate == null) {
+      return false;
+    }
     // If balance is 0, it's not overdue
-    if (currentBalance <= 0) { return false; }
+    if (currentBalance <= 0) {
+      return false;
+    }
     return nextPaymentDate!.isBefore(DateTime.now());
   }
 
   int? get daysUntilNextPayment {
-    if (nextPaymentDate == null) { return null; }
+    if (nextPaymentDate == null) {
+      return null;
+    }
     return nextPaymentDate!.difference(DateTime.now()).inDays;
   }
 
   DateTime? get estimatedPayoffDate {
-    if (remainingMonths == null || remainingMonths == 0) { return null; }
+    if (remainingMonths == null || remainingMonths == 0) {
+      return null;
+    }
     return DateTime.now().add(Duration(days: remainingMonths! * 30));
   }
 
@@ -337,9 +352,15 @@ class Debt {
   }
 
   static DateTime? _parseDate(dynamic date) {
-    if (date == null) { return null; }
-    if (date is Timestamp) { return date.toDate(); }
-    if (date is String) { return DateTime.tryParse(date); }
+    if (date == null) {
+      return null;
+    }
+    if (date is Timestamp) {
+      return date.toDate();
+    }
+    if (date is String) {
+      return DateTime.tryParse(date);
+    }
     return null;
   }
 
@@ -362,30 +383,54 @@ class Debt {
   }
 
   static double _toDouble(dynamic value) {
-    if (value is num) { return value.toDouble(); }
-    if (value is String) { return double.tryParse(value) ?? 0.0; }
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.tryParse(value) ?? 0.0;
+    }
     return 0.0;
   }
 
   static double? _toNullableDouble(dynamic value) {
-    if (value == null) { return null; }
-    if (value is num) { return value.toDouble(); }
-    if (value is String) { return double.tryParse(value); }
+    if (value == null) {
+      return null;
+    }
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.tryParse(value);
+    }
     return null;
   }
 
   static int? _toNullableInt(dynamic value) {
-    if (value == null) { return null; }
-    if (value is int) { return value; }
-    if (value is num) { return value.toInt(); }
-    if (value is String) { return int.tryParse(value); }
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value);
+    }
     return null;
   }
 
   static bool _toBool(dynamic value) {
-    if (value is bool) { return value; }
-    if (value is num) { return value != 0; }
-    if (value is String) { return value.toLowerCase() == 'true'; }
+    if (value is bool) {
+      return value;
+    }
+    if (value is num) {
+      return value != 0;
+    }
+    if (value is String) {
+      return value.toLowerCase() == 'true';
+    }
     return false;
   }
 }

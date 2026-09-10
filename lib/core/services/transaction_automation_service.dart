@@ -186,7 +186,7 @@ class TransactionAutomationService {
       source: detected.source,
       sourceId: detected.id,
       sourceFingerprint: detected.fingerprint,
-      confidence: detected.confidence,
+      confidence: detected.confidence.overall,
       warnings: detected.warnings,
     );
 

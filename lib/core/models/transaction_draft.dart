@@ -54,7 +54,8 @@ class TransactionDraft {
       accountId: transaction.accountId,
       destinationAccountId: transaction.toAccountId,
       confidence: (metadata['confidence'] as num?)?.toDouble() ?? 1,
-      warnings: (metadata['warnings'] as List?)
+      warnings:
+          (metadata['warnings'] as List?)
               ?.map((item) => item.toString())
               .toList() ??
           const [],
@@ -67,26 +68,28 @@ class TransactionDraft {
     required String accountId,
     String? categoryId,
     String? destinationAccountId,
-  }) => TransactionDraft(
-    sourceId: detected.id,
-    source: detected.source,
-    sourceFingerprint: detected.fingerprint,
-    amount: detected.amount,
-    description: detected.merchant,
-    date: detected.date,
-    type: detected.type.toLowerCase() == 'income'
-        ? TransactionType.income
-        : TransactionType.expense,
-    categoryId: categoryId ?? detected.detectedCategory,
-    accountId: accountId,
-    destinationAccountId: destinationAccountId,
-    confidence: detected.confidence,
-    warnings: detected.warnings,
-    metadata: {
-      if (detected.body != null) 'sourceBody': detected.body,
-      if (detected.bankName != null) 'bankName': detected.bankName,
-    },
-  );
+  }) {
+    final evidence = detected.toJson();
+    return TransactionDraft(
+      sourceId: detected.id,
+      source: detected.source,
+      sourceFingerprint: detected.fingerprint,
+      amount: detected.amount,
+      description: detected.merchant,
+      date: detected.date,
+      type: detected.type.toLowerCase() == 'income'
+          ? TransactionType.income
+          : TransactionType.expense,
+      categoryId: categoryId ?? detected.detectedCategory,
+      accountId: accountId,
+      destinationAccountId: destinationAccountId,
+      confidence: detected.confidence.overall,
+      warnings: detected.warnings,
+      metadata: {
+        'detectionEvidence': evidence,
+      },
+    );
+  }
 
   Transaction toTransaction({required String userId, String id = ''}) {
     final now = DateTime.now();

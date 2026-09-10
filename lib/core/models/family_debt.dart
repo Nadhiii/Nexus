@@ -48,7 +48,9 @@ class FamilyDebt {
 
   /// Days until due (negative if overdue)
   int? get daysUntilDue {
-    if (dueDate == null) { return null; }
+    if (dueDate == null) {
+      return null;
+    }
     return dueDate!.difference(DateTime.now()).inDays;
   }
 

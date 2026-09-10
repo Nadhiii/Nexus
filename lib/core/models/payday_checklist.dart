@@ -7,12 +7,7 @@ enum ChecklistItemType {
   savingsTransfer,
 }
 
-enum ChecklistItemPriority {
-  urgent,
-  high,
-  medium,
-  low,
-}
+enum ChecklistItemPriority { urgent, high, medium, low }
 
 class PaydayChecklistItem {
   final String id;

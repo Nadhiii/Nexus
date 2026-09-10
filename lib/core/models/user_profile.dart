@@ -76,24 +76,26 @@ class UserProfile {
 
   @override
   bool operator ==(Object other) {
-    if (identical(this, other)) { return true; }
-  
+    if (identical(this, other)) {
+      return true;
+    }
+
     return other is UserProfile &&
-      other.uid == uid &&
-      other.displayName == displayName &&
-      other.email == email &&
-      other.photoUrl == photoUrl &&
-      other.phone == phone &&
-      other.isAnonymous == isAnonymous;
+        other.uid == uid &&
+        other.displayName == displayName &&
+        other.email == email &&
+        other.photoUrl == photoUrl &&
+        other.phone == phone &&
+        other.isAnonymous == isAnonymous;
   }
 
   @override
   int get hashCode {
     return uid.hashCode ^
-      displayName.hashCode ^
-      email.hashCode ^
-      photoUrl.hashCode ^
-      phone.hashCode ^
-      isAnonymous.hashCode;
+        displayName.hashCode ^
+        email.hashCode ^
+        photoUrl.hashCode ^
+        phone.hashCode ^
+        isAnonymous.hashCode;
   }
 }

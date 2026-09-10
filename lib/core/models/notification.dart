@@ -50,7 +50,6 @@ class AppNotification {
     );
   }
 
-
   static String _cleanLegacyText(String value) {
     // Older builds persisted UTF-8 text after an incorrect character-set
     // conversion. Clean the common visible artifacts when old notifications
@@ -63,6 +62,7 @@ class AppNotification {
         .replaceAll('≡ƒ', '')
         .replaceAll('ΓêÆ', '−');
   }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

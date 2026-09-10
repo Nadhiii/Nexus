@@ -40,7 +40,9 @@ class TransactionRelationship {
         (value) => value.name == data['type'],
         orElse: () => TransactionRelationshipType.relatedPayment,
       ),
-      transactionIds: List<String>.from(data['transactionIds'] as List? ?? const []),
+      transactionIds: List<String>.from(
+        data['transactionIds'] as List? ?? const [],
+      ),
       reason: data['reason'] as String? ?? '',
       confidence: (data['confidence'] as num?)?.toDouble() ?? 0,
       active: data['active'] as bool? ?? true,
@@ -50,15 +52,15 @@ class TransactionRelationship {
   }
 
   Map<String, dynamic> toMap() => {
-        'userId': userId,
-        'type': type.name,
-        'transactionIds': transactionIds,
-        'reason': reason,
-        'confidence': confidence,
-        'active': active,
-        'createdAt': Timestamp.fromDate(createdAt),
-        'updatedAt': Timestamp.fromDate(updatedAt),
-      };
+    'userId': userId,
+    'type': type.name,
+    'transactionIds': transactionIds,
+    'reason': reason,
+    'confidence': confidence,
+    'active': active,
+    'createdAt': Timestamp.fromDate(createdAt),
+    'updatedAt': Timestamp.fromDate(updatedAt),
+  };
 
   static DateTime _date(dynamic value) {
     if (value is Timestamp) return value.toDate();

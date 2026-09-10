@@ -16,6 +16,7 @@ class Transaction {
   final List<String>? attachments;
   final DateTime createdAt;
   final DateTime updatedAt;
+  String? get notes => metadata?['notes']?.toString();
 
   Transaction({
     required this.id,
@@ -46,7 +47,9 @@ class Transaction {
     return double.tryParse(value?.toString() ?? '') ?? 0;
   }
 
-  factory Transaction.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory Transaction.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final raw = doc.data();
     if (raw == null) throw FormatException('Transaction ${doc.id} has no data');
     final data = Map<String, dynamic>.from(raw);
@@ -54,7 +57,7 @@ class Transaction {
       id: doc.id,
       userId: data['userId']?.toString() ?? '',
       type: TransactionType.values.firstWhere(
-          (e) => e.name == data['type']?.toString(),
+        (e) => e.name == data['type']?.toString(),
         orElse: () => TransactionType.expense,
       ),
       amount: _readAmount(data['amount']),
@@ -81,7 +84,7 @@ class Transaction {
       id: data['id']?.toString() ?? '',
       userId: data['userId']?.toString() ?? '',
       type: TransactionType.values.firstWhere(
-          (e) => e.name == data['type']?.toString(),
+        (e) => e.name == data['type']?.toString(),
         orElse: () => TransactionType.expense,
       ),
       amount: _readAmount(data['amount']),

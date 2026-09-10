@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -49,7 +50,13 @@ class _AuthGateState extends State<AuthGate> {
         }
 
         // User logged in - initialize providers
-        return const AuthenticatedApp();
+        return Provider<KnowledgeProvider>(
+          create: (_) => KnowledgeProvider(
+            firestore: FirebaseFirestore.instance,
+            userId: snapshot.data!.uid,
+          ),
+          child: const AuthenticatedApp(),
+        );
       },
     );
   }

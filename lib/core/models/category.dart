@@ -35,7 +35,11 @@ class Category {
   }
 
   /// Creates a Category object from a Firestore document map.
-  factory Category.fromMap(String id, Map<String, dynamic> map, {bool isModified = false}) {
+  factory Category.fromMap(
+    String id,
+    Map<String, dynamic> map, {
+    bool isModified = false,
+  }) {
     return Category(
       id: id,
       name: map['name'] as String,
