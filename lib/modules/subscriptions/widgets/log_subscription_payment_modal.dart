@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/models/subscription.dart';
 import '../../../core/models/account.dart';
 import '../../../core/models/transaction.dart';
+import '../../../core/models/transaction_draft.dart';
 import '../../../core/providers/subscription_provider.dart';
 import '../../../core/providers/account_provider.dart';
 import '../../../core/providers/transaction_provider.dart';
@@ -387,7 +388,7 @@ class _LogSubscriptionPaymentModalState
         nextDueDate: widget.subscription.calculateNextDueDate(),
       );
 
-      await txnProvider.addTransaction(transaction);
+      await txnProvider.commitDraft(TransactionDraft.fromTransaction(transaction));
       await subProvider.updateSubscription(updatedSub);
 
       if (mounted) {

@@ -1,4 +1,4 @@
-﻿import 'core/services/ota_update_service.dart';
+import 'core/services/ota_update_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -19,6 +19,8 @@ import 'core/providers/user_provider.dart';
 import 'core/providers/gmail_provider.dart';
 import 'core/providers/goal_provider.dart';
 import 'core/providers/category_provider.dart';
+import 'core/providers/knowledge_provider.dart';
+import 'core/providers/transaction_relationship_provider.dart';
 import 'core/providers/bike_provider.dart';
 import 'core/providers/vehicle_management_provider.dart';
 import 'core/providers/fuel_price_provider.dart';
@@ -28,7 +30,7 @@ import 'core/auth/auth_gate.dart';
 import 'core/services/crash_reporting_service.dart';
 import 'core/services/widget_sync_service.dart';
 import 'core/services/intent_navigation_service.dart';
-// REMOVED: flutter_dotenv import ΓÇö no env vars exist, migrated to --dart-define
+// REMOVED: flutter_dotenv import — no env vars exist, migrated to --dart-define
 import 'package:another_telephony/telephony.dart';
 import 'core/services/nbox_background_service.dart';
 
@@ -45,7 +47,7 @@ void main() async {
     );
   }
 
-  // Only Firebase is truly required before runApp ΓÇö and even this
+  // Only Firebase is truly required before runApp — and even this
   // can be done faster with a loading screen
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
@@ -70,17 +72,19 @@ class NexusApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => GoalProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
+        ChangeNotifierProvider(create: (_) => KnowledgeProvider()),
+        ChangeNotifierProvider(
+          create: (_) => TransactionRelationshipProvider(),
+        ),
         ChangeNotifierProvider(create: (_) => BikeProvider()),
         ChangeNotifierProvider(create: (_) => VehicleManagementProvider()),
         ChangeNotifierProvider(create: (_) => FuelPriceProvider()),
         ChangeNotifierProvider(create: (_) => SharedExpenseProvider()),
         ChangeNotifierProvider(create: (_) => FamilyDebtProvider()),
         ChangeNotifierProxyProvider<CategoryProvider, GmailProvider>(
-          create: (context) =>
-              GmailProvider(categoryProvider: context.read<CategoryProvider>()),
+          create: (context) => GmailProvider(),
           update: (context, categoryProvider, gmailProvider) {
-            return gmailProvider ??
-                GmailProvider(categoryProvider: categoryProvider);
+            return gmailProvider ?? GmailProvider();
           },
         ),
         ChangeNotifierProxyProvider2<
@@ -88,11 +92,9 @@ class NexusApp extends StatelessWidget {
           CategoryProvider,
           NewNboxProvider
         >(
-          create: (context) => NewNboxProvider(
-            gmailProvider: context.read<GmailProvider>(),
-            categoryProvider: context.read<CategoryProvider>(),
-          ),
-          // update must ALWAYS return the existing instance ΓÇö never create a
+          create: (context) =>
+              NewNboxProvider(gmailProvider: context.read<GmailProvider>()),
+          // update must ALWAYS return the existing instance — never create a
           // second one. Creating a second NewNboxProvider triggers a parallel
           // initialize()/scanSmsInbox() which causes a permission deadlock/ANR.
           update: (context, gmailProvider, categoryProvider, nboxProvider) {
@@ -139,18 +141,12 @@ class NexusApp extends StatelessWidget {
         ),
       ],
       child: _AppInitializer(
-        child: Selector<ThemeProvider, ThemeMode>(
-          selector: (context, themeProvider) => themeProvider.themeMode,
-          builder: (context, themeMode, child) {
-            return MaterialApp(
-              title: 'Nexus',
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.lightTheme,
-              darkTheme: AppTheme.darkTheme,
-              themeMode: themeMode,
-              home: const AuthGate(),
-            );
-          },
+        child: MaterialApp(
+          title: 'Nexus',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.darkTheme,
+          themeMode: ThemeMode.dark,
+          home: const AuthGate(),
         ),
       ),
     );
@@ -193,7 +189,7 @@ class _AppInitializerState extends State<_AppInitializer> {
         // e.g. flutter run --dart-define=GEMINI_API_KEY=xxx
         // Access via: const String.fromEnvironment('GEMINI_API_KEY')
 
-        // ONLY initialize notifications here ΓÇö version check lives in More Screen
+        // ONLY initialize notifications here — version check lives in More Screen
         // to avoid the "Reply already submitted" crash during login/SMS scan.
         await _otaService.initNotifications();
       });

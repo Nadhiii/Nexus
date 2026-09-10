@@ -2,10 +2,8 @@
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
-import 'dart:ui';
 import 'package:animations/animations.dart';
 
-import '../core/providers/is_popup_active_provider.dart';
 import '../core/providers/nbox_provider.dart';
 import '../core/theme/app_animations.dart';
 import '../core/theme/app_typography.dart';
@@ -31,7 +29,6 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen>
     with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
-  int _previousIndex = 0;
   StreamSubscription<int>? _intentSub;
   StreamSubscription<DetectionApprovalRequest>? _approvalSub;
   late final List<Widget> _screens;
@@ -96,7 +93,6 @@ class _MainScreenState extends State<MainScreen>
           initialTabIndex: financeTab,
         );
       }
-      _previousIndex = _currentIndex;
       _currentIndex = index;
     });
   }
@@ -255,58 +251,63 @@ class _MainScreenState extends State<MainScreen>
       final index = item['index'] as int;
       final isSelected = currentIndex == index;
       final label = item['label'] as String;
-
       final scheme = Theme.of(context).colorScheme;
       final activeBg = scheme.onSurface;
       final activeFg = scheme.surface;
       final inactiveFg = scheme.onSurfaceVariant;
 
-      return Semantics(
-        label: label,
-        button: true,
-        selected: isSelected,
-        child: GestureDetector(
-          onTap: () => _navigateToScreen(index),
-          behavior: HitTestBehavior.opaque,
-          child: SizedBox(
-          width: 48,
-          height: 48,
-          child: Center(
-            child: AnimatedContainer(
-              duration: AppAnimations.interactionDuration,
-              curve: AppAnimations.interactionCurve,
-              padding: EdgeInsets.symmetric(
-                horizontal: isSelected ? AppSpacing.lg : AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
-              decoration: BoxDecoration(
-                color: isSelected ? activeBg : Colors.transparent,
-                borderRadius: AppSpacing.borderRadiusFull,
-              ),
-              child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isSelected
-                    ? item['selectedIcon'] as IconData
-                    : item['icon'] as IconData,
-                color: isSelected ? activeFg : inactiveFg,
-                size: 20,
-              ),
-              if (isSelected) ...[
-                const SizedBox(width: AppSpacing.xs),
-                Text(
-                  label,
-                  style: AppTypography.labelMedium.copyWith(color: activeFg),
+      return Expanded(
+        child: Semantics(
+          label: label,
+          button: true,
+          selected: isSelected,
+          child: GestureDetector(
+            onTap: () => _navigateToScreen(index),
+            behavior: HitTestBehavior.opaque,
+            child: SizedBox(
+              height: 48,
+              child: Center(
+                child: AnimatedContainer(
+                  duration: AppAnimations.interactionDuration,
+                  curve: AppAnimations.interactionCurve,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSelected ? AppSpacing.md : AppSpacing.sm,
+                    vertical: AppSpacing.sm,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected ? activeBg : Colors.transparent,
+                    borderRadius: AppSpacing.borderRadiusFull,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isSelected
+                            ? item['selectedIcon'] as IconData
+                            : item['icon'] as IconData,
+                        color: isSelected ? activeFg : inactiveFg,
+                        size: 20,
+                      ),
+                      if (isSelected) ...[
+                        const SizedBox(width: AppSpacing.xs),
+                        Flexible(
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.labelMedium.copyWith(color: activeFg),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ],
-              ],
+              ),
             ),
-            ),
-          ),
           ),
         ),
       );
     }).toList();
   }
+
 }

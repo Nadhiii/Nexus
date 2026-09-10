@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -14,10 +14,11 @@ import '../models/detected_transaction.dart';
 import '../models/notification.dart';
 import '../providers/notification_provider.dart';
 import '../widgets/top_snackbar.dart';
+import '../utils/currency_formatter.dart';
 
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  log('≡ƒô¿ FCM background message: ${message.messageId}');
+  log('📨 FCM background message: ${message.messageId}');
 }
 
 @pragma('vm:entry-point')
@@ -105,9 +106,9 @@ class NotificationService {
         sound: true,
         provisional: false,
       );
-      log('≡ƒöö Notification permission: ${settings.authorizationStatus}');
+      log('🔔 Notification permission: ${settings.authorizationStatus}');
     } catch (e) {
-      log('Γ¥î Error requesting notification permission: $e');
+      log('❌ Error requesting notification permission: $e');
       // Permission request failed, but don't crash - app can work without notifications
     }
   }
@@ -176,7 +177,7 @@ class NotificationService {
       }
       _localNotificationsInitialized = true;
     } catch (e) {
-      log('Γ¥î Error setting up local notifications: $e');
+      log('❌ Error setting up local notifications: $e');
       // Non-critical error - app can continue without local notifications
     }
   }
@@ -345,7 +346,7 @@ class NotificationService {
         (transaction.id.hashCode ^ transaction.source.hashCode) & 0x7fffffff;
     final title = 'New transaction detected';
     final body =
-        'Γé╣${transaction.amount.toStringAsFixed(0)} at ${transaction.merchant}. Log it?';
+        '₹${AppCurrency.format(transaction.amount)} at ${transaction.merchant}. Log it?';
 
     if (addToInAppFeed) {
       _notificationProvider?.addNotification(
@@ -496,7 +497,7 @@ class NotificationService {
       }
       _messaging.onTokenRefresh.listen(_storeToken);
     } catch (e) {
-      log('ΓÜá∩╕Å Error syncing FCM token: $e');
+      log('⚠️ Error syncing FCM token: $e');
       // Non-critical error
     }
   }
@@ -519,9 +520,9 @@ class NotificationService {
         'platform': defaultTargetPlatform.toString(),
         'updatedAt': DateTime.now().toIso8601String(),
       });
-      log('Γ£à FCM token stored: $token');
+      log('✅ FCM token stored: $token');
     } catch (e) {
-      log('ΓÜá∩╕Å Error storing FCM token: $e');
+      log('⚠️ Error storing FCM token: $e');
       // Non-critical error
     }
   }
@@ -554,13 +555,13 @@ class NotificationService {
       String message;
       if (days == 0) {
         message =
-            'EMI payment for ${debt.name} is due today! Amount: Γé╣${debt.monthlyEMI.toStringAsFixed(0)}';
+            'EMI payment for ${debt.name} is due today! Amount: ₹${debt.monthlyEMI.toStringAsFixed(0)}';
       } else if (days == 1) {
         message =
-            'EMI payment for ${debt.name} is due tomorrow! Amount: Γé╣${debt.monthlyEMI.toStringAsFixed(0)}';
+            'EMI payment for ${debt.name} is due tomorrow! Amount: ₹${debt.monthlyEMI.toStringAsFixed(0)}';
       } else {
         message =
-            'EMI payment for ${debt.name} is due in $days days! Amount: Γé╣${debt.monthlyEMI.toStringAsFixed(0)}';
+            'EMI payment for ${debt.name} is due in $days days! Amount: ₹${debt.monthlyEMI.toStringAsFixed(0)}';
       }
 
       log('Notification: $message');

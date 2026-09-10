@@ -7,13 +7,16 @@ import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/models/transaction.dart';
+import '../../core/models/transaction_draft.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../../core/providers/account_provider.dart';
 import '../../core/providers/category_provider.dart';
 import '../../core/models/detected_transaction.dart';
 import '../../core/providers/nbox_provider.dart';
+import '../../core/providers/knowledge_provider.dart';
+import '../../core/models/knowledge_entry.dart';
 import '../../core/widgets/top_snackbar.dart';
-import '../../core/services/smart_category_resolver.dart';
+import '../../core/services/transaction_intelligence_service.dart';
 import '../../core/utils/logo_utils.dart';
 import '../../core/providers/subscription_provider.dart';
 import '../../core/services/transaction_match_service.dart';
@@ -22,6 +25,7 @@ import '../payday/payday_checklist_helper.dart';
 class ModernAddTransactionScreen extends StatefulWidget {
   final Transaction? transaction;
   final String? accountId;
+  final String? categoryId;
   final TransactionType? initialType;
   final DetectedTransaction? detectedTransaction;
 
@@ -29,6 +33,7 @@ class ModernAddTransactionScreen extends StatefulWidget {
     super.key,
     this.transaction,
     this.accountId,
+    this.categoryId,
     this.initialType,
     this.detectedTransaction,
   });
@@ -89,15 +94,19 @@ class _ModernAddTransactionScreenState
         _selectedType = detected.type.toLowerCase() == 'income'
             ? TransactionType.income
             : TransactionType.expense;
-        // Prefer detectedCategory if present, else fallback to merchant-based suggestion
+        // Manual approval uses the same history/Knowledge-aware intelligence
+        // path as the other transaction entry flows. An explicitly supplied
+        // category still wins because it represents a user choice.
+        final understanding = const TransactionIntelligenceService().analyze(
+          detected: detected,
+          history: context.read<TransactionProvider>().transactions,
+          knowledge: context.read<KnowledgeProvider>().entries,
+        );
         _selectedCategory =
+            widget.categoryId ??
+            understanding.categoryId ??
             detected.detectedCategory ??
-            SmartCategoryResolver.resolve(
-              merchant: detected.merchant,
-              body: detected.body,
-              amount: detected.amount,
-              transactionType: detected.type,
-            );
+            'other';
       }
     }
   }
@@ -279,6 +288,9 @@ class _ModernAddTransactionScreenState
                                 onChanged: (value) {
                                   setState(() {
                                     _selectedAccountId = value;
+                                    if (_toAccountId == value) {
+                                      _toAccountId = null;
+                                    }
                                   });
                                 },
                                 validator: (value) {
@@ -406,14 +418,8 @@ class _ModernAddTransactionScreenState
                       const SizedBox(height: AppSpacing.sm),
                       Consumer<CategoryProvider>(
                         builder: (context, categoryProvider, _) {
-                          if (categoryProvider.isLoading) {
-                            return const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(AppSpacing.md),
-                                child: CircularProgressIndicator(),
-                              ),
-                            );
-                          }
+                          // Built-in categories are available immediately; never
+                          // block the form while the user's Firestore overrides load.
                           final categories = categoryProvider.categories;
                           if (categories.isEmpty) {
                             return Text(
@@ -913,6 +919,61 @@ class _ModernAddTransactionScreenState
     }
   }
 
+  Future<void> _offerToRememberCategory({
+    required String merchant,
+    required String? categoryId,
+  }) async {
+    if (categoryId == null || categoryId.isEmpty || merchant.trim().isEmpty) {
+      return;
+    }
+
+    final knowledge = context.read<KnowledgeProvider>();
+    final normalized = merchant.trim().toLowerCase();
+    final alreadyKnown = knowledge.entries.any(
+      (entry) =>
+          entry.active &&
+          entry.kind == KnowledgeKind.rule &&
+          entry.predicate == 'category' &&
+          entry.subject == normalized,
+    );
+    if (alreadyKnown) return;
+
+    final categories = context.read<CategoryProvider>().categories;
+    final matchingCategories = categories
+        .where((category) => category.id == categoryId)
+        .toList();
+    final categoryName = matchingCategories.isNotEmpty
+        ? matchingCategories.first.name
+        : categoryId;
+
+    final remember = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remember this?'),
+        content: Text('$merchant is usually $categoryName. Remember that?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('No'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Remember'),
+          ),
+        ],
+      ),
+    );
+
+    if (remember == true && mounted) {
+      await knowledge.learnCategory(
+        subject: merchant,
+        categoryId: categoryId,
+        source: KnowledgeSource.explicit,
+        evidence: ['User approved Knowledge after transaction review.'],
+      );
+    }
+  }
+
   void _saveTransaction() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -952,6 +1013,9 @@ class _ModernAddTransactionScreenState
       final amount = double.parse(_amountController.text.trim());
       final now = DateTime.now();
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final transactionProvider = context.read<TransactionProvider>();
+      final subscriptionProvider = context.read<SubscriptionProvider>();
+      final nboxProvider = context.read<NewNboxProvider>();
 
       String? resolvedCategoryId = _selectedCategory;
       if (_selectedType != TransactionType.transfer) {
@@ -968,7 +1032,28 @@ class _ModernAddTransactionScreenState
         _selectedCategory = resolvedCategoryId;
       }
 
-      debugPrint('🔄 Creating transfer transaction:');
+      if (!_isEditMode && widget.detectedTransaction != null) {
+        final fingerprint = widget.detectedTransaction!.fingerprint;
+        if (fingerprint.isNotEmpty) {
+          final existing = await transactionProvider.findBySourceFingerprint(
+            fingerprint,
+          );
+          if (existing != null) {
+            if (!mounted) return;
+            await nboxProvider.markAsApproved(
+              widget.detectedTransaction!.id,
+              widget.detectedTransaction!.source,
+            );
+            if (mounted) {
+              showTopSnackBar(context, 'This transaction is already recorded.');
+              Navigator.pop(context, false);
+            }
+            return;
+          }
+        }
+      }
+
+      debugPrint('🔄 Creating transaction:');
       debugPrint('   Type: $_selectedType');
       debugPrint('   From Account ID: $_selectedAccountId');
       debugPrint('   To Account ID: $_toAccountId');
@@ -990,6 +1075,14 @@ class _ModernAddTransactionScreenState
             ? _toAccountId
             : null,
         date: _selectedDate,
+        metadata: widget.detectedTransaction == null
+            ? null
+            : {
+                'source': widget.detectedTransaction!.source,
+                'sourceId': widget.detectedTransaction!.id,
+                'sourceFingerprint': widget.detectedTransaction!.fingerprint,
+                'entity': widget.detectedTransaction!.merchant,
+              },
         createdAt: _isEditMode ? widget.transaction!.createdAt : now,
         updatedAt: now,
       );
@@ -998,10 +1091,15 @@ class _ModernAddTransactionScreenState
       debugPrint('   accountId: ${transaction.accountId}');
       debugPrint('   toAccountId: ${transaction.toAccountId}');
 
-      final provider = context.read<TransactionProvider>();
       final success = _isEditMode
-          ? await provider.updateTransaction(transaction, widget.transaction!)
-          : await provider.addTransaction(transaction);
+          ? await transactionProvider.updateTransaction(
+              transaction,
+              widget.transaction!,
+            )
+          : (await transactionProvider.commitDraft(
+              TransactionDraft.fromTransaction(transaction),
+            )) !=
+            null;
 
       // --- SUBSCRIPTION MATCHING AND PAYMENT ---
       if (success && mounted) {
@@ -1010,7 +1108,6 @@ class _ModernAddTransactionScreenState
         // --- SUBSCRIPTION ---
         if (categoryLower == 'subscriptions' ||
             _selectedCategory == 'subscriptions') {
-          final subscriptionProvider = context.read<SubscriptionProvider>();
           final matchResult = TransactionMatchService.analyzeTransaction(
             transaction: transaction,
             subscriptions: subscriptionProvider.subscriptions,
@@ -1080,11 +1177,23 @@ class _ModernAddTransactionScreenState
         if (!mounted) {
           return;
         }
+
+        if (widget.detectedTransaction != null &&
+            transaction.type != TransactionType.transfer) {
+          await _offerToRememberCategory(
+            merchant: widget.detectedTransaction!.merchant,
+            categoryId: transaction.categoryId,
+          );
+          if (!mounted) return;
+        }
+
         if (widget.detectedTransaction != null) {
-          context.read<NewNboxProvider>().markAsApproved(
+          if (!mounted) return;
+          await nboxProvider.markAsApproved(
             widget.detectedTransaction!.id,
             widget.detectedTransaction!.source,
           );
+          if (!mounted) return;
           // Check for payday checklist before popping
           if (!_isEditMode && transaction.type == TransactionType.income) {
             await PaydayChecklistHelper.checkAndShowChecklist(

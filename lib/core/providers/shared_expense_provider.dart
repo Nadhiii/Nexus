@@ -110,11 +110,12 @@ class SharedExpenseProvider with ChangeNotifier {
   Future<void> addFamilyMember(FamilyMember member) async {
     try {
       _setLoading(true);
-      await _firestore
+      final ref = _firestore
           .collection('$_basePath/family_members')
-          .doc(member.id)
-          .set(member.toMap());
+          .doc(member.id);
+      await ref.set(member.toMap(), SetOptions(merge: true));
 
+      _familyMembers.removeWhere((item) => item.id == member.id);
       _familyMembers.add(member);
       notifyListeners();
     } catch (e) {
@@ -131,7 +132,7 @@ class SharedExpenseProvider with ChangeNotifier {
       await _firestore
           .collection('$_basePath/family_members')
           .doc(member.id)
-          .update(member.toMap());
+          .set(member.toMap(), SetOptions(merge: true));
 
       final index = _familyMembers.indexWhere((m) => m.id == member.id);
       if (index != -1) {
@@ -150,7 +151,7 @@ class SharedExpenseProvider with ChangeNotifier {
       await _firestore
           .collection('$_basePath/family_members')
           .doc(memberId)
-          .update({'isActive': false});
+          .set({'isActive': false}, SetOptions(merge: true));
 
       _familyMembers.removeWhere((m) => m.id == memberId);
       notifyListeners();
@@ -164,10 +165,9 @@ class SharedExpenseProvider with ChangeNotifier {
   Future<void> addSharedExpense(SharedExpense expense) async {
     try {
       _setLoading(true);
-      await _firestore
-          .collection('$_basePath/shared_expenses')
-          .doc(expense.id)
-          .set(expense.toMap());
+      final collection = _firestore.collection('$_basePath/shared_expenses');
+      final ref = expense.id.isEmpty ? collection.doc() : collection.doc(expense.id);
+      await ref.set(expense.copyWith(id: ref.id).toMap());
     } catch (e) {
       _setError('Failed to add shared expense: $e');
       rethrow;

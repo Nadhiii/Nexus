@@ -7,6 +7,7 @@ import '../../../core/theme/app_animations.dart';
 import '../../../core/models/bike.dart';
 import '../../../core/models/account.dart';
 import '../../../core/models/transaction.dart';
+import '../../../core/models/transaction_draft.dart';
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/providers/account_provider.dart';
 import '../../../core/providers/transaction_provider.dart';
@@ -269,7 +270,9 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );
-          await context.read<TransactionProvider>().addTransaction(transaction);
+          await context.read<TransactionProvider>().commitDraft(
+            TransactionDraft.fromTransaction(transaction),
+          );
         }
       }
 

@@ -292,7 +292,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Γé╣${_formatAmount(totalPaid)}',
+                      '₹${_formatAmount(totalPaid)}',
                       style: const TextStyle(
                         color: AppColors.success,
                         fontSize: 22,
@@ -411,7 +411,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Γé╣${_formatCompact(debt.originalAmount)}',
+              '₹${_formatCompact(debt.originalAmount)}',
               style: const TextStyle(
                 color: AppColors.success,
                 fontSize: 18,
@@ -528,7 +528,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Γé╣${_formatAmount(totalDebt)}',
+                            '₹${_formatAmount(totalDebt)}',
                             style: AppTypography.currencyMedium,
                           ),
                           const SizedBox(height: 6),
@@ -555,7 +555,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      'Γé╣${_formatCompact(totalPaid)} paid',
+                                      '₹${_formatCompact(totalPaid)} paid',
                                       style: const TextStyle(
                                         color: AppColors.success,
                                         fontSize: 11,
@@ -612,7 +612,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                     _buildStatChip(
                       icon: Icons.calendar_today_outlined,
                       label: 'Monthly EMI',
-                      value: 'Γé╣${_formatCompact(totalEMI)}',
+                      value: '₹${_formatCompact(totalEMI)}',
                     ),
                     const SizedBox(width: 12),
                     if (nextDue != null)
@@ -850,7 +850,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Γé╣${_formatAmount(debt.currentBalance)}',
+          '₹${_formatAmount(debt.currentBalance)}',
           style: TextStyle(
             color: Colors.white,
             fontSize: isLarge ? 22 : 18,
@@ -860,7 +860,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
         if ((debt.monthlyEMI ?? 0) > 0) ...[
           const SizedBox(height: 2),
           Text(
-            'EMI Γé╣${_formatCompact(debt.monthlyEMI ?? 0)} /mo',
+            'EMI ₹${_formatCompact(debt.monthlyEMI ?? 0)} /mo',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.5),
               fontSize: 10,

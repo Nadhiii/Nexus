@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AppConstants {
   // App Info
   static const String appName = 'Nexus';
-  static const String appTagline = 'Smart Finance Management';
+  static const String appTagline = 'Personal Finance Management';
   static const String version = '1.0.0';
 
   // Design Constants

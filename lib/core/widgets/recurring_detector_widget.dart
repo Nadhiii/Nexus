@@ -96,7 +96,7 @@ class _RecurringDetectorWidgetState extends State<RecurringDetectorWidget> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Smart Insights',
+                      'Insights',
                       style: AppTypography.titleSmall.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,

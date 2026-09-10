@@ -194,7 +194,7 @@ class ModernInsightsScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Γé╣${NumberFormat('#,##,###').format(netWorth)}',
+            '₹${NumberFormat('#,##,###').format(netWorth)}',
             style: AppTypography.currencyLarge,
           ),
           const SizedBox(height: AppSpacing.xl2),
@@ -236,7 +236,7 @@ class ModernInsightsScreen extends StatelessWidget {
             style: AppTypography.bodySmall,
           ),
           Text(
-            "Γé╣${NumberFormat('#,##,###').format(monthlyBurn)}",
+            "₹${NumberFormat('#,##,###').format(monthlyBurn)}",
             style: AppTypography.labelLarge,
           ),
         ],
@@ -266,7 +266,7 @@ class ModernInsightsScreen extends StatelessWidget {
               child: _buildBentoTile(
                 context,
                 title: "Investments",
-                value: "Γé╣${NumberFormat.compact().format(totalInvestments)}",
+                value: "₹${NumberFormat.compact().format(totalInvestments)}",
                 subtitle: "$investmentCount Assets",
                 icon: Icons.show_chart,
                 color: AppColors.investmentIndigo,
@@ -287,7 +287,7 @@ class ModernInsightsScreen extends StatelessWidget {
               child: _buildBentoTile(
                 context,
                 title: "Liabilities",
-                value: "Γé╣${NumberFormat.compact().format(totalLiabilities)}",
+                value: "₹${NumberFormat.compact().format(totalLiabilities)}",
                 subtitle: "$activeDebtCount Loans",
                 icon: Icons.warning_amber_rounded,
                 color: AppColors.error,
@@ -306,7 +306,7 @@ class ModernInsightsScreen extends StatelessWidget {
         _buildBentoTile(
           context,
           title: "Subscriptions",
-          value: "Γé╣${NumberFormat.compact().format(subCost)}/mo",
+          value: "₹${NumberFormat.compact().format(subCost)}/mo",
           subtitle: "$activeSubCount Active",
           icon: Icons.autorenew,
           color: AppColors.accentOrange,
@@ -524,7 +524,7 @@ class ModernInsightsScreen extends StatelessWidget {
           style: AppTypography.labelSmall,
         ),
         Text(
-          "Γé╣${NumberFormat.compact().format(value)}",
+          "₹${NumberFormat.compact().format(value)}",
           style: AppTypography.labelLarge.copyWith(color: color),
         ),
       ],

@@ -12,7 +12,7 @@ class MutualFundApiService {
   /// FIX: this previously downloaded the entire scheme list (~30,000
   /// entries, no NAV data) from `baseUrl` and filtered it client-side on
   /// every keystroke. That's slow, wasteful, and was never actually being
-  /// used anyway ΓÇö add_investment_screen.dart bypassed this method and
+  /// used anyway — add_investment_screen.dart bypassed this method and
   /// called the real search endpoint directly. This now uses that same
   /// endpoint, matching what's already proven to work in the UI.
   Future<List<MutualFundScheme>> searchSchemes(String query) async {
@@ -36,7 +36,7 @@ class MutualFundApiService {
   }
 
   /// Get all available mutual fund schemes.
-  /// (This one intentionally still hits the full-list endpoint ΓÇö it's
+  /// (This one intentionally still hits the full-list endpoint — it's
   /// meant for cases where you actually need the complete list, not a
   /// search-as-you-type flow.)
   Future<List<MutualFundScheme>> getAllSchemes() async {

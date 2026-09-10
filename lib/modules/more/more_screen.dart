@@ -24,6 +24,7 @@ import '../../core/services/ota_update_service.dart';
 import 'reports_and_analytics_screen.dart';
 import 'manage_categories_screen.dart';
 import 'about_screen.dart';
+import 'knowledge_screen.dart';
 
 class ModernMoreScreen extends StatefulWidget {
   const ModernMoreScreen({super.key});
@@ -408,6 +409,14 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             color: AppColors.error,
             title: "NBox Sync",
             onTap: () => _navigate(const NboxSyncScreen()),
+          ),
+          _divider(),
+          _buildTile(
+            icon: Icons.psychology_alt_rounded,
+            color: AppColors.accentTeal,
+            title: "Knowledge",
+            subtitle: "What Nexus has learned",
+            onTap: () => _navigate(const KnowledgeScreen()),
           ),
         ],
       ),

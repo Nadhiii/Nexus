@@ -1,5 +1,4 @@
-﻿import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/transaction.dart';
@@ -8,6 +7,7 @@ import '../providers/transaction_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../theme/app_spacing.dart';
+import '../utils/currency_formatter.dart';
 
 class TotalBalanceCard extends StatelessWidget {
   const TotalBalanceCard({super.key});
@@ -35,7 +35,6 @@ class TotalBalanceCard extends StatelessWidget {
         final balanceAccent = totalBalance >= 0
             ? AppColors.success
             : AppColors.error;
-        final colorScheme = Theme.of(context).colorScheme;
 
         final runway = monthExpense > 0
             ? (totalBalance / (monthExpense / now.day * 30)).floor()
@@ -47,38 +46,24 @@ class TotalBalanceCard extends StatelessWidget {
           runwayMsg = 'No expenses this month';
           runwayColor = AppColors.textTertiary;
         } else if (runway >= 90) {
-          runwayMsg = 'Runway: 3+ months ≡ƒƒó';
+          runwayMsg = 'Runway: 3+ months 🟢';
           runwayColor = AppColors.pastelGreen;
         } else if (runway >= 30) {
           runwayMsg = 'Runway: ~$runway days';
           runwayColor = AppColors.pastelOrange;
         } else {
-          runwayMsg = 'Runway: $runway days ΓÜá';
+          runwayMsg = 'Runway: $runway days ⚠';
           runwayColor = AppColors.error;
         }
 
         return Container(
           padding: const EdgeInsets.all(AppSpacing.xl2),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                balanceAccent.withValues(alpha: 0.24),
-                colorScheme.surfaceContainerHighest,
-              ],
-            ),
+            color: Theme.of(context).cardColor,
             borderRadius: AppSpacing.borderRadiusLg,
             border: Border.all(
-              color: balanceAccent.withValues(alpha: 0.35),
+              color: AppColors.borderSubtle,
             ),
-            boxShadow: [
-              BoxShadow(
-                  color: colorScheme.shadow.withValues(alpha: 0.4),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,7 +77,7 @@ class TotalBalanceCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Γé╣${NumberFormat('#,##,###').format(totalBalance)}',
+                '₹${AppCurrency.format(totalBalance)}',
                 style: AppTypography.currencyLarge.copyWith(
                   color: balanceAccent,
                 ),
@@ -172,7 +157,7 @@ class _MiniStat extends StatelessWidget {
                 style: AppTypography.labelSmall,
               ),
               Text(
-                'Γé╣${NumberFormat.compact().format(value)}',
+                '₹${AppCurrency.format(value)}',
                 style: AppTypography.labelLarge,
               ),
             ],

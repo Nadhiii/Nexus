@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,17 +6,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:another_telephony/telephony.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/detected_transaction.dart';
 import '../utils/sms_parser.dart';
 import '../services/notification_service.dart';
 import '../services/nbox_background_service.dart';
-import 'category_provider.dart';
+import 'account_provider.dart';
+import 'transaction_provider.dart';
+import 'knowledge_provider.dart';
 import 'gmail_provider.dart';
 import '../models/nbox_settings.dart';
+import '../models/transaction_understanding.dart';
+import '../services/transaction_automation_service.dart';
 
 // ---------------------------------------------------------------------------
-// Isolate helpers ΓÇö must be top-level (not inside a class) for compute()
+// Isolate helpers — must be top-level (not inside a class) for compute()
 // ---------------------------------------------------------------------------
 
 class _SmsBatchPayload {
@@ -66,7 +72,14 @@ class NewNboxProvider extends ChangeNotifier {
   NboxSettings _settings = const NboxSettings();
   NboxSettings get settings => _settings;
 
-  final CategoryProvider? _categoryProvider;
+  AccountProvider? _accountProvider;
+  TransactionProvider? _transactionProvider;
+  KnowledgeProvider? _knowledgeProvider;
+  final TransactionAutomationService _automationService =
+      TransactionAutomationService();
+  final Map<String, TransactionUnderstanding> _understandings = {};
+  final List<AutoRecordedTransaction> _autoRecorded = [];
+  final Set<String> _automationInFlight = {};
   final Telephony _telephony = Telephony.instance;
 
   bool _isLoading = false;
@@ -86,21 +99,24 @@ class NewNboxProvider extends ChangeNotifier {
   bool get smsReadingEnabled => _settings.smsReadingEnabled;
 
   List<DetectedTransaction> get pendingSms => List.unmodifiable(_pendingSms);
+  TransactionUnderstanding? understandingFor(
+    String source,
+    String fingerprint,
+  ) => _understandings['$source:$fingerprint'];
   List<DetectedTransaction> get pendingEmails =>
       List.unmodifiable(_pendingEmails);
   List<DetectedTransaction> get rejected => List.unmodifiable(_rejected);
   List<DetectedTransaction> _pendingPdf = [];
   List<DetectedTransaction> get pendingPdf => List.unmodifiable(_pendingPdf);
+  List<AutoRecordedTransaction> get autoRecorded =>
+      List.unmodifiable(_autoRecorded);
 
   bool get hasPendingApprovalRequest =>
       _pendingApprovalSource != null && _pendingApprovalId != null;
 
   bool _isInitialized = false;
 
-  NewNboxProvider({
-    GmailProvider? gmailProvider,
-    CategoryProvider? categoryProvider,
-  }) : _categoryProvider = categoryProvider {
+  NewNboxProvider({GmailProvider? gmailProvider}) {
     update(gmailProvider);
     _backgroundDetectionSubscription = NboxBackgroundService.detectionStream
         .listen((transaction) {
@@ -115,10 +131,84 @@ class NewNboxProvider extends ChangeNotifier {
     await _loadSettings();
     await _loadNotifiedDetectionIds();
     await _loadProcessedIds();
+    await _loadAutoRecorded();
     await _restorePendingTransactions();
     await restorePendingApprovalRequest();
     _isInitialized = true;
     notifyListeners();
+  }
+
+  DocumentReference<Map<String, dynamic>>? get _auditDocument {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return null;
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('nbox_audit')
+        .doc('auto_recorded');
+  }
+
+  Future<void> _loadAutoRecorded() async {
+    try {
+      final snapshot = await _auditDocument?.get();
+      final values = snapshot?.data()?['entries'] as List?;
+      if (values == null) return;
+      _autoRecorded
+        ..clear()
+        ..addAll(
+          values
+              .map((value) {
+                final data = Map<String, dynamic>.from(value as Map);
+                final detected = DetectedTransaction.fromJson(
+                  Map<String, dynamic>.from(data['detected'] as Map),
+                );
+                final understanding = TransactionUnderstanding(
+                  source: detected,
+                  categoryId: data['categoryId'] as String?,
+                  purpose: data['purpose'] as String? ?? 'unknown',
+                  reasons: List<String>.from(
+                    data['reasons'] as List? ?? const [],
+                  ),
+                  observations: List<String>.from(
+                    data['observations'] as List? ?? const [],
+                  ),
+                  confidence: Map<String, double>.from(
+                    (data['fieldConfidence'] as Map? ?? const {}).map(
+                      (key, value) =>
+                          MapEntry(key.toString(), (value as num).toDouble()),
+                    ),
+                  ),
+                );
+                return AutoRecordedTransaction(
+                  detected: detected,
+                  understanding: understanding,
+                );
+              })
+              .take(20),
+        );
+    } catch (_) {
+      // Audit history must never prevent NBox from loading.
+    }
+  }
+
+  Future<void> _persistAutoRecorded() async {
+    final document = _auditDocument;
+    if (document == null) return;
+    await document.set({
+      'entries': _autoRecorded
+          .map(
+            (entry) => {
+              'detected': entry.detected.toJson(),
+              'categoryId': entry.understanding.categoryId,
+              'purpose': entry.understanding.purpose,
+              'reasons': entry.understanding.reasons,
+              'observations': entry.understanding.observations,
+              'fieldConfidence': entry.understanding.confidence,
+            },
+          )
+          .toList(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   Future<void> _loadSettings() async {
@@ -137,6 +227,16 @@ class NewNboxProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('nbox_settings', jsonEncode(_settings.toJson()));
     notifyListeners();
+  }
+
+  void setFinancialDependencies({
+    required AccountProvider accountProvider,
+    required TransactionProvider transactionProvider,
+    required KnowledgeProvider knowledgeProvider,
+  }) {
+    _accountProvider = accountProvider;
+    _transactionProvider = transactionProvider;
+    _knowledgeProvider = knowledgeProvider;
   }
 
   void update(GmailProvider? gmailProvider) {
@@ -207,7 +307,7 @@ class NewNboxProvider extends ChangeNotifier {
     _setLoading(true);
     await NotificationService().showTransactionScanStatus(source: 'sms');
 
-    // 2. ≡ƒ¢æ IPC COLLISION SHIELD
+    // 2. 🛑 IPC COLLISION SHIELD
     // Wait a full 3 seconds before querying the Android ContentResolver.
     // This allows Firebase, Google Play Services, and Auto-Backup to finish
     // their native Android background handshakes. Without this shield, the Binder
@@ -224,18 +324,22 @@ class NewNboxProvider extends ChangeNotifier {
       final List<SmsMessage> messages = [];
       final DateTime now = DateTime.now();
 
-      for (int i = 0; i < 7; i++) {
+      for (int i = 0; i < 7; i += 2) {
+        final endDay = i;
+        final startDay = i + 2 > 7 ? 7 : i + 2;
         final startMillis = now
-            .subtract(Duration(days: i + 1))
+            .subtract(Duration(days: startDay))
             .millisecondsSinceEpoch
             .toString();
         final endMillis = now
-            .subtract(Duration(days: i))
+            .subtract(Duration(days: endDay))
             .millisecondsSinceEpoch
             .toString();
 
         try {
-          debugPrint('=== [NBOX DEBUG] Fetching Day $i ===');
+          debugPrint(
+            '=== [NBOX DEBUG] Fetching SMS window ${endDay + 1}-$startDay ===',
+          );
           final chunk = await _telephony
               .getInboxSms(
                 columns: [
@@ -249,18 +353,18 @@ class NewNboxProvider extends ChangeNotifier {
                     .and(SmsColumn.DATE)
                     .lessThan(endMillis),
               )
-              .timeout(const Duration(seconds: 4));
+              .timeout(const Duration(seconds: 5));
 
           messages.addAll(chunk);
           debugPrint(
-            '=== [NBOX DEBUG] Day $i fetched ${chunk.length} msgs ===',
+            '=== [NBOX DEBUG] SMS window fetched ${chunk.length} msgs ===',
           );
         } catch (e) {
-          debugPrint('=== [NBOX DEBUG] SMS chunk $i failed: $e ===');
+          debugPrint('=== [NBOX DEBUG] SMS window failed: $e ===');
         }
 
-        // Give the UI thread time to render frames AND let other IPC traffic pass
-        await Future.delayed(const Duration(milliseconds: 350));
+        // Yield between native ContentResolver calls.
+        await Future.delayed(const Duration(milliseconds: 250));
       }
 
       debugPrint('=== [NBOX DEBUG] Total SMS Fetched: ${messages.length} ===');
@@ -392,15 +496,115 @@ class NewNboxProvider extends ChangeNotifier {
     _rejected.addAll(freshRejected);
 
     _sortLists();
+    unawaited(_analyzeAndAutomate(freshPending));
     unawaited(_persistPendingTransactions());
     unawaited(_notifyFreshDetections(freshPending));
   }
 
-  Future<void> _notifyFreshDetections(
+  Future<void> _analyzeAndAutomate(
     List<DetectedTransaction> freshPending,
   ) async {
-    final candidates = freshPending
-        .where((t) => t.isHighConfidence)
+    final accounts = _accountProvider;
+    final transactions = _transactionProvider;
+    final knowledge = _knowledgeProvider;
+    if (accounts == null || transactions == null || knowledge == null) {
+      return;
+    }
+
+    final peerSnapshot = <DetectedTransaction>[
+      ..._pendingSms,
+      ..._pendingEmails,
+      ..._pendingPdf,
+    ];
+    final candidatesByKey = <String, DetectedTransaction>{
+      for (final item in peerSnapshot)
+        '${item.source}:${item.fingerprint}': item,
+      for (final item in freshPending)
+        '${item.source}:${item.fingerprint}': item,
+    };
+
+    for (final detected in candidatesByKey.values) {
+      final key = '${detected.source}:${detected.fingerprint}';
+      if (_processedIds.contains(key) || _automationInFlight.contains(key)) {
+        continue;
+      }
+
+      _automationInFlight.add(key);
+      try {
+        final understanding = _automationService.analyze(
+          detected: detected,
+          history: transactions.transactions,
+          knowledge: knowledge.entries,
+          accounts: accounts,
+          peerDetections: peerSnapshot,
+        );
+        _understandings[key] = understanding;
+        // The understanding is UI state as well as automation state.
+        notifyListeners();
+
+        if (understanding.canAutoRecord) {
+          final recorded = await _automationService.tryAutoRecord(
+            detected: detected,
+            accountProvider: accounts,
+            transactionProvider: transactions,
+            knowledge: knowledge.entries,
+            peerDetections: peerSnapshot,
+          );
+          if (recorded) {
+            _autoRecorded.insert(
+              0,
+              AutoRecordedTransaction(
+                detected: detected,
+                understanding: understanding,
+              ),
+            );
+            if (_autoRecorded.length > 20) _autoRecorded.removeLast();
+            await _persistAutoRecorded();
+            await markAsApproved(detected.id, detected.source);
+
+            // A matched incoming/outgoing pair is two notifications for the
+            // same account movement, not two transactions. Once one side is
+            // recorded, consume the other detection as part of that same fact.
+            if (understanding.isTransfer &&
+                understanding.relatedDetectionIds.isNotEmpty) {
+              for (final relatedKey in understanding.relatedDetectionIds) {
+                final separator = relatedKey.indexOf(':');
+                if (separator <= 0 || separator >= relatedKey.length - 1) {
+                  continue;
+                }
+                final relatedSource = relatedKey.substring(0, separator);
+                final relatedFingerprint = relatedKey.substring(separator + 1);
+                final related =
+                    [..._pendingSms, ..._pendingEmails, ..._pendingPdf]
+                        .where(
+                          (item) =>
+                              item.source == relatedSource &&
+                              item.fingerprint == relatedFingerprint,
+                        )
+                        .toList();
+                if (related.isNotEmpty) {
+                  await markAsApproved(related.first.id, related.first.source);
+                }
+              }
+            }
+            continue;
+          }
+        }
+
+        await _notifyFreshDetections([detected]);
+      } finally {
+        _automationInFlight.remove(key);
+      }
+    }
+  }
+
+  Future<void> _notifyFreshDetections(
+    List<DetectedTransaction> candidates,
+  ) async {
+    // Anything that remains pending after analysis needs a path to the user.
+    // High-confidence items are normally auto-recorded; uncertain or
+    // unresolvable items are deliberately surfaced for one-tap review.
+    final eligible = candidates
         .where((t) => !_processedIds.contains('${t.source}:${t.fingerprint}'))
         .where(
           (t) =>
@@ -408,14 +612,12 @@ class NewNboxProvider extends ChangeNotifier {
         )
         .toList();
 
-    if (candidates.isEmpty) {
-      return;
-    }
+    if (eligible.isEmpty) return;
 
-    final toNotify = candidates.take(_maxPromptsPerScan).toList();
-    for (final transaction in toNotify) {
-      final detectionKey = '${transaction.source}:${transaction.fingerprint}';
-      _notifiedDetectionIds.add(detectionKey);
+    for (final transaction in eligible.take(_maxPromptsPerScan)) {
+      final key = '${transaction.source}:${transaction.fingerprint}';
+      if (_notifiedDetectionIds.contains(key)) continue;
+      _notifiedDetectionIds.add(key);
       await NotificationService().showDetectedTransactionPrompt(transaction);
     }
     await _persistNotifiedDetectionIds();
@@ -443,7 +645,11 @@ class NewNboxProvider extends ChangeNotifier {
 
     final source = _pendingApprovalSource!;
     final id = _pendingApprovalId!;
-    final pool = source == 'sms' ? _pendingSms : _pendingEmails;
+    final pool = source == 'sms'
+        ? _pendingSms
+        : source == 'email'
+        ? _pendingEmails
+        : _pendingPdf;
     final index = pool.indexWhere((t) => t.id == id && t.source == source);
     if (index == -1) {
       return null;
@@ -456,11 +662,21 @@ class NewNboxProvider extends ChangeNotifier {
   }
 
   Future<void> markAsApproved(String id, String source) async {
-    final transaction = [..._pendingSms, ..._pendingEmails, ..._rejected]
-        .firstWhere(
-          (t) => t.id == id && t.source == source,
-          orElse: () => throw StateError('Transaction not found'),
+    final transaction =
+        [
+          ..._pendingSms,
+          ..._pendingEmails,
+          ..._pendingPdf,
+          ..._rejected,
+        ].cast<DetectedTransaction?>().firstWhere(
+          (t) => t!.id == id && t.source == source,
+          orElse: () => null,
         );
+    if (transaction == null) {
+      // Approval can be retried after a successful write or after a stream
+      // refresh. Treat that state as idempotent instead of crashing the UI.
+      return;
+    }
 
     _pendingSms.removeWhere((t) => t.id == id && t.source == source);
     _pendingEmails.removeWhere((t) => t.id == id && t.source == source);
@@ -585,6 +801,9 @@ class NewNboxProvider extends ChangeNotifier {
   Future<void> _restorePendingTransactions() async {
     final stored = await NboxBackgroundService.loadPendingTransactions();
     for (final transaction in stored) {
+      // Drop legacy detections for notices that contain an amount but never
+      // represented money movement (for example Google Play payment-due mail).
+      if (_isNonTransactionNotice(transaction)) continue;
       final key = '${transaction.source}:${transaction.fingerprint}';
       if (_processedIds.contains(key) ||
           _processedIds.contains('$key:rejected')) {
@@ -599,6 +818,24 @@ class NewNboxProvider extends ChangeNotifier {
       }
     }
     _sortLists();
+    await _persistPendingTransactions();
+  }
+
+  bool _isNonTransactionNotice(DetectedTransaction transaction) {
+    if (transaction.source != 'email') return false;
+    final text = (transaction.body ?? '').toLowerCase();
+    const phrases = [
+      'payment due',
+      'amount due',
+      'too low to pay',
+      'needs attention',
+      'update your payment method',
+      'choose how to manage your subscription',
+    ];
+    if (!phrases.any(text.contains)) return false;
+    return !RegExp(
+      r'\b(debited|credited|received|spent|withdrawn|purchase of|paid)\b',
+    ).hasMatch(text);
   }
 
   Future<void> _persistPendingTransactions() {
@@ -630,4 +867,13 @@ class NewNboxProvider extends ChangeNotifier {
       if (hasListeners) notifyListeners();
     });
   }
+}
+
+class AutoRecordedTransaction {
+  final DetectedTransaction detected;
+  final TransactionUnderstanding understanding;
+  const AutoRecordedTransaction({
+    required this.detected,
+    required this.understanding,
+  });
 }

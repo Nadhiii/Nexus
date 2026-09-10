@@ -466,7 +466,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                           itemBuilder: (context, index) {
                             final backup = _backups![index];
                             final dateFormat = DateFormat(
-                              'MMM dd, yyyy ΓÇó HH:mm',
+                              'MMM dd, yyyy • HH:mm',
                             );
                             final totalItems = backup.counts.values.fold<int>(
                               0,

@@ -194,7 +194,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
           AnimatedNumberText(
             number: currentVal,
             decimalPlaces: 2,
-            prefix: 'Γé╣',
+            prefix: '₹',
             style: AppTypography.currencyLarge,
           ),
           const SizedBox(height: 20),
@@ -210,7 +210,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  '${isProfitable ? '+' : ''}Γé╣${profit.toStringAsFixed(2)} (${percent.toStringAsFixed(2)}%)',
+                  '${isProfitable ? '+' : ''}₹${profit.toStringAsFixed(2)} (${percent.toStringAsFixed(2)}%)',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -317,7 +317,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
             // FIX: this row needs a bounded height, same as the 3-item
             // branches below. The "large" tile variant uses Spacer()
             // internally, which requires a bounded height from its
-            // ancestors ΓÇö without this SizedBox, the Column inside the
+            // ancestors — without this SizedBox, the Column inside the
             // large tile gets unbounded height constraints and throws a
             // RenderFlex "incoming height constraints are unbounded"
             // exception any time useLarge is true (e.g. exactly 2 assets,
@@ -578,7 +578,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Γé╣${NumberFormat('#,##,###').format(asset.currentAmount)}',
+                  '₹${NumberFormat('#,##,###').format(asset.currentAmount)}',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -654,7 +654,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Γé╣${NumberFormat.compact().format(asset.currentAmount)}',
+                    '₹${NumberFormat.compact().format(asset.currentAmount)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -726,7 +726,7 @@ class _ModernInvestmentScreenState extends State<ModernInvestmentScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Γé╣${NumberFormat.compact().format(asset.currentAmount)}',
+                    '₹${NumberFormat.compact().format(asset.currentAmount)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

@@ -11,14 +11,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/detected_transaction.dart';
 import '../models/gmail_sync_settings.dart';
 import '../utils/gmail_parser.dart';
-import '../services/categorization_service.dart';
-import 'category_provider.dart';
 import '../services/auth_service.dart';
 
 class GmailProvider extends ChangeNotifier {
   static const List<String> _gmailScopes = [gmail.GmailApi.gmailReadonlyScope];
-
-  final CategoryProvider? _categoryProvider;
 
   GoogleSignInAccount? _currentUser;
   bool _hasGmailAccess = false;
@@ -41,17 +37,16 @@ class GmailProvider extends ChangeNotifier {
 
   bool _isInitialized = false;
 
-  GmailProvider({CategoryProvider? categoryProvider})
-    : _categoryProvider = categoryProvider {
+  GmailProvider() {
     // FIX: Removed initialize() from constructor.
     // It will now be called explicitly by AuthGate.
   }
 
   Future<void> initialize() async {
-  if (_isInitialized) return;
-  await AuthService.ensureGoogleSignInInitialized();
-  await _initializeSettings();
-  _isInitialized = true;
+    if (_isInitialized) return;
+    await AuthService.ensureGoogleSignInInitialized();
+    await _initializeSettings();
+    _isInitialized = true;
 
     _authSubscription = GoogleSignIn.instance.authenticationEvents.listen(
       (event) {
@@ -87,6 +82,8 @@ class GmailProvider extends ChangeNotifier {
       if (kDebugMode) debugPrint('[GmailProvider] Auth init failed: $e');
     }
   }
+
+  Future<void> ensureInitialized() => initialize();
 
   Future<void> _initializeSettings() async {
     try {
@@ -138,6 +135,7 @@ class GmailProvider extends ChangeNotifier {
 
   Future<void> linkAccount() async {
     try {
+      await ensureInitialized();
       _currentUser ??= await GoogleSignIn.instance.authenticate();
       final authorization = await _currentUser!.authorizationClient
           .authorizeScopes(_gmailScopes);
@@ -182,6 +180,7 @@ class GmailProvider extends ChangeNotifier {
 
   Future<void> scanEmails() async {
     if (_isLoading) return;
+    await ensureInitialized();
     if (_currentUser == null) return;
 
     if (kDebugMode) debugPrint('[GmailProvider] Starting email scan...');
@@ -191,13 +190,6 @@ class GmailProvider extends ChangeNotifier {
 
     gapis.AuthClient? client;
     try {
-      AICategorizationService? aiService;
-      if (_categoryProvider != null) {
-        aiService = AICategorizationService(
-          categoryProvider: _categoryProvider,
-        );
-      }
-
       client = await _getAuthenticatedClient();
       if (client == null) {
         _hasGmailAccess = false;
@@ -283,7 +275,6 @@ class GmailProvider extends ChangeNotifier {
                 body,
                 msg.snippet ?? '',
                 emailDate,
-                aiCategorizationService: aiService,
               );
               if (transaction != null) freshTransactions.add(transaction);
             }

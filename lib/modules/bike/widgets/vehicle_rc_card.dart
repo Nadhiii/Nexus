@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../core/models/bike.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_animations.dart';
 import 'add_bike.dart';
 
@@ -221,7 +220,7 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
                   ),
                 ),
                 Text(
-                  '2-WHEELER ΓÇó ${widget.bike.fuelType?.toUpperCase() ?? 'PETROL'}',
+                  '2-WHEELER • ${widget.bike.fuelType?.toUpperCase() ?? 'PETROL'}',
                   style: TextStyle(
                     color: AppColors.textTertiary,
                     fontSize: 10,

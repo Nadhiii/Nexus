@@ -296,7 +296,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
             children: [
               Flexible(
                 child: Text(
-                'Γé╣${_formatAmount(totalSaved)}',
+                '₹${_formatAmount(totalSaved)}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.currencyLarge,
@@ -354,7 +354,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Remaining: Γé╣${_formatAmount(totalTarget - totalSaved)}',
+                'Remaining: ₹${_formatAmount(totalTarget - totalSaved)}',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 12,
@@ -640,7 +640,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Γé╣${_formatAmount(goal.currentAmount)} / ${_formatAmount(goal.targetAmount)}',
+                  '₹${_formatAmount(goal.currentAmount)} / ${_formatAmount(goal.targetAmount)}',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 13,
@@ -688,8 +688,8 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                 const SizedBox(height: 8),
                 Text(
                   isCompleted
-                      ? 'Goal achieved! ≡ƒÄë'
-                      : 'Γé╣${_formatAmount(goal.targetAmount - goal.currentAmount)} to go',
+                      ? 'Goal achieved! 🎉'
+                      : '₹${_formatAmount(goal.targetAmount - goal.currentAmount)} to go',
                   style: TextStyle(
                     color: isCompleted
                         ? AppColors.success
@@ -794,7 +794,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Γé╣${_formatAmount(goal.currentAmount)} of Γé╣${_formatAmount(goal.targetAmount)}',
+                      '₹${_formatAmount(goal.currentAmount)} of ₹${_formatAmount(goal.targetAmount)}',
                       style: TextStyle(
                         color: AppColors.textTertiary,
                         fontSize: 11,
@@ -919,7 +919,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Γé╣${_formatAmount(goal.targetAmount)}',
+                    '₹${_formatAmount(goal.targetAmount)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -937,7 +937,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      isCompleted ? 'Γ£ô' : '$percentage%',
+                      isCompleted ? '✓' : '$percentage%',
                       style: TextStyle(
                         color: isCompleted ? AppColors.success : goalColor,
                         fontWeight: FontWeight.bold,

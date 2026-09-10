@@ -1,4 +1,4 @@
-﻿// ignore_for_file: unused_element
+// ignore_for_file: unused_element
 import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
 import '../../core/widgets/collapsible_fab.dart';
@@ -22,6 +22,7 @@ import '../accounts/account_detail_screen.dart';
 import '../transactions/add_transaction_screen.dart';
 import '../../core/utils/transaction_display.dart';
 import '../../core/utils/logo_utils.dart';
+import '../../core/utils/currency_formatter.dart';
 
 enum WalletView { accounts, history }
 
@@ -260,6 +261,22 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                         ],
                       ]
                     : null,
+              ),
+
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 4,
+                  ),
+                  child: const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Manage accounts and track your money',
+                      style: AppTypography.bodyMedium,
+                    ),
+                  ),
+                ),
               ),
 
               SliverToBoxAdapter(
@@ -507,7 +524,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
 
   String _formatSignedCurrency(double amount) {
     final absFormatted = NumberFormat('#,##,###').format(amount.abs());
-    return amount < 0 ? '-Γé╣$absFormatted' : 'Γé╣$absFormatted';
+    return amount < 0 ? '-₹$absFormatted' : '₹$absFormatted';
   }
 
   Widget _buildAccountsList(BuildContext context, AccountProvider provider) {
@@ -665,7 +682,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                 Text(
-                  "Γé╣${account.balance.toStringAsFixed(0)}",
+                  "₹${AppCurrency.format(account.balance)}",
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -868,7 +885,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                "$signΓé╣${t.amount.toStringAsFixed(0)}",
+                "$sign₹${AppCurrency.format(t.amount)}",
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -1119,7 +1136,7 @@ class _WalletFlipCardState extends State<_WalletFlipCard>
           const SizedBox(height: 12),
           AnimatedNumberText(
             number: widget.total,
-            prefix: 'Γé╣',
+            prefix: '₹',
             style: AppTypography.displaySmall.copyWith(
               color: Colors.white,
               fontSize: 36,

@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  static const String _themeKey = 'theme_mode';
-
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _themeMode = ThemeMode.dark;
 
   ThemeMode get themeMode => _themeMode;
   bool get isDarkMode => _themeMode == ThemeMode.dark;
@@ -14,20 +12,13 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   void toggleTheme() {
-    _themeMode = isDarkMode ? ThemeMode.light : ThemeMode.dark;
-    _savePreferences();
-    notifyListeners();
+    // Kept for source compatibility with older callers; appearance is intentionally dark-only.
   }
 
   Future<void> _loadPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    final themeModeIndex = prefs.getInt(_themeKey) ?? ThemeMode.system.index;
-    _themeMode = ThemeMode.values[themeModeIndex];
+    await SharedPreferences.getInstance();
+    // Nexus uses one appearance: dark mode. Ignore any legacy light/system preference.
+    _themeMode = ThemeMode.dark;
     notifyListeners();
-  }
-
-  Future<void> _savePreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_themeKey, _themeMode.index);
   }
 }

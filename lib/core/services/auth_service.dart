@@ -1,27 +1,26 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import '../providers/gmail_provider.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  static const String _webClientId =
+      '217588531616-vac0sturbdi7ojbqj12jvdcf040dm730.apps.googleusercontent.com';
+  // --------------------------------------------
 
- static const String _webClientId = '217588531616-vac0sturbdi7ojbqj12jvdcf040dm730.apps.googleusercontent.com';
-// --------------------------------------------
+  static bool _googleSignInInitialized = false;
 
-static bool _googleSignInInitialized = false;
+  User? get currentUser => _auth.currentUser;
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-User? get currentUser => _auth.currentUser;
-Stream<User?> get authStateChanges => _auth.authStateChanges();
-
-// Public + static so any part of the app (GmailProvider included) can call
-// this safely regardless of call order, and it only ever runs once.
-static Future<void> ensureGoogleSignInInitialized() async {
-  if (_googleSignInInitialized) return;
-  await GoogleSignIn.instance.initialize(serverClientId: _webClientId);
-  _googleSignInInitialized = true;
-}
+  // Public + static so any part of the app (GmailProvider included) can call
+  // this safely regardless of call order, and it only ever runs once.
+  static Future<void> ensureGoogleSignInInitialized() async {
+    if (_googleSignInInitialized) return;
+    await GoogleSignIn.instance.initialize(serverClientId: _webClientId);
+    _googleSignInInitialized = true;
+  }
 
   Future<User?> signInWithGoogle() async {
     try {
@@ -36,11 +35,11 @@ static Future<void> ensureGoogleSignInInitialized() async {
       try {
         debugPrint('Starting Google Sign-In (v7)...');
 
-       await AuthService.ensureGoogleSignInInitialized();
+        await AuthService.ensureGoogleSignInInitialized();
 
         // v7: authenticate() replaces signIn()
-        final GoogleSignInAccount googleUser =
-            await GoogleSignIn.instance.authenticate();
+        final GoogleSignInAccount googleUser = await GoogleSignIn.instance
+            .authenticate();
 
         debugPrint('Google account selected: ${googleUser.email}');
 
@@ -56,9 +55,7 @@ static Future<void> ensureGoogleSignInInitialized() async {
         final idToken = googleUser.authentication.idToken;
 
         if (authorization.accessToken.isEmpty || idToken == null) {
-          throw Exception(
-            'Failed to get authentication tokens from Google',
-          );
+          throw Exception('Failed to get authentication tokens from Google');
         }
 
         debugPrint('Creating Firebase credential...');
@@ -68,8 +65,9 @@ static Future<void> ensureGoogleSignInInitialized() async {
         );
 
         debugPrint('Signing in to Firebase...');
-        final UserCredential userCredential =
-            await _auth.signInWithCredential(credential);
+        final UserCredential userCredential = await _auth.signInWithCredential(
+          credential,
+        );
 
         debugPrint(
           'Firebase sign-in successful: ${userCredential.user?.email}',

@@ -1,4 +1,4 @@
-﻿// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+﻿// ────────────────────────────────────────────────────────────────────────────
 // upcoming_week_widget.dart
 //
 // BUG FIX: The old widget called provider.upcomingObligations which returned []
@@ -7,7 +7,7 @@
 //
 // This version reads from DebtProvider + SubscriptionProvider directly and
 // shows everything due in the next 7 days that is NOT yet paid/settled.
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ────────────────────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -99,12 +99,12 @@ class UpcomingWeekWidget extends StatelessWidget {
     final cutoff = now.add(const Duration(days: 7));
     final items = <_ObligationItem>[];
 
-    // ΓöÇΓöÇ Debts with upcoming EMI ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Debts with upcoming EMI ──────────────────────────────────────
     for (final debt in debtProvider.debts) {
       if (debt.currentBalance <= 0) continue;
       final due = debt.nextPaymentDate;
       if (due == null) continue;
-      if (due.isBefore(now.subtract(const Duration(days: 1)))) continue; // overdue ΓÇö still show
+      if (due.isBefore(now.subtract(const Duration(days: 1)))) continue; // overdue — still show
       if (due.isAfter(cutoff)) continue;
 
       final daysUntil = due.difference(now).inDays;
@@ -117,7 +117,7 @@ class UpcomingWeekWidget extends StatelessWidget {
       ));
     }
 
-    // ΓöÇΓöÇ Subscriptions due this week ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Subscriptions due this week ──────────────────────────────────
     for (final sub in subProvider.subscriptions) {
       if (!sub.isActive) continue;
       final due = sub.calculateNextDueDate();
@@ -140,7 +140,7 @@ class UpcomingWeekWidget extends StatelessWidget {
   }
 }
 
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _AllCaughtUp extends StatelessWidget {
   @override
@@ -188,7 +188,7 @@ class _AllCaughtUp extends StatelessWidget {
   }
 }
 
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────────────────
 
 enum _ObligationType { emi, subscription }
 
@@ -276,7 +276,7 @@ class _ObligationTile extends StatelessWidget {
             ),
           ),
           Text(
-            'Γé╣${NumberFormat('#,##,###').format(item.amount)}',
+            '₹${NumberFormat('#,##,###').format(item.amount)}',
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: AppTypography.labelLarge.fontSize,

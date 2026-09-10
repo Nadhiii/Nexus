@@ -1,19 +1,18 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/providers/nbox_provider.dart';
-import '../../core/providers/subscription_provider.dart';
-import '../../core/providers/debt_provider.dart';
-import '../../core/providers/investment_provider.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../../core/providers/category_provider.dart';
 import '../../core/providers/account_provider.dart';
+import '../../core/providers/knowledge_provider.dart';
 import '../../core/services/transaction_intent_classifier.dart';
-import '../../core/services/smart_category_resolver.dart';
+import '../../core/services/transaction_automation_service.dart';
 import '../../core/widgets/top_notification.dart';
 import '../../core/models/detected_transaction.dart';
 import '../../core/models/transaction.dart';
+import '../../core/models/transaction_draft.dart';
 import '../transactions/add_transaction_screen.dart';
 import '../payday/payday_screen.dart';
 import 'smart_approval_sheet.dart';
@@ -25,6 +24,7 @@ import '../../core/widgets/nexus_inline_loading.dart';
 import '../../core/widgets/nexus_empty_state.dart';
 import '../../core/widgets/nexus_button.dart';
 import '../../core/widgets/nexus_card.dart';
+import '../../core/utils/currency_formatter.dart';
 import '../../core/services/pdf_statement_import_service.dart';
 
 enum NBoxFilter { all, sms, email, pdf, trash }
@@ -60,7 +60,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
   late final NewNboxProvider _nboxProvider;
 
-  // ΓöÇΓöÇ View mode state ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── View mode state ───────────────────────────────────────────────────────
   NBoxViewMode _viewMode = NBoxViewMode.list;
 
   // When set, Focus mode only shows these ids (used after a bulk-approve run
@@ -88,7 +88,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       await nbox.scanEmails();
     } else {
       debugPrint(
-        '[NboxScreen] Gmail not linked ΓÇö skipping scan. Please sign in again.',
+        '[NboxScreen] Gmail not linked — skipping scan. Please sign in again.',
       );
     }
     if (mounted) setState(() => _isGmailLoading = false);
@@ -96,84 +96,90 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
   bool _isPdfLoading = false;
 
-Future<void> _importPdf() async {
-  if (!mounted) return;
-  setState(() => _isPdfLoading = true);
-  try {
-    final parseData = await PdfStatementImportService.pickAndParse(
-  onPromptPassword: () => _showPasswordDialog(context),
-);
+  Future<void> _importPdf() async {
+    if (!mounted) return;
+    setState(() => _isPdfLoading = true);
+    try {
+      final parseData = await PdfStatementImportService.pickAndParse(
+        onPromptPassword: () => _showPasswordDialog(context),
+      );
 
-if (parseData == null) return; // User cancelled picking or password entry
+      if (parseData == null) return; // User cancelled picking or password entry
 
-if (parseData.transactions.isEmpty) {
-  if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('No transactions found in this statement.')),
+      if (parseData.transactions.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No transactions found in this statement.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      await context.read<NewNboxProvider>().importFromPdf(
+        parseData.transactions,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Import failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isPdfLoading = false);
+    }
+  }
+
+  /// Displays an AlertDialog prompting the user for the PDF password.
+  Future<String?> _showPasswordDialog(BuildContext context) {
+    String enteredPassword = '';
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.cardSurface,
+          title: const Text(
+            'PDF Password Required',
+            style: TextStyle(color: AppColors.textPrimary),
+          ),
+          content: TextField(
+            obscureText: true,
+            autofocus: true,
+            style: const TextStyle(color: AppColors.textPrimary),
+            decoration: InputDecoration(
+              hintText: 'Enter PDF password',
+              hintStyle: const TextStyle(color: AppColors.textTertiary),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: AppColors.primaryBlue),
+              ),
+            ),
+            onChanged: (val) => enteredPassword = val,
+            onSubmitted: (val) => Navigator.pop(dialogContext, val),
+          ),
+          actions: [
+            NexusButton(
+              variant: NexusButtonVariant.secondary,
+              width: double.infinity,
+              onPressed: () => Navigator.pop(dialogContext, null),
+              label: 'Cancel',
+            ),
+            NexusButton(
+              width: double.infinity,
+              onPressed: () => Navigator.pop(dialogContext, enteredPassword),
+              label: 'Submit',
+            ),
+          ],
+        );
+      },
     );
   }
-  return;
-}
-
-await context.read<NewNboxProvider>().importFromPdf(parseData.transactions);
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Import failed: $e')),
-      );
-    }
-  } finally {
-    if (mounted) setState(() => _isPdfLoading = false);
-  }
-}
-
-/// Displays an AlertDialog prompting the user for the PDF password.
-Future<String?> _showPasswordDialog(BuildContext context) {
-  String enteredPassword = '';
-  return showDialog<String>(
-    context: context,
-    barrierDismissible: false,
-    builder: (dialogContext) {
-      return AlertDialog(
-        backgroundColor: AppColors.cardSurface,
-        title: const Text(
-          'PDF Password Required',
-          style: TextStyle(color: AppColors.textPrimary),
-        ),
-        content: TextField(
-          obscureText: true,
-          autofocus: true,
-          style: const TextStyle(color: AppColors.textPrimary),
-          decoration: InputDecoration(
-            hintText: 'Enter PDF password',
-            hintStyle: const TextStyle(color: AppColors.textTertiary),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-            ),
-            focusedBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: AppColors.primaryBlue),
-            ),
-          ),
-          onChanged: (val) => enteredPassword = val,
-          onSubmitted: (val) => Navigator.pop(dialogContext, val),
-        ),
-        actions: [
-          NexusButton(
-            variant: NexusButtonVariant.secondary,
-            width: double.infinity,
-            onPressed: () => Navigator.pop(dialogContext, null),
-            label: 'Cancel',
-          ),
-          NexusButton(
-            width: double.infinity,
-            onPressed: () => Navigator.pop(dialogContext, enteredPassword),
-            label: 'Submit',
-          ),
-        ],
-      );
-    },
-  );
-}
 
   @override
   void initState() {
@@ -201,21 +207,13 @@ Future<String?> _showPasswordDialog(BuildContext context) {
   }
 
   Future<void> _refreshData() async {
+    // Opening NBox must be cheap. Pending detections are already restored by
+    // the provider/background service; explicit source buttons perform scans.
     if (!mounted) return;
     setState(() {
-      _isSmsLoading = true;
-      _isGmailLoading = true;
+      _isSmsLoading = false;
+      _isGmailLoading = false;
     });
-    final nbox = context.read<NewNboxProvider>();
-    await nbox.scanSmsInbox();
-    if (!mounted) return;
-    setState(() => _isSmsLoading = false);
-
-    if (nbox.isGmailLinked) {
-      await nbox.scanEmails();
-    }
-    if (!mounted) return;
-    setState(() => _isGmailLoading = false);
   }
 
   // --- SELECTION LOGIC ---
@@ -345,7 +343,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                     )
                     .toList();
 
-          // ΓöÇΓöÇ FOCUS MODE: single-card review ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+          // ── FOCUS MODE: single-card review ───────────────────────────────
           if (inFocusMode) {
             if (focusList.isEmpty) {
               // Queue drained while we were in focus mode -- fall back to
@@ -392,9 +390,11 @@ Future<String?> _showPasswordDialog(BuildContext context) {
             );
           }
 
-          // ΓöÇΓöÇ LIST / TRASH MODE: Sliver Layout ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+          // ── LIST / TRASH MODE: Sliver Layout ─────────────────────────────
           return CustomScrollView(
             slivers: [
+              if (context.watch<NewNboxProvider>().autoRecorded.isNotEmpty)
+                SliverToBoxAdapter(child: _buildAutoRecordedSection()),
               _isSelectionMode
                   ? _buildSelectionHeader(displayList)
                   : _buildMainHeader(),
@@ -516,7 +516,12 @@ Future<String?> _showPasswordDialog(BuildContext context) {
 
   Widget _buildStandardHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -576,28 +581,28 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                       ),
                     ),
 
-                    _isPdfLoading
-    ? const Padding(
-        padding: EdgeInsets.all(8.0),
-        child: NexusInlineLoading(),
-      )
-    : IconButton(
-        tooltip: 'Import PDF Statement',
-        onPressed: _importPdf,
-        icon: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.cardSurface,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white10),
-          ),
-          child: const Icon(
-            Icons.picture_as_pdf,
-            color: AppColors.primaryBlue,
-            size: 20,
-          ),
-        ),
-      ),
+              _isPdfLoading
+                  ? const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: NexusInlineLoading(),
+                    )
+                  : IconButton(
+                      tooltip: 'Import PDF Statement',
+                      onPressed: _importPdf,
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardSurface,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: const Icon(
+                          Icons.picture_as_pdf,
+                          color: AppColors.primaryBlue,
+                          size: 20,
+                        ),
+                      ),
+                    ),
             ],
           ),
         ],
@@ -686,32 +691,32 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                 ),
               ),
 
-              _isPdfLoading
-    ? const Padding(
-        padding: EdgeInsets.all(8.0),
-        child: SizedBox(
-          width: 24,
-          height: 24,
-          child: NexusInlineLoading(),
-        ),
-      )
-    : IconButton(
-        tooltip: 'Import PDF Statement',
-        onPressed: _importPdf,
-        icon: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.cardSurface,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white10),
-          ),
-          child: const Icon(
-            Icons.picture_as_pdf,
-            color: AppColors.primaryBlue,
-            size: 20,
-          ),
-        ),
-      ),
+        _isPdfLoading
+            ? const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: NexusInlineLoading(),
+                ),
+              )
+            : IconButton(
+                tooltip: 'Import PDF Statement',
+                onPressed: _importPdf,
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardSurface,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: const Icon(
+                    Icons.picture_as_pdf,
+                    color: AppColors.primaryBlue,
+                    size: 20,
+                  ),
+                ),
+              ),
         const SizedBox(width: 16),
       ],
     );
@@ -976,7 +981,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      '${isIncome ? '+' : ''}Γé╣${t.amount.toStringAsFixed(0)}',
+                                      '${isIncome ? '+' : ''}₹${AppCurrency.format(t.amount)}',
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
@@ -1103,6 +1108,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                                           ],
                                         ),
                                       ),
+                                      _buildUnderstandingSection(t),
                                       const SizedBox(height: 16),
                                       const Padding(
                                         padding: EdgeInsets.fromLTRB(
@@ -1112,7 +1118,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                                           8,
                                         ),
                                         child: Text(
-                                          "SOURCE MESSAGE",
+                                          "SOURCE SUMMARY",
                                           style: TextStyle(
                                             color: AppColors.textTertiary,
                                             fontSize: 10,
@@ -1140,14 +1146,35 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                                             ),
                                           ),
                                         ),
-                                        child: Text(
-                                          t.body ?? "No content",
-                                          style: const TextStyle(
-                                            fontFamily: 'monospace',
-                                            fontSize: 11,
-                                            color: AppColors.textSecondary,
-                                            height: 1.4,
-                                          ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _sourceSummary(t),
+                                              maxLines: 4,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: AppColors.textSecondary,
+                                                height: 1.35,
+                                              ),
+                                            ),
+                                            if ((t.body ?? '')
+                                                .trim()
+                                                .isNotEmpty)
+                                              Align(
+                                                alignment:
+                                                    Alignment.centerRight,
+                                                child: TextButton(
+                                                  onPressed: () =>
+                                                      _showFullSource(t),
+                                                  child: const Text(
+                                                    'View full message',
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                       ),
                                       const SizedBox(height: 20),
@@ -1237,6 +1264,252 @@ Future<String?> _showPasswordDialog(BuildContext context) {
     );
   }
 
+  Widget _buildUnderstandingSection(DetectedTransaction t) {
+    final understanding = context.read<NewNboxProvider>().understandingFor(
+      t.source,
+      t.fingerprint,
+    );
+    if (understanding == null) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Text(
+          'Nexus is still working this out.',
+          style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
+        ),
+      );
+    }
+
+    final chips = <Widget>[];
+    if (understanding.entity?.isNotEmpty == true) {
+      chips.add(
+        _buildAnalysisChip(
+          Icons.person_search_rounded,
+          'Entity: ${understanding.entity}',
+        ),
+      );
+    }
+    if (understanding.counterpartyRole != 'unknown') {
+      chips.add(
+        _buildAnalysisChip(
+          Icons.swap_horiz_rounded,
+          'Role: ${understanding.counterpartyRole}',
+        ),
+      );
+    }
+    if (understanding.purpose != 'unknown') {
+      final purpose = understanding.purpose == 'category'
+          ? (t.detectedCategory ?? 'Category')
+          : understanding.purpose;
+      chips.add(
+        _buildAnalysisChip(
+          Icons.label_outline_rounded,
+          'Purpose: ${_titleCase(purpose)}',
+        ),
+      );
+    }
+    if (understanding.accountId != null) {
+      chips.add(
+        _buildAnalysisChip(Icons.account_balance_rounded, 'Account identified'),
+      );
+    }
+    if (understanding.destinationAccountId != null) {
+      chips.add(
+        _buildAnalysisChip(Icons.call_made_rounded, 'Destination identified'),
+      );
+    }
+    if (understanding.isRecurring) {
+      chips.add(_buildAnalysisChip(Icons.repeat_rounded, 'Recurring'));
+    }
+    if (understanding.isRefund) {
+      chips.add(_buildAnalysisChip(Icons.undo_rounded, 'Refund'));
+    }
+    if (understanding.usualAmount != null && understanding.usualAmount! > 0) {
+      chips.add(
+        _buildAnalysisChip(
+          Icons.insights_rounded,
+          'Usual: ₹${understanding.usualAmount!.round()}',
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.cardElevated.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.pastelTeal.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'NEXUS UNDERSTANDING',
+            style: TextStyle(
+              color: AppColors.textTertiary,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (chips.isNotEmpty)
+            Wrap(spacing: 8, runSpacing: 8, children: chips),
+          if (understanding.observations.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ...understanding.observations
+                .take(2)
+                .map(
+                  (text) => Padding(
+                    padding: const EdgeInsets.only(bottom: 3),
+                    child: Text(
+                      '• $text',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+          ],
+          if (understanding.reasons.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                understanding.reasons.first,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textTertiary,
+                  fontSize: 11,
+                  height: 1.35,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAutoRecordedSection() {
+    final nbox = context.watch<NewNboxProvider>();
+    final transactions = context.watch<TransactionProvider>().transactions;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.cardElevated.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'RECENTLY AUTO-RECORDED',
+            style: TextStyle(
+              color: AppColors.textTertiary,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...nbox.autoRecorded.map((entry) {
+            final t = entry.detected;
+            final tx = transactions
+                .where(
+                  (item) =>
+                      item.metadata?['sourceFingerprint'] == t.fingerprint,
+                )
+                .firstOrNull;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                '${t.merchant} · ₹${AppCurrency.format(t.amount)}',
+                style: const TextStyle(color: AppColors.textPrimary),
+              ),
+              subtitle: Text(
+                '${t.source} · ${(t.confidence * 100).round()}% confidence\n${entry.understanding.reasons.take(2).join(' ')}',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+              isThreeLine: true,
+              trailing: TextButton(
+                onPressed: tx == null
+                    ? null
+                    : () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ModernAddTransactionScreen(transaction: tx),
+                        ),
+                      ),
+                child: const Text('Fix'),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  String _titleCase(String value) {
+    return value
+        .replaceAll('_', ' ')
+        .split(' ')
+        .where((word) => word.isNotEmpty)
+        .map((word) => '${word[0].toUpperCase()}${word.substring(1)}')
+        .join(' ');
+  }
+
+  String _sourceSummary(DetectedTransaction t) {
+    final body = (t.body ?? '').replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (body.isEmpty) return 'No source message available.';
+
+    final sentences = body
+        .split(RegExp(r'[.!?]+\s+'))
+        .where(
+          (s) => RegExp(
+            r'\b(debited|credited|received|sent|paid|spent|transaction|purchase|upi|ref)\b',
+            caseSensitive: false,
+          ).hasMatch(s),
+        )
+        .take(3)
+        .toList();
+    final summary = sentences.isEmpty ? body : sentences.join(' ');
+    return summary.length > 360 ? '${summary.substring(0, 357)}...' : summary;
+  }
+
+  Future<void> _showFullSource(DetectedTransaction t) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        title: const Text('Source message'),
+        content: SingleChildScrollView(
+          child: SelectableText(
+            t.body ?? 'No content',
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAnalysisChip(IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1308,15 +1581,15 @@ Future<String?> _showPasswordDialog(BuildContext context) {
             children: [
               Flexible(
                 child: Text(
-                "PENDING REVIEW",
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
+                  "PENDING REVIEW",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
                 ),
               ),
               Container(
@@ -1355,7 +1628,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
           ),
           const SizedBox(height: 12),
           Text(
-            'Γé╣${NumberFormat('#,##,###').format(totalValue)}',
+            '₹${NumberFormat('#,##,###').format(totalValue)}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTypography.currencyLarge,
@@ -1365,15 +1638,17 @@ Future<String?> _showPasswordDialog(BuildContext context) {
             children: [
               Icon(Icons.auto_awesome, color: AppColors.nboxAccent, size: 14),
               const SizedBox(width: 6),
-              Flexible(child: Text(
-                'Detected from SMS and Email',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 12,
+              Flexible(
+                child: Text(
+                  'Detected from SMS and Email',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 12,
+                  ),
                 ),
-              )),
+              ),
             ],
           ),
         ],
@@ -1413,7 +1688,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
       padding: const EdgeInsets.only(bottom: 24.0, top: 10.0),
       child: Column(
         children: [
-          // ΓöÇΓöÇ Focus mode label ΓöÇΓöÇ
+          // ── Focus mode label ──
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: Row(
@@ -1438,8 +1713,8 @@ Future<String?> _showPasswordDialog(BuildContext context) {
             ),
           ),
 
-          // ΓöÇΓöÇ Card + real buttons, isolated so drag doesn't rebuild the
-          // whole NBox screen on every frame ΓöÇΓöÇ
+          // ── Card + real buttons, isolated so drag doesn't rebuild the
+          // whole NBox screen on every frame ──
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(
@@ -1517,7 +1792,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ΓöÇΓöÇ Top row: source tag + date ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+                // ── Top row: source tag + date ─────────────────────────────
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -1526,41 +1801,41 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                     if (t.source == 'email') _buildConfidenceBadge(t),
                     const Spacer(),
 
-                    // ΓöÇΓöÇ The Updated Date Pill ΓöÇΓöÇ
+                    // ── The Updated Date Pill ──
                     Flexible(
                       child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          width: 0.5,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.6),
-                            blurRadius: 6,
-                            spreadRadius: 1,
-                            offset: const Offset(0, 3),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            width: 0.5,
                           ),
-                        ],
-                      ),
-                      child: Text(
-                        DateFormat('dd MMM, hh:mm a').format(t.date),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.3,
-                          height: 1.0,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
-                      ),
+                        child: Text(
+                          DateFormat('dd MMM, hh:mm a').format(t.date),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                            height: 1.0,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -1568,14 +1843,14 @@ Future<String?> _showPasswordDialog(BuildContext context) {
 
                 const SizedBox(height: 16),
 
-                // ΓöÇΓöÇ Center: amount + merchant + category ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+                // ── Center: amount + merchant + category ───────────────────
                 Expanded(
                   flex: 3,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        '${isIncome ? '+' : 'ΓêÆ'}Γé╣${NumberFormat('#,##,###').format(t.amount)}',
+                        '${isIncome ? '+' : '−'}₹${NumberFormat('#,##,###').format(t.amount)}',
                         style: TextStyle(
                           fontSize: 42,
                           fontWeight: FontWeight.w900,
@@ -1612,7 +1887,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                       if (t.balanceAfter != null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          '${t.bankName ?? 'Bank'} bal. Γé╣${NumberFormat('#,##,###.##').format(t.balanceAfter)}',
+                          '${t.bankName ?? 'Bank'} bal. ₹${NumberFormat('#,##,###.##').format(t.balanceAfter)}',
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.textTertiary,
@@ -1624,13 +1899,13 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                   ),
                 ),
 
-                // ΓöÇΓöÇ Bottom: SMS/email body ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+                // Source summary: keep review focused on the useful facts.
                 if (t.body != null) ...[
                   Expanded(
-                    flex: 2,
+                    flex: 1,
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(16),
@@ -1638,22 +1913,43 @@ Future<String?> _showPasswordDialog(BuildContext context) {
                           color: Colors.white.withValues(alpha: 0.05),
                         ),
                       ),
-                      child: SingleChildScrollView(
-                        child: Text(
-                          t.body!,
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                            height: 1.5,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'SOURCE SUMMARY',
+                            style: TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _sourceSummary(t),
+                            maxLines: 4,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                              height: 1.35,
+                            ),
+                          ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () => _showFullSource(t),
+                              child: const Text('View full message'),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ],
 
-                // ΓöÇΓöÇ Warning row (if any) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+                // ── Warning row (if any) ───────────────────────────────────
                 if (t.warnings.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Row(
@@ -1778,11 +2074,11 @@ Future<String?> _showPasswordDialog(BuildContext context) {
     if (t.isHighConfidence) {
       bgColor = AppColors.accentTeal.withValues(alpha: 0.15);
       textColor = AppColors.accentTeal;
-      label = 'Γ£ô High';
+      label = '✓ High';
     } else if (t.isLowConfidence) {
       bgColor = AppColors.pastelOrange.withValues(alpha: 0.15);
       textColor = AppColors.pastelOrange;
-      label = 'ΓÜá Low';
+      label = '⚠ Low';
     } else {
       bgColor = Colors.white.withValues(alpha: 0.1);
       textColor = AppColors.textSecondary;
@@ -1869,19 +2165,16 @@ Future<String?> _showPasswordDialog(BuildContext context) {
 
     try {
       final nbox = context.read<NewNboxProvider>();
-      final subs = context.read<SubscriptionProvider>().subscriptions;
-      final debts = context.read<DebtProvider>().debts;
-      final investments = context.read<InvestmentProvider>().investments;
 
-      final classification = TransactionIntentClassifier.classify(
+      final understanding = TransactionAutomationService().analyze(
         detected: t,
-        subscriptions: subs,
-        debts: debts,
-        investments: investments,
+        history: context.read<TransactionProvider>().transactions,
+        knowledge: context.read<KnowledgeProvider>().entries,
+        accounts: context.read<AccountProvider>(),
       );
 
       bool success = false;
-      if (classification.intent == TransactionIntent.salary) {
+      if (understanding.intent == TransactionIntent.salary) {
         success =
             await Navigator.push(
               context,
@@ -1895,15 +2188,23 @@ Future<String?> _showPasswordDialog(BuildContext context) {
               ),
             ) ==
             true;
-      } else if (classification.intent.hasSideEffects) {
+      } else if (understanding.intent.hasSideEffects) {
         success = await showSmartApprovalSheet(context, t);
       } else {
         success =
             await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) =>
-                    ModernAddTransactionScreen(detectedTransaction: t),
+                builder: (_) => ModernAddTransactionScreen(
+                  detectedTransaction: t,
+                  accountId: understanding.accountId,
+                  categoryId: understanding.categoryId,
+                  initialType: understanding.isTransfer
+                      ? TransactionType.transfer
+                      : t.type.toLowerCase() == 'income'
+                      ? TransactionType.income
+                      : TransactionType.expense,
+                ),
               ),
             ) ??
             false;
@@ -1933,9 +2234,6 @@ Future<String?> _showPasswordDialog(BuildContext context) {
     if (_isBulkApproving) return;
 
     final nbox = context.read<NewNboxProvider>();
-    final subs = context.read<SubscriptionProvider>().subscriptions;
-    final debts = context.read<DebtProvider>().debts;
-    final investments = context.read<InvestmentProvider>().investments;
 
     final selected = currentList
         .where((t) => _selectedIds.contains('${t.source}:${t.id}'))
@@ -1950,16 +2248,16 @@ Future<String?> _showPasswordDialog(BuildContext context) {
     var failed = 0;
 
     for (final t in selected) {
-      final classification = TransactionIntentClassifier.classify(
+      final understanding = TransactionAutomationService().analyze(
         detected: t,
-        subscriptions: subs,
-        debts: debts,
-        investments: investments,
+        history: context.read<TransactionProvider>().transactions,
+        knowledge: context.read<KnowledgeProvider>().entries,
+        accounts: context.read<AccountProvider>(),
       );
 
       final needsForm =
-          classification.intent.hasSideEffects ||
-          classification.intent == TransactionIntent.salary;
+          understanding.intent.hasSideEffects ||
+          understanding.intent == TransactionIntent.salary;
 
       if (needsForm) {
         needsReview.add(t);
@@ -2015,14 +2313,7 @@ Future<String?> _showPasswordDialog(BuildContext context) {
     final accountId = accounts.first.id;
 
     final categories = context.read<CategoryProvider>().categories;
-    String? resolvedCategoryId =
-        t.detectedCategory ??
-        SmartCategoryResolver.resolve(
-          merchant: t.merchant,
-          body: t.body,
-          amount: t.amount,
-          transactionType: t.type,
-        );
+    var resolvedCategoryId = t.detectedCategory ?? 'other';
     final hasId = categories.any((c) => c.id == resolvedCategoryId);
     if (!hasId) {
       final byName = categories
@@ -2045,11 +2336,22 @@ Future<String?> _showPasswordDialog(BuildContext context) {
       accountId: accountId,
       toAccountId: null,
       date: t.date,
+      metadata: {
+        'source': t.source,
+        'sourceId': t.id,
+        'sourceFingerprint': t.fingerprint,
+        'entity': t.merchant,
+        'purpose': isIncome ? 'income' : 'expense',
+        'confidence': t.confidence,
+      },
       createdAt: now,
       updatedAt: now,
     );
 
-    return context.read<TransactionProvider>().addTransaction(transaction);
+    return context
+        .read<TransactionProvider>()
+        .commitDraft(TransactionDraft.fromTransaction(transaction))
+        .then((result) => result != null && !result.alreadyExists);
   }
 }
 

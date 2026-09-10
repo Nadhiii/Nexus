@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -9,6 +8,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/models/account.dart';
 import '../../core/models/detected_transaction.dart';
 import '../../core/models/transaction.dart' as txn;
+import '../../core/models/transaction_draft.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../../core/widgets/top_snackbar.dart';
 
@@ -39,7 +39,7 @@ class _ReviewItem {
 class StatementImportReviewScreen extends StatefulWidget {
   final Account account;
   final List<DetectedTransaction> detected;
-  
+
   // Added optional parameters for opening and closing balances
   final double? openingBalance;
   final double? closingBalance;
@@ -85,8 +85,7 @@ class _StatementImportReviewScreenState
         date: d.date,
         isDuplicate: isDup,
       );
-    }).toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+    }).toList()..sort((a, b) => b.date.compareTo(a.date));
   }
 
   int get _selectedCount => _items.where((i) => i.selected).length;
@@ -105,7 +104,11 @@ class _StatementImportReviewScreenState
 
   Future<void> _confirmImport() async {
     if (_selectedCount == 0) {
-      showTopSnackBar(context, 'Select at least one transaction', isError: true);
+      showTopSnackBar(
+        context,
+        'Select at least one transaction',
+        isError: true,
+      );
       return;
     }
 
@@ -124,20 +127,22 @@ class _StatementImportReviewScreenState
 
     for (final item in _items.where((i) => i.selected)) {
       final now = DateTime.now();
-      final id = FirebaseFirestore.instance.collection('transactions').doc().id;
-
       final transaction = txn.Transaction(
-        id: id,
+        // Let the canonical transaction engine allocate the user-scoped ID.
+        // Root-level `transactions` IDs were incompatible with normal reads.
+        id: '',
         userId: userId,
-        type: item.isIncome ? txn.TransactionType.income : txn.TransactionType.expense,
+        type: item.isIncome
+            ? txn.TransactionType.income
+            : txn.TransactionType.expense,
         amount: item.detected.amount,
         description: item.merchant,
         categoryId: null, // left for the user to set later, as usual
         accountId: widget.account.id,
         date: item.date,
         metadata: {
-          'fingerprint': item.detected.fingerprint,
-          'source': 'pdf_statement',
+          'sourceFingerprint': item.detected.fingerprint,
+          'source': 'statement_import',
           'bankName': item.detected.bankName,
           if (item.detected.detectedCategory != null)
             'suggestedCategory': item.detected.detectedCategory,
@@ -146,7 +151,10 @@ class _StatementImportReviewScreenState
         updatedAt: now,
       );
 
-      final ok = await provider.addTransaction(transaction);
+      final result = await provider.commitDraft(
+        TransactionDraft.fromTransaction(transaction),
+      );
+      final ok = result != null && !result.alreadyExists;
       if (ok) {
         savedCount++;
       } else {
@@ -178,21 +186,23 @@ class _StatementImportReviewScreenState
         elevation: 0,
         title: Text(
           'Review Statement',
-          style: AppTypography.titleMedium.copyWith(color: AppColors.textPrimary),
+          style: AppTypography.titleMedium.copyWith(
+            color: AppColors.textPrimary,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: _items.every((i) => i.selected)
                 ? () => setState(() {
-                      for (final i in _items) {
-                        i.selected = false;
-                      }
-                    })
+                    for (final i in _items) {
+                      i.selected = false;
+                    }
+                  })
                 : () => setState(() {
-                      for (final i in _items) {
-                        i.selected = true;
-                      }
-                    }),
+                    for (final i in _items) {
+                      i.selected = true;
+                    }
+                  }),
             child: Text(
               _items.every((i) => i.selected) ? 'Deselect all' : 'Select all',
               style: TextStyle(color: AppColors.primaryBlue),
@@ -214,7 +224,7 @@ class _StatementImportReviewScreenState
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                     itemCount: _items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
                     itemBuilder: (context, index) => _buildRow(_items[index]),
                   ),
           ),
@@ -244,7 +254,11 @@ class _StatementImportReviewScreenState
               color: AppColors.primaryBlue.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.account_balance, color: AppColors.primaryBlue, size: 20),
+            child: Icon(
+              Icons.account_balance,
+              color: AppColors.primaryBlue,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -264,7 +278,8 @@ class _StatementImportReviewScreenState
                   style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
                 ),
                 // Added logic to display opening and closing balances
-                if (widget.openingBalance != null || widget.closingBalance != null) ...[
+                if (widget.openingBalance != null ||
+                    widget.closingBalance != null) ...[
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -272,14 +287,20 @@ class _StatementImportReviewScreenState
                         Expanded(
                           child: Text(
                             'Opening: ₹${widget.openingBalance!.toStringAsFixed(2)}',
-                            style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
+                            style: TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                       if (widget.closingBalance != null)
                         Expanded(
                           child: Text(
                             'Closing: ₹${widget.closingBalance!.toStringAsFixed(2)}',
-                            style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
+                            style: TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                     ],
@@ -291,7 +312,9 @@ class _StatementImportReviewScreenState
           Text(
             '${_selectedTotal >= 0 ? '+' : '−'}₹${_selectedTotal.abs().toStringAsFixed(2)}',
             style: AppTypography.titleMedium.copyWith(
-              color: _selectedTotal >= 0 ? AppColors.pastelGreen : AppColors.textPrimary,
+              color: _selectedTotal >= 0
+                  ? AppColors.pastelGreen
+                  : AppColors.textPrimary,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -341,9 +364,13 @@ class _StatementImportReviewScreenState
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => setState(() => item.isIncome = !item.isIncome),
+                        onTap: () =>
+                            setState(() => item.isIncome = !item.isIncome),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: color.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
@@ -378,19 +405,28 @@ class _StatementImportReviewScreenState
                     children: [
                       Text(
                         DateFormat('dd MMM yyyy').format(item.date),
-                        style: TextStyle(color: AppColors.textTertiary, fontSize: 11),
+                        style: TextStyle(
+                          color: AppColors.textTertiary,
+                          fontSize: 11,
+                        ),
                       ),
                       if (item.isDuplicate) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.orange.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
                             'Already imported',
-                            style: TextStyle(color: Colors.orange, fontSize: 10),
+                            style: TextStyle(
+                              color: Colors.orange,
+                              fontSize: 10,
+                            ),
                           ),
                         ),
                       ],
@@ -418,17 +454,25 @@ class _StatementImportReviewScreenState
               backgroundColor: AppColors.primaryBlue,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
             child: _isSaving
                 ? const SizedBox(
                     width: 22,
                     height: 22,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
                   )
                 : Text(
                     'Import $_selectedCount transaction${_selectedCount == 1 ? '' : 's'}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
                   ),
           ),
         ),

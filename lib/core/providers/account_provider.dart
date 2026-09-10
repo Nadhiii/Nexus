@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/account.dart';
@@ -18,6 +18,7 @@ class AccountProvider with ChangeNotifier {
   String? _error;
   bool _isInitialized = false;
   Future<void>? _initializationFuture;
+  StreamSubscription<List<Account>>? _accountSubscription;
 
   // Undo support
   Account? _lastDeletedAccount;
@@ -53,7 +54,8 @@ class AccountProvider with ChangeNotifier {
     final firstSnapshot = Completer<void>();
     _setLoading(true);
     try {
-      _accountService
+      await _accountSubscription?.cancel();
+      _accountSubscription = _accountService
           .watchAccounts(userId)
           .listen(
             (accounts) {
@@ -109,16 +111,16 @@ class AccountProvider with ChangeNotifier {
     if (user == null) { return; }
     try {
       debugPrint(
-        '≡ƒÆ░ AccountProvider.updateAccountBalance: accountId=$accountId, newBalance=$newBalance',
+        '💰 AccountProvider.updateAccountBalance: accountId=$accountId, newBalance=$newBalance',
       );
       await _accountService.updateAccountBalance(
         user.uid,
         accountId,
         newBalance,
       );
-      debugPrint('Γ£à AccountProvider: Balance updated in Firestore');
+      debugPrint('✅ AccountProvider: Balance updated in Firestore');
     } catch (e) {
-      debugPrint('Γ¥î AccountProvider: Failed to update balance: $e');
+      debugPrint('❌ AccountProvider: Failed to update balance: $e');
       _setError('Failed to update account balance: $e');
     }
   }
@@ -144,11 +146,11 @@ class AccountProvider with ChangeNotifier {
         accountId: accountId,
       );
       debugPrint(
-        '≡ƒùæ∩╕Å Cascade deleted account and all related transactions for account $accountId',
+        '🗑️ Cascade deleted account and all related transactions for account $accountId',
       );
     } catch (e) {
       _setError(e.toString());
-      // Deletion failed ΓÇö clear any staged undo data so a stale restore
+      // Deletion failed — clear any staged undo data so a stale restore
       // isn't offered for an account that was never actually removed.
       _lastDeletedAccount = null;
       _lastDeletedTransactions = [];
@@ -174,7 +176,7 @@ class AccountProvider with ChangeNotifier {
 
       // Restore the account
       await _accountService.addAccount(user.uid, accountToRestore);
-      debugPrint('Γ£à Restored account: ${accountToRestore.name}');
+      debugPrint('✅ Restored account: ${accountToRestore.name}');
 
       // Restore its transactions
       if (transactionsToRestore.isNotEmpty) {
@@ -182,7 +184,7 @@ class AccountProvider with ChangeNotifier {
           user.uid,
           transactionsToRestore,
         );
-        debugPrint('Γ£à Restored ${transactionsToRestore.length} transactions');
+        debugPrint('✅ Restored ${transactionsToRestore.length} transactions');
       }
 
       // Clear the stored deleted data
@@ -190,7 +192,7 @@ class AccountProvider with ChangeNotifier {
       _lastDeletedTransactions = [];
     } catch (e) {
       _setError('Failed to restore account: $e');
-      debugPrint('Γ¥î Error restoring account: $e');
+      debugPrint('❌ Error restoring account: $e');
     } finally {
       _setLoading(false);
     }
@@ -203,26 +205,26 @@ class AccountProvider with ChangeNotifier {
     if (user == null) { return 0; }
     try {
       final count = await _accountService.purgeAccountsByName(user.uid, name);
-      debugPrint('≡ƒº╣ Purged $count account(s) named "$name"');
+      debugPrint('🧹 Purged $count account(s) named "$name"');
       return count;
     } catch (e) {
-      debugPrint('Γ¥î Failed to purge account "$name": $e');
+      debugPrint('❌ Failed to purge account "$name": $e');
       _setError('Failed to purge account "$name": $e');
       return 0;
     }
   }
 
   Account? getAccountById(String id) {
-    debugPrint('≡ƒöì getAccountById called with id: "$id"');
+    debugPrint('🔍 getAccountById called with id: "$id"');
     debugPrint(
-      '≡ƒôï Available accounts: ${_accounts.map((a) => '"${a.id}":${a.name}').toList()}',
+      '📋 Available accounts: ${_accounts.map((a) => '"${a.id}":${a.name}').toList()}',
     );
     try {
       final account = _accounts.firstWhere((acc) => acc.id == id);
-      debugPrint('Γ£à Found account: ${account.name}');
+      debugPrint('✅ Found account: ${account.name}');
       return account;
     } catch (e) {
-      debugPrint('Γ¥î Account not found for id: "$id"');
+      debugPrint('❌ Account not found for id: "$id"');
       return null;
     }
   }
@@ -253,10 +255,21 @@ class AccountProvider with ChangeNotifier {
   }
 
   void clear() {
+    _accountSubscription?.cancel();
+    _accountSubscription = null;
     _accounts = [];
     _isInitialized = false;
+    _initializationFuture = null;
+    _lastDeletedAccount = null;
+    _lastDeletedTransactions = [];
     _error = null;
     _isLoading = false;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _accountSubscription?.cancel();
+    super.dispose();
   }
 }

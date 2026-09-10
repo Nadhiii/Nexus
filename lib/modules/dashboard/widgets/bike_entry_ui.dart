@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/models/bike.dart';
 import '../../../core/models/account.dart';
 import '../../../core/models/transaction.dart';
+import '../../../core/models/transaction_draft.dart';
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/providers/account_provider.dart';
 import '../../../core/providers/transaction_provider.dart';
@@ -268,7 +269,7 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );
-          await txnProvider.addTransaction(transaction);
+          await txnProvider.commitDraft(TransactionDraft.fromTransaction(transaction));
         }
       }
 

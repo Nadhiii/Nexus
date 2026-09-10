@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/models/debt.dart';
 import '../../../core/models/account.dart';
 import '../../../core/models/transaction.dart';
+import '../../../core/models/transaction_draft.dart';
 import '../../../core/providers/debt_provider.dart';
 import '../../../core/providers/account_provider.dart';
 import '../../../core/providers/transaction_provider.dart';
@@ -423,7 +424,9 @@ class _PayDebtModalState extends State<PayDebtModal>
       final debtProvider = context.read<DebtProvider>();
 
       // Execute Bridge Actions
-      await txnProvider.addTransaction(transaction); // Updates Account Balance
+      await txnProvider.commitDraft(
+        TransactionDraft.fromTransaction(transaction),
+      ); // Updates Account Balance
       await debtProvider.payDebt(
         widget.debt.id,
         amount,

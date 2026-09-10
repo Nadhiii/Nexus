@@ -1,14 +1,22 @@
 import 'package:intl/intl.dart';
 
-extension CurrencyFormatting on double {
-  /// Formats a double to currency standard.
-  /// If it's an exact integer, it hides the decimals (e.g., 100).
-  /// If it has decimals, it preserves exactly 2 decimal places (e.g., 100.50).
-  String toAppCurrency() {
-    if (this == truncateToDouble()) {
-      return NumberFormat('#,##,##0', 'en_IN').format(this);
-    } else {
-      return NumberFormat('#,##,##0.00', 'en_IN').format(this);
-    }
+/// Safe formatter for values crossing Firestore/JSON and UI boundaries.
+class AppCurrency {
+  AppCurrency._();
+
+  static final NumberFormat _format = NumberFormat('#,##,##0.00', 'en_IN');
+
+  static String format(Object? value) {
+    final amount = switch (value) {
+      num number => number.toDouble(),
+      String text => double.tryParse(text.trim()),
+      _ => null,
+    };
+    return _format.format(amount ?? 0);
   }
+}
+
+/// Compatibility helper for statically typed numeric code.
+extension CurrencyFormatting on num {
+  String toAppCurrency() => AppCurrency.format(this);
 }

@@ -181,11 +181,11 @@ class BiometricService {
   }
 
   String getBiometricIcon(List<BiometricType> types) {
-    if (types.isEmpty) return '≡ƒöÆ';
-    if (types.contains(BiometricType.face)) return '≡ƒæñ';
-    if (types.contains(BiometricType.fingerprint)) return '≡ƒæå';
-    if (types.contains(BiometricType.iris)) return '≡ƒæü∩╕Å';
-    return '≡ƒöÉ';
+    if (types.isEmpty) return '🔒';
+    if (types.contains(BiometricType.face)) return '👤';
+    if (types.contains(BiometricType.fingerprint)) return '👆';
+    if (types.contains(BiometricType.iris)) return '👁️';
+    return '🔐';
   }
 
   Future<bool> authenticateForSensitiveOperation({

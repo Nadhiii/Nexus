@@ -53,7 +53,7 @@ class LocationService {
       // Reverse geocode to get city name
       List<Placemark> placemarks = [];
       try {
-        placemarks = await placemarkFromCoordinates(
+        placemarks = await Geocoding().placemarkFromCoordinates(
           position.latitude,
           position.longitude,
         );

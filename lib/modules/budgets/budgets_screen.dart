@@ -301,7 +301,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Γé╣${_formatAmount(totalRemaining.abs())}',
+            '₹${_formatAmount(totalRemaining.abs())}',
             style: AppTypography.currencyLarge.copyWith(
               color: isOver ? AppColors.error : Colors.white,
             ),
@@ -358,7 +358,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
               Expanded(
                 child: _buildMiniStat(
                   'Spent',
-                  'Γé╣${_formatAmount(totalSpent)}',
+                  '₹${_formatAmount(totalSpent)}',
                   AppColors.error.withValues(alpha: 0.8),
                 ),
               ),
@@ -366,7 +366,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
               Expanded(
                 child: _buildMiniStat(
                   'Total Cap',
-                  'Γé╣${_formatAmount(totalAllocated)}',
+                  '₹${_formatAmount(totalAllocated)}',
                   AppColors.textSecondary,
                 ),
               ),
@@ -653,7 +653,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Γé╣${_formatAmount(budget.allocatedAmount)}',
+                    '₹${_formatAmount(budget.allocatedAmount)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
@@ -696,8 +696,8 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                 const SizedBox(height: 6),
                 Text(
                   isOverspent
-                      ? 'Over by Γé╣${_formatAmount(budget.spentAmount - budget.allocatedAmount)}'
-                      : 'Γé╣${_formatAmount(budget.remainingAmount)} left',
+                      ? 'Over by ₹${_formatAmount(budget.spentAmount - budget.allocatedAmount)}'
+                      : '₹${_formatAmount(budget.remainingAmount)} left',
                   style: TextStyle(
                     color: statusColor,
                     fontSize: 10,
@@ -785,8 +785,8 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                     const SizedBox(height: 6),
                     Text(
                       isOverspent
-                          ? 'Over by Γé╣${_formatAmount(budget.spentAmount - budget.allocatedAmount)}'
-                          : 'Γé╣${_formatAmount(budget.remainingAmount)} of Γé╣${_formatAmount(budget.allocatedAmount)} left',
+                          ? 'Over by ₹${_formatAmount(budget.spentAmount - budget.allocatedAmount)}'
+                          : '₹${_formatAmount(budget.remainingAmount)} of ₹${_formatAmount(budget.allocatedAmount)} left',
                       style: TextStyle(
                         color: statusColor,
                         fontSize: 11,
@@ -903,7 +903,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Γé╣${_formatAmount(budget.allocatedAmount)}',
+                    '₹${_formatAmount(budget.allocatedAmount)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

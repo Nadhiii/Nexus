@@ -1,13 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/transaction.dart' as models;
+import '../models/transaction_draft.dart';
 import '../models/detected_transaction.dart';
 import '../models/bike.dart';
 import '../models/debt.dart';
 import '../models/subscription.dart';
 import '../models/investment.dart';
 import 'transaction_intent_classifier.dart';
-import 'ledger_service.dart';
+import 'transaction_paths.dart';
+import '../providers/transaction_provider.dart';
+import '../utils/currency_formatter.dart';
 
 // ---------------------------------------------------------------------------
 // Side Effect types
@@ -40,20 +43,15 @@ class SideEffect {
 class ApprovedTransactionPlan {
   final DetectedTransaction source;
   final TransactionIntent intent;
-  final models.Transaction transaction;
+  final TransactionDraft draft;
   final List<SideEffect> sideEffects;
   final Map<String, dynamic> extraData;
-
-  /// Pre-calculated new account balance — must be provided by caller
-  /// (the approval sheet reads AccountProvider and computes this).
-  final double newAccountBalance;
 
   const ApprovedTransactionPlan({
     required this.source,
     required this.intent,
-    required this.transaction,
+    required this.draft,
     required this.sideEffects,
-    required this.newAccountBalance,
     this.extraData = const {},
   });
 
@@ -66,8 +64,6 @@ class ApprovedTransactionPlan {
 
 class TransactionRouter {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final LedgerService _ledgerService = LedgerService();
-
   /// Executes an [ApprovedTransactionPlan]:
   ///   - Routes through LedgerService for the main transaction
   ///     (handles account balance + budget spentAmount atomically)
@@ -78,28 +74,16 @@ class TransactionRouter {
   Future<String> execute({
     required ApprovedTransactionPlan plan,
     required String userId,
+    required TransactionProvider transactionProvider,
   }) async {
-    // ── Step 1: Save transaction + update account + update budget ─────────────
-    // We can't get the auto-generated ID back from LedgerService directly,
-    // so we pre-generate the ID here and pass it in via copyWith.
-    final txnRef = _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('transactions')
-        .doc();
-    final txnId = txnRef.id;
-
-    final finalTransaction = plan.transaction.copyWith(id: txnId);
-
-    // LedgerService.addTransactionAndUpdateBalance handles:
-    //   - transaction write
-    //   - account balance update
-    //   - budget spentAmount increment
-    // All in one atomic batch.
-    await _ledgerService.addTransactionAndUpdateBalance(
-      transaction: finalTransaction,
-      newBalance: plan.newAccountBalance,
-    );
+    final result = await transactionProvider.commitDraft(plan.draft);
+    if (result == null) {
+      throw StateError(
+        transactionProvider.error ?? 'Transaction could not be committed',
+      );
+    }
+    final txnId = result.transaction.id;
+    if (result.alreadyExists) return txnId;
 
     debugPrint(
       'TransactionRouter: main commit done — intent=${plan.intent.label}, txnId=$txnId',
@@ -140,10 +124,31 @@ class TransactionRouter {
       }
 
       if (hasSideWrites) {
-        await sideBatch.commit();
-        debugPrint(
-          'TransactionRouter: side effects committed (${plan.sideEffects.length} effects)',
-        );
+        try {
+          await sideBatch.commit();
+          await TransactionPaths.document(_firestore, userId, txnId).update({
+            'metadata.sideEffectStatus': 'completed',
+            'metadata.sideEffectCompletedAt': Timestamp.now(),
+          });
+          debugPrint(
+            'TransactionRouter: side effects committed (${plan.sideEffects.length} effects)',
+          );
+        } catch (error) {
+          // The ledger commit remains valid, but the record explicitly marks
+          // the follow-up work for a retry/reconciliation worker. Do not
+          // report the financial commit as failed or silently lose the error.
+          try {
+            await TransactionPaths.document(_firestore, userId, txnId).update({
+              'metadata.sideEffectStatus': 'pending_retry',
+              'metadata.sideEffectError': error.toString(),
+            });
+          } catch (statusError) {
+            debugPrint(
+              'TransactionRouter: could not record retry status: $statusError',
+            );
+          }
+          rethrow;
+        }
       }
     }
 
@@ -167,7 +172,9 @@ class TransactionRouter {
         .collection('bikes')
         .doc(bikeId)
         .collection('entries')
-        .doc();
+        // Retrying an approval must update the same side-effect record rather
+        // than creating a second fuel entry.
+        .doc(transactionId);
 
     final now = DateTime.now();
     batch.set(entryRef, {
@@ -263,7 +270,7 @@ class TransactionRouter {
 
   // ---------------------------------------------------------------------------
   // Static plan builders
-  // (categoryId now uses SmartCategoryResolver.resolve() output directly —
+  // (categoryId now uses the resolved category output directly —
   //  i.e. 'garage', 'bills', 'entertainment', 'investment')
   // ---------------------------------------------------------------------------
 
@@ -271,7 +278,6 @@ class TransactionRouter {
     required DetectedTransaction detected,
     required String userId,
     required String accountId,
-    required double currentAccountBalance,
     required Bike bike,
     required double odometerReading,
     required double fuelLiters,
@@ -296,13 +302,10 @@ class TransactionRouter {
       'previousOdometer': bike.currentOdometer,
       'pricePerLiter': fuelLiters > 0 ? detected.amount / fuelLiters : null,
       'isFullTank': isFullTank,
-      'mileage': ?mileage,
+      'mileage': mileage,
     };
 
-    final now = DateTime.now();
-    final transaction = models.Transaction(
-      id: '',
-      userId: userId,
+    final draft = TransactionDraft(
       type: models.TransactionType.expense,
       amount: detected.amount,
       description: 'Fuel – ${bike.name}',
@@ -310,15 +313,17 @@ class TransactionRouter {
       accountId: accountId,
       date: detected.date,
       metadata: metadata,
-      createdAt: now,
-      updatedAt: now,
+      source: detected.source,
+      sourceId: detected.id,
+      sourceFingerprint: detected.fingerprint,
+      confidence: detected.confidence,
+      warnings: detected.warnings,
     );
 
     return ApprovedTransactionPlan(
       source: detected,
       intent: TransactionIntent.fuel,
-      transaction: transaction,
-      newAccountBalance: currentAccountBalance - detected.amount,
+      draft: draft,
       sideEffects: [
         SideEffect(
           type: SideEffectType.createBikeEntry,
@@ -330,7 +335,7 @@ class TransactionRouter {
             'fuelLiters': fuelLiters,
             'amount': detected.amount,
             'isFullTank': isFullTank,
-            'mileage': ?mileage,
+            'mileage': mileage,
           },
         ),
         SideEffect(
@@ -344,7 +349,7 @@ class TransactionRouter {
         'odometerReading': odometerReading,
         'fuelLiters': fuelLiters,
         'isFullTank': isFullTank,
-        'mileage': ?mileage,
+        'mileage': mileage,
       },
     );
   }
@@ -353,7 +358,6 @@ class TransactionRouter {
     required DetectedTransaction detected,
     required String userId,
     required String accountId,
-    required double currentAccountBalance,
     required Debt debt,
   }) {
     final nextDate = debt.nextPaymentDate != null
@@ -370,10 +374,7 @@ class TransactionRouter {
           double.infinity,
         );
 
-    final now = DateTime.now();
-    final transaction = models.Transaction(
-      id: '',
-      userId: userId,
+    final draft = TransactionDraft(
       type: models.TransactionType.expense,
       amount: detected.amount,
       description: 'EMI – ${debt.name}',
@@ -381,20 +382,25 @@ class TransactionRouter {
       accountId: accountId,
       date: detected.date,
       metadata: {
+        'source': detected.source,
+        'sourceId': detected.id,
+        'sourceFingerprint': detected.fingerprint,
         'intent': 'emi_payment',
         'debtId': debt.id,
         'debtName': debt.name,
         'paidMonthIndex': (debt.paidMonths ?? 0) + 1,
       },
-      createdAt: now,
-      updatedAt: now,
+      source: detected.source,
+      sourceId: detected.id,
+      sourceFingerprint: detected.fingerprint,
+      confidence: detected.confidence,
+      warnings: detected.warnings,
     );
 
     return ApprovedTransactionPlan(
       source: detected,
       intent: TransactionIntent.emiPayment,
-      transaction: transaction,
-      newAccountBalance: currentAccountBalance - detected.amount,
+      draft: draft,
       sideEffects: [
         SideEffect(
           type: SideEffectType.updateDebtProgress,
@@ -402,7 +408,7 @@ class TransactionRouter {
           data: {
             'debtId': debt.id,
             'newBalance': newBalance,
-            'nextPaymentDate': ?nextDate,
+            'nextPaymentDate': nextDate,
           },
         ),
       ],
@@ -413,15 +419,11 @@ class TransactionRouter {
     required DetectedTransaction detected,
     required String userId,
     required String accountId,
-    required double currentAccountBalance,
     required Subscription subscription,
   }) {
     final newDueDate = subscription.calculateNextDueDate();
 
-    final now = DateTime.now();
-    final transaction = models.Transaction(
-      id: '',
-      userId: userId,
+    final draft = TransactionDraft(
       type: models.TransactionType.expense,
       amount: detected.amount,
       description: subscription.name,
@@ -429,21 +431,26 @@ class TransactionRouter {
       accountId: accountId,
       date: detected.date,
       metadata: {
+        'source': detected.source,
+        'sourceId': detected.id,
+        'sourceFingerprint': detected.fingerprint,
         'intent': 'subscription_payment',
         'subscriptionId': subscription.id,
         'subscriptionName': subscription.name,
         'previousDueDate': subscription.nextDueDate.toIso8601String(),
         'newDueDate': newDueDate.toIso8601String(),
       },
-      createdAt: now,
-      updatedAt: now,
+      source: detected.source,
+      sourceId: detected.id,
+      sourceFingerprint: detected.fingerprint,
+      confidence: detected.confidence,
+      warnings: detected.warnings,
     );
 
     return ApprovedTransactionPlan(
       source: detected,
       intent: TransactionIntent.subscriptionPayment,
-      transaction: transaction,
-      newAccountBalance: currentAccountBalance - detected.amount,
+      draft: draft,
       sideEffects: [
         SideEffect(
           type: SideEffectType.updateSubscriptionDueDate,
@@ -458,13 +465,9 @@ class TransactionRouter {
     required DetectedTransaction detected,
     required String userId,
     required String accountId,
-    required double currentAccountBalance,
     required Investment investment,
   }) {
-    final now = DateTime.now();
-    final transaction = models.Transaction(
-      id: '',
-      userId: userId,
+    final draft = TransactionDraft(
       type: models.TransactionType.expense,
       amount: detected.amount,
       description: 'SIP – ${investment.name}',
@@ -472,24 +475,29 @@ class TransactionRouter {
       accountId: accountId,
       date: detected.date,
       metadata: {
+        'source': detected.source,
+        'sourceId': detected.id,
+        'sourceFingerprint': detected.fingerprint,
         'intent': 'investment_sip',
         'investmentId': investment.id,
         'investmentName': investment.name,
       },
-      createdAt: now,
-      updatedAt: now,
+      source: detected.source,
+      sourceId: detected.id,
+      sourceFingerprint: detected.fingerprint,
+      confidence: detected.confidence,
+      warnings: detected.warnings,
     );
 
     return ApprovedTransactionPlan(
       source: detected,
       intent: TransactionIntent.investmentSip,
-      transaction: transaction,
-      newAccountBalance: currentAccountBalance - detected.amount,
+      draft: draft,
       sideEffects: [
         SideEffect(
           type: SideEffectType.updateInvestmentAmount,
           description:
-              'Add ₹${detected.amount.toStringAsFixed(0)} to ${investment.name}',
+              'Add ₹${AppCurrency.format(detected.amount)} to ${investment.name}',
           data: {'investmentId': investment.id, 'amount': detected.amount},
         ),
       ],

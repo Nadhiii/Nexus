@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/subscription.dart';
 import '../services/subscription_service.dart';
@@ -75,9 +75,9 @@ class SubscriptionProvider extends ChangeNotifier {
 
   // Formatted getters
   String get formattedTotalMonthlyCost =>
-      'Γé╣${totalMonthlyCost.toStringAsFixed(2)}';
+      '₹${totalMonthlyCost.toStringAsFixed(2)}';
   String get formattedTotalYearlyCost =>
-      'Γé╣${totalYearlyCost.toStringAsFixed(2)}';
+      '₹${totalYearlyCost.toStringAsFixed(2)}';
 
   Future<void> initialize() {
     return _initializationFuture ??= _initialize();
@@ -124,7 +124,9 @@ class SubscriptionProvider extends ChangeNotifier {
   }
 
   void _checkSubscriptionReminders() {
-    if (_notificationProvider == null) { return; }
+    if (_notificationProvider == null) {
+      return;
+    }
     for (final sub in _subscriptions) {
       _notificationProvider!.checkSubscriptionReminders(
         sub.name,
@@ -211,13 +213,17 @@ class SubscriptionProvider extends ChangeNotifier {
 
   Future<void> clearAllData() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) { return; }
+    if (user == null) {
+      return;
+    }
     await _subscriptionService.clearAllSubscriptions(user.uid);
   }
 
   Future<void> restoreFromBackup(List<dynamic> data) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) { return; }
+    if (user == null) {
+      return;
+    }
     final subscriptions = data
         .map((d) => Subscription.fromJson(d as Map<String, dynamic>))
         .toList();
@@ -245,5 +251,12 @@ class SubscriptionProvider extends ChangeNotifier {
 
   void clear() {
     reset();
+  }
+
+  @override
+  void dispose() {
+    _subscriptionsSubscription?.cancel();
+    _dueTodaySubscription?.cancel();
+    super.dispose();
   }
 }

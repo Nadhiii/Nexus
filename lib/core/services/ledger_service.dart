@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as fs;
 import 'package:flutter/foundation.dart';
 import '../models/transaction.dart';
+import 'transaction_paths.dart';
 
 /// LedgerService: Ensures atomicity for transaction + account + budget updates.
 ///
@@ -24,9 +25,9 @@ class LedgerService {
   }) async {
     final userId = transaction.userId;
 
-    final transactionRef = transaction.id.isNotEmpty 
-        ? _userCol(userId, 'transactions').doc(transaction.id)
-        : _userCol(userId, 'transactions').doc();
+    final transactionRef = transaction.id.isNotEmpty
+        ? TransactionPaths.document(_firestore, userId, transaction.id)
+        : TransactionPaths.collection(_firestore, userId).doc();
     final accountRef = _userDoc(userId, 'accounts', transaction.accountId);
 
     final batch = _firestore.batch();
@@ -68,9 +69,9 @@ class LedgerService {
   }) async {
     final userId = transaction.userId;
 
-    final transactionRef = transaction.id.isNotEmpty 
-        ? _userCol(userId, 'transactions').doc(transaction.id)
-        : _userCol(userId, 'transactions').doc();
+    final transactionRef = transaction.id.isNotEmpty
+        ? TransactionPaths.document(_firestore, userId, transaction.id)
+        : TransactionPaths.collection(_firestore, userId).doc();
     final sourceAccountRef =
         _userDoc(userId, 'accounts', transaction.accountId);
     final destAccountRef =
@@ -98,7 +99,11 @@ class LedgerService {
     required Map<String, double> accountBalances,
   }) async {
     final userId = newTransaction.userId;
-    final transactionRef = _userDoc(userId, 'transactions', newTransaction.id);
+    final transactionRef = TransactionPaths.document(
+      _firestore,
+      userId,
+      newTransaction.id,
+    );
     
     final batch = _firestore.batch();
     batch.update(transactionRef, newTransaction.toMap());
@@ -144,7 +149,11 @@ class LedgerService {
     required Map<String, double> accountBalances,
   }) async {
     final userId = transaction.userId;
-    final transactionRef = _userDoc(userId, 'transactions', transaction.id);
+    final transactionRef = TransactionPaths.document(
+      _firestore,
+      userId,
+      transaction.id,
+    );
     
     final batch = _firestore.batch();
     batch.delete(transactionRef);

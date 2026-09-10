@@ -59,16 +59,24 @@ class SharedExpense {
   /// Get remaining amount to be collected
   double get remainingAmount => totalOwed - settledAmount;
 
+  static double _amount(Object? value) => value is num
+      ? value.toDouble()
+      : double.tryParse(value?.toString() ?? '') ?? 0;
+
+  static DateTime _date(Object? value) {
+    if (value is Timestamp) return value.toDate();
+    return DateTime.tryParse(value?.toString() ?? '') ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
   factory SharedExpense.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    final data = Map<String, dynamic>.from(doc.data() as Map? ?? const {});
     return SharedExpense(
       id: doc.id,
       userId: data['userId'] ?? '',
       description: data['description'] ?? '',
-      totalAmount: (data['totalAmount'] ?? 0).toDouble(),
-      date: data['date'] is Timestamp
-          ? (data['date'] as Timestamp).toDate()
-          : DateTime.parse(data['date'] as String),
+      totalAmount: _amount(data['totalAmount']),
+      date: _date(data['date']),
       paidBy: data['paidBy'] ?? '',
       paidByName: data['paidByName'] ?? '',
       splits:
@@ -79,12 +87,8 @@ class SharedExpense {
       isSettled: data['isSettled'] ?? false,
       category: data['category'],
       notes: data['notes'],
-      createdAt: data['createdAt'] is Timestamp
-          ? (data['createdAt'] as Timestamp).toDate()
-          : DateTime.parse(data['createdAt'] as String),
-      updatedAt: data['updatedAt'] is Timestamp
-          ? (data['updatedAt'] as Timestamp).toDate()
-          : DateTime.parse(data['updatedAt'] as String),
+      createdAt: _date(data['createdAt']),
+      updatedAt: _date(data['updatedAt']),
     );
   }
 
@@ -158,12 +162,12 @@ class ExpenseSplit {
     return ExpenseSplit(
       personId: data['personId'] ?? '',
       personName: data['personName'] ?? '',
-      amount: (data['amount'] ?? 0).toDouble(),
+      amount: data['amount'] is num
+          ? (data['amount'] as num).toDouble()
+          : double.tryParse(data['amount']?.toString() ?? '') ?? 0,
       isSettled: data['isSettled'] ?? false,
       settledDate: data['settledDate'] != null
-          ? (data['settledDate'] is Timestamp
-                ? (data['settledDate'] as Timestamp).toDate()
-                : DateTime.parse(data['settledDate'] as String))
+          ? SharedExpense._date(data['settledDate'])
           : null,
     );
   }

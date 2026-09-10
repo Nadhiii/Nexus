@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 
 @immutable
 class DetectedTransaction {
@@ -18,6 +18,9 @@ class DetectedTransaction {
   final double?
   balanceAfter; // Account balance after this transaction, if the alert included one
   final String? accountNumber; // Last-4 digits of account/card, if present
+  final Map<String, dynamic>? analysis; // Latest interpretation/evidence
+  final String? matchedTransactionId;
+  final String? statementImportId;
 
   const DetectedTransaction({
     required this.id,
@@ -34,6 +37,9 @@ class DetectedTransaction {
     this.bankName,
     this.balanceAfter,
     this.accountNumber,
+    this.analysis,
+    this.matchedTransactionId,
+    this.statementImportId,
   });
 
   // Quick check for reliability
@@ -56,6 +62,9 @@ class DetectedTransaction {
     'bankName': bankName,
     'balanceAfter': balanceAfter,
     'accountNumber': accountNumber,
+    'analysis': analysis,
+    'matchedTransactionId': matchedTransactionId,
+    'statementImportId': statementImportId,
   };
 
   factory DetectedTransaction.fromJson(Map<String, dynamic> json) {
@@ -74,6 +83,11 @@ class DetectedTransaction {
       bankName: json['bankName'] as String?,
       balanceAfter: (json['balanceAfter'] as num?)?.toDouble(),
       accountNumber: json['accountNumber'] as String?,
+      analysis: json['analysis'] != null
+          ? Map<String, dynamic>.from(json['analysis'] as Map)
+          : null,
+      matchedTransactionId: json['matchedTransactionId'] as String?,
+      statementImportId: json['statementImportId'] as String?,
     );
   }
 
@@ -103,6 +117,9 @@ class DetectedTransaction {
     String? bankName,
     double? balanceAfter,
     String? accountNumber,
+    Map<String, dynamic>? analysis,
+    String? matchedTransactionId,
+    String? statementImportId,
   }) {
     return DetectedTransaction(
       id: id ?? this.id,
@@ -119,6 +136,9 @@ class DetectedTransaction {
       bankName: bankName ?? this.bankName,
       balanceAfter: balanceAfter ?? this.balanceAfter,
       accountNumber: accountNumber ?? this.accountNumber,
+      analysis: analysis ?? this.analysis,
+      matchedTransactionId: matchedTransactionId ?? this.matchedTransactionId,
+      statementImportId: statementImportId ?? this.statementImportId,
     );
   }
 }

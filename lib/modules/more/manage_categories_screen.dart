@@ -108,7 +108,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                   child: Center(
                     child: Text(
                       isHiddenView
-                          ? "Nothing hidden ΓÇö deleted defaults show up here"
+                          ? "Nothing hidden — deleted defaults show up here"
                           : "No categories found",
                       style: TextStyle(color: AppColors.textTertiary),
                     ),
@@ -127,7 +127,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                       final category = displayedCategories[index];
 
                       if (isHiddenView) {
-                        // Hidden defaults aren't swipeable/editable here ΓÇö
+                        // Hidden defaults aren't swipeable/editable here —
                         // just show them with an explicit restore action.
                         return Padding(
                           padding: const EdgeInsets.only(bottom: AppSpacing.md),

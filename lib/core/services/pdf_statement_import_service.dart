@@ -203,16 +203,16 @@ class PdfStatementImportService {
       type: FileType.custom,
       allowedExtensions: ['pdf'],
     );
-    if (result == null || result.files.single.path == null) {
+    if (result.single.path == null) {
       debugPrint('[PdfImport] File picker cancelled or no path.');
       return null;
     }
 
-    debugPrint('[PdfImport] File picked: ${result.files.single.name}');
-    final file = File(result.files.single.path!);
+    debugPrint('[PdfImport] File picked: ${result.single.name}');
+    final file = File(result.single.path!);
     final bytes = await file.readAsBytes();
     debugPrint('[PdfImport] Read ${bytes.length} bytes from file.');
-    final fileName = result.files.single.name;
+    final fileName = result.single.name;
 
     final savedPasswords = await _getSavedPasswords();
     debugPrint(

@@ -76,7 +76,7 @@ class BikeProvider with ChangeNotifier {
       return "${entry.date.year}-${entry.date.month}-${entry.date.day}";
     }).toSet();
 
-    debugPrint('≡ƒùô∩╕Å getUniqueActiveDays: ${uniqueDays.length} unique days');
+    debugPrint('🗓️ getUniqueActiveDays: ${uniqueDays.length} unique days');
     return uniqueDays.length;
   }
 
@@ -107,14 +107,14 @@ class BikeProvider with ChangeNotifier {
 
   // Method to select a specific bike (separate from dashboard bike)
   void selectBike(String bikeId) {
-    debugPrint('≡ƒÅì∩╕Å BikeProvider: selectBike called with bikeId: $bikeId');
+    debugPrint('🏍️ BikeProvider: selectBike called with bikeId: $bikeId');
     _selectedBikeId = bikeId;
     final user = _auth.currentUser;
     if (user != null) {
-      debugPrint('≡ƒÅì∩╕Å BikeProvider: Loading entries for user ${user.uid}');
+      debugPrint('🏍️ BikeProvider: Loading entries for user ${user.uid}');
       loadBikeEntries(user.uid, bikeId);
     } else {
-      debugPrint('Γ¥î BikeProvider: No current user!');
+      debugPrint('❌ BikeProvider: No current user!');
     }
     notifyListeners();
   }
@@ -170,7 +170,7 @@ class BikeProvider with ChangeNotifier {
         notifyListeners();
       },
       onError: (e) {
-        debugPrint('Γ¥î BikeProvider: Error loading dashboard bike entries: $e');
+        debugPrint('❌ BikeProvider: Error loading dashboard bike entries: $e');
         _setError('Error loading dashboard bike entries: $e');
       },
     );
@@ -198,7 +198,7 @@ class BikeProvider with ChangeNotifier {
   }
 
   void loadBikeEntries(String userId, String bikeId) {
-    debugPrint('≡ƒôè BikeProvider: loadBikeEntries called for bikeId: $bikeId');
+    debugPrint('📊 BikeProvider: loadBikeEntries called for bikeId: $bikeId');
     _setLoading(true);
     // Cancel previous subscription if it exists
     _entriesSubscription?.cancel();
@@ -207,11 +207,11 @@ class BikeProvider with ChangeNotifier {
         .watchBikeEntries(userId, bikeId)
         .listen(
           (entries) {
-            debugPrint('≡ƒôè BikeProvider: Received ${entries.length} entries');
+            debugPrint('📊 BikeProvider: Received ${entries.length} entries');
             for (var i = 0; i < entries.length; i++) {
               final entry = entries[i];
               debugPrint(
-                '  [$i] ${entry.date.toIso8601String()} | ${entry.category}, Γé╣${entry.fuelAmount}, ${entry.fuelQuantity}L',
+                '  [$i] ${entry.date.toIso8601String()} | ${entry.category}, ₹${entry.fuelAmount}, ${entry.fuelQuantity}L',
               );
             }
             _currentBikeEntries = entries;
@@ -223,7 +223,7 @@ class BikeProvider with ChangeNotifier {
             _syncToWidgets();
           },
           onError: (e) {
-            debugPrint('Γ¥î BikeProvider: Error loading entries: $e');
+            debugPrint('❌ BikeProvider: Error loading entries: $e');
             _setError('Error loading entries: $e');
             _setLoading(false);
           },
@@ -429,8 +429,8 @@ class BikeProvider with ChangeNotifier {
     }
   }
 
-  // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-  // MILEAGE CALCULATION (Full Tank ΓåÆ Full Tank method)
+  // ═══════════════════════════════════════════════════════════════════════
+  // MILEAGE CALCULATION (Full Tank → Full Tank method)
   //
   // This matches the spreadsheet "Real Mileage" logic:
   //   - Sort all FUEL entries by odometer reading (ascending = chronological
@@ -448,7 +448,7 @@ class BikeProvider with ChangeNotifier {
   // computed dist / fuelQuantity using the nearest-lower-odometer entry
   // (which could be a partial fill just a few km away), giving a tiny
   // distance divided against a normal fuel amount.
-  // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  // ═══════════════════════════════════════════════════════════════════════
 
   /// Returns a map of entryId -> calculated mileage (km/L) for FULL TANK
   /// entries only. Partial fill entries are not included (no key present).
@@ -501,17 +501,17 @@ class BikeProvider with ChangeNotifier {
         .where((e) => e.mileage != null && e.mileage! > 0)
         .toList();
     if (entries.isEmpty) {
-      debugPrint('Γ¢╜ getAverageMileage: 0 (no entries with mileage)');
+      debugPrint('⛽ getAverageMileage: 0 (no entries with mileage)');
       return 0;
     }
     final avg =
         entries.fold<double>(0, (sum, e) => sum + e.mileage!) / entries.length;
-    debugPrint('Γ¢╜ getAverageMileage: $avg (from ${entries.length} entries)');
+    debugPrint('⛽ getAverageMileage: $avg (from ${entries.length} entries)');
     return avg;
   }
 
-  /// Calculate overall average mileage using the Full Tank ΓåÆ Full Tank
-  /// method. This is the RELIABLE, production method ΓÇö it matches the
+  /// Calculate overall average mileage using the Full Tank → Full Tank
+  /// method. This is the RELIABLE, production method — it matches the
   /// spreadsheet's "Real Mileage" approach and correctly accounts for
   /// partial fills between full tanks.
   double getDashboardReliableAverageMileage() {
@@ -566,7 +566,7 @@ class BikeProvider with ChangeNotifier {
     final avg = total / mileageMap.length;
 
     debugPrint(
-      'Γ¢╜ getReliableAverageMileage: $avg km/l (from ${mileageMap.length} full-tank intervals)',
+      '⛽ getReliableAverageMileage: $avg km/l (from ${mileageMap.length} full-tank intervals)',
     );
     return avg;
   }
@@ -615,7 +615,7 @@ class BikeProvider with ChangeNotifier {
     final count = _currentBikeEntries
         .where((e) => e.category?.toLowerCase() == 'fuel')
         .length;
-    debugPrint('≡ƒöó getTotalFillups: $count');
+    debugPrint('🔢 getTotalFillups: $count');
     return count;
   }
 
@@ -711,7 +711,7 @@ class BikeProvider with ChangeNotifier {
           ((entry.category?.toLowerCase() == 'fuel') ? entry.fuelAmount : 0),
     );
     debugPrint(
-      '≡ƒÆ░ getTotalFuelCost: $total (from ${_currentBikeEntries.length} entries)',
+      '💰 getTotalFuelCost: $total (from ${_currentBikeEntries.length} entries)',
     );
     return total;
   }
@@ -767,7 +767,7 @@ class BikeProvider with ChangeNotifier {
       lastFuelDate: lastFuelDate,
     );
 
-    debugPrint('≡ƒöä Synced bike data to widgets: ${bike.name}');
+    debugPrint('🔄 Synced bike data to widgets: ${bike.name}');
   }
 
   void clear() {

@@ -1,16 +1,17 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/transaction.dart';
+import '../models/transaction_draft.dart';
 import '../services/transaction_service.dart';
-import '../services/ledger_service.dart';
+import '../services/transaction_engine.dart';
 import 'notification_provider.dart';
 import 'budget_provider.dart';
 import 'account_provider.dart';
 
 class TransactionProvider with ChangeNotifier {
   final TransactionService _transactionService = TransactionService();
-  final LedgerService _ledgerService = LedgerService();
+  final TransactionEngine _transactionEngine = TransactionEngine();
 
   NotificationProvider? _notificationProvider;
   BudgetProvider? _budgetProvider;
@@ -58,7 +59,9 @@ class TransactionProvider with ChangeNotifier {
 
   Future<void> _initialize() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) { return; }
+    if (user == null) {
+      return;
+    }
 
     try {
       _setLoading(true);
@@ -73,7 +76,9 @@ class TransactionProvider with ChangeNotifier {
 
   Future<void> loadTransactions() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) { return; }
+    if (user == null) {
+      return;
+    }
 
     final firstSnapshot = Completer<void>();
     try {
@@ -85,43 +90,90 @@ class TransactionProvider with ChangeNotifier {
           .listen(
             (transactions) {
               debugPrint(
-                '≡ƒôè TransactionProvider: Loaded ${transactions.length} transactions',
+                '📊 TransactionProvider: Loaded ${transactions.length} transactions',
               );
               _transactions = transactions;
               notifyListeners();
               if (!firstSnapshot.isCompleted) firstSnapshot.complete();
             },
             onError: (error) {
-              debugPrint('Γ¥î TransactionProvider Error: $error');
+              debugPrint('❌ TransactionProvider Error: $error');
               _setError('Failed to load transactions: $error');
               if (!firstSnapshot.isCompleted) firstSnapshot.complete();
             },
           );
       await firstSnapshot.future;
     } catch (e) {
-      debugPrint('Γ¥î TransactionProvider Catch: $e');
+      debugPrint('❌ TransactionProvider Catch: $e');
       _setError('Failed to load transactions: $e');
       if (!firstSnapshot.isCompleted) firstSnapshot.complete();
     }
   }
 
-  Future<bool> addTransaction(Transaction transaction) async {
+  Future<Transaction?> findBySourceFingerprint(String fingerprint) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || fingerprint.isEmpty) return null;
+    return _transactionService.findBySourceFingerprint(user.uid, fingerprint);
+  }
+
+  /// Commits every new financial fact through the same application-layer
+  /// use case. A source fingerprint is an idempotency key; it never becomes
+  /// the ledger document id.
+  Future<TransactionCommitResult?> commitDraft(TransactionDraft draft) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || _accountProvider == null) {
       _setError('User or Account Provider not available');
-      return false;
+      return null;
     }
 
     try {
+      final transaction = draft.toTransaction(userId: user.uid);
+      String? committedId;
+      if (!transaction.amount.isFinite ||
+          (transaction.type != TransactionType.adjustment &&
+              transaction.amount <= 0) ||
+          transaction.accountId.isEmpty) {
+        _setError('Enter a valid amount and account');
+        return null;
+      }
+      if (transaction.type == TransactionType.transfer &&
+          (transaction.toAccountId == null ||
+              transaction.toAccountId == transaction.accountId)) {
+        _setError('Choose different source and destination accounts');
+        return null;
+      }
+      // Source-backed transactions must be idempotent. NBox can receive the
+      // same SMS/email again after a rescan, restart, or delayed listener.
+      // Check Firestore as well as the local stream so deletion/recreation is
+      // reflected immediately rather than relying on listener timing.
+      final sourceFingerprint = transaction.metadata?['sourceFingerprint']
+          ?.toString();
+      final source = transaction.metadata?['source']?.toString();
+      if (sourceFingerprint != null && sourceFingerprint.isNotEmpty) {
+        final existing = await _transactionService.findBySourceFingerprint(
+          user.uid,
+          sourceFingerprint,
+        );
+        if (existing != null) {
+          final existingSource = existing.metadata?['source']?.toString();
+          if (source == null || existingSource == source) {
+            return TransactionCommitResult(
+              transaction: existing,
+              alreadyExists: true,
+            );
+          }
+        }
+      }
+
       _setLoading(true);
 
       debugPrint(
-        'Γ₧ò Adding transaction: ${transaction.description}, amount: ${transaction.amount}, userId: ${transaction.userId}',
+        '➕ Adding transaction: ${transaction.description}, amount: ${transaction.amount}, userId: ${transaction.userId}',
       );
       // Atomic transaction + account update
       if (transaction.type == TransactionType.transfer &&
           transaction.toAccountId != null) {
-        debugPrint('≡ƒÆ╕ Processing TRANSFER');
+        debugPrint('💸 Processing TRANSFER');
         final sourceAccount = _accountProvider!.getAccountById(
           transaction.accountId,
         );
@@ -131,32 +183,33 @@ class TransactionProvider with ChangeNotifier {
         if (sourceAccount == null || destAccount == null) {
           _setError('Source or destination account not found');
           _setLoading(false);
-          return false;
+          return null;
         }
         final sourceNewBalance = sourceAccount.balance - transaction.amount;
         final destNewBalance = destAccount.balance + transaction.amount;
-        await _ledgerService.addTransferAndUpdateBalances(
+        committedId = await _transactionEngine.commitTransfer(
           transaction: transaction,
           sourceNewBalance: sourceNewBalance,
-          destNewBalance: destNewBalance,
+          destinationNewBalance: destNewBalance,
         );
-        debugPrint('Γ£à Transfer and balances committed atomically');
+        debugPrint('✅ Transfer and balances committed atomically');
       } else {
-        debugPrint('≡ƒÆ░ Processing regular ${transaction.type}');
+        debugPrint('💰 Processing regular ${transaction.type}');
         final account = _accountProvider!.getAccountById(transaction.accountId);
         if (account == null) {
           _setError('Account not found');
           _setLoading(false);
-          return false;
+          return null;
         }
         final newBalance = transaction.type == TransactionType.income
             ? account.balance + transaction.amount
             : account.balance - transaction.amount;
-        await _ledgerService.addTransactionAndUpdateBalance(
+        committedId = await _transactionEngine.commit(
           transaction: transaction,
           newBalance: newBalance,
         );
-        debugPrint('Γ£à Transaction and balance committed atomically');
+        debugPrint('TransactionProvider: committed transaction $committedId');
+        debugPrint('✅ Transaction and balance committed atomically');
       }
 
       _notificationProvider?.notifyTransaction(
@@ -171,12 +224,21 @@ class TransactionProvider with ChangeNotifier {
       }
 
       _setLoading(false);
-      return true;
+      return TransactionCommitResult(
+        transaction: transaction.copyWith(id: committedId),
+      );
     } catch (e) {
       _setError('Failed to add transaction: $e');
       _setLoading(false);
-      return false;
+      return null;
     }
+  }
+
+  /// Compatibility wrapper for older screens. New transaction-producing
+  /// flows should create a [TransactionDraft] and call [commitDraft].
+  Future<bool> addTransaction(Transaction transaction) async {
+    final result = await commitDraft(TransactionDraft.fromTransaction(transaction));
+    return result != null && !result.alreadyExists;
   }
 
   /// Restores a previously deleted transaction (used for undo)
@@ -190,14 +252,14 @@ class TransactionProvider with ChangeNotifier {
 
     try {
       debugPrint(
-        '≡ƒöä Restoring transaction: ${transaction.description}, id: ${transaction.id}',
+        '🔄 Restoring transaction: ${transaction.description}, id: ${transaction.id}',
       );
-      debugPrint('≡ƒôè Current transactions count: ${_transactions.length}');
+      debugPrint('📊 Current transactions count: ${_transactions.length}');
 
       // Use the same logic as addTransaction to restore atomically
       if (transaction.type == TransactionType.transfer &&
           transaction.toAccountId != null) {
-        debugPrint('≡ƒÆ╕ Restoring TRANSFER');
+        debugPrint('💸 Restoring TRANSFER');
         final sourceAccount = _accountProvider!.getAccountById(
           transaction.accountId,
         );
@@ -210,14 +272,14 @@ class TransactionProvider with ChangeNotifier {
         }
         final sourceNewBalance = sourceAccount.balance - transaction.amount;
         final destNewBalance = destAccount.balance + transaction.amount;
-        await _ledgerService.addTransferAndUpdateBalances(
+        await _transactionEngine.commitTransfer(
           transaction: transaction,
           sourceNewBalance: sourceNewBalance,
-          destNewBalance: destNewBalance,
+          destinationNewBalance: destNewBalance,
         );
-        debugPrint('Γ£à Transfer restore committed atomically');
+        debugPrint('✅ Transfer restore committed atomically');
       } else {
-        debugPrint('≡ƒÆ░ Restoring regular ${transaction.type}');
+        debugPrint('💰 Restoring regular ${transaction.type}');
         final account = _accountProvider!.getAccountById(transaction.accountId);
         if (account == null) {
           _setError('Account not found');
@@ -226,11 +288,11 @@ class TransactionProvider with ChangeNotifier {
         final newBalance = transaction.type == TransactionType.income
             ? account.balance + transaction.amount
             : account.balance - transaction.amount;
-        await _ledgerService.addTransactionAndUpdateBalance(
+        await _transactionEngine.commit(
           transaction: transaction,
           newBalance: newBalance,
         );
-        debugPrint('Γ£à Transaction restore committed atomically');
+        debugPrint('✅ Transaction restore committed atomically');
       }
 
       // Manually add to local list if not already present (stream may be delayed)
@@ -242,12 +304,12 @@ class TransactionProvider with ChangeNotifier {
 
       // Always notify listeners to ensure UI updates
       debugPrint(
-        '≡ƒöö Calling notifyListeners() - transaction count: ${_transactions.length}',
+        '🔔 Calling notifyListeners() - transaction count: ${_transactions.length}',
       );
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('Γ¥î Restore failed: $e');
+      debugPrint('❌ Restore failed: $e');
       _setError('Failed to restore transaction: $e');
       return false;
     }
@@ -268,7 +330,12 @@ class TransactionProvider with ChangeNotifier {
 
       final accountBalances = <String, double>{};
 
-      double calcNewBalance(String acctId, double amt, bool isIncome, bool isReversal) {
+      double calcNewBalance(
+        String acctId,
+        double amt,
+        bool isIncome,
+        bool isReversal,
+      ) {
         final acct = _accountProvider!.getAccountById(acctId);
         if (acct == null) return 0;
         double bal = accountBalances[acctId] ?? acct.balance;
@@ -281,24 +348,56 @@ class TransactionProvider with ChangeNotifier {
       }
 
       // 1. Reverse original
-      if (originalTransaction.type == TransactionType.transfer && originalTransaction.toAccountId != null) {
-        accountBalances[originalTransaction.accountId] = calcNewBalance(originalTransaction.accountId, originalTransaction.amount, false, true);
-        accountBalances[originalTransaction.toAccountId!] = calcNewBalance(originalTransaction.toAccountId!, originalTransaction.amount, true, true);
+      if (originalTransaction.type == TransactionType.transfer &&
+          originalTransaction.toAccountId != null) {
+        accountBalances[originalTransaction.accountId] = calcNewBalance(
+          originalTransaction.accountId,
+          originalTransaction.amount,
+          false,
+          true,
+        );
+        accountBalances[originalTransaction.toAccountId!] = calcNewBalance(
+          originalTransaction.toAccountId!,
+          originalTransaction.amount,
+          true,
+          true,
+        );
       } else {
         final isIncome = originalTransaction.type == TransactionType.income;
-        accountBalances[originalTransaction.accountId] = calcNewBalance(originalTransaction.accountId, originalTransaction.amount, isIncome, true);
+        accountBalances[originalTransaction.accountId] = calcNewBalance(
+          originalTransaction.accountId,
+          originalTransaction.amount,
+          isIncome,
+          true,
+        );
       }
 
       // 2. Apply new
-      if (transaction.type == TransactionType.transfer && transaction.toAccountId != null) {
-        accountBalances[transaction.accountId] = calcNewBalance(transaction.accountId, transaction.amount, false, false);
-        accountBalances[transaction.toAccountId!] = calcNewBalance(transaction.toAccountId!, transaction.amount, true, false);
+      if (transaction.type == TransactionType.transfer &&
+          transaction.toAccountId != null) {
+        accountBalances[transaction.accountId] = calcNewBalance(
+          transaction.accountId,
+          transaction.amount,
+          false,
+          false,
+        );
+        accountBalances[transaction.toAccountId!] = calcNewBalance(
+          transaction.toAccountId!,
+          transaction.amount,
+          true,
+          false,
+        );
       } else {
         final isIncome = transaction.type == TransactionType.income;
-        accountBalances[transaction.accountId] = calcNewBalance(transaction.accountId, transaction.amount, isIncome, false);
+        accountBalances[transaction.accountId] = calcNewBalance(
+          transaction.accountId,
+          transaction.amount,
+          isIncome,
+          false,
+        );
       }
 
-      await _ledgerService.updateTransactionAndUpdateBalances(
+      await _transactionEngine.update(
         oldTransaction: originalTransaction,
         newTransaction: transaction,
         accountBalances: accountBalances,
@@ -321,10 +420,19 @@ class TransactionProvider with ChangeNotifier {
     }
 
     try {
-      final transaction = _transactions.firstWhere((t) => t.id == transactionId);
+      final transaction = getTransactionById(transactionId);
+      if (transaction == null) {
+        _setError('Transaction no longer exists. Refresh and try again.');
+        return false;
+      }
       final accountBalances = <String, double>{};
 
-      double calcNewBalance(String acctId, double amt, bool isIncome, bool isReversal) {
+      double calcNewBalance(
+        String acctId,
+        double amt,
+        bool isIncome,
+        bool isReversal,
+      ) {
         final acct = _accountProvider!.getAccountById(acctId);
         if (acct == null) return 0;
         double bal = accountBalances[acctId] ?? acct.balance;
@@ -336,15 +444,31 @@ class TransactionProvider with ChangeNotifier {
         return bal;
       }
 
-      if (transaction.type == TransactionType.transfer && transaction.toAccountId != null) {
-        accountBalances[transaction.accountId] = calcNewBalance(transaction.accountId, transaction.amount, false, true);
-        accountBalances[transaction.toAccountId!] = calcNewBalance(transaction.toAccountId!, transaction.amount, true, true);
+      if (transaction.type == TransactionType.transfer &&
+          transaction.toAccountId != null) {
+        accountBalances[transaction.accountId] = calcNewBalance(
+          transaction.accountId,
+          transaction.amount,
+          false,
+          true,
+        );
+        accountBalances[transaction.toAccountId!] = calcNewBalance(
+          transaction.toAccountId!,
+          transaction.amount,
+          true,
+          true,
+        );
       } else {
         final isIncome = transaction.type == TransactionType.income;
-        accountBalances[transaction.accountId] = calcNewBalance(transaction.accountId, transaction.amount, isIncome, true);
+        accountBalances[transaction.accountId] = calcNewBalance(
+          transaction.accountId,
+          transaction.amount,
+          isIncome,
+          true,
+        );
       }
 
-      await _ledgerService.deleteTransactionAndUpdateBalances(
+      await _transactionEngine.delete(
         transaction: transaction,
         accountBalances: accountBalances,
       );
@@ -358,13 +482,17 @@ class TransactionProvider with ChangeNotifier {
 
   Future<void> clearAllData() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) { return; }
+    if (user == null) {
+      return;
+    }
     await _transactionService.clearAllTransactions(user.uid);
   }
 
   Future<void> restoreFromBackup(List<dynamic> data) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) { return; }
+    if (user == null) {
+      return;
+    }
     final transactions = data
         .map((d) => Transaction.fromJson(d as Map<String, dynamic>))
         .toList();
@@ -384,16 +512,16 @@ class TransactionProvider with ChangeNotifier {
   /// Recalculates account balance from all transactions for a specific account
   Future<void> recalculateAccountBalance(String accountId) async {
     if (_accountProvider == null) {
-      debugPrint('Γ¥î AccountProvider not available');
+      debugPrint('❌ AccountProvider not available');
       return;
     }
     if (accountId.isEmpty) {
-      debugPrint('ΓÜá∩╕Å Skipping recalculation: empty accountId');
+      debugPrint('⚠️ Skipping recalculation: empty accountId');
       return;
     }
 
     try {
-      debugPrint('≡ƒöó Recalculating balance for account: $accountId');
+      debugPrint('🔢 Recalculating balance for account: $accountId');
 
       // Get all transactions for this account
       final accountTransactions = _transactions
@@ -401,7 +529,7 @@ class TransactionProvider with ChangeNotifier {
           .toList();
 
       debugPrint(
-        '≡ƒôè Found ${accountTransactions.length} transactions for this account',
+        '📊 Found ${accountTransactions.length} transactions for this account',
       );
 
       // Calculate balance from transactions
@@ -411,40 +539,40 @@ class TransactionProvider with ChangeNotifier {
         if (transaction.type == TransactionType.income) {
           calculatedBalance += transaction.amount;
           debugPrint(
-            '  Γ₧ò Income: +${transaction.amount} (${transaction.description})',
+            '  ➕ Income: +${transaction.amount} (${transaction.description})',
           );
         } else if (transaction.type == TransactionType.expense) {
           calculatedBalance -= transaction.amount;
           debugPrint(
-            '  Γ₧û Expense: -${transaction.amount} (${transaction.description})',
+            '  ➖ Expense: -${transaction.amount} (${transaction.description})',
           );
         } else if (transaction.type == TransactionType.transfer) {
           if (transaction.accountId == accountId) {
             // Money going out (source account)
             calculatedBalance -= transaction.amount;
             debugPrint(
-              '  Γ₧û Transfer Out: -${transaction.amount} (${transaction.description})',
+              '  ➖ Transfer Out: -${transaction.amount} (${transaction.description})',
             );
           } else if (transaction.toAccountId == accountId) {
             // Money coming in (destination account)
             calculatedBalance += transaction.amount;
             debugPrint(
-              '  Γ₧ò Transfer In: +${transaction.amount} (${transaction.description})',
+              '  ➕ Transfer In: +${transaction.amount} (${transaction.description})',
             );
           }
         }
       }
 
-      debugPrint('≡ƒÆ░ Calculated balance: $calculatedBalance');
+      debugPrint('💰 Calculated balance: $calculatedBalance');
 
       // Update the account balance
       await _accountProvider!.updateAccountBalance(
         accountId,
         calculatedBalance,
       );
-      debugPrint('Γ£à Account balance recalculated and updated');
+      debugPrint('✅ Account balance recalculated and updated');
     } catch (e) {
-      debugPrint('Γ¥î Error recalculating balance: $e');
+      debugPrint('❌ Error recalculating balance: $e');
       _setError('Failed to recalculate balance: $e');
     }
   }
@@ -460,7 +588,7 @@ class TransactionProvider with ChangeNotifier {
           ..sort((a, b) => a.date.compareTo(b.date));
 
     double running = 0.0;
-    debugPrint('≡ƒôÆ Ledger for account=$accountId, total txns=${txns.length}');
+    debugPrint('📒 Ledger for account=$accountId, total txns=${txns.length}');
 
     for (final t in txns) {
       double delta = 0.0;
@@ -489,17 +617,23 @@ class TransactionProvider with ChangeNotifier {
     // Print last N for quick view
     final start = (txns.length - lastN) < 0 ? 0 : (txns.length - lastN);
     final recent = txns.sublist(start);
-    debugPrint('≡ƒº╛ Last $lastN entries:');
+    debugPrint('🧾 Last $lastN entries:');
     for (final t in recent) {
       final isDst = t.toAccountId == accountId;
       final sign = t.type == TransactionType.income || isDst ? '+' : '-';
-      debugPrint('  $sign${t.amount.toStringAsFixed(2)}  ${t.description ?? ''}');
+      debugPrint(
+        '  $sign${t.amount.toStringAsFixed(2)}  ${t.description ?? ''}',
+      );
     }
-    debugPrint('Γ£à Computed balance from ledger: ${running.toStringAsFixed(2)}');
+    debugPrint('✅ Computed balance from ledger: ${running.toStringAsFixed(2)}');
   }
 
   void clear() {
+    _transactionSubscription?.cancel();
+    _transactionSubscription = null;
     _transactions.clear();
+    _isInitialized = false;
+    _initializationFuture = null;
     _isLoading = false;
     _error = null;
     notifyListeners();
@@ -510,4 +644,14 @@ class TransactionProvider with ChangeNotifier {
     _transactionSubscription?.cancel();
     super.dispose();
   }
+}
+
+class TransactionCommitResult {
+  final Transaction transaction;
+  final bool alreadyExists;
+
+  const TransactionCommitResult({
+    required this.transaction,
+    this.alreadyExists = false,
+  });
 }

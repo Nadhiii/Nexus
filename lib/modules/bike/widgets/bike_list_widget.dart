@@ -179,7 +179,7 @@ class BikeListWidget extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              "Γé╣${entry.fuelAmount.toStringAsFixed(0)}",
+                              "₹${entry.fuelAmount.toStringAsFixed(0)}",
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -230,7 +230,7 @@ class BikeListWidget extends StatelessWidget {
                         Text(
                           isFuel
                               ? (entry.fuelQuantity > 0
-                                    ? "${entry.fuelQuantity} Litres @ Γé╣${(entry.fuelAmount / entry.fuelQuantity).toStringAsFixed(2)}/L"
+                                    ? "${entry.fuelQuantity} Litres @ ₹${(entry.fuelAmount / entry.fuelQuantity).toStringAsFixed(2)}/L"
                                     : "${entry.fuelQuantity} Litres")
                               : entry.notes ?? "",
                           style: TextStyle(

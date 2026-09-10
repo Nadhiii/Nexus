@@ -40,8 +40,8 @@ class AppNotification {
         (e) => e.toString().split('.').last == map['type'],
         orElse: () => NotificationType.systemUpdate,
       ),
-      title: map['title'],
-      message: map['message'],
+      title: _cleanLegacyText(map['title']?.toString() ?? ''),
+      message: _cleanLegacyText(map['message']?.toString() ?? ''),
       createdAt: DateTime.parse(map['createdAt']),
       isRead: map['isRead'] ?? false,
       data: map['data'] != null ? Map<String, dynamic>.from(map['data']) : null,
@@ -50,6 +50,19 @@ class AppNotification {
     );
   }
 
+
+  static String _cleanLegacyText(String value) {
+    // Older builds persisted UTF-8 text after an incorrect character-set
+    // conversion. Clean the common visible artifacts when old notifications
+    // are read; newly-created notifications already use correct UTF-8.
+    return value
+        .replaceAll('Γé╣', '₹')
+        .replaceAll('Γ£à', '✓')
+        .replaceAll('Γ¥î', '✕')
+        .replaceAll('ΓÜá∩╕Å', '⚠️')
+        .replaceAll('≡ƒ', '')
+        .replaceAll('ΓêÆ', '−');
+  }
   Map<String, dynamic> toMap() {
     return {
       'id': id,

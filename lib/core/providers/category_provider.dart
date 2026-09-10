@@ -4,14 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/category.dart';
 
-/// Manages user-defined and default transaction categories.
-///
-/// Default categories are hardcoded (not Firestore docs). To let users
-/// "edit" or "delete" a default category, we store a user-scoped
-/// *override* document keyed by the SAME id as the default
-/// (e.g. 'food', 'bills'). On load we merge: default -> override (if any)
-/// -> hidden (if flagged). True custom categories are any user doc whose
-/// id does NOT match a default id.
 class CategoryProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -32,7 +24,7 @@ class CategoryProvider with ChangeNotifier {
   String? get error => _error;
 
   CategoryProvider() {
-    _loadCategories();
+    _categories = _getDefaultCategories();
   }
 
   @override
@@ -94,11 +86,10 @@ class CategoryProvider with ChangeNotifier {
                     // Apply override fields on top of the default,
                     // but a default category always stays isCustom: false
                     // so it renders/behaves as "Editable Default".
-                    return Category.fromMap(
-                      def.id,
-                      {...override, 'is_custom': false},
-                      isModified: true,
-                    );
+                    return Category.fromMap(def.id, {
+                      ...override,
+                      'is_custom': false,
+                    }, isModified: true);
                   })
                   .whereType<Category>()
                   .toList();
@@ -138,6 +129,21 @@ class CategoryProvider with ChangeNotifier {
     }
   }
 
+  /// Clears user-scoped state on logout. The next authenticated session
+  /// calls refresh() from AuthGate.
+  void clear() {
+    _categorySubscription?.cancel();
+    _categorySubscription = null;
+    // Keep the built-in categories available immediately after logout/login
+    // transitions. The authenticated refresh will replace them with the
+    // merged Firestore-backed list once it arrives.
+    _categories = _getDefaultCategories();
+    _hiddenCategories = [];
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
+
   /// Refresh categories (useful after auth changes)
   Future<void> refresh() async {
     await _loadCategories();
@@ -145,17 +151,19 @@ class CategoryProvider with ChangeNotifier {
 
   /// Adds a new custom category to Firestore.
   Future<void> addCategory(Category category) async {
+    _error = null;
     final user = _auth.currentUser;
     if (user == null) {
       return;
     }
 
     try {
-      await _firestore
+      final ref = _firestore
           .collection('users')
           .doc(user.uid)
           .collection('categories')
-          .add(category.toMap());
+          .doc(category.id);
+      await ref.set(category.toMap());
       // Stream will auto-update the list
     } catch (e) {
       _error = 'Error adding category: $e';
@@ -171,6 +179,7 @@ class CategoryProvider with ChangeNotifier {
   /// on a non-existent doc, which is why edits to default categories
   /// used to silently fail.
   Future<void> updateCategory(Category category) async {
+    _error = null;
     final user = _auth.currentUser;
     if (user == null) {
       return;
@@ -194,11 +203,15 @@ class CategoryProvider with ChangeNotifier {
   ///
   /// - True custom category -> the Firestore doc is deleted outright.
   /// - Default category -> can't be deleted (it isn't a real doc and
-  ///   SmartCategoryResolver may still route transactions to its id),
+  ///   legacy category routing may still route transactions to its id),
   ///   so we mark it 'hidden' instead. It moves into hiddenCategories
   ///   and disappears from the main list, but the id stays reserved
   ///   and can be restored via unhideCategory().
-  Future<void> deleteCategory(String categoryId, {bool isDefault = false}) async {
+  Future<void> deleteCategory(
+    String categoryId, {
+    bool isDefault = false,
+  }) async {
+    _error = null;
     final user = _auth.currentUser;
     if (user == null) {
       return;
@@ -225,6 +238,7 @@ class CategoryProvider with ChangeNotifier {
 
   /// Restores a previously hidden default category back to visible.
   Future<void> unhideCategory(String categoryId) async {
+    _error = null;
     final user = _auth.currentUser;
     if (user == null) {
       return;

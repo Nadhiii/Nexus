@@ -98,7 +98,7 @@ class BikeStatsWidget extends StatelessWidget {
           fuelEntries
               .fold<double>(0, (sum, e) => sum + (e.fuelAmount))
               .toStringAsFixed(0),
-          'Γé╣',
+          '₹',
           Icons.currency_rupee,
           subtitle: fuelEntries.isNotEmpty
               ? '${fuelEntries.map((e) => '${e.date.day}/${e.date.month}').toSet().length} days'

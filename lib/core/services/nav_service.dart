@@ -28,7 +28,7 @@ class NavService {
   /// Update investment with current NAV and recalculate its market value.
   ///
   /// IMPORTANT: This only ever touches `currentAmount`. `investedAmount` is
-  /// what the user actually typed in when they logged the purchase ΓÇö it is
+  /// what the user actually typed in when they logged the purchase — it is
   /// ground truth and must never be recalculated or overwritten here.
   Future<Investment> enrichInvestmentWithNav(Investment investment) async {
     // Only enrich Mutual Fund investments that have a scheme code.
@@ -42,13 +42,13 @@ class NavService {
     final currentNav = await getCurrentNav(investment.mutualFundSchemeCode!);
 
     if (currentNav == null) {
-      // NAV fetch failed ΓÇö leave the investment exactly as it was.
+      // NAV fetch failed — leave the investment exactly as it was.
       // Do NOT touch investedAmount or currentAmount here.
       return investment;
     }
 
     // Only recalculate the current market value. investedAmount is
-    // intentionally left untouched ΓÇö it's user-entered, not derived.
+    // intentionally left untouched — it's user-entered, not derived.
     final currentValue = investment.quantity * currentNav;
 
     return investment.copyWith(

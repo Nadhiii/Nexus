@@ -1,6 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -180,7 +182,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
           // Balance indicator
           if (balance != 0)
             Text(
-              '${isPositive ? '+' : ''}Γé╣${balance.abs().toStringAsFixed(0)}',
+              '${isPositive ? '+' : ''}₹${AppCurrency.format(balance.abs())}',
               style: TextStyle(
                 color: balanceColor,
                 fontSize: 10,
@@ -360,7 +362,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
         Expanded(
           child: _buildStatCard(
             'You Owe',
-            'Γé╣${youOwe.toStringAsFixed(0)}',
+            '₹${AppCurrency.format(youOwe)}',
             AppColors.error,
             Icons.arrow_upward,
           ),
@@ -369,7 +371,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
         Expanded(
           child: _buildStatCard(
             'You\'re Owed',
-            'Γé╣${youAreOwed.toStringAsFixed(0)}',
+            '₹${AppCurrency.format(youAreOwed)}',
             AppColors.success,
             Icons.arrow_downward,
           ),
@@ -495,7 +497,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
             ),
           ),
           Text(
-            'Γé╣${settlement.netAmount.toStringAsFixed(0)}',
+            '₹${AppCurrency.format(settlement.netAmount)}',
             style: TextStyle(
               color: AppColors.error,
               fontWeight: FontWeight.bold,
@@ -544,7 +546,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
                   ),
                 ),
                 Text(
-                  'Paid by ${expense.paidByName} ΓÇó ${DateFormat('MMM d').format(expense.date)}',
+                  'Paid by ${expense.paidByName} • ${DateFormat('MMM d').format(expense.date)}',
                   style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
                 ),
               ],
@@ -554,7 +556,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                'Γé╣${expense.totalAmount.toStringAsFixed(0)}',
+                '₹${AppCurrency.format(expense.totalAmount)}',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -579,6 +581,20 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
                     ),
                   ),
                 ),
+            ],
+          ),
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: AppColors.textSecondary),
+            onSelected: (value) {
+              if (value == 'edit') {
+                _editExpense(expense);
+              } else {
+                _deleteExpense(expense);
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'edit', child: Text('Edit')),
+              PopupMenuItem(value: 'delete', child: Text('Delete')),
             ],
           ),
         ],
@@ -630,7 +646,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
                         ),
                       ),
                       Text(
-                        'Γé╣${total.toStringAsFixed(0)}',
+                        '₹${AppCurrency.format(total)}',
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w500,
@@ -722,7 +738,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
                 : null,
             child: member.avatarUrl == null
                 ? Text(
-                    member.name[0].toUpperCase(),
+                    member.name.isNotEmpty ? member.name[0].toUpperCase() : '?',
                     style: TextStyle(
                       color: AppColors.primaryBlue,
                       fontWeight: FontWeight.bold,
@@ -762,8 +778,8 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
             children: [
               Text(
                 net >= 0
-                    ? '+Γé╣${net.toStringAsFixed(0)}'
-                    : '-Γé╣${net.abs().toStringAsFixed(0)}',
+                    ? '+₹${AppCurrency.format(net)}'
+                    : '-₹${AppCurrency.format(net.abs())}',
                 style: TextStyle(
                   color: net >= 0 ? AppColors.success : AppColors.error,
                   fontWeight: FontWeight.bold,
@@ -774,6 +790,20 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
                 net >= 0 ? 'is owed' : 'owes',
                 style: TextStyle(color: AppColors.textTertiary, fontSize: 11),
               ),
+            ],
+          ),
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: AppColors.textSecondary),
+            onSelected: (value) {
+              if (value == 'edit') {
+                _editMember(member);
+              } else {
+                _removeMember(member);
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'edit', child: Text('Edit')),
+              PopupMenuItem(value: 'delete', child: Text('Remove')),
             ],
           ),
         ],
@@ -856,5 +886,98 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
       context: context,
       builder: (context) => ModernAddFamilyMemberScreen(),
     );
+  }
+
+  Future<void> _editExpense(SharedExpense expense) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ModernAddSharedExpenseScreen(expense: expense),
+      ),
+    );
+  }
+
+  Future<void> _deleteExpense(SharedExpense expense) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete shared expense?'),
+        content: Text('Remove “${expense.description}” from Family & Friends?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await context.read<SharedExpenseProvider>().deleteSharedExpense(expense.id);
+    }
+  }
+
+  Future<void> _editMember(FamilyMember member) async {
+    final controller = TextEditingController(text: member.name);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit member'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (name != null && name.isNotEmpty && mounted) {
+      await context.read<SharedExpenseProvider>().updateFamilyMember(
+        FamilyMember(
+          id: member.id,
+          name: name,
+          email: member.email,
+          avatarUrl: member.avatarUrl,
+          isActive: member.isActive,
+        ),
+      );
+    }
+  }
+
+  Future<void> _removeMember(FamilyMember member) async {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (member.id == currentUserId) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remove member?'),
+        content: Text('Remove ${member.name} from Family & Friends?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await context.read<SharedExpenseProvider>().removeFamilyMember(member.id);
+    }
   }
 }

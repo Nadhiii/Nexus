@@ -1,17 +1,31 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as fs;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/transaction.dart';
+import 'transaction_paths.dart';
 
 class TransactionService {
+  Future<Transaction?> findBySourceFingerprint(
+    String userId,
+    String fingerprint,
+  ) async {
+    final snapshot =
+        await TransactionPaths.collection(fs.FirebaseFirestore.instance, userId)
+            .where('metadata.sourceFingerprint', isEqualTo: fingerprint)
+            .limit(1)
+            .get();
+    if (snapshot.docs.isEmpty) return null;
+    // The Firestore document id is authoritative and is not duplicated in
+    // the document payload. Preserve it so callers can safely compare an
+    // existing record with the candidate being imported.
+    return Transaction.fromFirestore(snapshot.docs.first);
+  }
+
   final fs.FirebaseFirestore _firestore = fs.FirebaseFirestore.instance;
 
   fs.CollectionReference<Map<String, dynamic>> _getTransactionsCollection(
     String userId,
   ) {
-    return _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('transactions');
+    return TransactionPaths.collection(_firestore, userId);
   }
 
   Stream<List<Transaction>> watchUserTransactions(String userId) {
@@ -25,16 +39,13 @@ class TransactionService {
     });
   }
 
-  Future<void> addTransaction(Transaction transaction) async {
-    final docRef = _getTransactionsCollection(transaction.userId).doc();
-    await docRef.set(transaction.copyWith(id: docRef.id).toMap());
-  }
-
   /// Restores a transaction with its original ID (used for undo)
   Future<void> restoreTransaction(Transaction transaction) async {
-    final docRef = _getTransactionsCollection(
+    final docRef = TransactionPaths.document(
+      _firestore,
       transaction.userId,
-    ).doc(transaction.id);
+      transaction.id,
+    );
     await docRef.set(transaction.toMap());
   }
 
@@ -46,7 +57,9 @@ class TransactionService {
 
   Future<void> deleteTransaction(String transactionId) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) { return Future.value(); }
+    if (user == null) {
+      return Future.value();
+    }
     return _getTransactionsCollection(user.uid).doc(transactionId).delete();
   }
 
@@ -114,7 +127,9 @@ class TransactionService {
     String userId,
     List<String> transactionIds,
   ) async {
-    if (transactionIds.isEmpty) { return; }
+    if (transactionIds.isEmpty) {
+      return;
+    }
     final batch = _firestore.batch();
     for (final id in transactionIds) {
       batch.delete(_getTransactionsCollection(userId).doc(id));

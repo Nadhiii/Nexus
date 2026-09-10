@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -42,10 +42,10 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // ΓöÇΓöÇ 1. APP BAR ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+          // ── 1. APP BAR ─────────────────────────────────────────────────
           const _DashboardAppBar(),
 
-          // ΓöÇΓöÇ 2. BALANCE CARD ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+          // ── 2. BALANCE CARD ────────────────────────────────────────────
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(
@@ -58,7 +58,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
             ),
           ),
 
-          // ΓöÇΓöÇ 3. ACTION BAR ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+          // ── 3. ACTION BAR ──────────────────────────────────────────────
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(
@@ -71,7 +71,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
             ),
           ),
 
-          // ΓöÇΓöÇ 4. UPCOMING WEEK ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+          // ── 4. UPCOMING WEEK ───────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -88,7 +88,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
             ),
           ),
 
-          // ΓöÇΓöÇ 5. GARAGE WIDGET ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+          // ── 5. GARAGE WIDGET ───────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -103,7 +103,7 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
             ),
           ),
 
-          // ΓöÇΓöÇ 6. RECENT ACTIVITY ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+          // ── 6. RECENT ACTIVITY ─────────────────────────────────────────
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(
@@ -123,9 +123,9 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
   }
 }
 
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────────────────
 // App Bar
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _DashboardAppBar extends StatelessWidget {
   const _DashboardAppBar();
@@ -153,38 +153,38 @@ class _DashboardAppBar extends StatelessWidget {
               tooltip: 'Notifications',
               padding: const EdgeInsets.all(AppSpacing.sm),
               icon: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Icon(
-                      Icons.notifications_outlined,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      size: 20,
-                    ),
-                    if (unread > 0)
-                      Positioned(
-                        top: -4,
-                        right: -4,
-                        child: Container(
-                          width: 14,
-                          height: 14,
-                            decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.error,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              unread > 9 ? '9+' : '$unread',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: Theme.of(context).colorScheme.onError,
-                                fontSize: 8,
-                                fontWeight: FontWeight.bold,
-                              ),
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    Icons.notifications_outlined,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    size: 20,
+                  ),
+                  if (unread > 0)
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.error,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            unread > 9 ? '9+' : '$unread',
+                            style: AppTypography.labelSmall.copyWith(
+                              color: Theme.of(context).colorScheme.onError,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                       ),
-                  ],
-                ),
+                    ),
+                ],
+              ),
             );
           },
         ),
@@ -193,9 +193,9 @@ class _DashboardAppBar extends StatelessWidget {
   }
 }
 
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────────────────
 // Greeting
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _GreetingTitle extends StatelessWidget {
   const _GreetingTitle();
@@ -239,9 +239,9 @@ class _GreetingTitle extends StatelessWidget {
   }
 }
 
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────────────────
 // Action Bar
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _ActionBar extends StatelessWidget {
   const _ActionBar();
@@ -255,7 +255,7 @@ class _ActionBar extends StatelessWidget {
             // Primary: Add Transaction
             Expanded(
               flex: 3,
-                child: NexusButton(
+              child: NexusButton(
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -304,9 +304,9 @@ class _ActionBar extends StatelessWidget {
   }
 }
 
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────────────────
 // Recent Activity
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _RecentActivitySectionWrapper extends StatelessWidget {
   const _RecentActivitySectionWrapper();
@@ -348,7 +348,6 @@ class _RecentActivitySection extends StatelessWidget {
                 style: AppTypography.labelMedium.copyWith(
                   color: AppColors.primaryBlue,
                 ),
-              
               ),
             ),
           ],
@@ -401,10 +400,7 @@ class _EmptyState extends StatelessWidget {
               size: 32,
             ),
             SizedBox(height: AppSpacing.contentGap),
-            Text(
-              'No transactions yet',
-              style: AppTypography.bodySmall,
-            ),
+            Text('No transactions yet', style: AppTypography.bodySmall),
           ],
         ),
       ),
@@ -424,6 +420,8 @@ class _TransactionTile extends StatelessWidget {
         return AppColors.error;
       case TransactionType.transfer:
         return AppColors.primaryBlue;
+      case TransactionType.adjustment:
+        return AppColors.textSecondary;
     }
   }
 
@@ -434,7 +432,9 @@ class _TransactionTile extends StatelessWidget {
       case TransactionType.expense:
         return '-';
       case TransactionType.transfer:
-        return 'Γåö';
+        return '↔';
+      case TransactionType.adjustment:
+        return '±';
     }
   }
 
@@ -490,7 +490,7 @@ class _TransactionTile extends StatelessWidget {
           ),
           // Amount
           Text(
-            '${_sign()}Γé╣${NumberFormat('#,##,###').format(transaction.amount)}',
+            '${_sign()}₹${NumberFormat('#,##,###').format(transaction.amount)}',
             style: TextStyle(
               color: color,
               fontSize: AppTypography.labelLarge.fontSize,
@@ -505,35 +505,35 @@ class _TransactionTile extends StatelessWidget {
   String _categoryEmoji(String? categoryId) {
     switch (categoryId) {
       case 'food':
-        return '≡ƒìö';
+        return '🍔';
       case 'groceries':
-        return '≡ƒ¢Æ';
+        return '🛒';
       case 'transport':
-        return '≡ƒÜî';
+        return '🚌';
       case 'garage':
-        return 'Γ¢╜';
+        return '⛽';
       case 'bills':
-        return '≡ƒÅª';
+        return '🏦';
       case 'entertainment':
-        return '≡ƒÄ¼';
+        return '🎬';
       case 'health':
-        return '≡ƒÆè';
+        return '💊';
       case 'education':
-        return '≡ƒôÜ';
+        return '📚';
       case 'shopping':
-        return '≡ƒ¢ì∩╕Å';
+        return '🛍️';
       case 'investment':
-        return '≡ƒôê';
+        return '📈';
       case 'salary':
-        return '≡ƒÆ░';
+        return '💰';
       case 'travel':
-        return 'Γ£ê∩╕Å';
+        return '✈️';
       case 'transfer':
-        return 'Γåö∩╕Å';
+        return '↔️';
       case 'shared':
-        return '≡ƒæÑ';
+        return '👥';
       default:
-        return '≡ƒÆ╕';
+        return '💸';
     }
   }
 }

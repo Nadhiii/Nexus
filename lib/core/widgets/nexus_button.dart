@@ -76,7 +76,7 @@ class NexusButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (icon != null) icon!,
+              ?icon,
               if (icon != null && (label != null || child != null))
                 const SizedBox(width: AppSpacing.controlGap),
               if (child != null) child! else if (label != null) Text(label!),

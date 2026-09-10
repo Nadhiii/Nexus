@@ -12,6 +12,7 @@ import '../../core/providers/transaction_provider.dart';
 import '../../core/providers/account_provider.dart';
 import '../../core/services/pdf_statement_import_service.dart';
 import '../../core/utils/logo_utils.dart';
+import '../../core/utils/currency_formatter.dart';
 import '../transactions/add_transaction_screen.dart';
 import 'add_account_screen.dart';
 import '../../core/services/statement_import_review_screen.dart';
@@ -725,7 +726,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        "$sign₹${t.amount.toStringAsFixed(0)}",
+                        "$sign₹${AppCurrency.format(t.amount)}",
                         style: AppTypography.titleMedium.copyWith(
                           color: color,
                           fontWeight: FontWeight.bold,

@@ -670,7 +670,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                             children: [
                               Flexible(
                                 child: Text(
-                                  "Γé╣${sub.amount.toStringAsFixed(0)}",
+                                  "₹${sub.amount.toStringAsFixed(0)}",
                                   style: isCompact
                                       ? AppTypography.titleMedium.copyWith(
                                           color: AppColors.textPrimary,
@@ -696,7 +696,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                             Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
-                                "~Γé╣${(sub.amount * (sub.frequency == 'monthly' ? 12 : 1)).toStringAsFixed(0)}/yr",
+                                "~₹${(sub.amount * (sub.frequency == 'monthly' ? 12 : 1)).toStringAsFixed(0)}/yr",
                                 style: AppTypography.bodySmall,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -707,7 +707,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                             Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
-                                "ΓÜá∩╕Å No matching payments in 60 days",
+                                "⚠️ No matching payments in 60 days",
                                 style: AppTypography.labelSmall.copyWith(
                                   color: Colors.grey,
                                   fontSize: 10,
@@ -791,7 +791,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
               ),
             ),
             Flexible(child: Text(
-              "Γé╣${sub.amount.toStringAsFixed(0)}",
+              "₹${sub.amount.toStringAsFixed(0)}",
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.bodyLarge.copyWith(
@@ -962,7 +962,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                "Γé╣${monthly.toStringAsFixed(0)}",
+                "₹${monthly.toStringAsFixed(0)}",
                 style: AppTypography.currencyLarge.copyWith(
                   color: AppColors.textPrimary, // White text
                 ),
@@ -987,7 +987,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                "Γé╣${yearly.toStringAsFixed(0)}",
+                "₹${yearly.toStringAsFixed(0)}",
                 style: AppTypography.headlineSmall.copyWith(
                   color: AppColors.pastelTeal, // Subtle pop of color
                   fontWeight: FontWeight.bold,

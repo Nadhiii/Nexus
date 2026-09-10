@@ -487,7 +487,7 @@ class _NboxSyncScreenState extends State<NboxSyncScreen> {
                   style: AppTypography.bodyLarge,
                 ),
                 subtitle: Text(
-                  'Confidence ΓëÑ 90%',
+                  'Confidence ≥ 90%',
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -512,7 +512,7 @@ class _NboxSyncScreenState extends State<NboxSyncScreen> {
                   style: AppTypography.bodyLarge,
                 ),
                 subtitle: Text(
-                  'Amount < Γé╣500',
+                  'Amount < ₹500',
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),

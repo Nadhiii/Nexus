@@ -688,7 +688,7 @@ class _SmartQuickSetupModalState extends State<SmartQuickSetupModal> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Smart Budget', style: AppTypography.headlineSmall.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                        Text('Quick Budget', style: AppTypography.headlineSmall.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
                         Text('Considers your existing commitments', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
                       ],
                     ),
@@ -791,7 +791,7 @@ class _SmartQuickSetupModalState extends State<SmartQuickSetupModal> {
                           children: [
                             Icon(Icons.auto_awesome, size: 18),
                             SizedBox(width: 8),
-                            Text('Create Smart Budgets', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                            Text('Create Budgets', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
                           ],
                         ),
                 ),
@@ -926,7 +926,7 @@ class _SmartQuickSetupModalState extends State<SmartQuickSetupModal> {
 
       if (mounted) {
         Navigator.pop(context);
-        showTopSnackBar(context, 'Smart budgets created successfully!');
+        showTopSnackBar(context, 'Budgets created successfully!');
       }
     } catch (e) {
       if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);

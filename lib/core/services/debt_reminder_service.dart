@@ -58,7 +58,7 @@ class DebtReminderService {
     _initialized = true;
   }
 
-  /// Get the user-configured threshold (default Γé╣500). A reminder for a
+  /// Get the user-configured threshold (default ₹500). A reminder for a
   /// given person only fires once their owed amount crosses this value
   /// AND has increased since the last time we notified about them.
   Future<double> getThreshold() async {
@@ -131,10 +131,10 @@ class DebtReminderService {
 
   /// Build a friendly notification body from payment suggestions.
   ///
-  /// e.g. "Hey, I see you have Γé╣3,000. Consider paying Varun Γé╣1,000 and
-  /// Tarun Γé╣500 to catch up on what you owe them."
+  /// e.g. "Hey, I see you have ₹3,000. Consider paying Varun ₹1,000 and
+  /// Tarun ₹500 to catch up on what you owe them."
   ///
-  /// e.g. "Hey, I see you have Γé╣3,000. Consider paying Varun Γé╣3,000 ΓÇö that
+  /// e.g. "Hey, I see you have ₹3,000. Consider paying Varun ₹3,000 — that
   /// clears what you owe him."
   String buildSuggestionMessage(
     double availableBalance,
@@ -142,14 +142,14 @@ class DebtReminderService {
   ) {
     if (suggestions.isEmpty) return '';
 
-    final balanceStr = 'Γé╣${availableBalance.toStringAsFixed(0)}';
+    final balanceStr = '₹${availableBalance.toStringAsFixed(0)}';
 
     if (suggestions.length == 1) {
       final s = suggestions.first;
-      final amountStr = 'Γé╣${s.suggestedAmount.toStringAsFixed(0)}';
+      final amountStr = '₹${s.suggestedAmount.toStringAsFixed(0)}';
       if (s.clearsDebt) {
         return 'Hey, I see you have $balanceStr. Consider paying '
-            '${s.personName} $amountStr ΓÇö that clears what you owe them!';
+            '${s.personName} $amountStr — that clears what you owe them!';
       } else {
         return 'Hey, I see you have $balanceStr. Consider paying '
             '${s.personName} $amountStr to chip away at what you owe them.';
@@ -159,7 +159,7 @@ class DebtReminderService {
     // Multiple people
     final parts = <String>[];
     for (final s in suggestions) {
-      final amountStr = 'Γé╣${s.suggestedAmount.toStringAsFixed(0)}';
+      final amountStr = '₹${s.suggestedAmount.toStringAsFixed(0)}';
       parts.add('${s.personName} $amountStr');
     }
 
@@ -215,11 +215,11 @@ class DebtReminderService {
     String body;
     if (debts.length == 1) {
       final d = debts.first;
-      body = 'You owe ${d.personName} Γé╣${d.amount.toStringAsFixed(0)}. '
+      body = 'You owe ${d.personName} ₹${d.amount.toStringAsFixed(0)}. '
           'Consider settling up soon.';
     } else {
       final parts = debts
-          .map((d) => '${d.personName} Γé╣${d.amount.toStringAsFixed(0)}')
+          .map((d) => '${d.personName} ₹${d.amount.toStringAsFixed(0)}')
           .toList();
       body = 'You owe ${_joinWithAnd(parts)}. Consider settling up soon.';
     }
@@ -241,7 +241,7 @@ class DebtReminderService {
     );
   }
 
-  /// Show a "you have Γé╣X, consider paying..." notification with concrete
+  /// Show a "you have ₹X, consider paying..." notification with concrete
   /// payment suggestions based on available balance.
   Future<void> showPaymentSuggestion(
     double availableBalance,

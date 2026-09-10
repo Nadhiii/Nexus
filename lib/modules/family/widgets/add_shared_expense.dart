@@ -13,9 +13,12 @@ import '../../../core/theme/app_animations.dart';
 import '../../../core/providers/shared_expense_provider.dart';
 import '../../../core/models/shared_expense.dart';
 import '../../../core/widgets/top_snackbar.dart';
+import '../../../core/utils/currency_formatter.dart';
 
 class ModernAddSharedExpenseScreen extends StatefulWidget {
-  const ModernAddSharedExpenseScreen({super.key});
+  final SharedExpense? expense;
+
+  const ModernAddSharedExpenseScreen({super.key, this.expense});
 
   @override
   State<ModernAddSharedExpenseScreen> createState() =>
@@ -54,7 +57,23 @@ class _ModernAddSharedExpenseScreenState
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<SharedExpenseProvider>();
-      if (provider.familyMembers.isNotEmpty) {
+      final existing = widget.expense;
+      if (existing != null) {
+        _descriptionController.text = existing.description;
+        _amountController.text = existing.totalAmount.toStringAsFixed(2);
+        _notesController.text = existing.notes ?? '';
+        _selectedDate = existing.date;
+        _selectedPayer = existing.paidBy;
+        _selectedCategory = existing.category ?? 'general';
+        _splitEqually = false;
+        for (final split in existing.splits) {
+          _selectedParticipants.add(split.personId);
+          _splitControllers[split.personId] = TextEditingController(
+            text: split.amount.toStringAsFixed(2),
+          );
+        }
+        setState(() {});
+      } else if (provider.familyMembers.isNotEmpty) {
         setState(() {
           _selectedPayer = provider.familyMembers.first.id;
           for (var member in provider.familyMembers) {
@@ -92,7 +111,7 @@ class _ModernAddSharedExpenseScreenState
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: true,
               title: Text(
-                'Shared Expense',
+                widget.expense == null ? 'Shared Expense' : 'Edit Expense',
                 style: AppTypography.headlineMedium,
               ),
             ),
@@ -431,7 +450,9 @@ class _ModernAddSharedExpenseScreenState
                               ? AppColors.primaryBlue
                               : AppColors.textTertiary.withValues(alpha: 0.3),
                           child: Text(
-                            member.name[0].toUpperCase(),
+                            member.name.isNotEmpty
+                                ? member.name[0].toUpperCase()
+                                : '?',
                             style: TextStyle(
                               color: isSelected
                                   ? Colors.white
@@ -662,7 +683,7 @@ class _ModernAddSharedExpenseScreenState
           Text(
             participantCount == 0
                 ? 'Select participants to calculate split'
-                : '₹${each.toStringAsFixed(0)}',
+                : '₹${AppCurrency.format(each)}',
             style: AppTypography.headlineMedium.copyWith(
               color: participantCount == 0
                   ? AppColors.textTertiary
@@ -852,7 +873,9 @@ class _ModernAddSharedExpenseScreenState
                                 alpha: 0.2,
                               ),
                               child: Text(
-                                member.name[0].toUpperCase(),
+                                member.name.isNotEmpty
+                                    ? member.name[0].toUpperCase()
+                                    : '?',
                                 style: const TextStyle(
                                   color: AppColors.primaryBlue,
                                   fontSize: 10,
@@ -868,7 +891,7 @@ class _ModernAddSharedExpenseScreenState
                               ),
                             ),
                             Text(
-                              '₹${perPerson.toStringAsFixed(0)}',
+                              '₹${AppCurrency.format(perPerson)}',
                               style: TextStyle(
                                 color: id == _selectedPayer
                                     ? AppColors.success
@@ -891,7 +914,9 @@ class _ModernAddSharedExpenseScreenState
                                 alpha: 0.2,
                               ),
                               child: Text(
-                                member.name[0].toUpperCase(),
+                                member.name.isNotEmpty
+                                    ? member.name[0].toUpperCase()
+                                    : '?',
                                 style: const TextStyle(
                                   color: AppColors.primaryBlue,
                                   fontSize: 10,
@@ -958,7 +983,7 @@ class _ModernAddSharedExpenseScreenState
     if (totalAmount > 0 && _selectedParticipants.isNotEmpty) {
       final perPerson = totalAmount / _selectedParticipants.length;
       for (var id in _selectedParticipants) {
-        _splitControllers[id]?.text = perPerson.toStringAsFixed(0);
+        _splitControllers[id]?.text = perPerson.toStringAsFixed(2);
       }
     }
     setState(() {});
@@ -1037,7 +1062,7 @@ class _ModernAddSharedExpenseScreenState
       );
 
       final expense = SharedExpense(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: widget.expense?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         userId: user?.uid ?? '',
         description: description,
         totalAmount: totalAmount,
@@ -1050,15 +1075,25 @@ class _ModernAddSharedExpenseScreenState
         notes: _notesController.text.trim().isNotEmpty
             ? _notesController.text.trim()
             : null,
-        createdAt: DateTime.now(),
+        createdAt: widget.expense?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      await provider.addSharedExpense(expense);
+      final enteredTotal = splits.fold<double>(0, (sum, split) => sum + split.amount);
+      if ((enteredTotal - totalAmount).abs() > 0.01) {
+        throw StateError('Split amounts must add up to the total');
+      }
+      if (widget.expense == null) {
+        await provider.addSharedExpense(expense);
+      } else {
+        await provider.updateSharedExpense(expense);
+      }
 
       if (mounted) {
         Navigator.pop(context);
-        _showNotifyOption(expense, splits, payerMember.name);
+        if (widget.expense == null) {
+          _showNotifyOption(expense, splits, payerMember.name);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -1155,7 +1190,7 @@ class _ModernAddSharedExpenseScreenState
                                 ),
                               ),
                               Text(
-                                '₹${split.amount.toStringAsFixed(0)}',
+                                '₹${AppCurrency.format(split.amount)}',
                                 style: const TextStyle(
                                   color: AppColors.error,
                                   fontWeight: FontWeight.bold,
@@ -1308,9 +1343,9 @@ class _ModernAddSharedExpenseScreenState
   ) {
     final dateStr = DateFormat('dd MMM yyyy').format(expense.date);
     final splitDetails = owingSplits
-        .map((s) => '• ${s.personName}: ₹${s.amount.toStringAsFixed(0)}')
+        .map((s) => '• ${s.personName}: ₹${AppCurrency.format(s.amount)}')
         .join('\n');
-    return '''💰 Expense Split Notification\n\n$payerName paid ₹${expense.totalAmount.toStringAsFixed(0)} for "${expense.description}" on $dateStr.\n\nYour share:\n$splitDetails\n\nPlease settle up when you can! 🙏''';
+    return '''💰 Expense Split Notification\n\n$payerName paid ₹${AppCurrency.format(expense.totalAmount)} for "${expense.description}" on $dateStr.\n\nYour share:\n$splitDetails\n\nPlease settle up when you can! 🙏''';
   }
 
   Future<void> _openSplitwise(

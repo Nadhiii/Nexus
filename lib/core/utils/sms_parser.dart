@@ -1,10 +1,12 @@
 ﻿import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import '../models/detected_transaction.dart';
-import '../services/smart_category_resolver.dart';
+import '../services/transaction_intelligence_service.dart';
+import '../models/knowledge_entry.dart';
+import '../models/transaction.dart';
 
 // ---------------------------------------------------------------------------
-// Internal parse result ΓÇö built before constructing DetectedTransaction
+// Internal parse result — built before constructing DetectedTransaction
 // ---------------------------------------------------------------------------
 class _ParseResult {
   final double amount;
@@ -33,7 +35,7 @@ class _ParseResult {
 // ---------------------------------------------------------------------------
 typedef _Predicate = bool Function(String lower);
 
-/// A named ignore rule ΓÇö the name lets you log *which* rule dropped a message.
+/// A named ignore rule — the name lets you log *which* rule dropped a message.
 class _IgnoreRule {
   final String name;
   final _Predicate matches;
@@ -72,9 +74,9 @@ class _BankTemplate {
 // Main parser
 // ---------------------------------------------------------------------------
 class NewSmsParser {
-  // ΓöÇΓöÇ Public API ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Public API ─────────────────────────────────────────────────────────────
 
-  /// Synchronous ΓÇö safe inside a [compute()] isolate.
+  /// Synchronous — safe inside a [compute()] isolate.
   static DetectedTransaction? parseSync(
     String id,
     String body,
@@ -94,14 +96,7 @@ class NewSmsParser {
     final result = _extractFields(cleanBody, lower, sender);
     if (result == null) return null;
 
-    final detectedCategory = SmartCategoryResolver.resolve(
-      merchant: result.merchant,
-      body: body,
-      amount: result.amount,
-      transactionType: result.type,
-    );
-
-    return DetectedTransaction(
+    final detected = DetectedTransaction(
       id: id,
       fingerprint: _fingerprint(sender, date, body),
       amount: result.amount,
@@ -112,10 +107,18 @@ class NewSmsParser {
       body: body,
       confidence: result.confidence,
       warnings: result.warnings,
-      detectedCategory: detectedCategory,
       bankName: result.bankName,
       balanceAfter: result.balance,
       accountNumber: result.accountNumber,
+    );
+    final understanding = const TransactionIntelligenceService().analyze(
+      detected: detected,
+      history: const <Transaction>[],
+      knowledge: const <KnowledgeEntry>[],
+    );
+
+    return detected.copyWith(
+      detectedCategory: understanding.categoryId ?? 'other',
     );
   }
 
@@ -128,11 +131,11 @@ class NewSmsParser {
   ) async =>
       parseSync(id, body, sender, date);
 
-  // ΓöÇΓöÇ Gate 2: confirmed-transaction allowlist ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Gate 2: confirmed-transaction allowlist ─────────────────────────────────
   //
   // We flip the logic: instead of trying to blocklist every possible
   // non-transaction, we require at least ONE confirmed-movement keyword.
-  // "Payment is successful at merchant" does NOT contain any of these ΓåÆ
+  // "Payment is successful at merchant" does NOT contain any of these →
   // it gets dropped even though it has an amount.
 
   static final RegExp _confirmedMovementPattern = RegExp(
@@ -148,7 +151,7 @@ class NewSmsParser {
   static bool _isConfirmedTransaction(String lower) =>
       _confirmedMovementPattern.hasMatch(lower);
 
-  // ΓöÇΓöÇ Ignore rules ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Ignore rules ───────────────────────────────────────────────────────────
   //
   // These run BEFORE the confirmed-movement check so truly ignorable messages
   // (e.g. OTPs that happen to contain "sent") are dropped first.
@@ -160,7 +163,7 @@ class NewSmsParser {
     // get dropped even if they happen to contain a movement word like
     // "sent" (e.g. "OTP sent for your login"). But most real bank
     // transaction SMS *also* carry a disclaimer like "Do not share
-    // OTP/PIN with anyone" ΓÇö a bare `contains('otp')` would wrongly
+    // OTP/PIN with anyone" — a bare `contains('otp')` would wrongly
     // drop those too. So: always drop messages that actually deliver
     // an OTP (code adjacent to the word), but for a bare mention of
     // OTP/PIN/verification-code with no code attached, only drop it
@@ -183,13 +186,13 @@ class NewSmsParser {
             s.contains('verification code');
         if (!mentionsOtp) return false;
 
-        // Bare disclaimer mention ΓÇö only ignorable if nothing here
+        // Bare disclaimer mention — only ignorable if nothing here
         // actually looks like a completed transaction.
         return !_confirmedMovementPattern.hasMatch(s);
       },
     ),
 
-    // Failed / declined / reversed ΓÇö no money moved
+    // Failed / declined / reversed — no money moved
     _IgnoreRule(
       'failed_or_reversed',
       (s) =>
@@ -200,7 +203,7 @@ class NewSmsParser {
           s.contains('reversal'),
     ),
 
-    // Mandate / AutoPay setup ΓÇö no money moved yet
+    // Mandate / AutoPay setup — no money moved yet
     // Covers: "mandate created", "autopay created/registered/set up",
     //         "nach registered", "e-mandate", "aspresented frequency" etc.
     _IgnoreRule(
@@ -224,7 +227,7 @@ class NewSmsParser {
               (s.contains('registered') || s.contains('set') || s.contains('created'))),
     ),
 
-    // Future / pending ΓÇö no money has moved yet
+    // Future / pending — no money has moved yet
     _IgnoreRule(
       'future_debit',
       (s) =>
@@ -275,10 +278,10 @@ class NewSmsParser {
     return null;
   }
 
-  // ΓöÇΓöÇ Bank / fintech templates ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Bank / fintech templates ────────────────────────────────────────────────
 
   static final List<_BankTemplate> _bankTemplates = [
-    // ΓöÇΓöÇ HDFC Bank ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── HDFC Bank ──────────────────────────────────────────────────────────
     // "Rs.500.00 debited from a/c **1234 on 12-Jun-25 to VPA merchant@upi"
     _BankTemplate(
       senderPrefixes: ['HDFCBK', 'HDFCBA', 'HDFCBN', 'HDFCCC', 'HDFCDC', 'HDFCHI', 'PAYZAP'],
@@ -301,7 +304,7 @@ class NewSmsParser {
       },
     ),
 
-    // ΓöÇΓöÇ ICICI Bank ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── ICICI Bank ─────────────────────────────────────────────────────────
     // "ICICI Bank Acct XX1234 debited for Rs 500.00 on 12-Jun-25; info: Swiggy"
     _BankTemplate(
       senderPrefixes: ['ICICIB', 'ICICIH', 'ICICIBNK', 'ISRVCE'],
@@ -322,12 +325,12 @@ class NewSmsParser {
       },
     ),
 
-    // ΓöÇΓöÇ SBI ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── SBI ────────────────────────────────────────────────────────────────
     // "Your A/c X1234 is debited with INR 500.00 on 12Jun25..."
     _BankTemplate(
       senderPrefixes: ['SBIINB', 'SBIPAY', 'SBIATM', 'SBIUPI', 'SBIBNK', 'SBISMS', 'ATMSBI'],
       displayName: 'SBI',
-      amountPattern: RegExp(r'(?:INR|Rs\.?|Γé╣)\s*([0-9,]+(?:\.[0-9]{1,2})?)', caseSensitive: false),
+      amountPattern: RegExp(r'(?:INR|Rs\.?|₹)\s*([0-9,]+(?:\.[0-9]{1,2})?)', caseSensitive: false),
       extractMerchant: (body) {
         final to = RegExp(
           r'(?:transferred to|paid to|transfer to|to)\s+([A-Za-z0-9 &.\-]{2,40}?)(?:\s+Ref|\s+UPI|\.|$)',
@@ -337,7 +340,7 @@ class NewSmsParser {
       },
     ),
 
-    // ΓöÇΓöÇ Axis Bank ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Axis Bank ──────────────────────────────────────────────────────────
     _BankTemplate(
       senderPrefixes: ['AXISBK', 'AXISIN', 'AXISB', 'AXISHR', 'AXISMR'],
       displayName: 'Axis Bank',
@@ -350,7 +353,7 @@ class NewSmsParser {
       },
     ),
 
-    // ΓöÇΓöÇ Kotak Mahindra ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Kotak Mahindra ─────────────────────────────────────────────────────
     _BankTemplate(
       senderPrefixes: ['KOTAKB', 'KOTAKP', 'KTKBNK', 'KTKREM'],
       displayName: 'Kotak Mahindra Bank',
@@ -363,7 +366,7 @@ class NewSmsParser {
       },
     ),
 
-    // ΓöÇΓöÇ Federal Bank ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Federal Bank ───────────────────────────────────────────────────────
     // "INR 500.00 sent from your Federal Bank A/C to <merchant>.Ref..."
     _BankTemplate(
       senderPrefixes: ['FEDBNK', 'FEDADV'],
@@ -377,7 +380,7 @@ class NewSmsParser {
       },
     ),
 
-    // ΓöÇΓöÇ IDFC First ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── IDFC First ─────────────────────────────────────────────────────────
     _BankTemplate(
       senderPrefixes: ['IDFCBK', 'IDFCFB', 'IDFCIT'],
       displayName: 'IDFC FIRST Bank',
@@ -390,7 +393,7 @@ class NewSmsParser {
       },
     ),
 
-    // ΓöÇΓöÇ IndusInd ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── IndusInd ───────────────────────────────────────────────────────────
     _BankTemplate(
       senderPrefixes: ['INDUSB', 'INDUSA', 'INDUSO'],
       displayName: 'IndusInd Bank',
@@ -403,9 +406,9 @@ class NewSmsParser {
       },
     ),
 
-    // ΓöÇΓöÇ slice (neobank) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-    // Expense: "Rs. 403.98 sent from a/c xx8047 on 10-Jun-26 to ZOMATO (UPI Ref: ΓÇª)"
-    // Income:  "Rs. 1,000 received in slice A/c xx8047 on ΓÇª from Mahanadi P J via UPI"
+    // ── slice (neobank) ────────────────────────────────────────────────────
+    // Expense: "Rs. 403.98 sent from a/c xx8047 on 10-Jun-26 to ZOMATO (UPI Ref: …)"
+    // Income:  "Rs. 1,000 received in slice A/c xx8047 on … from Mahanadi P J via UPI"
     _BankTemplate(
       senderPrefixes: ['SLICEP', 'SLICEB', 'SLCPAY'],
       displayName: 'Slice',
@@ -439,10 +442,10 @@ class NewSmsParser {
     return null;
   }
 
-  // ΓöÇΓöÇ Field extraction ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Field extraction ───────────────────────────────────────────────────────
 
   static final RegExp _genericAmountPattern = RegExp(
-    r'(?:Rs\.?|INR|Γé╣)\s*\.?\s*([0-9,]+(?:\.[0-9]{1,2})?)',
+    r'(?:Rs\.?|INR|₹)\s*\.?\s*([0-9,]+(?:\.[0-9]{1,2})?)',
     caseSensitive: false,
   );
 
@@ -467,14 +470,14 @@ class NewSmsParser {
   // Available / closing balance
   static final RegExp _balancePattern = RegExp(
     r'(?:avl\.?\s*bal(?:ance)?|available\s+bal(?:ance)?|closing\s+bal(?:ance)?)'
-    r'\s*(?:is|:|-|ΓÇô)?\s*(?:Rs\.?|INR|Γé╣)?\s*([0-9,]+(?:\.[0-9]{1,2})?)',
+    r'\s*(?:is|:|-|–)?\s*(?:Rs\.?|INR|₹)?\s*([0-9,]+(?:\.[0-9]{1,2})?)',
     caseSensitive: false,
   );
 
   static _ParseResult? _extractFields(String body, String lower, String sender) {
     final template = _templateFor(sender);
 
-    // ΓöÇΓöÇ Amount ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Amount ──────────────────────────────────────────────────────────────
     final amountRx = template?.amountPattern ?? _genericAmountPattern;
     final amountMatch = amountRx.firstMatch(body);
     if (amountMatch == null) return null;
@@ -482,7 +485,7 @@ class NewSmsParser {
     final amount = double.tryParse(amountMatch.group(1)!.replaceAll(',', ''));
     if (amount == null || amount <= 0) return null;
 
-    // ΓöÇΓöÇ Transaction type ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Transaction type ────────────────────────────────────────────────────
     // At this point _isConfirmedTransaction already passed, so one of these
     // keywords is guaranteed to be present.
     final hasIncome = _incomePattern.hasMatch(lower);
@@ -496,8 +499,8 @@ class NewSmsParser {
       type = 'expense';
     }
 
-    // ΓöÇΓöÇ Merchant ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-    // Priority: bank-specific ΓåÆ UPI VPA ΓåÆ income "from" ΓåÆ expense "to/at" ΓåÆ sender
+    // ── Merchant ────────────────────────────────────────────────────────────
+    // Priority: bank-specific → UPI VPA → income "from" → expense "to/at" → sender
     String? merchant;
 
     merchant = template?.extractMerchant?.call(body);
@@ -510,7 +513,7 @@ class NewSmsParser {
       merchant ??= _extractToAt(body); // "sent/paid to <name>"
     }
 
-    // Track this separately from the final fallback below ΓÇö a merchant
+    // Track this separately from the final fallback below — a merchant
     // that came from the raw sender code isn't a real counterparty and
     // should be flagged for review rather than presented as certain.
     final merchantWasExtracted = merchant != null;
@@ -535,7 +538,7 @@ class NewSmsParser {
       type: type,
       merchant: _normaliseMerchant(merchant),
       // Fall back to the cleaned sender code (e.g. "PAYTMB") when no
-      // dedicated template exists ΓÇö still better than nothing on the
+      // dedicated template exists — still better than nothing on the
       // review card, and consistent with how merchant already falls
       // back to the sender elsewhere in this function.
       bankName: template?.displayName ?? _cleanSender(sender),
@@ -548,7 +551,7 @@ class NewSmsParser {
     );
   }
 
-  // ΓöÇΓöÇ Merchant sub-extractors ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Merchant sub-extractors ────────────────────────────────────────────────
 
   static final RegExp _upiVpaPattern = RegExp(
     r'(?:^|\s)([a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,})(?:\s|\.|$)',
@@ -587,7 +590,7 @@ class NewSmsParser {
         .trim()
         .replaceAll(RegExp(r'\s*\.?\s*(?:Ref|UPI).*$', caseSensitive: false), '')
         .replaceAll(RegExp(r'\s+on\s+\d.*$', caseSensitive: false), '')
-        .replaceAll(RegExp(r'\(.*$'), '') // strip "(UPI Ref: ΓÇª"
+        .replaceAll(RegExp(r'\(.*$'), '') // strip "(UPI Ref: …"
         .trim();
 
     if (candidate.isEmpty || _metaNoise.hasMatch(candidate.toLowerCase())) {
@@ -610,7 +613,7 @@ class NewSmsParser {
         .toUpperCase();
   }
 
-  // ΓöÇΓöÇ Fingerprint ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Fingerprint ────────────────────────────────────────────────────────────
 
   static String _fingerprint(String sender, DateTime date, String body) {
   final snippet = body.length > 40 ? body.substring(0, 40) : body;

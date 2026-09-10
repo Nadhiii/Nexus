@@ -9,8 +9,10 @@ import '../../core/theme/app_animations.dart';
 import '../../core/models/payday_checklist.dart';
 import '../../core/models/detected_transaction.dart';
 import '../../core/models/transaction.dart';
+import '../../core/models/transaction_draft.dart';
 import '../../core/services/payday_checklist_service.dart';
-import '../../core/services/smart_category_resolver.dart';
+import '../../core/services/transaction_intelligence_service.dart';
+import '../../core/providers/knowledge_provider.dart';
 import '../../core/providers/debt_provider.dart';
 import '../../core/providers/subscription_provider.dart';
 import '../../core/providers/goal_provider.dart';
@@ -750,13 +752,14 @@ class _PaydayScreenState extends State<PaydayScreen>
     final accountId = accounts.first.id;
 
     final categories = context.read<CategoryProvider>().categories;
-    String? resolvedCategoryId = t.detectedCategory ??
-        SmartCategoryResolver.resolve(
-          merchant: t.merchant,
-          body: t.body,
-          amount: t.amount,
-          transactionType: t.type,
-        );
+    final understanding = const TransactionIntelligenceService().analyze(
+      detected: t,
+      history: context.read<TransactionProvider>().transactions,
+      knowledge: context.read<KnowledgeProvider>().entries,
+    );
+    String? resolvedCategoryId = understanding.categoryId ??
+        t.detectedCategory ??
+        'other';
     final hasId = categories.any((c) => c.id == resolvedCategoryId);
     if (!hasId) {
       final byName =
@@ -777,11 +780,23 @@ class _PaydayScreenState extends State<PaydayScreen>
       accountId: accountId,
       toAccountId: null,
       date: t.date,
+      metadata: {
+        'source': t.source,
+        'sourceId': t.id,
+        'sourceFingerprint': t.fingerprint,
+        'entity': t.merchant,
+        'purpose': 'salary',
+        'isPaymentFromCompany': true,
+        'confidence': t.confidence,
+      },
       createdAt: now,
       updatedAt: now,
     );
 
-    final ok = await context.read<TransactionProvider>().addTransaction(transaction);
+    final result = await context.read<TransactionProvider>().commitDraft(
+      TransactionDraft.fromTransaction(transaction),
+    );
+    final ok = result != null && !result.alreadyExists;
     if (!ok && mounted) {
       showTopSnackBar(context, 'Could not save — try again');
     }

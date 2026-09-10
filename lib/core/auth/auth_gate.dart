@@ -1,4 +1,5 @@
-﻿import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../screens/main_screen.dart';
@@ -9,11 +10,13 @@ import '../providers/subscription_provider.dart';
 import '../providers/budget_provider.dart';
 import '../providers/goal_provider.dart';
 import '../providers/category_provider.dart';
+import '../providers/knowledge_provider.dart';
+import '../providers/transaction_relationship_provider.dart';
+import '../providers/nbox_provider.dart';
 import '../providers/debt_provider.dart';
 import '../providers/investment_provider.dart';
 import '../providers/bike_provider.dart';
 import '../providers/notification_provider.dart';
-import '../providers/gmail_provider.dart';
 import '../providers/biometric_provider.dart';
 import 'biometric_auth_wrapper.dart';
 import '../services/notification_service.dart';
@@ -61,9 +64,15 @@ class _AuthGateState extends State<AuthGate> {
       Provider.of<DebtProvider>(context, listen: false).clear();
       Provider.of<InvestmentProvider>(context, listen: false).clear();
       Provider.of<BikeProvider>(context, listen: false).clear();
-      debugPrint('Γ£à All providers cleared on logout');
+      Provider.of<CategoryProvider>(context, listen: false).clear();
+      Provider.of<KnowledgeProvider>(context, listen: false).clear();
+      Provider.of<TransactionRelationshipProvider>(
+        context,
+        listen: false,
+      ).clear();
+      debugPrint('✅ All providers cleared on logout');
     } catch (e) {
-      debugPrint('ΓÜá∩╕Å Error clearing providers: $e');
+      debugPrint('⚠️ Error clearing providers: $e');
     }
   }
 }
@@ -159,7 +168,28 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
       context,
       listen: false,
     );
-    final gmailProvider = Provider.of<GmailProvider>(context, listen: false);
+    final knowledgeProvider = Provider.of<KnowledgeProvider>(
+      context,
+      listen: false,
+    );
+    final relationshipProvider = Provider.of<TransactionRelationshipProvider>(
+      context,
+      listen: false,
+    );
+    final nboxProvider = Provider.of<NewNboxProvider>(context, listen: false);
+    final accountProvider = Provider.of<AccountProvider>(
+      context,
+      listen: false,
+    );
+    final transactionProvider = Provider.of<TransactionProvider>(
+      context,
+      listen: false,
+    );
+    nboxProvider.setFinancialDependencies(
+      accountProvider: accountProvider,
+      transactionProvider: transactionProvider,
+      knowledgeProvider: knowledgeProvider,
+    );
 
     if (!_ranLegacyMigration) {
       _ranLegacyMigration = true;
@@ -188,6 +218,13 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
       debugPrint('Category initialization error: $e');
     }
 
+    try {
+      await knowledgeProvider.refresh();
+      await relationshipProvider.refresh();
+    } catch (e) {
+      debugPrint('Knowledge initialization error: $e');
+    }
+
     if (!_initializedNotifications) {
       _initializedNotifications = true;
       try {
@@ -201,15 +238,11 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
     // Step 1: Execute Backup API calls
     if (!_ranAutoBackupRestore) {
       _ranAutoBackupRestore = true;
-      await _maybeAutoBackupAndRestore();
-    }
-
-    // Step 2: ONLY once Backup is complete, initialize Gmail API calls.
-    // This prevents the Google Play Services broker from crashing the Android Binder.
-    try {
-      await gmailProvider.initialize();
-    } catch (e) {
-      debugPrint('Gmail initialization error: $e');
+      if (kDebugMode) {
+        debugPrint('[Backup] Skipped automatic backup/restore in debug.');
+      } else {
+        await _maybeAutoBackupAndRestore();
+      }
     }
   }
 

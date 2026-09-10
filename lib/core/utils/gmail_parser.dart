@@ -1,6 +1,7 @@
 import '../models/detected_transaction.dart';
-import '../services/categorization_service.dart';
-import '../services/smart_category_resolver.dart';
+import '../services/transaction_intelligence_service.dart';
+import '../models/knowledge_entry.dart';
+import '../models/transaction.dart';
 
 class BankPattern {
   final String name;
@@ -104,9 +105,8 @@ class GmailParser {
     String emailId,
     String body,
     String snippet,
-    DateTime emailDate, {
-    AICategorizationService? aiCategorizationService,
-  }) async {
+    DateTime emailDate,
+  ) async {
     // 1. CLEANING
     String combined = "$snippet $body";
     String cleanBody = combined
@@ -139,7 +139,6 @@ class GmailParser {
           pattern.name,
           emailDate,
           fallbackType,
-          aiCategorizationService: aiCategorizationService,
         );
       }
     }
@@ -151,7 +150,6 @@ class GmailParser {
       lower,
       emailDate,
       fallbackType,
-      aiCategorizationService: aiCategorizationService,
     );
   }
 
@@ -184,6 +182,25 @@ class GmailParser {
   }
 
   static bool _isIgnorable(String lower) {
+    // These are payment/subscription notices, not evidence that money moved.
+    // In particular, Google Play can contain an amount and words like
+    // "payment"/"subscription" while explicitly saying no charge happened.
+    final noMoneyMovement = [
+      'payment due',
+      'payment is due',
+      'amount due',
+      'too low to pay',
+      'needs attention',
+      'update your payment method',
+      'choose how to manage your subscription',
+      'cancel subscription',
+    ];
+    if (noMoneyMovement.any(lower.contains) &&
+        !RegExp(r'\b(debited|credited|received|spent|withdrawn|purchase of|paid)\b')
+            .hasMatch(lower)) {
+      return true;
+    }
+
     // If the email clearly reads like a transaction alert, don't let
     // disclaimer boilerplate (which almost always mentions OTP/CVV as
     // a "never share this" warning) discard it.
@@ -298,9 +315,8 @@ class GmailParser {
     String text,
     String lower,
     DateTime date,
-    String type, {
-    AICategorizationService? aiCategorizationService,
-  }) async {
+    String type,
+  ) async {
     final amountPattern = RegExp(
       r'(?:(?:Rs\.?|INR|₹|Total)\s?\.?\s*)([0-9,]+(?:\.[0-9]+)?)',
       caseSensitive: false,
@@ -335,7 +351,6 @@ class GmailParser {
       date,
       type,
       text,
-      aiCategorizationService,
       confidence: 0.55,
       warnings: warnings,
       bankName: detectedBank,
@@ -373,9 +388,8 @@ class GmailParser {
     String fullBody,
     String bankName,
     DateTime emailDate,
-    String fallbackType, {
-    AICategorizationService? aiCategorizationService,
-  }) async {
+    String fallbackType,
+  ) async {
     try {
       double amount = double.parse(
         match.namedGroup('amount')!.replaceAll(',', ''),
@@ -452,7 +466,6 @@ class GmailParser {
         txnDate,
         type,
         fullBody,
-        aiCategorizationService,
         confidence: confidence.clamp(0.0, 1.0),
         warnings: warnings,
         bankName: bankName,
@@ -470,17 +483,30 @@ class GmailParser {
     DateTime date,
     String type,
     String body,
-    AICategorizationService? aiService, {
+    {
     double confidence = 0.8,
     List<String> warnings = const [],
     String? bankName,
     double? balanceAfter,
   }) async {
-    final category = SmartCategoryResolver.resolve(
-      merchant: merchant,
-      body: body,
+    final detected = DetectedTransaction(
+      id: id,
+      fingerprint: '',
       amount: amount,
-      transactionType: type,
+      merchant: merchant,
+      date: date,
+      type: type,
+      source: 'email',
+      body: body,
+      confidence: confidence,
+      warnings: warnings,
+      bankName: bankName,
+      balanceAfter: balanceAfter,
+    );
+    final understanding = const TransactionIntelligenceService().analyze(
+      detected: detected,
+      history: const <Transaction>[],
+      knowledge: const <KnowledgeEntry>[],
     );
 
     final fingerprint = '${amount}_${merchant}_${date.toIso8601String()}_$type'
@@ -498,7 +524,7 @@ class GmailParser {
       body: body,
       confidence: confidence,
       warnings: warnings,
-      detectedCategory: category,
+      detectedCategory: understanding.categoryId ?? 'other',
       bankName: bankName,
       balanceAfter: balanceAfter,
     );

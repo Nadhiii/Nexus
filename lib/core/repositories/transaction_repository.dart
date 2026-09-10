@@ -45,6 +45,33 @@ class TransactionRepository extends FirestoreRepository<Transaction> {
     );
   }
 
+  Future<List<Transaction>> getByAccountAndDateRange(
+    String accountId,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    return query(
+      filters: [
+        QueryFilter(
+          field: 'accountId',
+          operator: QueryOperator.equals,
+          value: accountId,
+        ),
+        QueryFilter(
+          field: 'date',
+          operator: QueryOperator.greaterThanOrEqual,
+          value: Timestamp.fromDate(startDate),
+        ),
+        QueryFilter(
+          field: 'date',
+          operator: QueryOperator.lessThanOrEqual,
+          value: Timestamp.fromDate(endDate),
+        ),
+      ],
+      sort: const SortParams(field: 'date'),
+    );
+  }
+
   /// Get transactions for a date range
   Future<List<Transaction>> getByDateRange(
     DateTime startDate,

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as fs;
+import 'transaction_paths.dart';
 
 /// CascadeService: Handles atomic deletion of accounts and their transactions
 class CascadeService {
@@ -14,10 +15,7 @@ class CascadeService {
         .doc(userId)
         .collection('accounts')
         .doc(accountId);
-    final transactionsRef = _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('transactions');
+    final transactionsRef = TransactionPaths.collection(_firestore, userId);
 
     // Query all transactions for this account
     final txnSnapshot = await transactionsRef

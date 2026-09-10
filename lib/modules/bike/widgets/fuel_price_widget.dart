@@ -212,7 +212,7 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
                           if (currentPrice?.lastUpdated != null) ...[
                       const SizedBox(width: AppSpacing.sm),
                             Text(
-                              'ΓÇó Updated today',
+                              '• Updated today',
                               style: AppTypography.labelSmall.copyWith(
                                 color: AppColors.pastelGreen,
                                 fontSize: 10,
@@ -226,7 +226,7 @@ class _FuelPriceWidgetState extends State<FuelPriceWidget> {
                         textBaseline: TextBaseline.alphabetic,
                         children: [
                           Text(
-                            'Γé╣',
+                            '₹',
                             style: AppTypography.headlineSmall.copyWith(
                               color: AppColors.textSecondary,
                             ),
