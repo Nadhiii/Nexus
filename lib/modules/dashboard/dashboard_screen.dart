@@ -19,6 +19,8 @@ import '../bike/widgets/garage_dashboard_widget.dart';
 import '../family/screens/expense_splitter_screen.dart';
 import '../transactions/add_transaction_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../debts/screens/liabilities_screen.dart';
+import 'widgets/home_money_pulse.dart';
 
 class ModernDashboardScreen extends StatefulWidget {
   final void Function(int index, {int? financeTab})? onNavigate;
@@ -71,6 +73,19 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
             ),
           ),
 
+
+          // —— 3b. MONEY PULSE (this month + budgets + goals) ——
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.lg,
+                AppSpacing.xl,
+                0,
+              ),
+              child: HomeMoneyPulse(),
+            ),
+          ),
           // ── 4. UPCOMING WEEK ───────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
@@ -82,7 +97,11 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
               ),
               child: UpcomingWeekWidget(
                 onViewAll: () {
-                  // TODO: navigate to full bills/obligations screen
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const LiabilitiesScreen(),
+                    ),
+                  );
                 },
               ),
             ),
@@ -104,15 +123,17 @@ class _ModernDashboardScreenState extends State<ModernDashboardScreen>
           ),
 
           // ── 6. RECENT ACTIVITY ─────────────────────────────────────────
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(
+              padding: const EdgeInsets.fromLTRB(
                 AppSpacing.xl,
                 AppSpacing.lg,
                 AppSpacing.xl,
                 0,
               ),
-              child: _RecentActivitySectionWrapper(),
+              child: _RecentActivitySectionWrapper(
+                onViewAll: () => widget.onNavigate?.call(1, financeTab: 1),
+              ),
             ),
           ),
 
@@ -309,14 +330,15 @@ class _ActionBar extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _RecentActivitySectionWrapper extends StatelessWidget {
-  const _RecentActivitySectionWrapper();
+  final VoidCallback? onViewAll;
+  const _RecentActivitySectionWrapper({this.onViewAll});
 
   @override
   Widget build(BuildContext context) {
     return Consumer<TransactionProvider>(
       builder: (context, txProvider, _) {
         final recent = txProvider.transactions.take(5).toList();
-        return _RecentActivitySection(recentTransactions: recent);
+        return _RecentActivitySection(recentTransactions: recent, onViewAll: onViewAll);
       },
     );
   }
@@ -324,7 +346,8 @@ class _RecentActivitySectionWrapper extends StatelessWidget {
 
 class _RecentActivitySection extends StatelessWidget {
   final List<Transaction> recentTransactions;
-  const _RecentActivitySection({required this.recentTransactions});
+  final VoidCallback? onViewAll;
+  const _RecentActivitySection({required this.recentTransactions, this.onViewAll});
 
   @override
   Widget build(BuildContext context) {
@@ -339,10 +362,7 @@ class _RecentActivitySection extends StatelessWidget {
               style: AppTypography.labelSmall.copyWith(letterSpacing: 1.2),
             ),
             GestureDetector(
-              onTap: () {
-                // Navigate to full transactions screen via bottom nav
-                // handled by parent scaffold tab switching
-              },
+              onTap: onViewAll,
               child: Text(
                 'View all',
                 style: AppTypography.labelMedium.copyWith(
