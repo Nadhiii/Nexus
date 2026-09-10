@@ -11,6 +11,7 @@ import '../services/ai_categorization_service.dart';
 import '../../modules/ai_assistant/providers/ai_assistant_provider.dart';
 import 'category_provider.dart';
 import 'gmail_provider.dart';
+import '../services/transaction_brain_service.dart';
 
 class NewNboxProvider extends ChangeNotifier {
   GmailProvider? _gmailProvider;
@@ -184,9 +185,10 @@ class NewNboxProvider extends ChangeNotifier {
   void _processTransactions(
     List<DetectedTransaction> transactions,
     String source,
-  ) {
+  ) async {
     final freshPending = <DetectedTransaction>[];
     final freshRejected = <DetectedTransaction>[];
+    final autoApproved = <DetectedTransaction>[];
 
     for (final transaction in transactions) {
       final approvedId = '${transaction.source}:${transaction.id}';
@@ -197,8 +199,28 @@ class NewNboxProvider extends ChangeNotifier {
       } else if (_processedIds.contains(rejectedId)) {
         freshRejected.add(transaction);
       } else {
-        freshPending.add(transaction);
+        // PHASE 1 AUTO-APPROVAL: Check if transaction has high enough confidence
+        // to bypass Smart Approval screen entirely
+        if (transaction.shouldAutoApprove) {
+          autoApproved.add(transaction);
+          // Mark as processed without showing to user
+          _processedIds.add(approvedId);
+        } else {
+          freshPending.add(transaction);
+        }
       }
+    }
+
+    // Auto-approve high-confidence transactions silently
+    if (autoApproved.isNotEmpty) {
+      if (kDebugMode) {
+        print('[NewNboxProvider] Auto-approved ${autoApproved.length} transactions');
+        for (final tx in autoApproved) {
+          print('  - ${tx.merchant}: ₹${tx.amount} (${tx.confidence})');
+        }
+      }
+      // Trigger auto-approval in background (will be handled by TransactionBrain)
+      _autoApproveTransactions(autoApproved, source);
     }
 
     if (source == 'sms') {
@@ -211,6 +233,45 @@ class NewNboxProvider extends ChangeNotifier {
     _rejected.addAll(freshRejected);
 
     _sortLists();
+    notifyListeners();
+    
+    // Persist after auto-approval
+    if (autoApproved.isNotEmpty) {
+      await _persistIds();
+    }
+  }
+
+  /// Auto-approve high-confidence transactions without user intervention
+  Future<void> _autoApproveTransactions(
+    List<DetectedTransaction> transactions,
+    String source,
+  ) async {
+    // Integrate with TransactionBrain for actual auto-approval
+    final brain = TransactionBrainService.instance;
+    
+    if (!brain.isInitialized) {
+      debugPrint('[NewNboxProvider] TransactionBrain not initialized, skipping auto-approval');
+      return;
+    }
+    
+    int approvedCount = 0;
+    for (final transaction in transactions) {
+      try {
+        final success = await brain.autoApproveTransaction(transaction);
+        if (success) {
+          approvedCount++;
+          if (kDebugMode) {
+            print('[NewNboxProvider] Auto-approved: ${transaction.merchant} ₹${transaction.amount}');
+          }
+        }
+      } catch (e) {
+        debugPrint('[NewNboxProvider] Error auto-approving transaction: $e');
+      }
+    }
+    
+    if (approvedCount > 0 && kDebugMode) {
+      print('[NewNboxProvider] Successfully auto-approved $approvedCount/${transactions.length} transactions');
+    }
   }
 
   Future<void> markAsApproved(String id, String source) async {

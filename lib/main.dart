@@ -28,6 +28,7 @@ import 'core/auth/auth_gate.dart';
 import 'core/services/crash_reporting_service.dart';
 import 'core/services/widget_sync_service.dart';
 import 'core/services/intent_navigation_service.dart';
+import 'core/services/transaction_brain_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
@@ -186,6 +187,18 @@ class NexusApp extends StatelessWidget {
                     accountProvider: accountProvider,
                     subscriptionProvider: subscriptionProvider,
                     debtProvider: debtProvider,
+                  );
+
+                  // Initialize TransactionBrain - the central "brain" for all transactions
+                  TransactionBrainService.instance.initialize(
+                    transactionProvider: transactionProvider,
+                    accountProvider: accountProvider,
+                    budgetProvider: Provider.of<BudgetProvider>(context, listen: false),
+                    debtProvider: debtProvider,
+                    subscriptionProvider: subscriptionProvider,
+                    goalProvider: Provider.of<GoalProvider>(context, listen: false),
+                    investmentProvider: Provider.of<InvestmentProvider>(context, listen: false),
+                    bikeProvider: Provider.of<BikeProvider>(context, listen: false),
                   );
 
                   return MaterialApp(

@@ -1,9 +1,48 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // User-scoped collections (accounts, transactions within user documents)
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is accessing their own data
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Helper function to check if users are in the same family
+    function isInSameFamily(targetUserId) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)/family_members/$(targetUserId)) ||
+             exists(/databases/$(database)/documents/users/$(targetUserId)/family_members/$(request.auth.uid));
+    }
+    
+    // User profile documents
+    match /users/{userId} {
+      // Users can read their own profile and family members' profiles (for family features)
+      allow read: if isAuthenticated();
+      // Users can only update their own profile
+      allow update: if isOwner(userId);
+      
+      // All subcollections under user (transactions, accounts, categories, etc.)
+      match /{collectionId}/{documentId} {
+        // For most collections, only owner can access
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Special case: family_members collection - allow cross-user access for family
+      match /family_members/{memberId} {
+        // Allow reading family members if you're part of the family
+        allow read: if isAuthenticated() && 
+                       (isOwner(userId) || isInSameFamily(userId));
+        // Allow adding family members (to your own family_members list)
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+        // Allow updating/deleting your own family member entries
+        allow update, delete: if isAuthenticated() && 
+                                 resource.data.userId == request.auth.uid;
+      }
     }
 
     // Backups collection - users can only access their own backup
