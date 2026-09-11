@@ -8,6 +8,7 @@ import '../../modules/notifications/notifications_screen.dart';
 import '../../modules/goals/goals_screen.dart';
 import '../../modules/subscriptions/subscription_screen.dart';
 import '../../modules/bike/screens/garage_screen.dart';
+import '../../modules/bike/ui/bike_screen.dart';
 import '../../modules/family/screens/family_dashboard_screen.dart';
 import '../../modules/debts/screens/liabilities_screen.dart';
 
@@ -100,7 +101,7 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.garage,
         name: 'garage',
-        builder: (context, state) => const GarageManagementScreen(),
+        builder: (context, state) => const ModernBikeScreen(),
       ),
 
       // Family Dashboard

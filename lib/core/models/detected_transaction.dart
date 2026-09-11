@@ -1,7 +1,5 @@
 import 'package:flutter/foundation.dart';
 
-<<<<<<< Updated upstream
-=======
 /// Granular confidence scores for different aspects of a transaction
 /// This allows Nexus to be certain about some fields while uncertain about others
 @immutable
@@ -88,7 +86,6 @@ class TransactionConfidence {
   }
 }
 
->>>>>>> Stashed changes
 @immutable
 class DetectedTransaction {
   final String id; // Unique ID (SMS ID or Email ID)
@@ -99,12 +96,6 @@ class DetectedTransaction {
   final String type; // 'income' or 'expense'
   final String source; // 'sms' or 'email'
   final String? body; // Full SMS or Email body
-<<<<<<< Updated upstream
-  final double confidence; // 0.0 to 1.0, higher = more reliable
-  final List<String>
-  warnings; // e.g., ["Merchant unclear", "Amount incomplete"]
-  final String? detectedCategory; // Auto-detected category, if any
-=======
   final String? accountId; // Detected account ID (if known)
   final TransactionConfidence confidence; // Granular confidence scores
   final List<String>
@@ -115,7 +106,6 @@ class DetectedTransaction {
   final String? recurrencePattern; // e.g., "monthly", "weekly"
   final KnowledgeType knowledgeType; // How was this determined
   final List<String> matchedPatterns; // IDs of patterns/merchants that matched
->>>>>>> Stashed changes
   final String? bankName; // e.g., "IDFC FIRST Bank" - identified source bank
   final double?
   balanceAfter; // Account balance after this transaction, if the alert included one
@@ -133,11 +123,6 @@ class DetectedTransaction {
     required this.type,
     required this.source,
     this.body,
-<<<<<<< Updated upstream
-    this.confidence = 0.8,
-    this.warnings = const [],
-    this.detectedCategory,
-=======
     this.accountId,
     Object confidence = const TransactionConfidence(),
     this.warnings = const [],
@@ -147,21 +132,12 @@ class DetectedTransaction {
     this.recurrencePattern,
     this.knowledgeType = KnowledgeType.unknown,
     this.matchedPatterns = const [],
->>>>>>> Stashed changes
     this.bankName,
     this.balanceAfter,
     this.accountNumber,
     this.analysis,
     this.matchedTransactionId,
     this.statementImportId,
-<<<<<<< Updated upstream
-  });
-
-  // Quick check for reliability
-  bool get isHighConfidence => confidence >= 0.85;
-  bool get isLowConfidence => confidence < 0.65;
-  bool get needsReview => isLowConfidence || warnings.isNotEmpty;
-=======
   }) : confidence = _coerceConfidence(confidence);
 
   static TransactionConfidence _coerceConfidence(Object? value) {
@@ -205,7 +181,6 @@ class DetectedTransaction {
 
   /// What specific question should we ask the user?
   String? get questionToAsk => confidence.weakestArea;
->>>>>>> Stashed changes
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -286,14 +261,14 @@ class DetectedTransaction {
     String? type,
     String? source,
     String? body,
-<<<<<<< Updated upstream
-    double? confidence,
-=======
     String? accountId,
     Object? confidence,
->>>>>>> Stashed changes
     List<String>? warnings,
     String? detectedCategory,
+    bool? isRecurring,
+    String? recurrencePattern,
+    KnowledgeType? knowledgeType,
+    List<String>? matchedPatterns,
     String? bankName,
     double? balanceAfter,
     String? accountNumber,
@@ -313,14 +288,10 @@ class DetectedTransaction {
       confidence: confidence ?? this.confidence,
       warnings: warnings ?? this.warnings,
       detectedCategory: detectedCategory ?? this.detectedCategory,
-<<<<<<< Updated upstream
-=======
-
       isRecurring: isRecurring ?? this.isRecurring,
       recurrencePattern: recurrencePattern ?? this.recurrencePattern,
       knowledgeType: knowledgeType ?? this.knowledgeType,
       matchedPatterns: matchedPatterns ?? this.matchedPatterns,
->>>>>>> Stashed changes
       bankName: bankName ?? this.bankName,
       balanceAfter: balanceAfter ?? this.balanceAfter,
       accountNumber: accountNumber ?? this.accountNumber,
@@ -330,8 +301,6 @@ class DetectedTransaction {
     );
   }
 }
-<<<<<<< Updated upstream
-=======
 
 /// How did Nexus learn this information?
 enum KnowledgeType {
@@ -340,4 +309,3 @@ enum KnowledgeType {
   inferred, // Nexus inferred from context/rules (lower confidence)
   unknown, // No prior knowledge
 }
->>>>>>> Stashed changes

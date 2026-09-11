@@ -9,7 +9,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/utils/logo_utils.dart';
 import '../../core/widgets/collapsible_fab.dart';
 import 'utils/debt_logo_utils.dart';
-import 'widgets/add_debt_modal.dart';
+import 'add_debt_screen.dart';
 import 'widgets/pay_debt_modal.dart';
 import '../../core/widgets/swipe_to_delete.dart';
 
@@ -111,7 +111,7 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
         },
       ),
       floatingActionButton: CollapsibleFab(
-        onPressed: () => showAddDebtModal(context),
+        onPressed: () => navToAddDebtScreen(context),
         backgroundColor: AppColors.cardSurface,
         icon: const Icon(Icons.add, color: AppColors.error),
         label: 'Add Liability',
@@ -331,7 +331,7 @@ class _ModernDebtsScreenState extends State<ModernDebtsScreen> {
       itemName: debt.name,
       onDelete: () => context.read<DebtProvider>().deleteDebt(debt.id),
       child: GestureDetector(
-        onTap: () => showAddDebtModal(context, debtToEdit: debt),
+        onTap: () => navToAddDebtScreen(context, debtToEdit: debt),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(

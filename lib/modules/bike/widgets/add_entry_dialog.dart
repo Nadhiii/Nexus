@@ -1,9 +1,9 @@
-// ignore_for_file: unused_field
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../core/theme/app_animations.dart';
+
 import '../../../core/models/bike.dart';
 import '../../../core/models/account.dart';
 import '../../../core/models/transaction.dart';
@@ -15,233 +15,115 @@ import '../../../core/providers/notification_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_animations.dart';
 import '../../../core/widgets/nexus_switch.dart';
-import '../../../core/utils/logo_utils.dart';
+import '../../../core/widgets/top_snackbar.dart';
 
-// Note: Keeping the name AddEntryDialog so your imports don't break,
-// but this is now a full screen Scaffold!
 class AddEntryDialog extends StatefulWidget {
   final Bike bike;
   final double? initialRate;
 
   const AddEntryDialog({super.key, required this.bike, this.initialRate});
 
+  static Future<void> show(
+    BuildContext context, {
+    required Bike bike,
+    double? initialRate,
+  }) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.65),
+      builder: (_) => AddEntryDialog(bike: bike, initialRate: initialRate),
+    );
+  }
+
   @override
   State<AddEntryDialog> createState() => _AddEntryDialogState();
 }
 
 class _AddEntryDialogState extends State<AddEntryDialog> {
+  final _formKey = GlobalKey<FormState>();
+
   bool _isFuelMode = true;
-  bool _isInputtingTrip = true;
   bool _isFullTank = true;
   bool _linkToExpense = true;
   Account? _selectedAccount;
 
-  final _mainInputController = TextEditingController();
+  final _odometerController = TextEditingController();
   final _costController = TextEditingController();
   final _volumeController = TextEditingController();
   final _rateController = TextEditingController();
   final _notesController = TextEditingController();
-  final _customCategoryController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
   String _selectedCategory = 'maintenance';
-
-  double _lastOdo = 0.0;
-  double _calculatedOdo = 0.0;
-  double _calculatedTrip = 0.0;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _lastOdo = widget.bike.currentOdometer;
-    _calculatedOdo = _lastOdo;
-
+    _odometerController.text = widget.bike.currentOdometer.toStringAsFixed(0);
     if (widget.initialRate != null && widget.initialRate! > 0) {
       _rateController.text = widget.initialRate!.toStringAsFixed(2);
     }
-
-    _mainInputController.addListener(() => setState(() {}));
-    _costController.addListener(() => setState(() {}));
-    _volumeController.addListener(() => setState(() {}));
-  }
-
-  void _onMainInputChanged(String val) {
-    double input = double.tryParse(val) ?? 0.0;
-    setState(() {
-      if (_isInputtingTrip) {
-        _calculatedTrip = input;
-        _calculatedOdo = _lastOdo + input;
-      } else {
-        _calculatedOdo = input;
-        _calculatedTrip = (input - _lastOdo).clamp(0, double.infinity);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final accounts = context.read<AccountProvider>().accounts;
+      if (accounts.isNotEmpty) {
+        setState(() => _selectedAccount = accounts.first);
       }
     });
   }
 
-  void _toggleInputMode() {
-    setState(() {
-      _isInputtingTrip = !_isInputtingTrip;
-      _mainInputController.clear();
-      _calculatedTrip = 0;
-      _calculatedOdo = _lastOdo;
-    });
+  @override
+  void dispose() {
+    _odometerController.dispose();
+    _costController.dispose();
+    _volumeController.dispose();
+    _rateController.dispose();
+    _notesController.dispose();
+    super.dispose();
   }
 
   void _onFuelMathChanged() {
-    double vol = double.tryParse(_volumeController.text) ?? 0;
-    double rate = double.tryParse(_rateController.text) ?? 0;
+    final vol = double.tryParse(_volumeController.text.trim()) ?? 0;
+    final rate = double.tryParse(_rateController.text.trim()) ?? 0;
     if (vol > 0 && rate > 0) {
       _costController.text = (vol * rate).toStringAsFixed(0);
     }
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.primaryBlue,
-              surface: AppColors.backgroundBlack,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() => _selectedDate = picked);
-    }
-  }
-
-  double? _calculateExactMileage(
-    List<BikeEntry> history,
-    double currentOdo,
-    double currentFuel,
-  ) {
-    if (!_isFullTank) {
-      return null;
-    }
-
-    final sortedHistory = List<BikeEntry>.from(history)
-      ..sort((a, b) => b.odometerReading.compareTo(a.odometerReading));
-    BikeEntry? lastFullTankEntry;
-    double fuelConsumedBetween = 0.0;
-
-    for (var entry in sortedHistory) {
-      if ((entry.category ?? 'fuel') != 'fuel') {
-        continue;
-      }
-      if (entry.isFullTank) {
-        lastFullTankEntry = entry;
-        break;
-      } else {
-        fuelConsumedBetween += entry.fuelQuantity;
-      }
-    }
-
-    if (lastFullTankEntry == null) {
-      return null;
-    }
-    double distance = currentOdo - lastFullTankEntry.odometerReading;
-    double totalFuelUsed = currentFuel + fuelConsumedBetween;
-
-    if (totalFuelUsed <= 0) {
-      return 0.0;
-    }
-    return distance / totalFuelUsed;
-  }
-
   void _save() async {
-    final provider = context.read<BikeProvider>();
-
-    if (_costController.text.isEmpty || _mainInputController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill cost and distance fields")),
-      );
-      return;
-    }
-
-    final costParsed = double.tryParse(_costController.text);
-    if (costParsed == null || costParsed <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter a valid cost amount")),
-      );
-      return;
-    }
-
-    final mainInputParsed = double.tryParse(_mainInputController.text);
-    if (mainInputParsed == null || mainInputParsed < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter a valid distance")),
-      );
-      return;
-    }
-
-    if (_linkToExpense && _selectedAccount == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select an account to debit")),
-      );
-      return;
-    }
-
-    String finalCategory = 'fuel';
-    if (!_isFuelMode) {
-      finalCategory =
-          _selectedCategory == 'other' &&
-              _customCategoryController.text.isNotEmpty
-          ? _customCategoryController.text.trim()
-          : _selectedCategory;
-    }
-
-    double currentFuelQty = double.tryParse(_volumeController.text) ?? 0;
-    double? calculatedMileage;
-
-    if (_isFuelMode && _isFullTank) {
-      calculatedMileage = _calculateExactMileage(
-        provider.currentBikeEntries,
-        _calculatedOdo,
-        currentFuelQty,
-      );
-    }
-
-    final entry = BikeEntry(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: provider.auth.currentUser?.uid ?? '',
-      bikeName: widget.bike.name,
-      date: _selectedDate,
-      odometerReading: _calculatedOdo,
-      fuelQuantity: _isFuelMode ? currentFuelQty : 0,
-      fuelAmount: costParsed,
-      category: finalCategory,
-      notes: _notesController.text.trim(),
-      isFullTank: _isFullTank,
-      mileage: calculatedMileage,
-    );
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
 
     try {
-      provider.addBikeEntry(entry);
+      final provider = context.read<BikeProvider>();
+      final costParsed = double.parse(_costController.text.trim());
+      final odoParsed = double.parse(_odometerController.text.trim());
+      final currentFuelQty =
+          double.tryParse(_volumeController.text.trim()) ?? 0.0;
+      final category = _isFuelMode ? 'fuel' : _selectedCategory;
 
-      if (entry.isFullTank && entry.mileage != null && entry.mileage! > 0) {
-        Provider.of<NotificationProvider>(
-          context,
-          listen: false,
-        ).notifyFuelLogged(
-          vehicleName: widget.bike.name,
-          mileage: entry.mileage!,
-          fuelAmount: entry.fuelQuantity,
-          cost: entry.fuelAmount,
-        );
-      }
+      final entry = BikeEntry(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: provider.auth.currentUser?.uid ?? '',
+        bikeName: widget.bike.name,
+        date: _selectedDate,
+        odometerReading: odoParsed,
+        fuelQuantity: _isFuelMode ? currentFuelQty : 0,
+        fuelAmount: costParsed,
+        category: category,
+        notes: _notesController.text.trim(),
+        isFullTank: _isFullTank,
+      );
 
-      if (_calculatedOdo > widget.bike.currentOdometer) {
-        provider.updateBike(
-          widget.bike.copyWith(currentOdometer: _calculatedOdo),
+      await provider.addBikeEntry(entry);
+
+      if (odoParsed > widget.bike.currentOdometer) {
+        await provider.updateBike(
+          widget.bike.copyWith(currentOdometer: odoParsed),
         );
       }
 
@@ -255,17 +137,14 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
             amount: costParsed,
             description: _isFuelMode
                 ? '${widget.bike.name} - Fuel (${currentFuelQty.toStringAsFixed(1)}L)'
-                : '${widget.bike.name} - $finalCategory',
+                : '${widget.bike.name} - $category',
             categoryId: 'transportation',
             accountId: _selectedAccount!.id,
             date: _selectedDate,
             metadata: {
               'source': 'garage',
               'bikeName': widget.bike.name,
-              'entryId': entry.id,
-              'category': finalCategory,
-              if (_isFuelMode) 'fuelQuantity': currentFuelQty,
-              'odometer': _calculatedOdo,
+              'odometer': odoParsed,
             },
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
@@ -278,509 +157,463 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _linkToExpense
-                  ? "Entry added & expense recorded"
-                  : "Entry added successfully",
-            ),
-          ),
-        );
+        showTopSnackBar(context, 'Entry added successfully');
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Error adding entry: $e")));
-      }
+      if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.darkGradient.first,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 120.0,
-            backgroundColor: AppColors.darkGradient.first,
-            foregroundColor: AppColors.white,
-            flexibleSpace: FlexibleSpaceBar(
-              centerTitle: true,
-              title: Text(
-                _isFuelMode ? 'Add Fuel' : 'Add Expense',
-                style: AppTypography.headlineMedium,
-              ),
-            ),
-            leading: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            actions: [
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Row(
-                  children: [
-                    _buildModeBtn(Icons.local_gas_station, true),
-                    _buildModeBtn(Icons.build_circle, false),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLiveSummaryCard(),
-                  const SizedBox(height: AppSpacing.xl2),
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final activeColor = _isFuelMode ? AppColors.primaryBlue : AppColors.warning;
 
-                  Text(
-                    _isInputtingTrip ? "Trip Distance" : "New Odometer",
-                    style: AppTypography.titleSmall.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.bold,
+    return Material(
+      color: AppColors.darkSurface,
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(AppSpacing.radiusLg),
+      ),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.90,
+        ),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.xl,
+          AppSpacing.md,
+          AppSpacing.xl,
+          AppSpacing.xl + bottomInset,
+        ),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.borderSubtleDark,
+                      borderRadius: AppSpacing.borderRadiusFull,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _isFuelMode ? 'Add Fuel' : 'Add Vehicle Expense',
+                      style: AppTypography.headlineMedium.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.close,
+                        color: AppColors.textSecondary,
+                        size: AppSpacing.iconSm,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Mode Selector
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildModeButton(
+                        "Fuel Log",
+                        Icons.local_gas_station_outlined,
+                        true,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: _buildModeButton(
+                        "Expense / Service",
+                        Icons.build_outlined,
+                        false,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl),
+
+                _buildLabel('TOTAL COST'),
+                TextFormField(
+                  controller: _costController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  style: AppTypography.currencyMedium.copyWith(
+                    color: activeColor,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: "0.00",
+                    hintStyle: AppTypography.currencyMedium.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                    prefixText: "₹ ",
+                    prefixStyle: AppTypography.currencyMedium.copyWith(
+                      color: activeColor,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.darkSurfaceElevated,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: BorderSide(color: activeColor, width: 1.5),
+                    ),
+                  ),
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty)
+                      return "Cost is required";
+                    if (double.tryParse(val.trim()) == null)
+                      return "Enter a valid cost";
+                    return null;
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                _buildLabel('ODOMETER READING (KM)'),
+                _buildField(
+                  controller: _odometerController,
+                  hint: "e.g. 12450",
+                  icon: Icons.speed_outlined,
+                  isNumber: true,
+                  validator: (val) =>
+                      (val == null || val.trim().isEmpty) ? "Required" : null,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                if (_isFuelMode) ...[
                   Row(
                     children: [
                       Expanded(
-                        child: TextFormField(
-                          controller: _mainInputController,
-                          onChanged: _onMainInputChanged,
-                          style: AppTypography.displayMedium.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: '0.0',
-                            suffixText: ' km',
-                            suffixStyle: AppTypography.displayMedium.copyWith(
-                              color: _isFuelMode
-                                  ? AppColors.primaryBlue
-                                  : AppColors.pastelOrange,
-                              fontWeight: FontWeight.bold,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildLabel('VOLUME (LITERS)'),
+                            _buildField(
+                              controller: _volumeController,
+                              hint: "0.00",
+                              icon: Icons.water_drop_outlined,
+                              isNumber: true,
+                              onChanged: (_) => _onFuelMathChanged(),
                             ),
-                            hintStyle: TextStyle(color: AppColors.textTertiary),
-                            filled: true,
-                            fillColor: AppColors.cardElevated,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppSpacing.radiusLg,
-                              ),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: AppSpacing.md),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.cardElevated,
-                          borderRadius: BorderRadius.circular(
-                            AppSpacing.radiusMd,
-                          ),
-                        ),
-                        child: IconButton(
-                          padding: const EdgeInsets.all(16),
-                          onPressed: _toggleInputMode,
-                          icon: const Icon(
-                            Icons.swap_vert_circle,
-                            color: AppColors.textTertiary,
-                            size: 28,
-                          ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildLabel('RATE / L'),
+                            _buildField(
+                              controller: _rateController,
+                              hint: "₹ / L",
+                              icon: Icons.price_change_outlined,
+                              isNumber: true,
+                              onChanged: (_) => _onFuelMathChanged(),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.xl2),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Full Tank Fill-up",
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      NexusSwitch(
+                        value: _isFullTank,
+                        activeThumbColor: activeColor,
+                        onChanged: (v) => setState(() => _isFullTank = v),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  _buildLabel('SERVICE CATEGORY'),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.darkSurfaceElevated,
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      border: Border.all(color: AppColors.borderSubtleDark),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedCategory,
+                        isExpanded: true,
+                        dropdownColor: AppColors.darkSurfaceElevated,
+                        items:
+                            [
+                                  'maintenance',
+                                  'repair',
+                                  'insurance',
+                                  'fine',
+                                  'accessories',
+                                ]
+                                .map(
+                                  (c) => DropdownMenuItem(
+                                    value: c,
+                                    child: Text(
+                                      c[0].toUpperCase() + c.substring(1),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (val) => setState(
+                          () => _selectedCategory = val ?? 'maintenance',
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.lg),
 
-                  if (_isFuelMode) ...[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Full Tank Fill-up',
-                          style: AppTypography.titleSmall.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
+                // Link to Expenses
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.darkSurfaceElevated,
+                    borderRadius: AppSpacing.borderRadiusSm,
+                    border: Border.all(color: AppColors.borderSubtleDark),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.link,
+                                color: AppColors.success,
+                                size: 20,
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Text(
+                                "Record as Expense",
+                                style: AppTypography.bodyMedium.copyWith(
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        NexusSwitch(
-                          value: _isFullTank,
-                          activeThumbColor: AppColors.primaryBlue,
-                          onChanged: (val) => setState(() => _isFullTank = val),
+                          NexusSwitch(
+                            value: _linkToExpense,
+                            activeThumbColor: AppColors.success,
+                            onChanged: (val) =>
+                                setState(() => _linkToExpense = val),
+                          ),
+                        ],
+                      ),
+                      if (_linkToExpense) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Consumer<AccountProvider>(
+                          builder: (context, accProvider, _) {
+                            return DropdownButtonHideUnderline(
+                              child: DropdownButton<Account>(
+                                value: _selectedAccount,
+                                isExpanded: true,
+                                dropdownColor: AppColors.darkSurfaceElevated,
+                                hint: const Text("Select Account to Debit"),
+                                items: accProvider.accounts
+                                    .map(
+                                      (acc) => DropdownMenuItem(
+                                        value: acc,
+                                        child: Text(acc.name),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (acc) =>
+                                    setState(() => _selectedAccount = acc),
+                              ),
+                            );
+                          },
                         ),
                       ],
-                    ),
-                    if (!_isFullTank)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl2),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.lg,
+                          ),
+                          backgroundColor: AppColors.darkSurfaceElevated,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppSpacing.borderRadiusSm,
+                            side: const BorderSide(
+                              color: AppColors.borderSubtleDark,
+                            ),
+                          ),
+                        ),
                         child: Text(
-                          "Mileage won't be calculated for partial fill-ups.",
-                          style: TextStyle(
-                            color: AppColors.textTertiary,
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: AppSpacing.md),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildStandardTextField(
-                            controller: _volumeController,
-                            hint: "Volume",
-                            icon: Icons.water_drop_outlined,
-                            suffix: "L",
-                            onChanged: (_) => _onFuelMathChanged(),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: _buildStandardTextField(
-                            controller: _rateController,
-                            hint: "Rate/L",
-                            icon: Icons.price_change_outlined,
-                            suffix: "₹",
-                            onChanged: (_) => _onFuelMathChanged(),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                  ] else ...[
-                    Text(
-                      'Category',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardElevated,
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.radiusMd,
-                        ),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedCategory,
-                          isExpanded: true,
-                          dropdownColor: AppColors.cardElevated,
-                          icon: const Icon(
-                            Icons.keyboard_arrow_down,
+                          'Cancel',
+                          style: AppTypography.labelLarge.copyWith(
                             color: AppColors.textSecondary,
                           ),
-                          items:
-                              [
-                                    'maintenance',
-                                    'repair',
-                                    'insurance',
-                                    'fine',
-                                    'other',
-                                  ]
-                                  .map(
-                                    (c) => DropdownMenuItem(
-                                      value: c,
-                                      child: Text(
-                                        c[0].toUpperCase() + c.substring(1),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                          onChanged: (val) => setState(
-                            () => _selectedCategory = val ?? 'maintenance',
-                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _save,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.lg,
+                          ),
+                          backgroundColor: activeColor,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppSpacing.borderRadiusSm,
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                'Log Entry',
+                                style: AppTypography.labelLarge.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                    ),
                   ],
-
-                  Text(
-                    'Total Cost',
-                    style: AppTypography.titleSmall.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  _buildStandardTextField(
-                    controller: _costController,
-                    hint: "Total Cost",
-                    icon: Icons.currency_rupee,
-                    isHighlight: true,
-                  ),
-                  const SizedBox(height: AppSpacing.xl2),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Date',
-                              style: AppTypography.titleSmall.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            GestureDetector(
-                              onTap: () => _selectDate(context),
-                              child: Container(
-                                height: 54,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.cardElevated,
-                                  borderRadius: BorderRadius.circular(
-                                    AppSpacing.radiusMd,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.calendar_today,
-                                      size: 20,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                    const SizedBox(width: AppSpacing.sm),
-                                    Text(
-                                      DateFormat(
-                                        'dd/MMM/yy',
-                                      ).format(_selectedDate),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Notes',
-                              style: AppTypography.titleSmall.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            _buildStandardTextField(
-                              controller: _notesController,
-                              hint: "Optional",
-                              icon: Icons.note_alt_outlined,
-                              isNumber: false,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.xl2),
-
-                  _buildExpenseLinkingSection(),
-                  const SizedBox(height: AppSpacing.xl2),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _save,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _isFuelMode
-                            ? AppColors.primaryBlue
-                            : AppColors.pastelOrange,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.lg,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppSpacing.radiusMd,
-                          ),
-                        ),
-                      ),
-                      child: Text(
-                        _linkToExpense ? 'Save & Record Expense' : 'Save Entry',
-                        style: AppTypography.titleSmall.copyWith(
-                          color: AppColors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 60),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLiveSummaryCard() {
-    final themeColor = _isFuelMode
-        ? AppColors.primaryBlue
-        : AppColors.pastelOrange;
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.cardElevated,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-        border: Border.all(
-          color: themeColor.withValues(alpha: 0.3),
-          width: 1.5,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: themeColor.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "ENTRY SUMMARY",
-                style: TextStyle(
-                  color: themeColor,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              Icon(
-                _isFuelMode ? Icons.local_gas_station : Icons.build,
-                color: themeColor,
-                size: 16,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "CURRENT ODOMETER",
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 8,
-                    ),
-                  ),
-                  Text(
-                    "${_calculatedOdo.toStringAsFixed(0)} km",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    _isFuelMode ? "VOLUME" : "CATEGORY",
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 8,
-                    ),
-                  ),
-                  Text(
-                    _isFuelMode
-                        ? "${_volumeController.text.isEmpty ? '0' : _volumeController.text} L"
-                        : _selectedCategory.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Divider(color: Colors.white10),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "TOTAL COST",
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                "₹${_costController.text.isEmpty ? '0' : _costController.text}",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildStandardTextField({
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Text(
+        text,
+        style: AppTypography.labelSmall.copyWith(
+          color: AppColors.textTertiary,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModeButton(String label, IconData icon, bool isFuel) {
+    final isSelected = _isFuelMode == isFuel;
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _isFuelMode = isFuel);
+      },
+      child: AnimatedContainer(
+        duration: AppAnimations.standard,
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isFuel
+                    ? AppColors.primaryBlue.withValues(alpha: 0.15)
+                    : AppColors.warning.withValues(alpha: 0.15))
+              : AppColors.darkSurfaceElevated,
+          borderRadius: AppSpacing.borderRadiusSm,
+          border: Border.all(
+            color: isSelected
+                ? (isFuel ? AppColors.primaryBlue : AppColors.warning)
+                : AppColors.borderSubtleDark,
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected
+                  ? (isFuel ? AppColors.primaryBlue : AppColors.warning)
+                  : AppColors.textSecondary,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              label,
+              style: AppTypography.labelSmall.copyWith(
+                color: isSelected
+                    ? (isFuel ? AppColors.primaryBlue : AppColors.warning)
+                    : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildField({
     required TextEditingController controller,
     required String hint,
     required IconData icon,
-    bool isNumber = true,
-    bool isHighlight = false,
-    String? suffix,
+    bool isNumber = false,
     Function(String)? onChanged,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
@@ -788,194 +621,39 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
       keyboardType: isNumber
           ? const TextInputType.numberWithOptions(decimal: true)
           : TextInputType.text,
-      style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+      style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: AppColors.textTertiary),
-        suffixText: suffix,
-        suffixStyle: TextStyle(
+        hintStyle: AppTypography.bodyMedium.copyWith(
           color: AppColors.textTertiary,
-          fontWeight: FontWeight.bold,
         ),
         filled: true,
-        fillColor: AppColors.cardElevated,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          borderSide: isHighlight
-              ? BorderSide(
-                  color:
-                      (_isFuelMode
-                              ? AppColors.primaryBlue
-                              : AppColors.pastelOrange)
-                          .withValues(alpha: 0.5),
-                )
-              : BorderSide.none,
+        fillColor: AppColors.darkSurfaceElevated,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
         ),
         prefixIcon: Padding(
           padding: const EdgeInsets.only(
             left: AppSpacing.md,
             right: AppSpacing.sm,
           ),
-          child: Icon(
-            icon,
-            color: isHighlight
-                ? (_isFuelMode ? AppColors.primaryBlue : AppColors.pastelOrange)
-                : AppColors.textSecondary,
-            size: 20,
-          ),
+          child: Icon(icon, color: AppColors.textSecondary, size: 20),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+        ),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(AppSpacing.radiusSm)),
+          borderSide: BorderSide(color: AppColors.primaryBlue, width: 1.5),
         ),
       ),
-    );
-  }
-
-  Widget _buildModeBtn(IconData icon, bool isFuel) {
-    final isSelected = _isFuelMode == isFuel;
-    return GestureDetector(
-      onTap: () => setState(() => _isFuelMode = isFuel),
-      child: AnimatedContainer(
-        duration: AppAnimations.standard,
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (isFuel ? AppColors.primaryBlue : AppColors.pastelOrange)
-              : Colors.transparent,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          icon,
-          size: 16,
-          color: isSelected ? Colors.white : AppColors.textTertiary,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExpenseLinkingSection() {
-    final accountProvider = context.watch<AccountProvider>();
-    final accounts = accountProvider.accounts;
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.cardElevated,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(
-          color: _linkToExpense
-              ? AppColors.success.withValues(alpha: 0.3)
-              : Colors.transparent,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.link,
-                color: _linkToExpense
-                    ? AppColors.success
-                    : AppColors.textSecondary,
-                size: 24,
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Link to Expenses",
-                      style: TextStyle(
-                        color: _linkToExpense
-                            ? Colors.white
-                            : AppColors.textSecondary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    Text(
-                      "Auto-create transaction",
-                      style: TextStyle(
-                        color: AppColors.textTertiary,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              NexusSwitch(
-                value: _linkToExpense,
-                activeThumbColor: AppColors.success,
-                onChanged: (val) => setState(() {
-                  _linkToExpense = val;
-                  if (!val) {
-                    _selectedAccount = null;
-                  }
-                }),
-              ),
-            ],
-          ),
-          if (_linkToExpense) ...[
-            const SizedBox(height: AppSpacing.md),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              decoration: BoxDecoration(
-                color: AppColors.cardSurface,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<Account>(
-                  value: _selectedAccount,
-                  isExpanded: true,
-                  dropdownColor: AppColors.cardElevated,
-                  hint: Text(
-                    "Select Account to Debit",
-                    style: TextStyle(color: AppColors.textTertiary),
-                  ),
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down,
-                    color: AppColors.textSecondary,
-                  ),
-                  items: accounts.map((account) {
-                    final bankLogo = LogoUtils.bankLogoFor(
-                      account.bankName ?? account.name,
-                    );
-                    return DropdownMenuItem<Account>(
-                      value: account,
-                      child: Row(
-                        children: [
-                          if (bankLogo != null)
-                            SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: LogoUtils.buildLogo(bankLogo, size: 20),
-                            )
-                          else
-                            const Icon(
-                              Icons.account_balance_wallet,
-                              size: 20,
-                              color: AppColors.primaryBlue,
-                            ),
-                          const SizedBox(width: 12),
-                          Text(
-                            account.name,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (account) =>
-                      setState(() => _selectedAccount = account),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
+      validator: validator,
     );
   }
 }

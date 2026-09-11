@@ -11,10 +11,9 @@ import '../core/theme/app_spacing.dart';
 
 // Screens
 import '../modules/dashboard/dashboard_screen.dart';
-import '../modules/Wallet/wallet_screen.dart';
+import '../modules/Wallet/accounts_detail_screen.dart';
 import '../modules/insights/insights_screen.dart';
 import '../modules/more/more_screen.dart';
-import '../modules/bike/ui/bike_screen.dart';
 import '../core/services/intent_navigation_service.dart';
 import '../core/services/notification_service.dart';
 import '../modules/nbox/nbox_screen.dart';
@@ -40,10 +39,13 @@ class _MainScreenState extends State<MainScreen>
       ModernDashboardScreen(
         key: const ValueKey('main-dashboard'),
         onNavigate: _navigateToScreen,
+        onOpenAccountsHistory: _openAccountsHistory,
       ),
-      const ModernFinanceScreen(key: ValueKey('main-finance')),
       const ModernInsightsScreen(key: ValueKey('main-insights')),
-      const ModernBikeScreen(key: ValueKey('main-bike')),
+      const AccountsDetailScreen(
+        key: ValueKey('main-accounts'),
+        initialTabIndex: 0,
+      ),
       const NewModernNBoxScreen(key: ValueKey('main-nbox')),
       const ModernMoreScreen(key: ValueKey('main-more')),
     ];
@@ -59,17 +61,15 @@ class _MainScreenState extends State<MainScreen>
         transactionId: event.transactionId,
         source: event.source,
       );
-      _navigateToScreen(4);
+      _navigateToScreen(3);
     });
 
-    // A local-notification launch can happen before this screen has had a
-    // chance to subscribe to the in-memory stream. Recover its durable handoff.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final nbox = context.read<NewNboxProvider>();
       await nbox.restorePendingApprovalRequest();
       if (mounted && nbox.hasPendingApprovalRequest) {
-        _navigateToScreen(4);
+        _navigateToScreen(3);
       }
     });
   }
@@ -81,20 +81,22 @@ class _MainScreenState extends State<MainScreen>
     super.dispose();
   }
 
-  void _navigateToScreen(int index, {int? financeTab}) {
+  void _navigateToScreen(int index) {
     if (index == _currentIndex) return;
 
     HapticFeedback.selectionClick();
 
     setState(() {
-      if (index == 1 && financeTab != null) {
-        _screens[1] = ModernFinanceScreen(
-          key: const ValueKey('main-finance'),
-          initialTabIndex: financeTab,
-        );
-      }
       _currentIndex = index;
     });
+  }
+
+  void _openAccountsHistory() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const AccountsDetailScreen(initialTabIndex: 1),
+      ),
+    );
   }
 
   @override
@@ -105,16 +107,21 @@ class _MainScreenState extends State<MainScreen>
       backgroundColor: theme.scaffoldBackgroundColor,
       extendBody: true,
       body: PageTransitionSwitcher(
-        duration: AppAnimations.pageTransitionDuration,
+        duration: const Duration(milliseconds: 260),
+        reverse: false,
         transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
-          return FadeThroughTransition(
+          return SharedAxisTransition(
             animation: primaryAnimation,
             secondaryAnimation: secondaryAnimation,
+            transitionType: SharedAxisTransitionType.horizontal,
             fillColor: theme.scaffoldBackgroundColor,
             child: child,
           );
         },
-        child: _screens[_currentIndex],
+        child: KeyedSubtree(
+          key: ValueKey<int>(_currentIndex),
+          child: _screens[_currentIndex],
+        ),
       ),
       bottomNavigationBar: _buildKuveraFloatingDock(context, _currentIndex),
     );
@@ -132,35 +139,31 @@ class _MainScreenState extends State<MainScreen>
         AppSpacing.lg,
         AppSpacing.xl3 - AppSpacing.xs,
       ),
-      height: 64,
+      height: 68,
       child: Row(
         children: [
-          // Main Floating Pill Navigation Bar
+          // Main Floating Pill Navigation Bar (Zero white border)
           Expanded(
             child: Container(
-              height: 64,
+              height: 68,
               decoration: BoxDecoration(
                 color: isDark
-                    ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.95)
-                    : colorScheme.surface.withValues(alpha: 0.95),
+                    ? colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.96,
+                      )
+                    : colorScheme.surface.withValues(alpha: 0.96),
                 borderRadius: AppSpacing.borderRadiusFull,
-                border: Border.all(
-                  color: isDark
-                      ? colorScheme.outlineVariant
-                      : colorScheme.outlineVariant,
-                  width: 1,
-                ),
                 boxShadow: [
                   BoxShadow(
-                    color: colorScheme.shadow.withValues(alpha: isDark ? 0.4 : 0.08),
+                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
                 ],
               ),
               padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xs + 2,
-                vertical: AppSpacing.xs + 2,
+                horizontal: AppSpacing.sm,
+                vertical: 6,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -169,7 +172,7 @@ class _MainScreenState extends State<MainScreen>
             ),
           ),
           const SizedBox(width: AppSpacing.controlGap),
-          // Detached Quick Action Button
+          // Detached Quick Action Button (Zero white border)
           Semantics(
             button: true,
             label: 'Open Inbox',
@@ -178,27 +181,27 @@ class _MainScreenState extends State<MainScreen>
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => _navigateToScreen(4), // Quick Jump to Inbox
+                  onTap: () => _navigateToScreen(3),
                   borderRadius: AppSpacing.borderRadiusFull,
                   child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurface,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.shadow.withValues(alpha: 0.12),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: colorScheme.onSurface,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.inbox_rounded,
-                  color: colorScheme.surface,
-                  size: 24,
-                ),
+                    child: Icon(
+                      Icons.inbox_rounded,
+                      color: colorScheme.surface,
+                      size: 24,
+                    ),
                   ),
                 ),
               ),
@@ -224,26 +227,20 @@ class _MainScreenState extends State<MainScreen>
       {
         'icon': Icons.account_balance_wallet_outlined,
         'selectedIcon': Icons.account_balance_wallet_rounded,
-        'label': 'Wallet',
-        'index': 1,
+        'label': 'Accounts',
+        'index': 2,
       },
       {
         'icon': Icons.pie_chart_outline,
         'selectedIcon': Icons.pie_chart_rounded,
         'label': 'Wealth',
-        'index': 2,
-      },
-      {
-        'icon': Icons.two_wheeler_outlined,
-        'selectedIcon': Icons.two_wheeler_rounded,
-        'label': 'Garage',
-        'index': 3,
+        'index': 1,
       },
       {
         'icon': Icons.more_horiz_outlined,
         'selectedIcon': Icons.more_horiz_rounded,
         'label': 'More',
-        'index': 5,
+        'index': 4,
       },
     ];
 
@@ -252,9 +249,8 @@ class _MainScreenState extends State<MainScreen>
       final isSelected = currentIndex == index;
       final label = item['label'] as String;
       final scheme = Theme.of(context).colorScheme;
-      final activeBg = scheme.onSurface;
-      final activeFg = scheme.surface;
-      final inactiveFg = scheme.onSurfaceVariant;
+      final activeColor = scheme.primary;
+      final inactiveColor = scheme.onSurfaceVariant.withValues(alpha: 0.7);
 
       return Expanded(
         child: Semantics(
@@ -264,44 +260,43 @@ class _MainScreenState extends State<MainScreen>
           child: GestureDetector(
             onTap: () => _navigateToScreen(index),
             behavior: HitTestBehavior.opaque,
-            child: SizedBox(
-              height: 48,
-              child: Center(
-                child: AnimatedContainer(
-                  duration: AppAnimations.interactionDuration,
-                  curve: AppAnimations.interactionCurve,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isSelected ? AppSpacing.md : AppSpacing.sm,
-                    vertical: AppSpacing.sm,
+            child: AnimatedContainer(
+              duration: AppAnimations.interactionDuration,
+              curve: AppAnimations.interactionCurve,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? activeColor.withValues(alpha: 0.12)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isSelected
+                        ? item['selectedIcon'] as IconData
+                        : item['icon'] as IconData,
+                    color: isSelected ? activeColor : inactiveColor,
+                    size: 22,
                   ),
-                  decoration: BoxDecoration(
-                    color: isSelected ? activeBg : Colors.transparent,
-                    borderRadius: AppSpacing.borderRadiusFull,
+                  const SizedBox(height: 3),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: AppTypography.bodyFont,
+                      fontSize: 10,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: isSelected ? activeColor : inactiveColor,
+                      letterSpacing: 0.2,
+                    ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isSelected
-                            ? item['selectedIcon'] as IconData
-                            : item['icon'] as IconData,
-                        color: isSelected ? activeFg : inactiveFg,
-                        size: 20,
-                      ),
-                      if (isSelected) ...[
-                        const SizedBox(width: AppSpacing.xs),
-                        Flexible(
-                          child: Text(
-                            label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.labelMedium.copyWith(color: activeFg),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+                ],
               ),
             ),
           ),
@@ -309,5 +304,4 @@ class _MainScreenState extends State<MainScreen>
       );
     }).toList();
   }
-
 }

@@ -4,20 +4,29 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
+
 import '../../../core/providers/debt_provider.dart';
 import '../../../core/models/debt.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/utils/logo_utils.dart';
+import '../../../core/theme/app_animations.dart';
 import '../../../core/widgets/top_snackbar.dart';
-import '../utils/debt_logo_utils.dart';
 
-/// Floating Modal for Add/Edit Loan - Following Subscription Design Pattern
 class AddLoanModal extends StatefulWidget {
   final Debt? debtToEdit;
 
   const AddLoanModal({super.key, this.debtToEdit});
+
+  static Future<void> show(BuildContext context, {Debt? debtToEdit}) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.65),
+      builder: (_) => AddLoanModal(debtToEdit: debtToEdit),
+    );
+  }
 
   @override
   State<AddLoanModal> createState() => _AddLoanModalState();
@@ -26,68 +35,39 @@ class AddLoanModal extends StatefulWidget {
 class _AddLoanModalState extends State<AddLoanModal> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
   final _balanceController = TextEditingController();
   final _emiController = TextEditingController();
   final _rateController = TextEditingController();
   final _tenureController = TextEditingController();
-  final _paidMonthsController = TextEditingController();
   final _lenderController = TextEditingController();
 
-  // State
   DebtType _selectedType = DebtType.personalLoan;
   int _paymentDay = 5;
   DateTime _loanStartDate = DateTime(DateTime.now().year, DateTime.now().month);
   bool _isLoading = false;
-  bool _showEmiCalculator = false;
-
-  // EMI Calculator results
-  double? _calculatedEMI;
-  double? _totalInterest;
-  double? _totalPayment;
+  bool _isBorrowed = true; // Segment: Borrowed vs Lent
 
   bool get _isEditMode => widget.debtToEdit != null;
-
-  // Quick Add Loan Types
-  final List<Map<String, dynamic>> _loanQuickAdd = [
-    {'type': DebtType.personalLoan, 'name': 'Personal', 'icon': '💳'},
-    {'type': DebtType.homeLoan, 'name': 'Home', 'icon': '🏠'},
-    {'type': DebtType.carLoan, 'name': 'Car', 'icon': '🚗'},
-    {'type': DebtType.twoWheelerLoan, 'name': '2-Wheeler', 'icon': '🏍️'},
-    {'type': DebtType.educationLoan, 'name': 'Education', 'icon': '🎓'},
-    {'type': DebtType.goldLoan, 'name': 'Gold', 'icon': '💰'},
-  ];
 
   @override
   void initState() {
     super.initState();
-
     if (_isEditMode) {
-      _populateFromDebt(widget.debtToEdit!);
+      final d = widget.debtToEdit!;
+      _nameController.text = d.name;
+      _amountController.text = d.originalAmount.toStringAsFixed(0);
+      _balanceController.text = d.currentBalance.toStringAsFixed(0);
+      _emiController.text = d.monthlyEMI?.toStringAsFixed(0) ?? '';
+      _rateController.text = d.interestRate?.toString() ?? '';
+      _tenureController.text = d.totalMonths?.toString() ?? '';
+      _lenderController.text = d.lenderName ?? '';
+      _selectedType = d.type;
+      _paymentDay = d.paymentDay ?? 5;
+      final start = d.startDate ?? DateTime.now();
+      _loanStartDate = DateTime(start.year, start.month);
     }
-
-    // Live Preview Listeners
-    _nameController.addListener(() => setState(() {}));
-    _amountController.addListener(() => setState(() {}));
-    _balanceController.addListener(() => setState(() {}));
-    _emiController.addListener(() => setState(() {}));
-  }
-
-  void _populateFromDebt(Debt debt) {
-    _nameController.text = debt.name;
-    _amountController.text = debt.originalAmount.toStringAsFixed(0);
-    _balanceController.text = debt.currentBalance.toStringAsFixed(0);
-    _emiController.text = debt.monthlyEMI?.toStringAsFixed(0) ?? '';
-    _rateController.text = debt.interestRate?.toString() ?? '';
-    _tenureController.text = debt.totalMonths?.toString() ?? '';
-    _paidMonthsController.text = debt.paidMonths?.toString() ?? '';
-    _lenderController.text = debt.lenderName ?? '';
-    _selectedType = debt.type;
-    _paymentDay = debt.paymentDay ?? 5;
-    final start = debt.startDate ?? DateTime.now();
-    _loanStartDate = DateTime(start.year, start.month);
   }
 
   @override
@@ -98,807 +78,26 @@ class _AddLoanModalState extends State<AddLoanModal> {
     _emiController.dispose();
     _rateController.dispose();
     _tenureController.dispose();
-    _paidMonthsController.dispose();
     _lenderController.dispose();
     super.dispose();
   }
 
-  void _onQuickAdd(Map<String, dynamic> item) {
-    HapticFeedback.selectionClick();
-    setState(() {
-      _selectedType = item['type'] as DebtType;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.darkGradient.first,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 120.0,
-            backgroundColor: AppColors.darkGradient.first,
-            foregroundColor: AppColors.white,
-            flexibleSpace: FlexibleSpaceBar(
-              centerTitle: true,
-              title: Text(
-                _isEditMode ? 'Edit Liability' : 'Add Liability',
-                style: AppTypography.headlineMedium,
-              ),
-            ),
-            leading: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                                // 1. LIVE PREVIEW
-                                _buildLivePreview(),
-                                const SizedBox(height: 32),
-
-                                // 2. QUICK ADD
-                                _buildLabel('Loan Type'),
-                                SizedBox(
-                                  height: 50,
-                                  child: ListView.separated(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: _loanQuickAdd.length,
-                                    separatorBuilder: (_, _) =>
-                                        const SizedBox(width: 12),
-                                    itemBuilder: (context, index) {
-                                      final item = _loanQuickAdd[index];
-                                      final isSelected =
-                                          _selectedType == item['type'];
-                                      return GestureDetector(
-                                        onTap: () => _onQuickAdd(item),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? AppColors.info.withValues(
-                                                    alpha: 0.2,
-                                                  )
-                                                : AppColors.cardSurface,
-                                            borderRadius: BorderRadius.circular(
-                                              25,
-                                            ),
-                                            border: Border.all(
-                                              color: isSelected
-                                                  ? AppColors.info
-                                                  : Colors.white.withValues(
-                                                      alpha: 0.05,
-                                                    ),
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Text(
-                                                item['icon'],
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                item['name'],
-                                                style: TextStyle(
-                                                  color: isSelected
-                                                      ? AppColors.info
-                                                      : AppColors.textSecondary,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-
-                                // 3. LOAN DETAILS
-                                _buildLabel('Loan Details'),
-                                _buildGlassTextField(
-                                  controller: _nameController,
-                                  hint: "e.g. HDFC Home Loan",
-                                  icon: Icons.article_outlined,
-                                ),
-                                const SizedBox(height: 12),
-                                _buildGlassTextField(
-                                  controller: _lenderController,
-                                  hint: "Bank / Lender Name",
-                                  icon: Icons.account_balance,
-                                ),
-                                const SizedBox(height: 24),
-
-                                // 4. AMOUNT SECTION
-                                _buildLabel('Amounts'),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildGlassTextField(
-                                        controller: _amountController,
-                                        hint: "Principal",
-                                        icon: Icons.currency_rupee,
-                                        isNumber: true,
-                                        prefix: "₹",
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: _buildGlassTextField(
-                                        controller: _balanceController,
-                                        hint: "Balance",
-                                        icon: Icons.account_balance_wallet,
-                                        isNumber: true,
-                                        prefix: "₹",
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                _buildGlassTextField(
-                                  controller: _emiController,
-                                  hint: "Monthly EMI",
-                                  icon: Icons.calendar_today,
-                                  isNumber: true,
-                                  prefix: "₹",
-                                ),
-                                const SizedBox(height: 24),
-
-                                // 5. INTEREST & TENURE
-                                _buildLabel('Terms'),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildGlassTextField(
-                                        controller: _rateController,
-                                        hint: "Interest %",
-                                        icon: Icons.percent,
-                                        isNumber: true,
-                                        suffix: "%",
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: _buildGlassTextField(
-                                        controller: _tenureController,
-                                        hint: "Tenure",
-                                        icon: Icons.timer_outlined,
-                                        isNumber: true,
-                                        suffix: "mo",
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                _buildGlassTextField(
-                                  controller: _paidMonthsController,
-                                  hint: "Paid Months (Manual)",
-                                  icon: Icons.check_circle_outline,
-                                  isNumber: true,
-                                  suffix: "mo",
-                                ),
-                                const SizedBox(height: 12),
-                                _buildLabel('Loan Start Month'),
-                                GestureDetector(
-                                  onTap: _pickLoanStartMonthYear,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 16,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.cardSurface,
-                                      borderRadius: BorderRadius.circular(30),
-                                      border: Border.all(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.05,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.calendar_month,
-                                          color: AppColors.info,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          DateFormat(
-                                            'MMM yyyy',
-                                          ).format(_loanStartDate),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        Icon(
-                                          Icons.chevron_right,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-
-                                // EMI Calculator Toggle
-                                const SizedBox(height: 16),
-                                GestureDetector(
-                                  onTap: () {
-                                    HapticFeedback.lightImpact();
-                                    setState(
-                                      () => _showEmiCalculator =
-                                          !_showEmiCalculator,
-                                    );
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _showEmiCalculator
-                                          ? AppColors.info.withValues(
-                                              alpha: 0.15,
-                                            )
-                                          : AppColors.cardSurface,
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: _showEmiCalculator
-                                            ? AppColors.info.withValues(
-                                                alpha: 0.5,
-                                              )
-                                            : Colors.white.withValues(
-                                                alpha: 0.05,
-                                              ),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.calculate_outlined,
-                                          size: 18,
-                                          color: _showEmiCalculator
-                                              ? AppColors.info
-                                              : AppColors.textSecondary,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          _showEmiCalculator
-                                              ? "Hide Calculator"
-                                              : "Calculate EMI",
-                                          style: TextStyle(
-                                            color: _showEmiCalculator
-                                                ? AppColors.info
-                                                : AppColors.textSecondary,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-
-                                // EMI Calculator Results
-                                if (_showEmiCalculator) ...[
-                                  const SizedBox(height: 16),
-                                  _buildEmiCalculator(),
-                                ],
-
-                                const SizedBox(height: 24),
-
-                                // 6. PAYMENT DAY
-                                _buildLabel('EMI Due Date'),
-                                GestureDetector(
-                                  onTap: _showPaymentDayPicker,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 16,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.cardSurface,
-                                      borderRadius: BorderRadius.circular(30),
-                                      border: Border.all(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.05,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.event,
-                                          color: AppColors.info,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          "Every month on",
-                                          style: TextStyle(
-                                            color: AppColors.textTertiary,
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        Text(
-                                          "$_paymentDay${_getDaySuffix(_paymentDay)}",
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Icon(
-                                          Icons.chevron_right,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-
-                                const SizedBox(height: 40),
-
-                                // 7. SAVE BUTTON
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 56,
-                                  child: ElevatedButton(
-                                    onPressed: _isLoading ? null : _submit,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primaryBlue,
-                                      foregroundColor: AppColors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      elevation: 0,
-                                    ),
-                                    child: _isLoading
-                                        ? SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: AppColors.white,
-                                            ),
-                                          )
-                                        : Text(
-                                            _isEditMode
-                                                ? "Save Changes"
-                                                : "Add Loan",
-                                            style: const TextStyle(
-                                              color: AppColors.white,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                  ),
-                                ),
-                                const SizedBox(height: 100),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLivePreview() {
-    final name = _nameController.text.isEmpty
-        ? "Loan Name"
-        : _nameController.text;
-    final balance = double.tryParse(_balanceController.text) ?? 0;
-    final emi = double.tryParse(_emiController.text) ?? 0;
-    final bankLogo = DebtLogoUtils.bankLogoForParts(
-      lenderName: _lenderController.text,
-      name: _nameController.text,
-    );
-    final bankLogoScale = DebtLogoUtils.bankLogoScaleForParts(
-      lenderName: _lenderController.text,
-      name: _nameController.text,
-    );
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.info.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Center(
-              child: bankLogo != null
-                  ? LogoUtils.buildLogo(bankLogo, size: 22 * bankLogoScale)
-                  : Text(
-                      _selectedType.icon,
-                      style: const TextStyle(fontSize: 22),
-                    ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: AppTypography.titleMedium.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (emi > 0)
-                  Text(
-                    "₹${NumberFormat('#,##,###').format(emi)}/month",
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textTertiary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '₹${NumberFormat('#,##,###').format(balance)}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-              Text(
-                "remaining",
-                style: TextStyle(fontSize: 10, color: AppColors.textTertiary),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Text(
-        text,
-        style: AppTypography.titleSmall.copyWith(
-          color: AppColors.textPrimary,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGlassTextField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    bool isNumber = false,
-    String? prefix,
-    String? suffix,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: isNumber
-          ? const TextInputType.numberWithOptions(decimal: true)
-          : TextInputType.text,
-      inputFormatters: isNumber
-          ? [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))]
-          : null,
-      style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(color: AppColors.textTertiary),
-        filled: true,
-        fillColor: AppColors.cardElevated,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
-        prefixIcon: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.md, right: AppSpacing.sm),
-          child: Icon(icon, color: AppColors.textSecondary, size: 20),
-        ),
-        prefixText: prefix,
-        prefixStyle: TextStyle(
-          color: AppColors.info,
-          fontWeight: FontWeight.bold,
-        ),
-        suffixText: suffix,
-        suffixStyle: TextStyle(color: AppColors.textSecondary),
-      ),
-    );
-  }
-
-  Widget _buildEmiCalculator() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.info.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _calculateEMI,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.info,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              child: const Text(
-                "Calculate EMI",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          if (_calculatedEMI != null) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  _buildCalcRow(
-                    'Monthly EMI',
-                    '₹${NumberFormat('#,##,###').format(_calculatedEMI)}',
-                  ),
-                  const SizedBox(height: 8),
-                  _buildCalcRow(
-                    'Total Interest',
-                    '₹${NumberFormat('#,##,###').format(_totalInterest)}',
-                  ),
-                  const SizedBox(height: 8),
-                  _buildCalcRow(
-                    'Total Payment',
-                    '₹${NumberFormat('#,##,###').format(_totalPayment)}',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () {
-                _emiController.text = _calculatedEMI!.round().toString();
-                HapticFeedback.mediumImpact();
-              },
-              child: Text(
-                "Use This EMI →",
-                style: TextStyle(
-                  color: AppColors.info,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCalcRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showPaymentDayPicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.cardElevated,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppSpacing.radiusLg),
-        ),
-      ),
-      builder: (context) {
-        return Container(
-          height: 320,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Select EMI Due Date',
-                style: AppTypography.titleMedium.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 7,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                  ),
-                  itemCount: 28,
-                  itemBuilder: (context, index) {
-                    final day = index + 1;
-                    final isSelected = day == _paymentDay;
-                    return GestureDetector(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _paymentDay = day);
-                        Navigator.pop(context);
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.info
-                              : AppColors.cardSurface,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '$day',
-                            style: TextStyle(
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppColors.textPrimary,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  String _getDaySuffix(int day) {
-    if (day >= 11 && day <= 13) {
-      return 'th';
-    }
-    switch (day % 10) {
-      case 1:
-        return 'st';
-      case 2:
-        return 'nd';
-      case 3:
-        return 'rd';
-      default:
-        return 'th';
-    }
-  }
-
   void _calculateEMI() {
-    final principal = double.tryParse(_amountController.text) ?? 0;
-    final rate = double.tryParse(_rateController.text) ?? 0;
-    final tenure = int.tryParse(_tenureController.text) ?? 0;
+    final principal = double.tryParse(_amountController.text.trim()) ?? 0;
+    final rate = double.tryParse(_rateController.text.trim()) ?? 0;
+    final tenure = int.tryParse(_tenureController.text.trim()) ?? 0;
 
-    if (principal <= 0 || rate <= 0 || tenure <= 0) {
-      showTopSnackBar(
-        context,
-        'Enter Principal, Rate & Tenure first',
-        isError: true,
-      );
-      return;
-    }
-
-    // EMI Formula: [P x R x (1+R)^N] / [(1+R)^N – 1]
-    final monthlyRate = rate / 12 / 100;
-    final emi =
-        (principal * monthlyRate * math.pow(1 + monthlyRate, tenure)) /
-        (math.pow(1 + monthlyRate, tenure) - 1);
-
-    setState(() {
-      _calculatedEMI = emi;
-      _totalPayment = emi * tenure;
-      _totalInterest = _totalPayment! - principal;
-    });
-
-    HapticFeedback.mediumImpact();
-  }
-
-  DateTime _getNextPaymentDate() {
-    final now = DateTime.now();
-    var nextDate = DateTime(now.year, now.month, _paymentDay);
-
-    if (nextDate.isBefore(now) || nextDate.isAtSameMomentAs(now)) {
-      nextDate = DateTime(now.year, now.month + 1, _paymentDay);
-    }
-
-    return nextDate;
-  }
-
-  Future<void> _pickLoanStartMonthYear() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _loanStartDate,
-      firstDate: DateTime(now.year - 30, 1, 1),
-      lastDate: DateTime(now.year + 1, 12, 31),
-      initialDatePickerMode: DatePickerMode.year,
-    );
-    if (picked != null) {
-      setState(() {
-        _loanStartDate = DateTime(picked.year, picked.month);
-      });
+    if (principal > 0 && rate > 0 && tenure > 0) {
+      final monthlyRate = rate / 12 / 100;
+      final emi =
+          (principal * monthlyRate * math.pow(1 + monthlyRate, tenure)) /
+          (math.pow(1 + monthlyRate, tenure) - 1);
+      _emiController.text = emi.round().toString();
     }
   }
 
   Future<void> _submit() async {
-    if (_nameController.text.isEmpty || _balanceController.text.isEmpty) {
-      showTopSnackBar(context, 'Please fill required fields', isError: true);
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -912,30 +111,17 @@ class _AddLoanModalState extends State<AddLoanModal> {
       final provider = context.read<DebtProvider>();
       final now = DateTime.now();
 
-      final originalAmount = double.tryParse(_amountController.text) ?? 0;
-      final currentBalance = double.parse(_balanceController.text);
-      final emi = double.tryParse(_emiController.text);
-      final rate = double.tryParse(_rateController.text);
-      final tenure = int.tryParse(_tenureController.text);
-
-      int? paidMonths;
-      final manualPaidMonths = int.tryParse(_paidMonthsController.text);
-      if (manualPaidMonths != null && manualPaidMonths >= 0) {
-        paidMonths = manualPaidMonths;
-      }
-      if (emi != null && emi > 0 && paidMonths == null) {
-        final nowDate = DateTime.now();
-        final monthsElapsed =
-            (nowDate.year - _loanStartDate.year) * 12 +
-            (nowDate.month - _loanStartDate.month);
-        paidMonths = monthsElapsed < 0 ? 0 : monthsElapsed;
-      }
-      if (tenure != null && paidMonths != null) {
-        paidMonths = paidMonths.clamp(0, tenure);
-      }
+      final originalAmount =
+          double.tryParse(_amountController.text.trim()) ?? 0;
+      final currentBalance = double.parse(_balanceController.text.trim());
+      final emi = double.tryParse(_emiController.text.trim());
+      final rate = double.tryParse(_rateController.text.trim());
+      final tenure = int.tryParse(_tenureController.text.trim());
 
       final debt = Debt(
-        id: widget.debtToEdit?.id ?? '',
+        id:
+            widget.debtToEdit?.id ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
         userId: user.uid,
         name: _nameController.text.trim(),
         type: _selectedType,
@@ -944,9 +130,7 @@ class _AddLoanModalState extends State<AddLoanModal> {
         monthlyEMI: emi,
         interestRate: rate,
         totalMonths: tenure,
-        paidMonths: paidMonths,
         paymentDay: _paymentDay,
-        nextPaymentDate: _getNextPaymentDate(),
         lenderName: _lenderController.text.trim().isNotEmpty
             ? _lenderController.text.trim()
             : null,
@@ -957,37 +141,439 @@ class _AddLoanModalState extends State<AddLoanModal> {
 
       if (widget.debtToEdit != null) {
         await provider.updateDebt(debt);
-        if (mounted) {
-          showTopSnackBar(context, 'Loan updated successfully');
-        }
       } else {
         await provider.addDebt(debt);
-        if (mounted) {
-          showTopSnackBar(context, 'Loan added successfully');
-        }
       }
 
       if (mounted) {
         Navigator.pop(context);
+        showTopSnackBar(
+          context,
+          widget.debtToEdit != null ? 'Loan updated' : 'Loan recorded',
+        );
       }
     } catch (e) {
-      if (mounted) {
-        showTopSnackBar(context, 'Error: $e', isError: true);
-      }
+      if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final activeColor = _isBorrowed ? AppColors.warning : AppColors.success;
+
+    return Material(
+      color: AppColors.darkSurface,
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(AppSpacing.radiusLg),
+      ),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.90,
+        ),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.xl,
+          AppSpacing.md,
+          AppSpacing.xl,
+          AppSpacing.xl + bottomInset,
+        ),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.borderSubtleDark,
+                      borderRadius: AppSpacing.borderRadiusFull,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _isEditMode ? 'Edit Loan' : 'Add Loan',
+                      style: AppTypography.headlineMedium.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.close,
+                        color: AppColors.textSecondary,
+                        size: AppSpacing.iconSm,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Direction Toggle: Lent vs Borrowed
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.darkSurfaceElevated,
+                    borderRadius: AppSpacing.borderRadiusSm,
+                    border: Border.all(color: AppColors.borderSubtleDark),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildDirectionTab(
+                          "You Lent (Gave)",
+                          Icons.arrow_outward,
+                          false,
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildDirectionTab(
+                          "You Borrowed",
+                          Icons.arrow_downward,
+                          true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+
+                _buildLabel('PRINCIPAL AMOUNT'),
+                TextFormField(
+                  controller: _amountController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  onChanged: (_) {
+                    if (_balanceController.text.isEmpty) {
+                      _balanceController.text = _amountController.text;
+                    }
+                    _calculateEMI();
+                  },
+                  style: AppTypography.currencyMedium.copyWith(
+                    color: activeColor,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: "0.00",
+                    hintStyle: AppTypography.currencyMedium.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                    prefixText: "₹ ",
+                    prefixStyle: AppTypography.currencyMedium.copyWith(
+                      color: activeColor,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.darkSurfaceElevated,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: BorderSide(color: activeColor, width: 1.5),
+                    ),
+                  ),
+                  validator: (val) =>
+                      (val == null || val.trim().isEmpty) ? "Required" : null,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                _buildLabel('LOAN PURPOSE / TITLE'),
+                _buildField(
+                  controller: _nameController,
+                  hint: "e.g. Personal Loan, Car Loan, Lent to Friend",
+                  icon: Icons.title_outlined,
+                  validator: (val) =>
+                      (val == null || val.trim().isEmpty) ? "Required" : null,
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                _buildLabel('COUNTERPARTY / LENDER (OPTIONAL)'),
+                _buildField(
+                  controller: _lenderController,
+                  hint: "e.g. Bank of Baroda, John",
+                  icon: Icons.person_outline,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel('CURRENT BALANCE'),
+                          _buildField(
+                            controller: _balanceController,
+                            hint: "₹ Remaining",
+                            icon: Icons.account_balance_wallet_outlined,
+                            isNumber: true,
+                            validator: (val) =>
+                                (val == null || val.trim().isEmpty)
+                                ? "Required"
+                                : null,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel('INTEREST % P.A.'),
+                          _buildField(
+                            controller: _rateController,
+                            hint: "e.g. 10.5",
+                            icon: Icons.percent_outlined,
+                            isNumber: true,
+                            onChanged: (_) => _calculateEMI(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel('TENURE (MONTHS)'),
+                          _buildField(
+                            controller: _tenureController,
+                            hint: "e.g. 12",
+                            icon: Icons.timer_outlined,
+                            isNumber: true,
+                            onChanged: (_) => _calculateEMI(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel('MONTHLY EMI'),
+                          _buildField(
+                            controller: _emiController,
+                            hint: "Auto or manual",
+                            icon: Icons.calendar_month_outlined,
+                            isNumber: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl2),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.lg,
+                          ),
+                          backgroundColor: AppColors.darkSurfaceElevated,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppSpacing.borderRadiusSm,
+                            side: const BorderSide(
+                              color: AppColors.borderSubtleDark,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: AppTypography.labelLarge.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _submit,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.lg,
+                          ),
+                          backgroundColor: activeColor,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppSpacing.borderRadiusSm,
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                _isEditMode ? 'Save Changes' : 'Record Loan',
+                                style: AppTypography.labelLarge.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Text(
+        text,
+        style: AppTypography.labelSmall.copyWith(
+          color: AppColors.textTertiary,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDirectionTab(String label, IconData icon, bool isBorrowed) {
+    final isSelected = _isBorrowed == isBorrowed;
+    final color = isBorrowed ? AppColors.warning : AppColors.success;
+    return GestureDetector(
+      onTap: () => setState(() => _isBorrowed = isBorrowed),
+      child: AnimatedContainer(
+        duration: AppAnimations.standard,
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? color.withValues(alpha: 0.15)
+              : Colors.transparent,
+          borderRadius: AppSpacing.borderRadiusSm,
+          border: Border.all(
+            color: isSelected ? color : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? color : AppColors.textSecondary,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              label,
+              style: AppTypography.labelSmall.copyWith(
+                color: isSelected ? color : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool isNumber = false,
+    Function(String)? onChanged,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      onChanged: onChanged,
+      keyboardType: isNumber
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.textTertiary,
+        ),
+        filled: true,
+        fillColor: AppColors.darkSurfaceElevated,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(
+            left: AppSpacing.md,
+            right: AppSpacing.sm,
+          ),
+          child: Icon(icon, color: AppColors.textSecondary, size: 20),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: BorderSide(
+            color: _isBorrowed ? AppColors.warning : AppColors.success,
+            width: 1.5,
+          ),
+        ),
+      ),
+      validator: validator,
+    );
   }
 }
 
-/// Show the floating loan modal
 Future<void> showAddLoanModal(BuildContext context, {Debt? debtToEdit}) {
-  return Navigator.of(
-    context,
-  ).push(MaterialPageRoute(builder: (_) => AddLoanModal(debtToEdit: debtToEdit)));
+  return AddLoanModal.show(context, debtToEdit: debtToEdit);
 }
 
-// Keep backward compatibility alias
 typedef AddLoanSheet = AddLoanModal;

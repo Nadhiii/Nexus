@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
@@ -17,9 +17,8 @@ import '../../core/providers/goal_provider.dart';
 import '../investments/investment_screen.dart';
 import '../debts/screens/liabilities_screen.dart';
 import '../subscriptions/subscription_screen.dart';
-import '../budgets/budgets_screen.dart'; // Assuming this exists
-import '../goals/goals_screen.dart'; // Assuming this exists
-// import '../accounts/accounts_screen.dart';    // Uncomment if you have an accounts screen
+import '../budgets/budgets_screen.dart';
+import '../goals/goals_screen.dart';
 
 class ModernInsightsScreen extends StatelessWidget {
   const ModernInsightsScreen({super.key});
@@ -37,10 +36,7 @@ class ModernInsightsScreen extends StatelessWidget {
           >(
             builder: (context, accounts, debts, investments, subscriptions, _) {
               // --- 1. CALCULATE WEALTH DATA ---
-              final totalCash = accounts.accounts.fold(
-                0.0,
-                (sum, a) => sum + a.balance,
-              );
+              final totalCash = accounts.totalBalance;
               final totalInvestments = investments.investments.fold(
                 0.0,
                 (sum, i) => sum + i.currentAmount,
@@ -90,7 +86,10 @@ class ModernInsightsScreen extends StatelessWidget {
                     automaticallyImplyLeading: false, // Top-level tab
                     flexibleSpace: FlexibleSpaceBar(
                       centerTitle: false,
-                      titlePadding: const EdgeInsets.only(left: AppSpacing.xl, bottom: AppSpacing.xl2),
+                      titlePadding: const EdgeInsets.only(
+                        left: AppSpacing.xl,
+                        bottom: AppSpacing.xl2,
+                      ),
                       title: Text(
                         'Wealth',
                         style: AppTypography.headlineMedium.copyWith(
@@ -104,7 +103,9 @@ class ModernInsightsScreen extends StatelessWidget {
                   // 1. HERO SECTION (Net Worth + Burn)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xl,
+                      ),
                       child: Column(
                         children: [
                           _buildNetWorthCard(
@@ -122,7 +123,12 @@ class ModernInsightsScreen extends StatelessWidget {
 
                   // 2. BENTO GRID - Financial Tools
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl2, AppSpacing.xl, 130),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.xl,
+                      AppSpacing.xl2,
+                      AppSpacing.xl,
+                      130,
+                    ),
                     sliver: SliverToBoxAdapter(
                       child: _buildBentoGrid(
                         context,
@@ -216,7 +222,10 @@ class ModernInsightsScreen extends StatelessWidget {
 
   Widget _buildBurnRateTicker(BuildContext context, double monthlyBurn) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: AppSpacing.borderRadiusMd,
@@ -231,16 +240,26 @@ class ModernInsightsScreen extends StatelessWidget {
             size: 18,
           ),
           const SizedBox(width: AppSpacing.sm),
-          Text(
-            "Monthly Burn: ",
-            style: AppTypography.bodySmall,
-          ),
+          Text("Monthly Burn: ", style: AppTypography.bodySmall),
           Text(
             "₹${NumberFormat('#,##,###').format(monthlyBurn)}",
             style: AppTypography.labelLarge,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMiniStat(String label, double value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTypography.labelSmall),
+        Text(
+          "₹${NumberFormat.compact().format(value)}",
+          style: AppTypography.labelLarge.copyWith(color: color),
+        ),
+      ],
     );
   }
 
@@ -255,106 +274,129 @@ class ModernInsightsScreen extends StatelessWidget {
   }) {
     final budgetProvider = context.watch<BudgetProvider>();
     final goalProvider = context.watch<GoalProvider>();
+
     final activeBudgets = budgetProvider.activeBudgets;
     final budgetUsedPct = budgetProvider.totalAllocated <= 0
         ? 0.0
         : (budgetProvider.totalSpent / budgetProvider.totalAllocated) * 100;
     final budgetValue = activeBudgets.isEmpty
-        ? '—'
-        : '${budgetUsedPct.round()}% used';
+        ? '0%'
+        : '${budgetUsedPct.round()}%';
     final budgetSubtitle = activeBudgets.isEmpty
-        ? 'None yet'
+        ? 'No active budgets'
         : '${activeBudgets.length} active';
-    final activeGoals =
-        goalProvider.goals.where((g) => !g.isCompleted).toList();
-    final goalsSaved =
-        activeGoals.fold<double>(0, (sum, g) => sum + g.currentAmount);
+
+    final activeGoals = goalProvider.goals
+        .where((g) => !g.isCompleted)
+        .toList();
+    final goalsSaved = activeGoals.fold<double>(
+      0,
+      (sum, g) => sum + g.currentAmount,
+    );
     final goalsValue = activeGoals.isEmpty
-        ? '—'
+        ? '₹0'
         : '₹${NumberFormat.compact().format(goalsSaved)}';
     final goalsSubtitle = activeGoals.isEmpty
-        ? 'None yet'
-        : '${activeGoals.length} active';
+        ? 'No active targets'
+        : '${activeGoals.length} in progress';
 
-    const double spacing = AppSpacing.md;
+    const double gap = AppSpacing.md;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Row 1: Investments (large) + Liabilities (medium)
-        Row(
-          children: [
-            // INVESTMENTS - Large tile (takes more space)
-            Expanded(
-              flex: 3,
-              child: _buildBentoTile(
-                context,
-                title: "Investments",
-                value: "₹${NumberFormat.compact().format(totalInvestments)}",
-                subtitle: "$investmentCount Assets",
-                icon: Icons.show_chart,
-                color: AppColors.investmentIndigo,
-                height: 160,
-                isLarge: true,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ModernInvestmentScreen(),
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+          child: Text(
+            "FINANCIAL OVERVIEW",
+            style: AppTypography.labelSmall.copyWith(
+              color: AppColors.textTertiary,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ),
+
+        // TOP SECTION: 1 Vertical (Left) + 2 Horizontal (Right)
+        SizedBox(
+          height: 210, // Fixed height forces perfect bento symmetry
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. VERTICAL CARD
+              Expanded(
+                flex: 5,
+                child: _VerticalBentoCard(
+                  title: "Investments",
+                  value: "₹${NumberFormat.compact().format(totalInvestments)}",
+                  subtitle: "$investmentCount Assets",
+                  icon: Icons.trending_up_rounded,
+                  accentColor: AppColors.investmentIndigo,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ModernInvestmentScreen(),
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: spacing),
-            // LIABILITIES
-            Expanded(
-              flex: 2,
-              child: _buildBentoTile(
-                context,
-                title: "Liabilities",
-                value: "₹${NumberFormat.compact().format(totalLiabilities)}",
-                subtitle: "$activeDebtCount Loans",
-                icon: Icons.warning_amber_rounded,
-                color: AppColors.error,
-                height: 160,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LiabilitiesScreen()),
+              const SizedBox(width: gap),
+
+              // 2. HORIZONTAL CARDS (Stacked)
+              Expanded(
+                flex: 6,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: _HorizontalBentoCard(
+                        title: "Liabilities",
+                        value:
+                            "₹${NumberFormat.compact().format(totalLiabilities)}",
+                        icon: Icons.credit_card_off_rounded,
+                        accentColor: AppColors.error,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LiabilitiesScreen(),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: gap),
+                    Expanded(
+                      child: _HorizontalBentoCard(
+                        title: "Subscriptions",
+                        value: "₹${NumberFormat.compact().format(subCost)}/mo",
+                        icon: Icons.all_inclusive_rounded,
+                        accentColor: AppColors.accentOrange,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ModernSubscriptionScreen(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: spacing),
-
-        // Row 2: Subscriptions (wide)
-        _buildBentoTile(
-          context,
-          title: "Subscriptions",
-          value: "₹${NumberFormat.compact().format(subCost)}/mo",
-          subtitle: "$activeSubCount Active",
-          icon: Icons.autorenew,
-          color: AppColors.accentOrange,
-          height: 100,
-          isWide: true,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ModernSubscriptionScreen()),
+            ],
           ),
         ),
-        const SizedBox(height: spacing),
 
-        // Row 3: Budgets + Goals (small tiles)
+        const SizedBox(height: gap),
+
+        // BOTTOM SECTION: The Pill-Fill Cards
         Row(
           children: [
-            // BUDGETS
             Expanded(
-              child: _buildBentoTile(
-                context,
+              child: _PillFillBentoCard(
                 title: "Budgets",
                 value: budgetValue,
                 subtitle: budgetSubtitle,
-                icon: Icons.pie_chart_outline,
-                color: AppColors.pastelTeal,
-                height: 130,
+                icon: Icons.pie_chart_outline_rounded,
+                accentColor: AppColors.pastelTeal,
+                progress: (budgetUsedPct / 100).clamp(0.0, 1.0),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -363,17 +405,15 @@ class ModernInsightsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: spacing),
-            // GOALS
+            const SizedBox(width: gap),
             Expanded(
-              child: _buildBentoTile(
-                context,
+              child: _PillFillBentoCard(
                 title: "Goals",
                 value: goalsValue,
                 subtitle: goalsSubtitle,
-                icon: Icons.flag_outlined,
-                color: AppColors.pastelPink,
-                height: 130,
+                icon: Icons.flag_circle_rounded,
+                accentColor: AppColors.pastelPink,
+                progress: activeGoals.isEmpty ? 0.0 : 0.65,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const ModernGoalsScreen()),
@@ -385,172 +425,258 @@ class ModernInsightsScreen extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildBentoTile(
-    BuildContext context, {
-    required String title,
-    required String value,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-    required double height,
-    required VoidCallback onTap,
-    bool isLarge = false,
-    bool isWide = false,
-  }) {
+// ---------------------------------------------------------
+// SUPPORTING BENTO GRID WIDGETS
+// ---------------------------------------------------------
+
+class _VerticalBentoCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String subtitle;
+  final IconData icon;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  const _VerticalBentoCard({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.icon,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: height,
-        padding: EdgeInsets.all(isWide ? AppSpacing.lg : AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
-        borderRadius: AppSpacing.borderRadiusLg,
+          borderRadius: AppSpacing.borderRadiusLg,
           border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
-        child: isWide
-            ? _buildWideTileContent(title, value, subtitle, icon, color)
-            : _buildStandardTileContent(
-                title,
-                value,
-                subtitle,
-                icon,
-                color,
-                isLarge,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
               ),
+              child: Icon(icon, color: accentColor, size: 28),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(color: AppColors.textTertiary, fontSize: 11),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildWideTileContent(
-    String title,
-    String value,
-    String subtitle,
-    IconData icon,
-    Color color,
-  ) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          ),
-          child: Icon(icon, color: color, size: 24),
+class _HorizontalBentoCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  const _HorizontalBentoCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
         ),
-        const SizedBox(width: AppSpacing.lg),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: AppSpacing.borderRadiusLg,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.15),
+                borderRadius: AppSpacing.borderRadiusSm,
+              ),
+              child: Icon(icon, color: accentColor, size: 20),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      value,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PillFillBentoCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String subtitle;
+  final IconData icon;
+  final Color accentColor;
+  final double progress;
+  final VoidCallback onTap;
+
+  const _PillFillBentoCard({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.icon,
+    required this.accentColor,
+    required this.progress,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: AppSpacing.borderRadiusLg,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            borderRadius: AppSpacing.borderRadiusLg,
+          ),
+          child: Stack(
             children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+              Positioned.fill(
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: progress.clamp(0.0, 1.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.horizontal(
+                        right: Radius.circular(progress >= 1.0 ? 0 : 16),
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: accentColor.withValues(alpha: 0.2),
+                            borderRadius: AppSpacing.borderRadiusSm,
+                          ),
+                          child: Icon(icon, color: accentColor, size: 18),
+                        ),
+                        Text(
+                          value,
+                          style: TextStyle(
+                            color: accentColor,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            subtitle,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 20),
-      ],
-    );
-  }
-
-  Widget _buildStandardTileContent(
-    String title,
-    String value,
-    String subtitle,
-    IconData icon,
-    Color color,
-    bool isLarge,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Container(
-          padding: EdgeInsets.all(isLarge ? 12 : 8),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(isLarge ? 16 : 12),
-          ),
-          child: Icon(icon, color: color, size: isLarge ? 26 : 20),
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: isLarge ? 22 : 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              title,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: isLarge ? 13 : 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              subtitle,
-              style: TextStyle(
-                color: AppColors.textTertiary,
-                fontSize: isLarge ? 11 : 9,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMiniStat(String label, double value, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTypography.labelSmall,
-        ),
-        Text(
-          "₹${NumberFormat.compact().format(value)}",
-          style: AppTypography.labelLarge.copyWith(color: color),
-        ),
-      ],
+      ),
     );
   }
 }

@@ -1,6 +1,5 @@
 // ignore_for_file: unused_element
 import 'package:flutter/material.dart';
-import 'package:animations/animations.dart';
 import '../../core/widgets/collapsible_fab.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -12,6 +11,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/nexus_button.dart';
 import '../../core/widgets/nexus_card.dart';
 import '../../core/widgets/swipe_to_delete.dart';
+import '../../core/widgets/spring_tap.dart';
 import '../../core/models/transaction.dart';
 import '../../core/providers/account_provider.dart';
 import '../../core/providers/category_provider.dart';
@@ -28,7 +28,15 @@ enum WalletView { accounts, history }
 
 class ModernFinanceScreen extends StatefulWidget {
   final int initialTabIndex;
-  const ModernFinanceScreen({super.key, this.initialTabIndex = 0});
+  final bool showBalanceHero;
+  final String screenTitle;
+
+  const ModernFinanceScreen({
+    super.key,
+    this.initialTabIndex = 0,
+    this.showBalanceHero = true,
+    this.screenTitle = 'Wallet',
+  });
 
   @override
   State<ModernFinanceScreen> createState() => _ModernFinanceScreenState();
@@ -195,7 +203,10 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                             .clamp(0.0, 1.0);
                     return FlexibleSpaceBar(
                       centerTitle: false,
-                      titlePadding: const EdgeInsets.only(left: AppSpacing.xl, bottom: AppSpacing.xl2),
+                      titlePadding: const EdgeInsets.only(
+                        left: AppSpacing.xl,
+                        bottom: AppSpacing.xl2,
+                      ),
                       title: _isSelectionMode
                           ? AnimatedOpacity(
                               opacity: percent,
@@ -219,7 +230,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                                 scale: 0.9 + 0.1 * percent,
                                 duration: const Duration(milliseconds: 200),
                                 child: Text(
-                                  'Wallet',
+                                  widget.screenTitle,
                                   style: AppTypography.headlineMedium.copyWith(
                                     color: AppColors.textPrimary,
                                     fontWeight: FontWeight.w800,
@@ -279,24 +290,25 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                 ),
               ),
 
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
-                  ),
-                  child: AnimatedSize(
-                    duration: const Duration(milliseconds: 400),
-                    curve: Curves.easeInOutCubic,
-                    alignment: Alignment.topCenter,
-                    child: _buildTotalCashCard(
-                      totalCash,
-                      accountProvider.accounts.length,
-                      monthExpense,
+              if (widget.showBalanceHero)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    child: AnimatedSize(
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOutCubic,
+                      alignment: Alignment.topCenter,
+                      child: _buildTotalCashCard(
+                        totalCash,
+                        accountProvider.accounts.length,
+                        monthExpense,
+                      ),
                     ),
                   ),
                 ),
-              ),
 
               SliverToBoxAdapter(
                 child: Padding(
@@ -328,25 +340,11 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
             ? 'Add Account'
             : 'Log Transaction',
         onPressed: () {
-          final destination = _currentView == WalletView.accounts
-              ? const ModernAddAccountScreen()
-              : const ModernAddTransactionScreen();
-          Navigator.of(context).push(
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  destination,
-              transitionDuration: AppAnimations.pageTransitionDuration,
-              reverseTransitionDuration: AppAnimations.pageTransitionDuration,
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) =>
-                      SharedAxisTransition(
-                        animation: animation,
-                        secondaryAnimation: secondaryAnimation,
-                        transitionType: SharedAxisTransitionType.vertical,
-                        child: child,
-                      ),
-            ),
-          );
+          if (_currentView == WalletView.accounts) {
+            ModernAddAccountScreen.show(context);
+          } else {
+            ModernAddTransactionScreen.show(context);
+          }
         },
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -420,7 +418,10 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
       onTap: () => setState(() => _currentView = view),
       child: AnimatedContainer(
         duration: AppAnimations.standard,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.sm,
+        ),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primaryBlue : AppColors.cardSurface,
           borderRadius: AppSpacing.borderRadiusFull,
@@ -540,11 +541,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
           "No Accounts Linked",
           Icons.account_balance,
           "Add Account",
-          () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const ModernAddAccountScreen(),
-            ),
-          ),
+          () => ModernAddAccountScreen.show(context),
         ),
       );
     }
@@ -589,11 +586,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
           "No Recent Activity",
           Icons.receipt,
           "Log Transaction",
-          () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const ModernAddTransactionScreen(),
-            ),
-          ),
+          () => ModernAddTransactionScreen.show(context),
         ),
       );
     }
@@ -624,98 +617,119 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
   Widget _buildAccountCard(BuildContext context, dynamic account) {
     final bankLogo = LogoUtils.bankLogoFor(account.bankName ?? account.name);
     final logoScale = LogoUtils.bankLogoScale(account.bankName ?? account.name);
-    return GestureDetector(
+    final scheme = Theme.of(context).colorScheme;
+    return SpringTap(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => ModernAccountDetailScreen(account: account),
         ),
       ),
       child: NexusCard(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        border: Border.all(color: account.color.withValues(alpha: 0.24)),
+        color: scheme.surface,
+        border: Border.all(color: account.color.withValues(alpha: 0.18)),
         padding: AppSpacing.cardPadding,
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              width: 32,
-              height: 32,
-              child: Center(
-                child: bankLogo != null
-                    ? LogoUtils.buildLogo(bankLogo, size: 28 * logoScale)
-                    : Icon(account.icon, color: account.color, size: 24),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.lg),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    account.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.titleMedium.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontWeight: FontWeight.bold,
-                    ),
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: account.color.withValues(alpha: 0.10),
+                    shape: BoxShape.circle,
                   ),
-                  const SizedBox(height: AppSpacing.xs / 2),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xs / 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: account.color.withValues(alpha: 0.1),
-                      borderRadius: AppSpacing.borderRadiusXs,
-                    ),
-                    child: Text(
-                      account.typeDisplayName,
-                      style: AppTypography.labelSmall.copyWith(color: account.color),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                Text(
-                  "₹${AppCurrency.format(account.balance)}",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: AppTypography.titleLarge.fontSize,
-                    fontWeight: AppTypography.titleLarge.fontWeight,
+                  child: Center(
+                    child: bankLogo != null
+                        ? LogoUtils.buildLogo(bankLogo, size: 28 * logoScale)
+                        : Icon(account.icon, color: account.color, size: 25),
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: account.isActive
-                            ? AppColors.success
-                            : AppColors.textTertiary,
-                        shape: BoxShape.circle,
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        account.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.titleMedium.copyWith(
+                          color: scheme.onSurface,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      account.isActive ? 'Active' : 'Inactive',
-                      style: TextStyle(
-                        color: AppColors.textTertiary,
-                        fontSize: AppTypography.labelSmall.fontSize,
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        account.typeDisplayName.toUpperCase(),
+                        style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.textTertiary,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.1,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                ],
-              ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textTertiary,
+                  size: AppSpacing.iconSm,
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AVAILABLE BALANCE',
+                        style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.textTertiary,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        '₹${AppCurrency.format(account.balance)}',
+                        style: AppTypography.currencyLarge.copyWith(
+                          color: account.balance >= 0
+                              ? AppColors.success
+                              : AppColors.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: account.isActive
+                        ? AppColors.success.withValues(alpha: 0.08)
+                        : AppColors.textTertiary.withValues(alpha: 0.08),
+                    borderRadius: AppSpacing.borderRadiusFull,
+                  ),
+                  child: Text(
+                    account.isActive ? 'ACTIVE' : 'INACTIVE',
+                    style: AppTypography.labelSmall.copyWith(
+                      color: account.isActive
+                          ? AppColors.success
+                          : AppColors.textTertiary,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -750,7 +764,10 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
     final sign = isIncome ? "+" : (isTransfer ? "" : "-");
 
     Widget tile = Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xs + 2),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xl,
+        vertical: AppSpacing.xs + 2,
+      ),
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         gradient: _isSelectionMode && isSelected
@@ -763,7 +780,10 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
             : LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [color.withValues(alpha: 0.05), Theme.of(context).colorScheme.surfaceContainerHighest],
+                colors: [
+                  color.withValues(alpha: 0.05),
+                  Theme.of(context).colorScheme.surfaceContainerHighest,
+                ],
               ),
         borderRadius: AppSpacing.borderRadiusMd,
         border: Border.all(
@@ -823,9 +843,9 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
                       : (isTransfer ? "Transfer" : "Transaction"),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                    style: AppTypography.titleSmall.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
+                  style: AppTypography.titleSmall.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Container(
@@ -854,17 +874,17 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                "$sign₹${AppCurrency.format(t.amount)}",
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: AppTypography.titleMedium.fontSize,
+                  "$sign₹${AppCurrency.format(t.amount)}",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: AppTypography.titleMedium.fontSize,
+                  ),
                 ),
-                ),
-                ],
-              ),
+              ],
+            ),
           ),
         ],
       ),
@@ -890,11 +910,7 @@ class _ModernFinanceScreenState extends State<ModernFinanceScreen> {
         itemName: "Transaction",
         onDelete: () => provider.deleteTransaction(t.id),
         child: GestureDetector(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ModernAddTransactionScreen(transaction: t),
-            ),
-          ),
+          onTap: () => ModernAddTransactionScreen.show(context, transaction: t),
           child: tile,
         ),
       );

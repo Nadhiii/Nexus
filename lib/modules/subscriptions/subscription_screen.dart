@@ -1,4 +1,4 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/subscription_provider.dart';
@@ -180,7 +180,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
         },
       ),
       floatingActionButton: CollapsibleFab(
-        onPressed: () => showAddSubscription(context),
+        onPressed: () => ModernAddSubscriptionScreen.show(context),
         backgroundColor: AppColors.primaryBlue,
         icon: const Icon(Icons.add, color: Colors.white),
         label: 'New Sub',
@@ -217,8 +217,9 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
         zombieSubs.isNotEmpty;
     final rankedSubs = List<Subscription>.from(subs)
       ..sort(
-        (a, b) =>
-            _subscriptionPriorityScore(b).compareTo(_subscriptionPriorityScore(a)),
+        (a, b) => _subscriptionPriorityScore(
+          b,
+        ).compareTo(_subscriptionPriorityScore(a)),
       );
     final bentoRows = _buildDynamicSubscriptionRows(
       context,
@@ -268,14 +269,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
       final firstPriority = _isPrioritySubscription(first);
 
       if (remaining == 1) {
-        rows.add(
-          _buildBentoTile(
-            context,
-            first,
-            totalMonthly,
-            isWide: true,
-          ),
-        );
+        rows.add(_buildBentoTile(context, first, totalMonthly, isWide: true));
         index++;
       } else if (remaining == 2) {
         final second = subs[index + 1];
@@ -482,7 +476,8 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
     final isZombie = _zombieSubIds.contains(sub.id);
 
     return GestureDetector(
-      onTap: () => showAddSubscriptionModal(context, subscriptionToEdit: sub),
+      onTap: () =>
+          ModernAddSubscriptionScreen.show(context, subscriptionToEdit: sub),
       child: Container(
         height: isLarge
             ? 180
@@ -790,15 +785,17 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                 ],
               ),
             ),
-            Flexible(child: Text(
-              "₹${sub.amount.toStringAsFixed(0)}",
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.bodyLarge.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.bold,
+            Flexible(
+              child: Text(
+                "₹${sub.amount.toStringAsFixed(0)}",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodyLarge.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            )),
+            ),
           ],
         ),
       ),

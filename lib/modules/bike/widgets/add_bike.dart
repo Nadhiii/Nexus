@@ -14,6 +14,15 @@ class ModernAddBikeScreen extends StatefulWidget {
   final Bike? bikeToEdit;
   const ModernAddBikeScreen({super.key, this.bikeToEdit});
 
+  static Future<void> show(BuildContext context, {Bike? bikeToEdit}) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ModernAddBikeScreen(bikeToEdit: bikeToEdit),
+    );
+  }
+
   @override
   State<ModernAddBikeScreen> createState() => _ModernAddBikeScreenState();
 }
@@ -88,7 +97,9 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
   }
 
   DateTime? _parseDate(String dateString) {
-    if (dateString.isEmpty) { return null; }
+    if (dateString.isEmpty) {
+      return null;
+    }
     final formats = [
       DateFormat('dd-MMM-yyyy'),
       DateFormat('dd/MM/yyyy'),
@@ -176,7 +187,9 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
   }
 
   void _saveBike() {
-    if (!_formKey.currentState!.validate()) { return; }
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     final provider = context.read<BikeProvider>();
     final reg = _registrationController.text.trim();
@@ -186,7 +199,9 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
     final odoStr = _odometerController.text.trim();
 
     int year = DateTime.now().year;
-    if (yearStr.isNotEmpty) { year = int.tryParse(yearStr) ?? year; }
+    if (yearStr.isNotEmpty) {
+      year = int.tryParse(yearStr) ?? year;
+    }
     double odometer = double.tryParse(odoStr) ?? 0.0;
 
     // Use newly fetched make, OR existing make, OR guess from the model
@@ -242,10 +257,14 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
       () async {
         try {
           await provider.addBike(bike);
-          if (!mounted) { return; }
+          if (!mounted) {
+            return;
+          }
           Navigator.pop(context);
         } catch (e) {
-          if (!mounted) { return; }
+          if (!mounted) {
+            return;
+          }
           showTopSnackBar(context, 'Failed to save: $e', isError: true);
         }
       }();
@@ -253,10 +272,14 @@ class _ModernAddBikeScreenState extends State<ModernAddBikeScreen>
       () async {
         try {
           await provider.updateBike(bike);
-          if (!mounted) { return; }
+          if (!mounted) {
+            return;
+          }
           Navigator.pop(context);
         } catch (e) {
-          if (!mounted) { return; }
+          if (!mounted) {
+            return;
+          }
           showTopSnackBar(context, 'Failed to update: $e', isError: true);
         }
       }();

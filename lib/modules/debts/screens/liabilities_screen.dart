@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -12,6 +12,7 @@ import '../../../core/utils/logo_utils.dart';
 import '../../../core/widgets/swipe_to_delete.dart';
 import '../utils/debt_logo_utils.dart';
 import '../add_debt_screen.dart';
+import '../widgets/add_loan_sheet.dart';
 import '../widgets/pay_debt_modal.dart';
 
 /// Bento tile types for dynamic sizing
@@ -640,9 +641,15 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
     bool isWarning = false,
   }) {
     return Chip(
-      avatar: Icon(icon, size: AppSpacing.iconSm, color: isWarning ? AppColors.warning : AppColors.textSecondary),
+      avatar: Icon(
+        icon,
+        size: AppSpacing.iconSm,
+        color: isWarning ? AppColors.warning : AppColors.textSecondary,
+      ),
       label: Text('$label: $value'),
-      labelStyle: AppTypography.labelSmall.copyWith(color: isWarning ? AppColors.warning : AppColors.textSecondary),
+      labelStyle: AppTypography.labelSmall.copyWith(
+        color: isWarning ? AppColors.warning : AppColors.textSecondary,
+      ),
     );
   }
 
@@ -1153,7 +1160,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  navToAddDebtScreen(context);
+                  showAddLoanModal(context);
                 },
               ),
               const SizedBox(height: 8),

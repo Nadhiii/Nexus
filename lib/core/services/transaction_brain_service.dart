@@ -12,7 +12,6 @@ import '../providers/subscription_provider.dart';
 import '../providers/goal_provider.dart';
 import '../providers/investment_provider.dart';
 import '../providers/bike_provider.dart';
-import 'financial_health_service.dart';
 
 /// Central "Brain" for all transaction-related operations
 /// This service coordinates between all providers to ensure consistent
@@ -340,7 +339,7 @@ class TransactionBrainService {
             ((knowledge.typicalAmount ?? detected.amount) + detected.amount) /
             2,
         amountRange: newAmountRange,
-      lastSeenAt: now,
+        lastSeenAt: now,
         transactionCount: knowledge.transactionCount + 1,
         confidence: (knowledge.confidence + detected.confidence.merchant) / 2,
       );

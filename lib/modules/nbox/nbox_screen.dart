@@ -23,15 +23,11 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/nexus_inline_loading.dart';
 import '../../core/widgets/nexus_empty_state.dart';
 import '../../core/widgets/nexus_button.dart';
-import '../../core/widgets/nexus_card.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/services/pdf_statement_import_service.dart';
 
 enum NBoxFilter { all, sms, email, pdf, trash }
 
-/// Two lenses over the same pending list: a scrollable list (default) and an
-/// optional single-card "focus" review mode. No auto-switching between them
-/// based on item count anymore -- the person controls this explicitly.
 enum NBoxViewMode { list, focus }
 
 class NewModernNBoxScreen extends StatefulWidget {
@@ -48,28 +44,15 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   bool _isSelectionMode = false;
   bool _isSmsLoading = false;
   bool _isGmailLoading = false;
-  // Single-flight guard for _navigateToApproveScreen. Lives here (not just
-  // inside the queued-approval path) because approval screens can be
-  // triggered from several independent places at once -- a manual tap on
-  // the list checkmark, the expanded "Approve" button, a focus-mode swipe,
-  // AND a notification tap-through (queueApprovalRequestFromNotification in
-  // NewNboxProvider) -- any pair of which can race and stack two approval
-  // screens for the same or different transactions. Only one may be open
-  // at a time.
+
   bool _isApprovalScreenOpen = false;
 
   late final NewNboxProvider _nboxProvider;
 
-  // ── View mode state ───────────────────────────────────────────────────────
   NBoxViewMode _viewMode = NBoxViewMode.list;
 
-  // When set, Focus mode only shows these ids (used after a bulk-approve run
-  // hands off the "needs review" items). Null means "show the full filtered
-  // list" in Focus mode.
   Set<String>? _focusQueueIds;
 
-  // Guards against double-tapping Approve/Reject on the same row while a
-  // save is already in flight.
   bool _isBulkApproving = false;
 
   Future<void> _refreshSms() async {
@@ -83,13 +66,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     if (!mounted) return;
     setState(() => _isGmailLoading = true);
     final nbox = context.read<NewNboxProvider>();
-    debugPrint('[NboxScreen] isGmailLinked: ${nbox.isGmailLinked}');
     if (nbox.isGmailLinked) {
       await nbox.scanEmails();
-    } else {
-      debugPrint(
-        '[NboxScreen] Gmail not linked — skipping scan. Please sign in again.',
-      );
     }
     if (mounted) setState(() => _isGmailLoading = false);
   }
@@ -104,7 +82,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         onPromptPassword: () => _showPasswordDialog(context),
       );
 
-      if (parseData == null) return; // User cancelled picking or password entry
+      if (parseData == null) return;
 
       if (parseData.transactions.isEmpty) {
         if (mounted) {
@@ -131,7 +109,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     }
   }
 
-  /// Displays an AlertDialog prompting the user for the PDF password.
   Future<String?> _showPasswordDialog(BuildContext context) {
     String enteredPassword = '';
     return showDialog<String>(
@@ -140,6 +117,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppColors.cardSurface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
           title: const Text(
             'PDF Password Required',
             style: TextStyle(color: AppColors.textPrimary),
@@ -151,13 +131,15 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
             decoration: InputDecoration(
               hintText: 'Enter PDF password',
               hintStyle: const TextStyle(color: AppColors.textTertiary),
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
+              filled: true,
+              fillColor: AppColors.cardElevated,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
               ),
-              focusedBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: AppColors.primaryBlue),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: AppColors.primaryBlue),
               ),
             ),
             onChanged: (val) => enteredPassword = val,
@@ -207,8 +189,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   }
 
   Future<void> _refreshData() async {
-    // Opening NBox must be cheap. Pending detections are already restored by
-    // the provider/background service; explicit source buttons perform scans.
     if (!mounted) return;
     setState(() {
       _isSmsLoading = false;
@@ -216,7 +196,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     });
   }
 
-  // --- SELECTION LOGIC ---
   void _toggleSelection(String id) {
     setState(() {
       if (_selectedIds.contains(id)) {
@@ -332,9 +311,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
               !_isSelectionMode &&
               displayList.isNotEmpty;
 
-          // Focus mode shows either the full filtered list, or -- right
-          // after a bulk-approve run -- just the leftover items that need
-          // manual review (fuel/EMI/subscription/investment/salary).
           final focusList = _focusQueueIds == null
               ? displayList
               : displayList
@@ -343,11 +319,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     )
                     .toList();
 
-          // ── FOCUS MODE: single-card review ───────────────────────────────
           if (inFocusMode) {
             if (focusList.isEmpty) {
-              // Queue drained while we were in focus mode -- fall back to
-              // list mode automatically instead of showing a dead screen.
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
                   setState(() {
@@ -373,7 +346,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: _buildFilterPills(
                       nbox.pendingSms.length,
                       nbox.pendingEmails.length,
@@ -390,7 +363,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
             );
           }
 
-          // ── LIST / TRASH MODE: Sliver Layout ─────────────────────────────
           return CustomScrollView(
             slivers: [
               if (context.watch<NewNboxProvider>().autoRecorded.isNotEmpty)
@@ -415,7 +387,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   child: _buildFilterPills(
                     nbox.pendingSms.length,
                     nbox.pendingEmails.length,
@@ -456,8 +428,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     );
   }
 
-  // --- HEADERS ---
-
   Widget _buildViewModeToggle() {
     return IconButton(
       tooltip: _viewMode == NBoxViewMode.list ? 'Focus review' : 'List view',
@@ -466,7 +436,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           _viewMode = _viewMode == NBoxViewMode.list
               ? NBoxViewMode.focus
               : NBoxViewMode.list;
-          // Manual toggle always shows the full list, not a leftover queue.
           _focusQueueIds = null;
         });
       },
@@ -477,11 +446,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
               ? AppColors.primaryBlue.withValues(alpha: 0.2)
               : AppColors.cardSurface,
           shape: BoxShape.circle,
-          border: Border.all(
-            color: _viewMode == NBoxViewMode.focus
-                ? AppColors.primaryBlue
-                : Colors.white10,
-          ),
         ),
         child: Icon(
           _viewMode == NBoxViewMode.list
@@ -500,10 +464,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       onPressed: _enterSelectionModeEmpty,
       icon: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.cardSurface,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white10),
         ),
         child: const Icon(
           Icons.checklist_rounded,
@@ -526,7 +489,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Inbox',
+            'NBox',
             style: AppTypography.headlineMedium.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w800,
@@ -546,10 +509,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                       onPressed: _refreshSms,
                       icon: Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppColors.cardSurface,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white10),
                         ),
                         child: const Icon(
                           Icons.sms,
@@ -568,10 +530,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                       onPressed: _refreshGmail,
                       icon: Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppColors.cardSurface,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white10),
                         ),
                         child: const Icon(
                           Icons.email,
@@ -580,7 +541,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                         ),
                       ),
                     ),
-
               _isPdfLoading
                   ? const Padding(
                       padding: EdgeInsets.all(8.0),
@@ -591,10 +551,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                       onPressed: _importPdf,
                       icon: Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppColors.cardSurface,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white10),
                         ),
                         child: const Icon(
                           Icons.picture_as_pdf,
@@ -622,7 +581,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         centerTitle: false,
         titlePadding: const EdgeInsets.only(left: 20, bottom: 24),
         title: Text(
-          'Inbox',
+          'NBox',
           style: AppTypography.headlineMedium.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w800,
@@ -649,10 +608,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                 onPressed: _refreshSms,
                 icon: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.cardSurface,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white10),
                   ),
                   child: const Icon(
                     Icons.sms,
@@ -678,10 +636,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                 onPressed: _refreshGmail,
                 icon: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.cardSurface,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white10),
                   ),
                   child: const Icon(
                     Icons.email,
@@ -690,7 +647,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                   ),
                 ),
               ),
-
         _isPdfLoading
             ? const Padding(
                 padding: EdgeInsets.all(8.0),
@@ -705,10 +661,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                 onPressed: _importPdf,
                 icon: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.cardSurface,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white10),
                   ),
                   child: const Icon(
                     Icons.picture_as_pdf,
@@ -781,9 +736,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     );
   }
 
-  // --- SOURCE STYLING ---
-  // Single source of truth for per-source color/label so SMS, Email, and PDF
-  // never collapse into the old SMS-vs-everything-else binary again.
   Color _sourceColor(String source) {
     switch (source) {
       case 'sms':
@@ -808,8 +760,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     }
   }
 
-  // --- LIST MODE STREAM ITEM ---
-
   Widget _buildStreamItem(DetectedTransaction t, bool isLast, bool isTrashTab) {
     final uniqueId = '${t.source}:${t.id}';
     final isExpanded = _expandedIds.contains(uniqueId);
@@ -817,22 +767,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     final isIncome = t.type.toLowerCase() == 'income';
 
     final highlightColor = _sourceColor(t.source);
-    final borderColor = isSelected
-        ? AppColors.primaryBlue
-        : (isExpanded
-              ? highlightColor.withValues(alpha: 0.3)
-              : Colors.white.withValues(alpha: 0.05));
-
-    final bgGradient = isExpanded
-        ? LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              highlightColor.withValues(alpha: 0.15),
-              AppColors.cardSurface,
-            ],
-          )
-        : null;
 
     return Stack(
       children: [
@@ -842,24 +776,11 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           bottom: 0,
           child: Container(
             width: 2,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: isLast
-                    ? [
-                        highlightColor.withValues(alpha: 0.3),
-                        Colors.transparent,
-                      ]
-                    : [
-                        highlightColor.withValues(alpha: 0.3),
-                        highlightColor.withValues(alpha: 0.1),
-                      ],
-              ),
-            ),
+            color: isLast
+                ? Colors.transparent
+                : highlightColor.withValues(alpha: 0.15),
           ),
         ),
-
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Row(
@@ -884,16 +805,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                         color: isSelected
                             ? AppColors.primaryBlue
                             : highlightColor,
-                        width: 2.5,
+                        width: 2.0,
                       ),
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: highlightColor.withValues(alpha: 0.5),
-                          blurRadius: 10,
-                          spreadRadius: 2,
-                        ),
-                      ],
                     ),
                     child: isSelected
                         ? const Icon(Icons.check, size: 12, color: Colors.white)
@@ -901,7 +815,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                   ),
                 ),
               ),
-
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(right: 20),
@@ -911,28 +824,26 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     child: AnimatedContainer(
                       duration: AppAnimations.standard,
                       decoration: BoxDecoration(
-                        gradient: bgGradient,
-                        color: bgGradient == null
-                            ? AppColors.cardSurface
-                            : null,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: borderColor),
+                        color: isExpanded
+                            ? AppColors.cardElevated
+                            : AppColors.cardSurface,
+                        borderRadius: BorderRadius.circular(24),
                         boxShadow: isExpanded
                             ? [
                                 BoxShadow(
-                                  color: highlightColor.withValues(alpha: 0.15),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 6),
+                                  color: Colors.black.withValues(alpha: 0.2),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
                                 ),
                               ]
-                            : [],
+                            : null,
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(18),
                             child: Column(
                               children: [
                                 Row(
@@ -992,7 +903,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 8),
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -1021,10 +932,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                         ],
                                       ],
                                     ),
-                                    // Real, working one-tap actions -- no
-                                    // need to expand the row first. Hidden
-                                    // once expanded (bigger buttons take
-                                    // over down there) or in Trash/selection.
                                     if (!isTrashTab &&
                                         !isExpanded &&
                                         !_isSelectionMode)
@@ -1050,7 +957,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                               ],
                             ),
                           ),
-
                           AnimatedSize(
                             duration: AppAnimations.slow,
                             curve: AppAnimations.smoothCurve,
@@ -1068,9 +974,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                       ),
                                       const Padding(
                                         padding: EdgeInsets.fromLTRB(
-                                          16,
-                                          12,
-                                          16,
+                                          18,
+                                          14,
+                                          18,
                                           8,
                                         ),
                                         child: Text(
@@ -1085,7 +991,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                       ),
                                       Padding(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
+                                          horizontal: 18,
                                         ),
                                         child: Wrap(
                                           spacing: 8,
@@ -1112,9 +1018,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                       const SizedBox(height: 16),
                                       const Padding(
                                         padding: EdgeInsets.fromLTRB(
-                                          16,
+                                          18,
                                           0,
-                                          16,
+                                          18,
                                           8,
                                         ),
                                         child: Text(
@@ -1129,21 +1035,16 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                       ),
                                       Container(
                                         margin: const EdgeInsets.symmetric(
-                                          horizontal: 16,
+                                          horizontal: 18,
                                         ),
-                                        padding: const EdgeInsets.all(12),
+                                        padding: const EdgeInsets.all(14),
                                         width: double.infinity,
                                         decoration: BoxDecoration(
                                           color: Colors.black.withValues(
-                                            alpha: 0.3,
+                                            alpha: 0.25,
                                           ),
                                           borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          border: Border.all(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.05,
-                                            ),
+                                            16,
                                           ),
                                         ),
                                         child: Column(
@@ -1179,10 +1080,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                                       ),
                                       const SizedBox(height: 20),
                                       Container(
-                                        padding: const EdgeInsets.all(16),
+                                        padding: const EdgeInsets.all(18),
                                         decoration: BoxDecoration(
-                                          color: AppColors.cardSurface
-                                              .withValues(alpha: 0.5),
+                                          color: AppColors.cardSurface,
                                           border: Border(
                                             top: BorderSide(
                                               color: Colors.white.withValues(
@@ -1271,7 +1171,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     );
     if (understanding == null) {
       return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.symmetric(horizontal: 18),
         child: Text(
           'Nexus is still working this out.',
           style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
@@ -1333,12 +1233,11 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(horizontal: 18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.cardElevated.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.pastelTeal.withValues(alpha: 0.22)),
+        color: AppColors.cardElevated.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1396,10 +1295,10 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     final transactions = context.watch<TransactionProvider>().transactions;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.cardElevated.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.cardElevated.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1439,12 +1338,9 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
               trailing: TextButton(
                 onPressed: tx == null
                     ? null
-                    : () => Navigator.push(
+                    : () => ModernAddTransactionScreen.show(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              ModernAddTransactionScreen(transaction: tx),
-                        ),
+                        transaction: tx,
                       ),
                 child: const Text('Fix'),
               ),
@@ -1488,6 +1384,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text('Source message'),
         content: SingleChildScrollView(
           child: SelectableText(
@@ -1512,33 +1409,20 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
   Widget _buildAnalysisChip(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primaryBlue.withValues(alpha: 0.15),
-            AppColors.primaryBlue.withValues(alpha: 0.05),
-          ],
-        ),
+        color: AppColors.cardElevated,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppColors.primaryBlue),
+          Icon(icon, size: 13, color: AppColors.primaryBlue),
           const SizedBox(width: 6),
           Text(
             label,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary,
               fontSize: 11,
               fontWeight: FontWeight.w500,
             ),
@@ -1567,12 +1451,15 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     );
   }
 
-  // --- SUMMARY & FILTERS ---
+  // --- SOLID LUXURY SUMMARY CARD (NO GRADIENT) ---
 
   Widget _buildInboxSummaryCard(int count, double totalValue) {
-    return NexusCard(
-      variant: NexusCardVariant.hero,
-      padding: AppSpacing.cardPaddingLg,
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(28),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1585,7 +1472,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: AppColors.textTertiary,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.5,
@@ -1595,28 +1482,25 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
-                  vertical: 5,
+                  vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.nboxAccent.withValues(alpha: 0.3),
-                  ),
+                  color: AppColors.cardElevated,
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(
                       Icons.inbox_rounded,
-                      color: Colors.white70,
-                      size: 12,
+                      color: AppColors.textSecondary,
+                      size: 13,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 5),
                     Text(
-                      '$count items to review',
+                      '$count items',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1636,15 +1520,15 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.auto_awesome, color: AppColors.nboxAccent, size: 14),
+              Icon(Icons.auto_awesome, color: AppColors.primaryBlue, size: 14),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
-                  'Detected from SMS and Email',
+                  'Detected from SMS, Email & Statements',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: AppColors.textSecondary,
                     fontSize: 12,
                   ),
                 ),
@@ -1655,6 +1539,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       ),
     );
   }
+
+  // --- SEAMLESS PILLS (NO WHITE MATERIAL 3 BORDER) ---
 
   Widget _buildFilterPills(int smsCount, int emailCount, int pdfCount) {
     return SingleChildScrollView(
@@ -1672,14 +1558,36 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     );
   }
 
+  Widget _buildPill(String label, NBoxFilter value) {
+    final isSelected = _currentFilter == value;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: () => setState(() => _currentFilter = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primaryBlue : AppColors.cardSurface,
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              color: isSelected ? Colors.white : AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   // ---------------------------------------------------------------------------
-  // SWIPE MODE
+  // FOCUS VIEW
   // ---------------------------------------------------------------------------
 
-  /// `list` is guaranteed non-empty by the caller. The current card is
-  /// always list[0] -- once it's approved/rejected, the provider's
-  /// notifyListeners() shrinks `list` on the next build and list[0]
-  /// naturally becomes whatever's next. No manual index bookkeeping.
   Widget _buildFocusView(List<DetectedTransaction> list, NewNboxProvider nbox) {
     final current = list[0];
     final next = list.length > 1 ? list[1] : null;
@@ -1688,7 +1596,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       padding: const EdgeInsets.only(bottom: 24.0, top: 10.0),
       child: Column(
         children: [
-          // ── Focus mode label ──
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: Row(
@@ -1701,7 +1608,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'FOCUS REVIEW ┬╖ ${list.length} LEFT',
+                  'FOCUS REVIEW · ${list.length} LEFT',
                   style: const TextStyle(
                     color: AppColors.textTertiary,
                     fontSize: 11,
@@ -1712,18 +1619,13 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
               ],
             ),
           ),
-
-          // ── Card + real buttons, isolated so drag doesn't rebuild the
-          // whole NBox screen on every frame ──
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: 40.0,
-                vertical: 20.0,
+                horizontal: 36.0,
+                vertical: 18.0,
               ),
               child: _SwipeCardStack(
-                // New key per card => fresh drag state automatically, no
-                // manual reset needed when the card underneath changes.
                 key: ValueKey('${current.source}:${current.id}'),
                 current: current,
                 next: next,
@@ -1756,33 +1658,17 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isBack
-              ? [
-                  // Darken and mute the back card to push it into the background
-                  AppColors.cardSurface.withValues(alpha: 0.6),
-                  AppColors.cardSurface.withValues(alpha: 0.4),
-                ]
-              : [highlightColor.withValues(alpha: 0.12), AppColors.cardSurface],
-        ),
+        color: isBack
+            ? AppColors.cardSurface.withValues(alpha: 0.5)
+            : AppColors.cardSurface,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: isBack
-              // Crisper, thinner border for the back card to keep it sharp
-              ? Colors.white.withValues(alpha: 0.08)
-              : highlightColor.withValues(alpha: 0.35),
-          width: isBack ? 0.5 : 1.0,
-        ),
         boxShadow: isBack
-            ? []
+            ? null
             : [
                 BoxShadow(
-                  color: highlightColor.withValues(alpha: 0.1),
-                  blurRadius: 24,
-                  spreadRadius: -8, // Tighter shadow footprint
-                  offset: const Offset(0, 8),
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
               ],
       ),
@@ -1792,7 +1678,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── Top row: source tag + date ─────────────────────────────
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -1800,50 +1685,32 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     const SizedBox(width: 8),
                     if (t.source == 'email') _buildConfidenceBadge(t),
                     const Spacer(),
-
-                    // ── The Updated Date Pill ──
                     Flexible(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
+                          horizontal: 12,
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            width: 0.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.6),
-                              blurRadius: 6,
-                              spreadRadius: 1,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+                          color: AppColors.cardElevated,
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
                           DateFormat('dd MMM, hh:mm a').format(t.date),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.textSecondary,
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.3,
-                            height: 1.0,
                           ),
                         ),
                       ),
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 16),
-
-                // ── Center: amount + merchant + category ───────────────────
                 Expanded(
                   flex: 3,
                   child: Column(
@@ -1852,12 +1719,13 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                       Text(
                         '${isIncome ? '+' : '−'}₹${NumberFormat('#,##,###').format(t.amount)}',
                         style: TextStyle(
-                          fontSize: 42,
-                          fontWeight: FontWeight.w900,
+                          fontFamily: AppTypography.headerFont,
+                          fontSize: 34,
+                          fontWeight: FontWeight.w400,
                           color: isIncome
                               ? AppColors.pastelGreen
                               : AppColors.textPrimary,
-                          letterSpacing: -1,
+                          letterSpacing: -0.5,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -1898,8 +1766,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     ],
                   ),
                 ),
-
-                // Source summary: keep review focused on the useful facts.
                 if (t.body != null) ...[
                   Expanded(
                     flex: 1,
@@ -1907,11 +1773,8 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.05),
-                        ),
+                        color: Colors.black.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(18),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1948,8 +1811,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
                     ),
                   ),
                 ],
-
-                // ── Warning row (if any) ───────────────────────────────────
                 if (t.warnings.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Row(
@@ -1985,33 +1846,18 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          border: Border.all(color: color, width: 2.5),
-          borderRadius: BorderRadius.circular(8),
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Text(
           text,
           style: TextStyle(
             color: color,
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.5,
           ),
         ),
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-
-  Widget _buildPill(String label, NBoxFilter value) {
-    final isSelected = _currentFilter == value;
-    return Padding(
-      padding: const EdgeInsets.only(right: AppSpacing.controlGap),
-      child: FilterChip(
-        label: Text(label),
-        selected: isSelected,
-        showCheckmark: false,
-        onSelected: (_) => setState(() => _currentFilter = value),
       ),
     );
   }
@@ -2025,12 +1871,11 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 26,
-        height: 26,
+        width: 28,
+        height: 28,
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
+          color: color.withValues(alpha: 0.15),
           shape: BoxShape.circle,
-          border: Border.all(color: color.withValues(alpha: 0.4)),
         ),
         child: Icon(icon, size: 15, color: color),
       ),
@@ -2039,20 +1884,10 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
 
   Widget _buildTag(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color.withValues(alpha: 0.2), color.withValues(alpha: 0.1)],
-        ),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.15),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Text(
         text,
@@ -2089,14 +1924,10 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
       message:
           'Confidence: ${(t.confidence.overall * 100).toStringAsFixed(0)}%',
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(
-            color: textColor.withValues(alpha: 0.3),
-            width: 0.5,
-          ),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
           label,
@@ -2154,12 +1985,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     });
   }
 
-  /// Single dispatcher for every "open the approval screen" entry point
-  /// (list checkmark, expanded Approve button, focus-mode swipe, queued
-  /// notification tap-through). Guarded so only one approval screen can be
-  /// open at a time -- without this, two of those triggers firing close
-  /// together stack two screens, and whichever one ends up buried never
-  /// gets seen or saved even though the person filled it in.
   Future<void> _navigateToApproveScreen(DetectedTransaction t) async {
     if (_isApprovalScreenOpen) return;
     _isApprovalScreenOpen = true;
@@ -2193,20 +2018,16 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         success = await showSmartApprovalSheet(context, t);
       } else {
         success =
-            await Navigator.push(
+            await ModernAddTransactionScreen.show<bool>(
               context,
-              MaterialPageRoute(
-                builder: (_) => ModernAddTransactionScreen(
-                  detectedTransaction: t,
-                  accountId: understanding.accountId,
-                  categoryId: understanding.categoryId,
-                  initialType: understanding.isTransfer
-                      ? TransactionType.transfer
-                      : t.type.toLowerCase() == 'income'
-                      ? TransactionType.income
-                      : TransactionType.expense,
-                ),
-              ),
+              detectedTransaction: t,
+              accountId: understanding.accountId,
+              categoryId: understanding.categoryId,
+              initialType: understanding.isTransfer
+                  ? TransactionType.transfer
+                  : t.type.toLowerCase() == 'income'
+                  ? TransactionType.income
+                  : TransactionType.expense,
             ) ??
             false;
       }
@@ -2223,14 +2044,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
-  // ---------------------------------------------------------------------------
-  // BULK APPROVE
-  // ---------------------------------------------------------------------------
-
-  /// Splits the current selection into "simple" transactions (no side
-  /// effects -- salary excluded too, since that opens PaydayScreen) which
-  /// get saved silently with sensible defaults, and everything else, which
-  /// gets handed off to Focus mode for one-by-one review right after.
   Future<void> _approveSelected(List<DetectedTransaction> currentList) async {
     if (_isBulkApproving) return;
 
@@ -2270,8 +2083,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
         quickApproved++;
         nbox.markAsApproved(t.id, t.source);
       } else {
-        // Couldn't save silently (e.g. no account selected yet) -- don't
-        // lose the transaction, just fall back to manual review too.
         needsReview.add(t);
         failed++;
       }
@@ -2290,7 +2101,7 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     if (failed > 0) parts.add('$failed failed');
     showTopNotification(
       context,
-      parts.isEmpty ? 'Nothing to approve' : parts.join(' ┬╖ '),
+      parts.isEmpty ? 'Nothing to approve' : parts.join(' · '),
       isError: quickApproved == 0,
     );
 
@@ -2302,11 +2113,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
     }
   }
 
-  /// Silently saves a "simple" detected transaction (no side effects) using
-  /// the same router and draft path as the review form, with sensible defaults
-  /// instead of a form: first available account, detected/resolved category.
-  /// Returns false (and does nothing) if there's no account to save against,
-  /// so the caller can fall back to manual review instead of losing data.
   Future<bool> _quickApprove(DetectedTransaction t) async {
     final accounts = context.read<AccountProvider>().accounts;
     if (accounts.isEmpty) return false;
@@ -2342,14 +2148,6 @@ class _NewModernNBoxScreenState extends State<NewModernNBoxScreen>
   }
 }
 
-// -----------------------------------------------------------------------------
-// FOCUS MODE CARD STACK -- isolated drag/animation state
-// -----------------------------------------------------------------------------
-//
-// This widget owns its own drag state (_dx, _rotation, _animating). Its
-// setState calls only rebuild this small subtree -- never the parent NBox
-// screen's header, summary card, or list-sort logic. Dragging is optional;
-// the two buttons underneath are the primary, always-working way to act.
 class _SwipeCardStack extends StatefulWidget {
   final DetectedTransaction current;
   final DetectedTransaction? next;
@@ -2483,7 +2281,6 @@ class _SwipeCardStackState extends State<_SwipeCardStack> {
           ),
         ),
         const SizedBox(height: 16),
-        // Real, primary buttons -- dragging is optional garnish on top.
         Row(
           children: [
             Expanded(

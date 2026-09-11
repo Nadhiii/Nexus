@@ -9,7 +9,7 @@ import '../notifications/notification_settings_screen.dart';
 import '../gmail/nbox_sync_screen.dart';
 import '../family/screens/family_dashboard_screen.dart';
 import '../family/screens/expense_splitter_screen.dart';
-import '../knowledge/knowledge_dashboard_screen.dart';
+import '../knowledge/knowledge_screen.dart';
 import 'about_screen.dart';
 import 'reports_and_analytics_screen.dart';
 import 'manage_categories_screen.dart';
@@ -112,9 +112,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                 label: "Nexus Brain",
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const KnowledgeDashboardScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const KnowledgeScreen()),
                 ),
               ),
             ),
@@ -262,7 +260,10 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             icon: Icons.help_outline_rounded,
             color: AppColors.textSecondary,
             title: "Help & Support",
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutScreen())),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AboutScreen()),
+            ),
           ),
           _divider(),
           _buildTile(

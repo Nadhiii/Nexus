@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+
 import '../../../core/models/goal.dart';
 import '../../../core/widgets/top_snackbar.dart';
 import '../../../core/theme/app_colors.dart';
@@ -16,6 +17,21 @@ class ModernAddGoalScreen extends StatefulWidget {
     required this.onGoalAdded,
     this.goalToEdit,
   });
+
+  static Future<void> show(
+    BuildContext context,
+    Function(Goal) onGoalAdded, {
+    Goal? goalToEdit,
+  }) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.65),
+      builder: (_) =>
+          ModernAddGoalScreen(onGoalAdded: onGoalAdded, goalToEdit: goalToEdit),
+    );
+  }
 
   @override
   State<ModernAddGoalScreen> createState() => _ModernAddGoalScreenState();
@@ -46,37 +62,29 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
 
   final List<Color> _colorOptions = [
     AppColors.primaryBlue,
-    const Color(0xFF00E676),
-    const Color(0xFFFFEA00),
-    const Color(0xFFFF3D00),
-    const Color(0xFFD500F9),
-    const Color(0xFFE91E63),
+    AppColors.success,
+    AppColors.warning,
+    AppColors.error,
+    AppColors.accentPurple,
+    AppColors.accentPink,
   ];
 
   @override
   void initState() {
     super.initState();
-
     if (widget.goalToEdit != null) {
       _titleController.text = widget.goalToEdit!.name;
-      _targetAmountController.text = widget.goalToEdit!.targetAmount.toString();
+      _targetAmountController.text = widget.goalToEdit!.targetAmount
+          .toStringAsFixed(0);
       _currentAmountController.text = widget.goalToEdit!.currentAmount
-          .toString();
+          .toStringAsFixed(0);
       _selectedCategory = widget.goalToEdit!.description ?? 'Savings';
       _selectedDeadline = widget.goalToEdit!.targetDate;
-      _selectedColor = _parseColor(widget.goalToEdit!.color);
-    }
-
-    _titleController.addListener(() => setState(() {}));
-    _targetAmountController.addListener(() => setState(() {}));
-    _currentAmountController.addListener(() => setState(() {}));
-  }
-
-  Color _parseColor(String colorString) {
-    try {
-      return Color(int.parse(colorString.replaceFirst('#', '0xFF')));
-    } catch (e) {
-      return AppColors.primaryBlue;
+      try {
+        _selectedColor = Color(
+          int.parse(widget.goalToEdit!.color.replaceFirst('#', '0xFF')),
+        );
+      } catch (_) {}
     }
   }
 
@@ -88,490 +96,481 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
     super.dispose();
   }
 
+  Future<void> _createGoal() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final target = double.parse(_targetAmountController.text.trim());
+      final current =
+          double.tryParse(_currentAmountController.text.trim()) ?? 0.0;
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final colorString =
+          '#${_selectedColor.toARGB32().toRadixString(16).substring(2)}';
+
+      final goal = Goal(
+        id:
+            widget.goalToEdit?.id ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: user.uid,
+        name: _titleController.text.trim(),
+        description: _selectedCategory,
+        targetAmount: target,
+        currentAmount: current,
+        targetDate: _selectedDeadline,
+        color: colorString,
+        isCompleted: widget.goalToEdit?.isCompleted ?? false,
+        createdAt: widget.goalToEdit?.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      widget.onGoalAdded(goal);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final title = widget.goalToEdit != null ? "Edit Goal" : "Create Goal";
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isEditing = widget.goalToEdit != null;
 
-    return Scaffold(
-      backgroundColor: AppColors.darkGradient.first,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 120.0,
-            backgroundColor: AppColors.darkGradient.first,
-            foregroundColor: AppColors.white,
-            flexibleSpace: FlexibleSpaceBar(
-              centerTitle: true,
-              title: Text(title, style: AppTypography.headlineMedium),
-            ),
-            leading: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return Material(
+      color: AppColors.darkSurface,
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(AppSpacing.radiusLg),
+      ),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.90,
+        ),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.xl,
+          AppSpacing.md,
+          AppSpacing.xl,
+          AppSpacing.xl + bottomInset,
+        ),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.borderSubtleDark,
+                      borderRadius: AppSpacing.borderRadiusFull,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildLivePreview(),
-                    const SizedBox(height: AppSpacing.xl2),
-
                     Text(
-                      'Target Amount',
-                      style: AppTypography.titleSmall.copyWith(
+                      isEditing ? "Edit Goal" : "Create Goal",
+                      style: AppTypography.headlineMedium.copyWith(
                         color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    TextFormField(
-                      controller: _targetAmountController,
-                      autofocus: widget.goalToEdit == null,
-                      style: AppTypography.displayMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.close,
+                        color: AppColors.textSecondary,
+                        size: AppSpacing.iconSm,
                       ),
-                      decoration: InputDecoration(
-                        hintText: '0.00',
-                        prefixText: '₹ ',
-                        prefixStyle: AppTypography.displayMedium.copyWith(
-                          color: _selectedColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        hintStyle: TextStyle(color: AppColors.textTertiary),
-                        filled: true,
-                        fillColor: AppColors.cardElevated,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppSpacing.radiusLg,
-                          ),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Amount is required';
-                        }
-                        if (double.tryParse(value.trim()) == null) {
-                          return 'Please enter a valid number';
-                        }
-                        return null;
-                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
-                    const SizedBox(height: AppSpacing.xl2),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl),
 
-                    Text(
-                      'Goal Name',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                _buildLabel('TARGET AMOUNT'),
+                TextFormField(
+                  controller: _targetAmountController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  style: AppTypography.currencyMedium.copyWith(
+                    color: _selectedColor,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: "0.00",
+                    hintStyle: AppTypography.currencyMedium.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                    prefixText: "₹ ",
+                    prefixStyle: AppTypography.currencyMedium.copyWith(
+                      color: _selectedColor,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.darkSurfaceElevated,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _buildStandardTextField(
-                      controller: _titleController,
-                      hint: "e.g. New Macbook",
-                      icon: Icons.flag_outlined,
-                      validator: (val) =>
-                          val == null || val.isEmpty ? "Required" : null,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
+                      ),
                     ),
-                    const SizedBox(height: AppSpacing.xl2),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: BorderSide(color: _selectedColor, width: 1.5),
+                    ),
+                  ),
+                  validator: (val) => (val == null || val.trim().isEmpty)
+                      ? "Target amount is required"
+                      : null,
+                ),
+                const SizedBox(height: AppSpacing.lg),
 
-                    Text(
-                      'Already Saved (Optional)',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                _buildLabel('GOAL NAME'),
+                TextFormField(
+                  controller: _titleController,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: "e.g. New MacBook, Emergency Fund",
+                    hintStyle: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.darkSurfaceElevated,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.only(
+                        left: AppSpacing.md,
+                        right: AppSpacing.sm,
+                      ),
+                      child: Icon(
+                        Icons.flag_outlined,
+                        color: AppColors.textSecondary,
+                        size: 20,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _buildStandardTextField(
-                      controller: _currentAmountController,
-                      hint: "0.00",
-                      icon: Icons.savings_outlined,
-                      isNumber: true,
+                    border: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
+                      ),
                     ),
-                    const SizedBox(height: AppSpacing.xl2),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: BorderSide(color: _selectedColor, width: 1.5),
+                    ),
+                  ),
+                  validator: (val) => (val == null || val.trim().isEmpty)
+                      ? "Goal name is required"
+                      : null,
+                ),
+                const SizedBox(height: AppSpacing.lg),
 
-                    Text(
-                      'Category',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.cardElevated,
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.radiusMd,
-                        ),
-                      ),
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _selectedCategory,
-                        dropdownColor: AppColors.cardElevated,
-                        style: AppTypography.bodyLarge.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.radiusMd,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel('ALREADY SAVED'),
+                          TextFormField(
+                            controller: _currentAmountController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
                             ),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg,
-                            vertical: AppSpacing.md,
-                          ),
-                        ),
-                        items: _categories
-                            .map(
-                              (c) => DropdownMenuItem(value: c, child: Text(c)),
-                            )
-                            .toList(),
-                        onChanged: (v) =>
-                            setState(() => _selectedCategory = v!),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl2),
-
-                    Text(
-                      'Target Date',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    GestureDetector(
-                      onTap: () => _selectDate(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                          vertical: AppSpacing.md,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.cardElevated,
-                          borderRadius: BorderRadius.circular(
-                            AppSpacing.radiusMd,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.calendar_today,
-                              color: AppColors.textSecondary,
-                              size: 20,
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: AppColors.textPrimary,
                             ),
-                            const SizedBox(width: AppSpacing.md),
-                            Text(
-                              DateFormat(
-                                'MMM dd, yyyy',
-                              ).format(_selectedDeadline),
-                              style: AppTypography.bodyLarge.copyWith(
-                                color: AppColors.textPrimary,
+                            decoration: InputDecoration(
+                              hintText: "0.00",
+                              hintStyle: AppTypography.bodyMedium.copyWith(
+                                color: AppColors.textTertiary,
                               ),
-                            ),
-                            const Spacer(),
-                            Icon(
-                              Icons.chevron_right,
-                              color: AppColors.textSecondary,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl2),
-
-                    Text(
-                      'Appearance',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    SizedBox(
-                      height: 50,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _colorOptions.length,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(width: AppSpacing.md),
-                        itemBuilder: (context, index) {
-                          final color = _colorOptions[index];
-                          final isSelected = _selectedColor == color;
-                          return GestureDetector(
-                            onTap: () => setState(() => _selectedColor = color),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : Colors.transparent,
-                                  width: 3,
+                              filled: true,
+                              fillColor: AppColors.darkSurfaceElevated,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.lg,
+                                vertical: AppSpacing.md,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: AppSpacing.borderRadiusSm,
+                                borderSide: const BorderSide(
+                                  color: AppColors.borderSubtleDark,
                                 ),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: color.withValues(alpha: 0.6),
-                                          blurRadius: 10,
-                                        ),
-                                      ]
-                                    : [],
                               ),
-                              child: isSelected
-                                  ? const Icon(
-                                      Icons.check,
-                                      size: 20,
-                                      color: Colors.white,
-                                    )
-                                  : null,
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: AppSpacing.borderRadiusSm,
+                                borderSide: const BorderSide(
+                                  color: AppColors.borderSubtleDark,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: AppSpacing.borderRadiusSm,
+                                borderSide: BorderSide(
+                                  color: _selectedColor,
+                                  width: 1.5,
+                                ),
+                              ),
                             ),
-                          );
-                        },
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xl2),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel('CATEGORY'),
+                          Container(
+                            height: 52,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.darkSurfaceElevated,
+                              borderRadius: AppSpacing.borderRadiusSm,
+                              border: Border.all(
+                                color: AppColors.borderSubtleDark,
+                              ),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _selectedCategory,
+                                isExpanded: true,
+                                dropdownColor: AppColors.darkSurfaceElevated,
+                                items: _categories
+                                    .map(
+                                      (c) => DropdownMenuItem(
+                                        value: c,
+                                        child: Text(c),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (v) =>
+                                    setState(() => _selectedCategory = v!),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
 
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _createGoal,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryBlue,
-                          foregroundColor: AppColors.white,
+                _buildLabel('TARGET DEADLINE'),
+                GestureDetector(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _selectedDeadline,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(
+                        const Duration(days: 365 * 10),
+                      ),
+                      builder: (context, child) {
+                        return Theme(
+                          data: ThemeData.dark().copyWith(
+                            colorScheme: ColorScheme.dark(
+                              primary: _selectedColor,
+                              surface: AppColors.darkSurfaceElevated,
+                            ),
+                          ),
+                          child: child!,
+                        );
+                      },
+                    );
+                    if (picked != null)
+                      setState(() => _selectedDeadline = picked);
+                  },
+                  child: Container(
+                    height: 52,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.darkSurfaceElevated,
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      border: Border.all(color: AppColors.borderSubtleDark),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today_outlined,
+                          color: AppColors.textSecondary,
+                          size: 18,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          DateFormat('MMM dd, yyyy').format(_selectedDeadline),
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const Spacer(),
+                        const Icon(
+                          Icons.chevron_right,
+                          color: AppColors.textSecondary,
+                          size: 18,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                _buildLabel('COLOR BADGE'),
+                SizedBox(
+                  height: 40,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _colorOptions.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(width: AppSpacing.md),
+                    itemBuilder: (context, index) {
+                      final color = _colorOptions[index];
+                      final isSelected = _selectedColor == color;
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedColor = color),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.transparent,
+                              width: 3,
+                            ),
+                          ),
+                          child: isSelected
+                              ? const Icon(
+                                  Icons.check,
+                                  size: 18,
+                                  color: Colors.white,
+                                )
+                              : null,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl2),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             vertical: AppSpacing.lg,
                           ),
+                          backgroundColor: AppColors.darkSurfaceElevated,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.radiusMd,
+                            borderRadius: AppSpacing.borderRadiusSm,
+                            side: const BorderSide(
+                              color: AppColors.borderSubtleDark,
                             ),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: AppTypography.labelLarge.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _createGoal,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.lg,
+                          ),
+                          backgroundColor: _selectedColor,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppSpacing.borderRadiusSm,
                           ),
                         ),
                         child: _isLoading
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
+                                height: 18,
+                                width: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: AppColors.white,
+                                  color: Colors.white,
                                 ),
                               )
                             : Text(
-                                widget.goalToEdit != null
-                                    ? 'Save Changes'
-                                    : 'Save Goal',
-                                style: AppTypography.titleSmall.copyWith(
-                                  color: AppColors.white,
+                                isEditing ? 'Save Changes' : 'Save Goal',
+                                style: AppTypography.labelLarge.copyWith(
+                                  color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                       ),
                     ),
-                    const SizedBox(height: 100),
                   ],
                 ),
-              ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildStandardTextField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    bool isNumber = false,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(color: AppColors.textTertiary),
-        filled: true,
-        fillColor: AppColors.cardElevated,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
-        prefixIcon: Padding(
-          padding: const EdgeInsets.only(
-            left: AppSpacing.md,
-            right: AppSpacing.sm,
-          ),
-          child: Icon(icon, color: AppColors.textSecondary),
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Text(
+        text,
+        style: AppTypography.labelSmall.copyWith(
+          color: AppColors.textTertiary,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.1,
         ),
       ),
-      validator: validator,
     );
-  }
-
-  Widget _buildLivePreview() {
-    final title = _titleController.text.isEmpty
-        ? "New Goal"
-        : _titleController.text;
-    final target = double.tryParse(_targetAmountController.text) ?? 0;
-    final current = double.tryParse(_currentAmountController.text) ?? 0;
-    double progress = target > 0 ? (current / target) : 0.05;
-    if (progress > 1.0) {
-      progress = 1.0;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: AppColors.cardElevated,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-        border: Border.all(
-          color: _selectedColor.withValues(alpha: 0.3),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: _selectedColor.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: _selectedColor.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.flag, color: _selectedColor, size: 20),
-              ),
-              Text(
-                "${(progress * 100).toStringAsFixed(0)}%",
-                style: AppTypography.titleMedium.copyWith(
-                  color: _selectedColor,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            title,
-            style: AppTypography.headlineSmall.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            "Target: ₹${target.toStringAsFixed(0)}",
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.white.withValues(alpha: 0.1),
-              color: _selectedColor,
-              minHeight: 8,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDeadline,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
-    );
-    if (picked != null) {
-      setState(() => _selectedDeadline = picked);
-    }
-  }
-
-  Future<void> _createGoal() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      try {
-        final target = double.parse(_targetAmountController.text);
-        final current = double.tryParse(_currentAmountController.text) ?? 0.0;
-        final user = FirebaseAuth.instance.currentUser;
-
-        if (user == null) {
-          return;
-        }
-
-        String colorString =
-            '#${_selectedColor.toARGB32().toRadixString(16).substring(2)}';
-
-        final goal = Goal(
-          id:
-              widget.goalToEdit?.id ??
-              DateTime.now().millisecondsSinceEpoch.toString(),
-          userId: user.uid,
-          name: _titleController.text.trim(),
-          description: _selectedCategory,
-          targetAmount: target,
-          currentAmount: current,
-          targetDate: _selectedDeadline,
-          color: colorString,
-          isCompleted: widget.goalToEdit?.isCompleted ?? false,
-          createdAt: widget.goalToEdit?.createdAt ?? DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-
-        widget.onGoalAdded(goal);
-        if (mounted) {
-          Navigator.pop(context);
-        }
-      } catch (e) {
-        if (mounted) {
-          showTopSnackBar(context, 'Error: $e', isError: true);
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
-      }
-    }
   }
 }
 
@@ -580,10 +579,5 @@ Future<void> navToAddGoalScreen(
   Function(Goal) onGoalAdded, {
   Goal? goalToEdit,
 }) {
-  return Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) =>
-          ModernAddGoalScreen(onGoalAdded: onGoalAdded, goalToEdit: goalToEdit),
-    ),
-  );
+  return ModernAddGoalScreen.show(context, onGoalAdded, goalToEdit: goalToEdit);
 }

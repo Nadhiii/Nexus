@@ -9,12 +9,27 @@ import '../../../core/providers/investment_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_animations.dart';
 import '../../../core/widgets/top_snackbar.dart';
 
 class ModernAddInvestmentScreen extends StatefulWidget {
   final Investment? investmentToEdit;
 
   const ModernAddInvestmentScreen({super.key, this.investmentToEdit});
+
+  static Future<void> show(
+    BuildContext context, {
+    Investment? investmentToEdit,
+  }) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.65),
+      builder: (_) =>
+          ModernAddInvestmentScreen(investmentToEdit: investmentToEdit),
+    );
+  }
 
   @override
   State<ModernAddInvestmentScreen> createState() =>
@@ -24,7 +39,6 @@ class ModernAddInvestmentScreen extends StatefulWidget {
 class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers
   final _nameController = TextEditingController();
   final _symbolController = TextEditingController();
   final _investedController = TextEditingController();
@@ -33,7 +47,6 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
   final _searchController = TextEditingController();
   final _navController = TextEditingController();
 
-  // State
   InvestmentType _selectedType = InvestmentType.mutualFund;
   bool _isLoading = false;
   bool _isSearching = false;
@@ -48,8 +61,8 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
       _selectedType = i.type;
       _nameController.text = i.name;
       _symbolController.text = i.symbol ?? '';
-      _investedController.text = i.investedAmount.toString();
-      _currentController.text = i.currentAmount.toString();
+      _investedController.text = i.investedAmount.toStringAsFixed(0);
+      _currentController.text = i.currentAmount.toStringAsFixed(0);
       _quantityController.text = i.quantity.toString();
       _selectedSchemeCode = i.mutualFundSchemeCode;
       _navController.text = i.purchasePrice.toString();
@@ -68,11 +81,8 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
     super.dispose();
   }
 
-  // --- MUTUAL FUND API ---
   Future<void> _searchFunds(String query) async {
-    if (query.length < 3) {
-      return;
-    }
+    if (query.length < 3) return;
     setState(() => _isSearching = true);
     try {
       final response = await http.get(
@@ -84,7 +94,7 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
           _isSearching = false;
         });
       }
-    } catch (e) {
+    } catch (_) {
       setState(() => _isSearching = false);
     }
   }
@@ -97,286 +107,366 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final nav = data['data'][0]['nav'];
-        setState(() {
-          _navController.text = nav.toString();
-        });
+        setState(() => _navController.text = nav.toString());
       }
     } catch (_) {}
   }
 
+  Future<void> _saveAsset() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final investment = Investment(
+        id:
+            widget.investmentToEdit?.id ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: user.uid,
+        name: _nameController.text.trim(),
+        type: _selectedType,
+        symbol: _symbolController.text.trim().toUpperCase(),
+        mutualFundSchemeCode: _selectedSchemeCode,
+        mutualFundSchemeName: _selectedType == InvestmentType.mutualFund
+            ? _nameController.text
+            : null,
+        quantity: double.tryParse(_quantityController.text.trim()) ?? 1.0,
+        investedAmount: double.parse(_investedController.text.trim()),
+        currentAmount:
+            double.tryParse(_currentController.text.trim()) ??
+            double.parse(_investedController.text.trim()),
+        purchasePrice: double.tryParse(_navController.text.trim()) ?? 0.0,
+        startDate: widget.investmentToEdit?.startDate ?? DateTime.now(),
+        lastUpdated: DateTime.now(),
+      );
+
+      final provider = context.read<InvestmentProvider>();
+      if (widget.investmentToEdit != null) {
+        await provider.updateInvestment(investment);
+      } else {
+        await provider.addInvestment(investment);
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+        showTopSnackBar(context, 'Asset Saved');
+      }
+    } catch (e) {
+      if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final title = widget.investmentToEdit != null ? "Edit Asset" : "Add Asset";
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isEditing = widget.investmentToEdit != null;
 
-    return Scaffold(
-      backgroundColor: AppColors.darkGradient.first,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 120.0,
-            backgroundColor: AppColors.darkGradient.first,
-            foregroundColor: AppColors.white,
-            flexibleSpace: FlexibleSpaceBar(
-              centerTitle: true,
-              title: Text(title, style: AppTypography.headlineMedium),
-            ),
-            leading: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return Material(
+      color: AppColors.darkSurface,
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(AppSpacing.radiusLg),
+      ),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.90,
+        ),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.xl,
+          AppSpacing.md,
+          AppSpacing.xl,
+          AppSpacing.xl + bottomInset,
+        ),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.borderSubtleDark,
+                      borderRadius: AppSpacing.borderRadiusFull,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // PRIMARY AMOUNT
                     Text(
-                      'Invested Amount',
-                      style: AppTypography.titleSmall.copyWith(
+                      isEditing ? "Edit Asset" : "Add Asset",
+                      style: AppTypography.headlineMedium.copyWith(
                         color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    TextFormField(
-                      controller: _investedController,
-                      autofocus: widget.investmentToEdit == null,
-                      style: AppTypography.displayMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.close,
+                        color: AppColors.textSecondary,
+                        size: AppSpacing.iconSm,
                       ),
-                      decoration: InputDecoration(
-                        hintText: '0.00',
-                        prefixText: '₹ ',
-                        prefixStyle: AppTypography.displayMedium.copyWith(
-                          color: AppColors.investmentIndigo,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        hintStyle: TextStyle(color: AppColors.textTertiary),
-                        filled: true,
-                        fillColor: AppColors.cardElevated,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppSpacing.radiusLg,
-                          ),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Invested amount is required';
-                        }
-                        if (double.tryParse(value.trim()) == null) {
-                          return 'Please enter a valid number';
-                        }
-                        return null;
-                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
-                    const SizedBox(height: AppSpacing.xl2),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl),
 
-                    // ASSET TYPE
-                    Text(
-                      'Asset Type',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                _buildLabel('INVESTED AMOUNT'),
+                TextFormField(
+                  controller: _investedController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  style: AppTypography.currencyMedium.copyWith(
+                    color: AppColors.investmentIndigo,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: "0.00",
+                    hintStyle: AppTypography.currencyMedium.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                    prefixText: "₹ ",
+                    prefixStyle: AppTypography.currencyMedium.copyWith(
+                      color: AppColors.investmentIndigo,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.darkSurfaceElevated,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    SizedBox(
-                      height: 40,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          _buildTypeChip(
-                            "Mutual Fund",
-                            InvestmentType.mutualFund,
-                          ),
-                          _buildTypeChip("Stock", InvestmentType.stock),
-                          _buildTypeChip("Crypto", InvestmentType.crypto),
-                          _buildTypeChip("Gold", InvestmentType.gold),
-                          _buildTypeChip(
-                            "Real Estate",
-                            InvestmentType.realEstate,
-                          ),
-                        ],
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xl2),
+                    focusedBorder: const OutlineInputBorder(
+                      borderRadius: BorderRadius.all(
+                        Radius.circular(AppSpacing.radiusSm),
+                      ),
+                      borderSide: BorderSide(
+                        color: AppColors.investmentIndigo,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  validator: (val) => (val == null || val.trim().isEmpty)
+                      ? "Invested amount is required"
+                      : null,
+                ),
+                const SizedBox(height: AppSpacing.lg),
 
-                    // MF SEARCH (Conditional)
-                    if (_selectedType == InvestmentType.mutualFund &&
-                        widget.investmentToEdit == null) ...[
-                      Text(
-                        'Search Mutual Fund',
-                        style: AppTypography.titleSmall.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      _buildStandardField(
-                        controller: _searchController,
-                        hint: "e.g. SBI Small Cap",
-                        icon: Icons.search,
-                        onChanged: _searchFunds,
-                      ),
-                      if (_isSearching)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 8.0),
-                          child: LinearProgressIndicator(
-                            color: AppColors.investmentIndigo,
-                            backgroundColor: Colors.transparent,
-                          ),
-                        ),
-                      if (_searchResults.isNotEmpty)
-                        Container(
-                          height: 180,
-                          margin: const EdgeInsets.only(top: AppSpacing.md),
-                          decoration: BoxDecoration(
-                            color: AppColors.cardElevated,
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.radiusMd,
-                            ),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.05),
-                            ),
-                          ),
-                          child: ListView.builder(
-                            itemCount: _searchResults.length,
-                            itemBuilder: (ctx, i) => ListTile(
-                              title: Text(
-                                _searchResults[i]['schemeName'],
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              subtitle: Text(
-                                _searchResults[i]['schemeCode'].toString(),
-                                style: TextStyle(
-                                  color: AppColors.textTertiary,
-                                  fontSize: 11,
-                                ),
-                              ),
-                              onTap: () {
-                                setState(() {
-                                  _nameController.text =
-                                      _searchResults[i]['schemeName'];
-                                  _selectedSchemeCode =
-                                      _searchResults[i]['schemeCode']
-                                          .toString();
-                                  _searchResults = [];
-                                  _fetchNav(_selectedSchemeCode!);
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: AppSpacing.xl2),
+                _buildLabel('ASSET TYPE'),
+                SizedBox(
+                  height: 40,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _buildTypeChip("Mutual Fund", InvestmentType.mutualFund),
+                      _buildTypeChip("Stock", InvestmentType.stock),
+                      _buildTypeChip("Crypto", InvestmentType.crypto),
+                      _buildTypeChip("Gold", InvestmentType.gold),
+                      _buildTypeChip("Real Estate", InvestmentType.realEstate),
                     ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
 
-                    // ASSET DETAILS
-                    Text(
-                      'Asset Details',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                if (_selectedType == InvestmentType.mutualFund &&
+                    !isEditing) ...[
+                  _buildLabel('SEARCH MUTUAL FUND'),
+                  _buildField(
+                    controller: _searchController,
+                    hint: "e.g. SBI Small Cap, Parag Parikh",
+                    icon: Icons.search,
+                    onChanged: _searchFunds,
+                  ),
+                  if (_isSearching)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: LinearProgressIndicator(
+                        color: AppColors.investmentIndigo,
+                        backgroundColor: Colors.transparent,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _buildStandardField(
-                      controller: _nameController,
-                      hint: "Asset Name",
-                      icon: Icons.description_outlined,
+                  if (_searchResults.isNotEmpty)
+                    Container(
+                      height: 140,
+                      margin: const EdgeInsets.only(top: AppSpacing.sm),
+                      decoration: BoxDecoration(
+                        color: AppColors.darkSurfaceElevated,
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusSm,
+                        ),
+                        border: Border.all(color: AppColors.borderSubtleDark),
+                      ),
+                      child: ListView.builder(
+                        itemCount: _searchResults.length,
+                        itemBuilder: (ctx, i) => ListTile(
+                          title: Text(
+                            _searchResults[i]['schemeName'],
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                          onTap: () {
+                            setState(() {
+                              _nameController.text =
+                                  _searchResults[i]['schemeName'];
+                              _selectedSchemeCode =
+                                  _searchResults[i]['schemeCode'].toString();
+                              _searchResults = [];
+                              _fetchNav(_selectedSchemeCode!);
+                            });
+                          },
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: AppSpacing.xl2),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
+
+                _buildLabel('ASSET NAME'),
+                _buildField(
+                  controller: _nameController,
+                  hint: "e.g. Nifty 50 Index Fund",
+                  icon: Icons.description_outlined,
+                  validator: (val) => (val == null || val.trim().isEmpty)
+                      ? "Asset name is required"
+                      : null,
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                Row(
+                  children: [
                     if (_selectedType != InvestmentType.mutualFund) ...[
-                      _buildStandardField(
-                        controller: _symbolController,
-                        hint: "Symbol (BTC, AAPL)",
-                        icon: Icons.short_text,
+                      Expanded(
+                        child: _buildField(
+                          controller: _symbolController,
+                          hint: "Symbol (BTC, RELIANCE)",
+                          icon: Icons.short_text,
+                        ),
                       ),
-                      const SizedBox(height: AppSpacing.xl2),
+                      const SizedBox(width: AppSpacing.md),
                     ],
-                    _buildStandardField(
-                      controller: _quantityController,
-                      hint: "Quantity",
-                      icon: Icons.pie_chart_outline,
-                      isNumber: true,
-                    ),
-                    const SizedBox(height: AppSpacing.xl2),
-
-                    // CURRENT VALUATION
-                    Text(
-                      'Current Valuation (Optional)',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: _buildField(
+                        controller: _quantityController,
+                        hint: "Quantity (Units)",
+                        icon: Icons.pie_chart_outline,
+                        isNumber: true,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _buildStandardField(
-                      controller: _currentController,
-                      hint: "Current Value (₹)",
-                      icon: Icons.trending_up,
-                      isNumber: true,
-                      isRequired: false,
-                    ),
-                    const SizedBox(height: AppSpacing.xl2),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
 
-                    // SAVE BUTTON
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _saveAsset,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.investmentIndigo,
-                          foregroundColor: AppColors.white,
+                _buildLabel('CURRENT VALUATION (OPTIONAL)'),
+                _buildField(
+                  controller: _currentController,
+                  hint: "Current Total Value (₹)",
+                  icon: Icons.trending_up,
+                  isNumber: true,
+                ),
+                const SizedBox(height: AppSpacing.xl2),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             vertical: AppSpacing.lg,
                           ),
+                          backgroundColor: AppColors.darkSurfaceElevated,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.radiusMd,
+                            borderRadius: AppSpacing.borderRadiusSm,
+                            side: const BorderSide(
+                              color: AppColors.borderSubtleDark,
                             ),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: AppTypography.labelLarge.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _saveAsset,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.lg,
+                          ),
+                          backgroundColor: AppColors.investmentIndigo,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppSpacing.borderRadiusSm,
                           ),
                         ),
                         child: _isLoading
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
+                                height: 18,
+                                width: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: AppColors.white,
+                                  color: Colors.white,
                                 ),
                               )
                             : Text(
-                                widget.investmentToEdit != null
-                                    ? "Save Changes"
-                                    : "Save Asset",
-                                style: AppTypography.titleSmall.copyWith(
-                                  color: AppColors.white,
+                                isEditing ? 'Save Changes' : 'Save Asset',
+                                style: AppTypography.labelLarge.copyWith(
+                                  color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                       ),
                     ),
-                    const SizedBox(height: 100),
                   ],
                 ),
-              ),
+              ],
             ),
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Text(
+        text,
+        style: AppTypography.labelSmall.copyWith(
+          color: AppColors.textTertiary,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.1,
+        ),
       ),
     );
   }
@@ -386,28 +476,29 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
     return GestureDetector(
       onTap: () => setState(() => _selectedType = type),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: AppAnimations.standard,
         margin: const EdgeInsets.only(right: AppSpacing.sm),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.sm,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.investmentIndigo
-              : AppColors.cardElevated,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              ? AppColors.investmentIndigo.withValues(alpha: 0.15)
+              : AppColors.darkSurfaceElevated,
+          borderRadius: AppSpacing.borderRadiusSm,
           border: Border.all(
-            color: isSelected ? AppColors.investmentIndigo : Colors.transparent,
+            color: isSelected
+                ? AppColors.investmentIndigo
+                : AppColors.borderSubtleDark,
+            width: isSelected ? 1.5 : 1.0,
           ),
         ),
         child: Center(
           child: Text(
             label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : AppColors.textSecondary,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
+            style: AppTypography.labelSmall.copyWith(
+              color: isSelected
+                  ? AppColors.investmentIndigo
+                  : AppColors.textSecondary,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
         ),
@@ -415,13 +506,13 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
     );
   }
 
-  Widget _buildStandardField({
+  Widget _buildField({
     required TextEditingController controller,
     required String hint,
-    IconData? icon,
+    required IconData icon,
     bool isNumber = false,
-    bool isRequired = true,
     Function(String)? onChanged,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
@@ -429,94 +520,40 @@ class _ModernAddInvestmentScreenState extends State<ModernAddInvestmentScreen> {
           ? const TextInputType.numberWithOptions(decimal: true)
           : TextInputType.text,
       onChanged: onChanged,
-      style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+      style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: AppColors.textTertiary),
-        filled: true,
-        fillColor: AppColors.cardElevated,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          borderSide: BorderSide.none,
+        hintStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.textTertiary,
         ),
+        filled: true,
+        fillColor: AppColors.darkSurfaceElevated,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.md,
         ),
-        prefixIcon: icon != null
-            ? Padding(
-                padding: const EdgeInsets.only(
-                  left: AppSpacing.md,
-                  right: AppSpacing.sm,
-                ),
-                child: Icon(icon, color: AppColors.textSecondary, size: 20),
-              )
-            : null,
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(
+            left: AppSpacing.md,
+            right: AppSpacing.sm,
+          ),
+          child: Icon(icon, color: AppColors.textSecondary, size: 20),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+        ),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(AppSpacing.radiusSm)),
+          borderSide: BorderSide(color: AppColors.investmentIndigo, width: 1.5),
+        ),
       ),
-      validator: (value) {
-        if (isRequired && (value == null || value.isEmpty)) {
-          return "Required";
-        }
-        return null;
-      },
+      validator: validator,
     );
-  }
-
-  Future<void> _saveAsset() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      try {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user == null) {
-          return;
-        }
-
-        final investment = Investment(
-          id:
-              widget.investmentToEdit?.id ??
-              DateTime.now().millisecondsSinceEpoch.toString(),
-          userId: user.uid,
-          name: _nameController.text.trim(),
-          type: _selectedType,
-          symbol: _symbolController.text.trim().toUpperCase(),
-          mutualFundSchemeCode: _selectedSchemeCode,
-          mutualFundSchemeName: _selectedType == InvestmentType.mutualFund
-              ? _nameController.text
-              : null,
-          quantity: double.tryParse(_quantityController.text) ?? 1.0,
-          investedAmount: double.parse(_investedController.text),
-          currentAmount:
-              double.tryParse(_currentController.text) ??
-              double.parse(_investedController.text),
-          purchasePrice: double.tryParse(_navController.text) ?? 0.0,
-          startDate: widget.investmentToEdit?.startDate ?? DateTime.now(),
-          lastUpdated: DateTime.now(),
-        );
-
-        final provider = Provider.of<InvestmentProvider>(
-          context,
-          listen: false,
-        );
-        if (widget.investmentToEdit != null) {
-          await provider.updateInvestment(investment);
-        } else {
-          await provider.addInvestment(investment);
-        }
-
-        if (mounted) {
-          Navigator.pop(context);
-          showTopSnackBar(context, 'Asset Saved');
-        }
-      } catch (e) {
-        if (mounted) {
-          showTopSnackBar(context, 'Error: $e', isError: true);
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
-      }
-    }
   }
 }
 
@@ -524,16 +561,12 @@ Future<void> navToAddInvestmentScreen(
   BuildContext context, {
   Investment? investmentToEdit,
 }) {
-  return Navigator.of(context).push(
-    PageRouteBuilder(
-      opaque: false,
-      pageBuilder: (_, _, _) =>
-          ModernAddInvestmentScreen(investmentToEdit: investmentToEdit),
-    ),
+  return ModernAddInvestmentScreen.show(
+    context,
+    investmentToEdit: investmentToEdit,
   );
 }
 
-// Optional: Add this alias so you don't have to rename functions across your app right now
 Future<void> showAddInvestmentModal(
   BuildContext context, {
   Investment? investmentToEdit,

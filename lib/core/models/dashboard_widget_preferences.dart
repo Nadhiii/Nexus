@@ -3,18 +3,18 @@ import 'package:flutter/material.dart';
 enum DashboardWidgetType {
   netWorth,
   quickActions,
-  upcomingBills,
-  goalProgress,
-  recentTransactions,
-  monthlySpending,
-  investments,
-  cashFlow,
+  monthPulse,
+  garage,
+  payments,
+  goals,
+  budgets,
+  recentActivity,
 }
 
 enum DashboardWidgetSize {
-  small, // 1/2 width
-  medium, // full width, compact height
-  large, // full width, expanded height
+  small, // 1/2 width or compact
+  medium, // full width or flexible
+  large, // full width, prominent
 }
 
 class DashboardWidget {
@@ -76,10 +76,7 @@ class DashboardWidget {
         orElse: () => DashboardWidgetType.netWorth,
       ),
       title: map['title'] ?? '',
-      icon: IconData(
-        map['icon'] ?? Icons.dashboard.codePoint,
-        fontFamily: 'MaterialIcons',
-      ),
+      icon: IconData(map['icon'] ?? 0xe871, fontFamily: 'MaterialIcons'),
       size: DashboardWidgetSize.values.firstWhere(
         (e) => e.name == map['size'],
         orElse: () => DashboardWidgetSize.medium,
@@ -104,10 +101,10 @@ class DashboardPreferences {
   static List<DashboardWidget> getDefaultWidgets() {
     return [
       const DashboardWidget(
-        id: 'net_worth',
+        id: 'total_balance',
         type: DashboardWidgetType.netWorth,
-        title: 'Net Worth',
-        icon: Icons.account_balance_wallet,
+        title: 'Total Balance',
+        icon: Icons.account_balance_wallet_rounded,
         size: DashboardWidgetSize.large,
         order: 0,
       ),
@@ -115,59 +112,57 @@ class DashboardPreferences {
         id: 'quick_actions',
         type: DashboardWidgetType.quickActions,
         title: 'Quick Actions',
-        icon: Icons.flash_on,
+        icon: Icons.flash_on_rounded,
         size: DashboardWidgetSize.medium,
         order: 1,
       ),
       const DashboardWidget(
-        id: 'recent_transactions',
-        type: DashboardWidgetType.recentTransactions,
-        title: 'Recent Transactions',
-        icon: Icons.receipt_long,
-        size: DashboardWidgetSize.medium,
+        id: 'month_pulse',
+        type: DashboardWidgetType.monthPulse,
+        title: 'Monthly Spending Pulse',
+        icon: Icons.insights_rounded,
+        size: DashboardWidgetSize.large,
         order: 2,
       ),
       const DashboardWidget(
-        id: 'upcoming_bills',
-        type: DashboardWidgetType.upcomingBills,
-        title: 'Upcoming Bills',
-        icon: Icons.schedule,
-        size: DashboardWidgetSize.small,
+        id: 'garage',
+        type: DashboardWidgetType.garage,
+        title: 'Garage',
+        icon: Icons.two_wheeler_rounded,
+        size: DashboardWidgetSize.medium,
         order: 3,
       ),
       const DashboardWidget(
-        id: 'goal_progress',
-        type: DashboardWidgetType.goalProgress,
-        title: 'Goal Progress',
-        icon: Icons.flag,
+        id: 'payments',
+        type: DashboardWidgetType.payments,
+        title: 'Upcoming Payments',
+        icon: Icons.schedule_rounded,
         size: DashboardWidgetSize.small,
         order: 4,
       ),
       const DashboardWidget(
-        id: 'monthly_spending',
-        type: DashboardWidgetType.monthlySpending,
-        title: 'Monthly Spending',
-        icon: Icons.pie_chart,
-        size: DashboardWidgetSize.medium,
+        id: 'budgets',
+        type: DashboardWidgetType.budgets,
+        title: 'Budgets Overview',
+        icon: Icons.pie_chart_outline_rounded,
+        size: DashboardWidgetSize.small,
         order: 5,
       ),
       const DashboardWidget(
-        id: 'investments',
-        type: DashboardWidgetType.investments,
-        title: 'Investments',
-        icon: Icons.trending_up,
-        size: DashboardWidgetSize.medium,
+        id: 'goals',
+        type: DashboardWidgetType.goals,
+        title: 'Savings Goals',
+        icon: Icons.flag_rounded,
+        size: DashboardWidgetSize.small,
         order: 6,
-        isVisible: false, // Hidden by default
       ),
       const DashboardWidget(
-        id: 'cash_flow',
-        type: DashboardWidgetType.cashFlow,
-        title: 'Cash Flow',
-        icon: Icons.waterfall_chart,
+        id: 'recent_activity',
+        type: DashboardWidgetType.recentActivity,
+        title: 'Recent Activity',
+        icon: Icons.receipt_long_rounded,
         size: DashboardWidgetSize.large,
         order: 7,
-        isVisible: false, // Hidden by default
       ),
     ];
   }

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../core/theme/app_animations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/models/bike.dart';
@@ -1038,21 +1038,17 @@ class _ModernBikeScreenState extends State<ModernBikeScreen> {
   }
 
   void _showAddBikeDialog(BuildContext context) =>
-      showDialog(context: context, builder: (_) => ModernAddBikeScreen());
+      ModernAddBikeScreen.show(context);
 
   void _showAddEntryDialog(BuildContext context, double currentPrice) {
     final provider = context.read<BikeProvider>();
     if (provider.selectedBike == null) {
       return;
     }
-    Navigator.push(
+    AddEntryDialog.show(
       context,
-      MaterialPageRoute(
-        builder: (_) => AddEntryDialog(
-          bike: provider.selectedBike!,
-          initialRate: currentPrice,
-        ),
-      ),
+      bike: provider.selectedBike!,
+      initialRate: currentPrice,
     );
   }
 

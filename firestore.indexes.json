@@ -52,6 +52,25 @@
       ]
     },
     {
+      "collectionGroup": "challans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "bikeId", "order": "ASCENDING" },
+        { "fieldPath": "violationDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "challans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "bikeId", "order": "ASCENDING" },
+        { "fieldPath": "isPaid", "order": "ASCENDING" },
+        { "fieldPath": "violationDate", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "budgets",
       "queryScope": "COLLECTION",
       "fields": [

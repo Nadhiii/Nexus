@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../core/models/bike.dart';
 import '../../../core/theme/app_colors.dart';
@@ -98,7 +98,10 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
             offset: const Offset(0, 10),
           ),
         ],
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
       ),
       clipBehavior: Clip.hardEdge,
       child: Stack(
@@ -298,10 +301,9 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
                   ),
                 ),
                 GestureDetector(
-                  onTap: () => showDialog(
-                    context: context,
-                    builder: (_) =>
-                        ModernAddBikeScreen(bikeToEdit: widget.bike),
+                  onTap: () => ModernAddBikeScreen.show(
+                    context,
+                    bikeToEdit: widget.bike,
                   ),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -428,12 +430,18 @@ class _VehicleRCWidgetState extends State<VehicleRCWidget>
     final now = DateTime.now();
     final expiry = widget.bike.policyExpiry;
 
-    if (expiry == null) { return _buildBadge('NO INSURANCE', Colors.grey); }
+    if (expiry == null) {
+      return _buildBadge('NO INSURANCE', Colors.grey);
+    }
     final isExpired = expiry.isBefore(now);
     final isExpiringSoon = expiry.difference(now).inDays < 30 && !isExpired;
 
-    if (isExpired) { return _buildBadge('EXPIRED', AppColors.error); }
-    if (isExpiringSoon) { return _buildBadge('RENEW SOON', Colors.orange); }
+    if (isExpired) {
+      return _buildBadge('EXPIRED', AppColors.error);
+    }
+    if (isExpiringSoon) {
+      return _buildBadge('RENEW SOON', Colors.orange);
+    }
     return _buildBadge('ACTIVE', AppColors.success);
   }
 

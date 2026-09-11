@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
@@ -12,7 +12,6 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/widgets/nexus_button.dart';
 import '../../core/widgets/nexus_switch.dart';
-import '../../core/widgets/nexus_card.dart';
 import '../../core/widgets/spring_tap.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../backup/backup_settings_screen.dart';
@@ -24,7 +23,8 @@ import '../../core/services/ota_update_service.dart';
 import 'reports_and_analytics_screen.dart';
 import 'manage_categories_screen.dart';
 import 'about_screen.dart';
-import 'knowledge_screen.dart';
+import '../knowledge/knowledge_screen.dart';
+import '../bike/ui/bike_screen.dart';
 
 class ModernMoreScreen extends StatefulWidget {
   const ModernMoreScreen({super.key});
@@ -62,7 +62,6 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
-      debugPrint("DEBUG: Local App Version is: '$currentVersion'");
 
       final update = await _otaService.checkForUpdate(currentVersion);
 
@@ -73,7 +72,9 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
           _isDownloading = true;
         });
 
-        _otaProgressSubscription = _otaService.progressStream.listen((progress) {
+        _otaProgressSubscription = _otaService.progressStream.listen((
+          progress,
+        ) {
           if (mounted && !_isCancelled) {
             setState(() {
               if (progress < 0) {
@@ -160,7 +161,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                 _buildSectionHeader("PREFERENCES"),
                 const SizedBox(height: AppSpacing.contentGap),
                 _buildSettingsSection(),
-                
+
                 const SizedBox(height: AppSpacing.xl3),
 
                 _buildSectionHeader("SUPPORT"),
@@ -176,9 +177,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                   Center(
                     child: Text(
                       _updateStatus!,
-                      style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
                   ),
                 ],
@@ -256,7 +255,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                             child: GestureDetector(
                               onTap: _cancelUpdate,
                               child: Container(
-                              padding: const EdgeInsets.all(AppSpacing.sm),
+                                padding: const EdgeInsets.all(AppSpacing.sm),
                                 decoration: BoxDecoration(
                                   color: AppColors.error.withValues(alpha: 0.2),
                                   shape: BoxShape.circle,
@@ -311,69 +310,98 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
       child: NexusButton(
         label: label,
         onPressed: onPressed,
-        variant: isError ? NexusButtonVariant.destructive : NexusButtonVariant.tertiary,
+        variant: isError
+            ? NexusButtonVariant.destructive
+            : NexusButtonVariant.tertiary,
         width: double.infinity,
       ),
     );
   }
 
   Widget _buildToolsGrid() {
+    const double gap = AppSpacing.sm; // Standard gap
     return Column(
       children: [
-        Row(
-          children: [
-            _expandedTool(
-              Icons.pie_chart_rounded,
-              AppColors.pastelPurple,
-              "Analytics",
-              () => _navigate(const ReportsAndAnalyticsScreen()),
-            ),
-            const SizedBox(width: AppSpacing.controlGap),
-            _expandedTool(
-              Icons.category_rounded,
-              AppColors.pastelOrange,
-              "Categories",
-              () => _navigate(const ManageCategoriesScreen()),
-            ),
-          ],
+        // Top 3-Column Split (Fixed Height fixes the alignment issues)
+        SizedBox(
+          height: 180,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. Tall Left
+              Expanded(
+                child: _TallToolCard(
+                  icon: Icons.pie_chart_rounded,
+                  color: AppColors.pastelPurple,
+                  label: 'Analytics',
+                  subtitle: 'Insights',
+                  onTap: () => _navigate(const ReportsAndAnalyticsScreen()),
+                ),
+              ),
+              const SizedBox(width: gap),
+
+              // 2. Stacked Middle
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _CompactToolCard(
+                        icon: Icons.category_rounded,
+                        color: AppColors.pastelOrange,
+                        label: 'Categories',
+                        onTap: () => _navigate(const ManageCategoriesScreen()),
+                      ),
+                    ),
+                    const SizedBox(height: gap),
+                    Expanded(
+                      child: _CompactToolCard(
+                        icon: Icons.call_split_rounded,
+                        color: AppColors.success,
+                        label: 'Quick Split',
+                        onTap: () => _navigate(const ExpenseSplitterScreen()),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: gap),
+
+              // 3. Tall Right
+              Expanded(
+                child: _TallToolCard(
+                  icon: Icons.two_wheeler_rounded,
+                  color: AppColors.accentTeal,
+                  label: 'Garage',
+                  subtitle: 'Vehicles',
+                  onTap: () => _navigate(const ModernBikeScreen()),
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: AppSpacing.controlGap),
-        Row(
-          children: [
-            _expandedTool(
-              Icons.family_restroom_rounded,
-              AppColors.accentPink,
-              "Family & Friends",
-              () => _navigate(const FamilyDashboardScreen()),
-            ),
-            const SizedBox(width: AppSpacing.controlGap),
-            _expandedTool(
-              Icons.call_split_rounded,
-              AppColors.success,
-              "Quick Split",
-              () => _navigate(const ExpenseSplitterScreen()),
-            ),
-          ],
+        const SizedBox(height: gap),
+        // Bottom Full-Width Banner
+        _BannerToolCard(
+          icon: Icons.family_restroom_rounded,
+          color: AppColors.accentPink,
+          label: 'Shared Expense',
+          subtitle: 'Group bills, circles & quick transfers',
+          onTap: () => _navigate(const FamilyDashboardScreen()),
         ),
       ],
     );
   }
 
-  Widget _expandedTool(
-    IconData icon,
-    Color color,
-    String label,
-    VoidCallback onTap,
-  ) {
-    return Expanded(
-      child: _ToolCard(icon: icon, color: color, label: label, onTap: onTap),
-    );
-  }
-
   Widget _buildSettingsSection() {
-    return NexusCard(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      padding: EdgeInsets.zero,
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: AppSpacing.borderRadiusLg,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      clipBehavior:
+          Clip.antiAlias, // Keeps list ripples inside the rounded corners
       child: Column(
         children: [
           Consumer<BiometricProvider>(
@@ -424,9 +452,13 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
   }
 
   Widget _buildSupportSection() {
-    return NexusCard(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      padding: EdgeInsets.zero,
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: AppSpacing.borderRadiusLg,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           _buildTile(
@@ -440,7 +472,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
             icon: Icons.info_outline_rounded,
             color: AppColors.info,
             title: "About Nexus",
-            onTap: () => _navigate(const AboutScreen()), 
+            onTap: () => _navigate(const AboutScreen()),
           ),
         ],
       ),
@@ -457,7 +489,10 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
   }) {
     return ListTile(
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
@@ -519,13 +554,79 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
   }
 }
 
-class _ToolCard extends StatelessWidget {
+// ---------------------------------------------------------
+// SUPPORTING BENTO GRID WIDGETS
+// ---------------------------------------------------------
+
+class _TallToolCard extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _TallToolCard({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SpringTap(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: AppSpacing.borderRadiusLg,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: AppTypography.labelMedium.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: AppTypography.labelSmall.copyWith(
+                color: AppColors.textTertiary,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactToolCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String label;
   final VoidCallback onTap;
 
-  const _ToolCard({
+  const _CompactToolCard({
     required this.icon,
     required this.color,
     required this.label,
@@ -536,34 +637,108 @@ class _ToolCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SpringTap(
       onTap: onTap,
-      child: NexusCard(
-        variant: NexusCardVariant.base,
-        border: Border.all(color: color.withValues(alpha: 0.24)),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xl2),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.md,
+        ),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: AppSpacing.borderRadiusLg,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 52,
-              height: 52,
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.14),
-                borderRadius: AppSpacing.borderRadiusSm,
+                color: color.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 28),
+              child: Icon(icon, color: color, size: 18),
             ),
-            const SizedBox(height: AppSpacing.contentGap),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+            const SizedBox(height: AppSpacing.xs),
+            FittedBox(
+              fit: BoxFit.scaleDown,
               child: Text(
                 label,
                 textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
                 style: AppTypography.labelSmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w700,
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BannerToolCard extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _BannerToolCard({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SpringTap(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: AppSpacing.borderRadiusLg,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: AppSpacing.borderRadiusMd,
+              ),
+              child: Icon(icon, color: color, size: 26),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: AppTypography.labelLarge.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: AppTypography.labelSmall.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textTertiary,
+              size: 24,
             ),
           ],
         ),

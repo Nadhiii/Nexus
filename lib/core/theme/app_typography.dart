@@ -1,14 +1,16 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:ui';
+import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 class AppTypography {
-  // --- Font Families ---
-  static const String bodyFont = 'Inter';
-  static const String headerFont = 'RammettoOne';
-  static const String serifHeaderFont = 'PlayfairDisplay'; // Kuvera-style Serif font
+  AppTypography._();
 
-  // Semantic roles. Branded display styles are reserved for hero values and
-  // identity; dense content should use the Inter-based title/body roles.
+  // Fonts
+  static const String bodyFont = 'Inter';
+  static const String headerFont = 'RammettoOne'; // App signature maintained
+  static const String serifHeaderFont = 'PlayfairDisplay';
+
+  // Semantic Roles
   static const TextStyle hero = displayLarge;
   static const TextStyle screenTitle = headlineLarge;
   static const TextStyle sectionTitle = titleLarge;
@@ -16,7 +18,26 @@ class AppTypography {
   static const TextStyle caption = bodySmall;
   static const TextStyle controlLabel = labelLarge;
 
-  // --- Kuvera Serif Hero Titles ---
+  // --- Signature Rammetto Currency (Characterful & Punchy) ---
+  static const TextStyle currencyLarge = TextStyle(
+    fontFamily: headerFont,
+    fontSize: 32,
+    fontWeight: FontWeight.w400,
+    height: 1.2,
+    letterSpacing: -1.0,
+    color: AppColors.textPrimary,
+  );
+
+  static const TextStyle currencyMedium = TextStyle(
+    fontFamily: headerFont,
+    fontSize: 22,
+    fontWeight: FontWeight.w400,
+    height: 1.3,
+    letterSpacing: -0.5,
+    color: AppColors.textPrimary,
+  );
+
+  // --- Kuvera Hero Titles ---
   static const TextStyle kuveraSerifLarge = TextStyle(
     fontFamily: serifHeaderFont,
     fontSize: 38,
@@ -34,79 +55,95 @@ class AppTypography {
     color: AppColors.kuveraTextPrimaryLight,
   );
 
-  // --- Headlines ---
+  // --- Rammetto Headlines ---
   static const TextStyle displayLarge = TextStyle(
     fontFamily: headerFont,
-    fontSize: 48,
+    fontSize: 38,
     fontWeight: FontWeight.w400,
-    height: 1.1,
-    color: AppColors.textPrimary,
-  );
-
-  static const TextStyle displayMedium = TextStyle(
-    fontFamily: headerFont,
-    fontSize: 40,
-    fontWeight: FontWeight.w400,
-    height: 1.15,
-    color: AppColors.textPrimary,
-  );
-
-  static const TextStyle displaySmall = TextStyle(
-    fontFamily: headerFont,
-    fontSize: 36,
-    fontWeight: FontWeight.w400,
-    height: 1.2,
-    color: AppColors.textPrimary,
-  );
-
-  static const TextStyle headlineLarge = TextStyle(
-    fontFamily: headerFont,
-    fontSize: 32,
-    fontWeight: FontWeight.w400,
-    height: 1.2,
-    color: AppColors.textPrimary,
-  );
-
-  static const TextStyle headlineMedium = TextStyle(
-    fontFamily: headerFont,
-    fontSize: 24,
-    fontWeight: FontWeight.w400,
-    height: 1.3,
-    color: AppColors.textPrimary,
-  );
-
-  static const TextStyle headlineSmall = TextStyle(
-    fontFamily: headerFont,
-    fontSize: 20,
-    fontWeight: FontWeight.w400,
-    height: 1.3,
-    color: AppColors.textPrimary,
-  );
-
-  // --- Currency Styles ---
-  static const TextStyle currencyLarge = TextStyle(
-    fontFamily: headerFont,
-    fontSize: 36,
-    fontWeight: FontWeight.w900,
     height: 1.2,
     letterSpacing: -1.0,
     color: AppColors.textPrimary,
   );
 
-  static const TextStyle currencyMedium = TextStyle(
+  static const TextStyle displayMedium = TextStyle(
     fontFamily: headerFont,
-    fontSize: 26,
-    fontWeight: FontWeight.w900,
-    height: 1.3,
+    fontSize: 30,
+    fontWeight: FontWeight.w400,
+    height: 1.25,
+    letterSpacing: -0.8,
     color: AppColors.textPrimary,
   );
 
-  // --- Body & Lists ---
+  static const TextStyle displaySmall = TextStyle(
+    fontFamily: headerFont,
+    fontSize: 24,
+    fontWeight: FontWeight.w400,
+    height: 1.3,
+    letterSpacing: -0.5,
+    color: AppColors.textPrimary,
+  );
+
+  static const TextStyle headlineLarge = TextStyle(
+    fontFamily: headerFont,
+    fontSize: 22,
+    fontWeight: FontWeight.w400,
+    height: 1.35,
+    letterSpacing: -0.5,
+    color: AppColors.textPrimary,
+  );
+
+  static const TextStyle headlineMedium = TextStyle(
+    fontFamily: headerFont,
+    fontSize: 18,
+    fontWeight: FontWeight.w400,
+    height: 1.35,
+    letterSpacing: -0.3,
+    color: AppColors.textPrimary,
+  );
+
+  static const TextStyle headlineSmall = TextStyle(
+    fontFamily: headerFont,
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    height: 1.4,
+    letterSpacing: -0.2,
+    color: AppColors.textPrimary,
+  );
+
+  // --- UI Titles (Inter provides crisp readability for smaller section titles) ---
+  static const TextStyle titleLarge = TextStyle(
+    fontFamily: bodyFont,
+    fontSize: 18,
+    fontWeight: FontWeight.w700,
+    height: 1.35,
+    letterSpacing: -0.2,
+    color: AppColors.textPrimary,
+  );
+
+  static const TextStyle titleMedium = TextStyle(
+    fontFamily: bodyFont,
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    height: 1.4,
+    letterSpacing: -0.1,
+    color: AppColors.textPrimary,
+  );
+
+  static const TextStyle titleSmall = TextStyle(
+    fontFamily: bodyFont,
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    height: 1.4,
+    color: AppColors.textPrimary,
+  );
+
+  // --- Body Styles ---
   static const TextStyle bodyLarge = TextStyle(
     fontFamily: bodyFont,
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 1.5,
+    letterSpacing: -0.1,
     color: AppColors.textPrimary,
   );
 
@@ -122,35 +159,8 @@ class AppTypography {
     fontFamily: bodyFont,
     fontSize: 12,
     fontWeight: FontWeight.w400,
-    height: 1.5,
+    height: 1.4,
     color: AppColors.textSecondary,
-  );
-
-  // --- Titles ---
-  static const TextStyle titleLarge = TextStyle(
-    fontFamily: bodyFont,
-    fontSize: 22,
-    fontWeight: FontWeight.w600,
-    height: 1.3,
-    color: AppColors.textPrimary,
-  );
-
-  static const TextStyle titleMedium = TextStyle(
-    fontFamily: bodyFont,
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
-    height: 1.4,
-    letterSpacing: 0.15,
-    color: AppColors.textPrimary,
-  );
-
-  static const TextStyle titleSmall = TextStyle(
-    fontFamily: bodyFont,
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
-    height: 1.4,
-    letterSpacing: 0.1,
-    color: AppColors.textPrimary,
   );
 
   // --- Labels ---
@@ -158,7 +168,7 @@ class AppTypography {
     fontFamily: bodyFont,
     fontSize: 14,
     fontWeight: FontWeight.w600,
-    letterSpacing: 0.5,
+    letterSpacing: 0.1,
     color: AppColors.textPrimary,
   );
 
@@ -166,19 +176,18 @@ class AppTypography {
     fontFamily: bodyFont,
     fontSize: 12,
     fontWeight: FontWeight.w600,
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
     color: AppColors.textPrimary,
   );
 
   static const TextStyle labelSmall = TextStyle(
     fontFamily: bodyFont,
     fontSize: 11,
-    fontWeight: FontWeight.w600,
-    letterSpacing: 0.5,
+    fontWeight: FontWeight.w500,
+    letterSpacing: 0.3,
     color: AppColors.textSecondary,
   );
 
-  // --- TextTheme Definitions ---
   static const TextTheme textTheme = TextTheme(
     displayLarge: displayLarge,
     displayMedium: displayMedium,

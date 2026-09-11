@@ -198,7 +198,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: GestureDetector(
-        onTap: () => _showAddMemberDialog(),
+        onTap: () => ModernAddFamilyMemberScreen.show(context),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -875,25 +875,15 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
   }
 
   void _showAddExpenseDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => ModernAddSharedExpenseScreen(),
-    );
+    ModernAddSharedExpenseScreen.show(context);
   }
 
   void _showAddMemberDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => ModernAddFamilyMemberScreen(),
-    );
+    ModernAddFamilyMemberScreen.show(context);
   }
 
   Future<void> _editExpense(SharedExpense expense) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ModernAddSharedExpenseScreen(expense: expense),
-      ),
-    );
+    await ModernAddSharedExpenseScreen.show(context, expense: expense);
   }
 
   Future<void> _deleteExpense(SharedExpense expense) async {
@@ -915,7 +905,9 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
       ),
     );
     if (confirmed == true && mounted) {
-      await context.read<SharedExpenseProvider>().deleteSharedExpense(expense.id);
+      await context.read<SharedExpenseProvider>().deleteSharedExpense(
+        expense.id,
+      );
     }
   }
 
@@ -936,7 +928,8 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
             child: const Text('Save'),
           ),
         ],

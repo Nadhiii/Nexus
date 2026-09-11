@@ -4,8 +4,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../models/pdf_statement.dart';
 import '../models/transaction.dart';
-import 'pdf_password_manager.dart';
-import 'duplicate_detector.dart';
 
 class PDFParsingService extends ChangeNotifier {
   // ... (keep existing state variables like _lastParseResult)
@@ -105,16 +103,5 @@ class PDFParsingService extends ChangeNotifier {
     await tempFile.writeAsBytes(await document.save());
     document.dispose();
     return tempFile;
-  }
-
-  /// Check for duplicate transactions
-  Future<Map<ExtractedTransaction, DuplicateCheckResult>> checkDuplicates(
-    List<ExtractedTransaction> pdfTransactions,
-    List<Transaction> existingTransactions,
-  ) async {
-    return await DuplicateDetector.checkBatch(
-      pdfTransactions,
-      existingTransactions,
-    );
   }
 }

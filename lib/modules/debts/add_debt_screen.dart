@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
@@ -6,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_animations.dart';
 import '../../../core/providers/debt_provider.dart';
 import '../../../core/models/debt.dart';
 import '../../../core/widgets/top_snackbar.dart';
@@ -15,6 +17,16 @@ class ModernAddDebtScreen extends StatefulWidget {
 
   const ModernAddDebtScreen({super.key, this.debtToEdit});
 
+  static Future<void> show(BuildContext context, {Debt? debtToEdit}) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.65),
+      builder: (_) => ModernAddDebtScreen(debtToEdit: debtToEdit),
+    );
+  }
+
   @override
   State<ModernAddDebtScreen> createState() => _ModernAddDebtScreenState();
 }
@@ -22,7 +34,6 @@ class ModernAddDebtScreen extends StatefulWidget {
 class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers
   final _nameController = TextEditingController();
   final _balanceController = TextEditingController();
   final _lenderController = TextEditingController();
@@ -30,7 +41,6 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
   final _rateController = TextEditingController();
   final _notesController = TextEditingController();
 
-  // State
   DebtType _selectedType = DebtType.creditCard;
   DateTime? _startDate;
   DateTime? _dueDate;
@@ -42,9 +52,9 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
     if (widget.debtToEdit != null) {
       final d = widget.debtToEdit!;
       _nameController.text = d.name;
-      _balanceController.text = d.currentBalance.toString();
+      _balanceController.text = d.currentBalance.toStringAsFixed(0);
       _lenderController.text = d.lenderName ?? '';
-      _emiController.text = d.monthlyEMI?.toString() ?? '';
+      _emiController.text = d.monthlyEMI?.toStringAsFixed(0) ?? '';
       _rateController.text = d.interestRate?.toString() ?? '';
       _notesController.text = d.notes ?? '';
       _selectedType = d.type;
@@ -64,245 +74,338 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
     super.dispose();
   }
 
+  void _saveDebt() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final balance = double.parse(_balanceController.text.trim());
+      final emi = double.tryParse(_emiController.text.trim());
+      final rate = double.tryParse(_rateController.text.trim());
+
+      final debt = Debt(
+        id:
+            widget.debtToEdit?.id ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: user.uid,
+        name: _nameController.text.trim(),
+        type: _selectedType,
+        originalAmount: widget.debtToEdit?.originalAmount ?? balance,
+        currentBalance: balance,
+        monthlyEMI: emi,
+        interestRate: rate,
+        lenderName: _lenderController.text.trim().isNotEmpty
+            ? _lenderController.text.trim()
+            : null,
+        startDate: _startDate,
+        dueDate: _dueDate,
+        notes: _notesController.text.trim().isNotEmpty
+            ? _notesController.text.trim()
+            : null,
+        createdAt: widget.debtToEdit?.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      final provider = context.read<DebtProvider>();
+      if (widget.debtToEdit != null) {
+        await provider.updateDebt(debt);
+      } else {
+        await provider.addDebt(debt);
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+        showTopSnackBar(
+          context,
+          widget.debtToEdit != null ? 'Liability updated' : 'Liability saved',
+        );
+      }
+    } catch (e) {
+      if (mounted) showTopSnackBar(context, 'Error: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final title = widget.debtToEdit != null
-        ? "Edit Liability"
-        : "New Liability";
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isEditing = widget.debtToEdit != null;
 
-    return Scaffold(
-      backgroundColor: AppColors.darkGradient.first,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 120.0,
-            backgroundColor: AppColors.darkGradient.first,
-            foregroundColor: AppColors.white,
-            flexibleSpace: FlexibleSpaceBar(
-              centerTitle: true,
-              title: Text(title, style: AppTypography.headlineMedium),
-            ),
-            leading: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return Material(
+      color: AppColors.darkSurface,
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(AppSpacing.radiusLg),
+      ),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.90,
+        ),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.xl,
+          AppSpacing.md,
+          AppSpacing.xl,
+          AppSpacing.xl + bottomInset,
+        ),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.borderSubtleDark,
+                      borderRadius: AppSpacing.borderRadiusFull,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // PRIMARY AMOUNT
                     Text(
-                      'Current Balance',
-                      style: AppTypography.titleSmall.copyWith(
+                      isEditing ? 'Edit Liability' : 'New Liability',
+                      style: AppTypography.headlineMedium.copyWith(
                         color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    TextFormField(
-                      controller: _balanceController,
-                      autofocus: widget.debtToEdit == null,
-                      style: AppTypography.displayMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.close,
+                        color: AppColors.textSecondary,
+                        size: AppSpacing.iconSm,
                       ),
-                      decoration: InputDecoration(
-                        hintText: '0.00',
-                        prefixText: '₹ ',
-                        prefixStyle: AppTypography.displayMedium.copyWith(
-                          color: AppColors.error,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        hintStyle: TextStyle(color: AppColors.textTertiary),
-                        filled: true,
-                        fillColor: AppColors.cardElevated,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppSpacing.radiusLg,
-                          ),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Balance is required';
-                        }
-                        if (double.tryParse(value.trim()) == null) {
-                          return 'Please enter a valid number';
-                        }
-                        return null;
-                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
-                    const SizedBox(height: AppSpacing.xl2),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl),
 
-                    // LIABILITY TYPE
-                    Text(
-                      'Liability Type',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                _buildLabel('OUTSTANDING BALANCE'),
+                TextFormField(
+                  controller: _balanceController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  style: AppTypography.currencyMedium.copyWith(
+                    color: AppColors.error,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: "0.00",
+                    hintStyle: AppTypography.currencyMedium.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                    prefixText: "₹ ",
+                    prefixStyle: AppTypography.currencyMedium.copyWith(
+                      color: AppColors.error,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.darkSurfaceElevated,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    SizedBox(
-                      height: 40,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          _buildTypeChip("Credit Card", DebtType.creditCard),
-                          _buildTypeChip(
-                            "Personal Loan",
-                            DebtType.personalLoan,
-                          ),
-                          _buildTypeChip("Home Loan", DebtType.homeLoan),
-                          _buildTypeChip("Car Loan", DebtType.carLoan),
-                          _buildTypeChip("Education", DebtType.educationLoan),
-                          _buildTypeChip("Other", DebtType.other),
-                        ],
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xl2),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      borderSide: const BorderSide(
+                        color: AppColors.error,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty)
+                      return "Balance is required";
+                    if (double.tryParse(val.trim()) == null)
+                      return "Enter a valid amount";
+                    return null;
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
 
-                    // DETAILS
-                    Text(
-                      'Details',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                _buildLabel('LIABILITY TYPE'),
+                SizedBox(
+                  height: 42,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _buildTypeChip("Credit Card", DebtType.creditCard),
+                      _buildTypeChip("Personal Loan", DebtType.personalLoan),
+                      _buildTypeChip("Home Loan", DebtType.homeLoan),
+                      _buildTypeChip("Car Loan", DebtType.carLoan),
+                      _buildTypeChip("Education", DebtType.educationLoan),
+                      _buildTypeChip("Other", DebtType.other),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                _buildLabel('LIABILITY DETAILS'),
+                _buildField(
+                  controller: _nameController,
+                  hint: "Liability Title (e.g. HDFC Regalia, Home Mortgage)",
+                  icon: Icons.description_outlined,
+                  validator: (val) => (val == null || val.trim().isEmpty)
+                      ? "Title is required"
+                      : null,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _buildField(
+                  controller: _lenderController,
+                  hint: "Lender / Institution (e.g. HDFC Bank, SBI)",
+                  icon: Icons.account_balance_outlined,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                _buildLabel('TERMS (OPTIONAL)'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildField(
+                        controller: _emiController,
+                        hint: "Monthly EMI",
+                        icon: Icons.calendar_view_month_outlined,
+                        isNumber: true,
+                        prefix: "₹",
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _buildStandardField(
-                      controller: _nameController,
-                      hint: "Debt Name (e.g. HDFC Card)",
-                      icon: Icons.description_outlined,
-                    ),
-                    const SizedBox(height: AppSpacing.xl2),
-                    _buildStandardField(
-                      controller: _lenderController,
-                      hint: "Lender / Bank Name",
-                      icon: Icons.account_balance_outlined,
-                      isRequired: false,
-                    ),
-                    const SizedBox(height: AppSpacing.xl2),
-
-                    // TERMS
-                    Text(
-                      'Terms (Optional)',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: _buildField(
+                        controller: _rateController,
+                        hint: "Interest %",
+                        icon: Icons.percent_outlined,
+                        isNumber: true,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildStandardField(
-                            controller: _emiController,
-                            hint: "Monthly EMI",
-                            icon: Icons.calendar_view_month,
-                            isNumber: true,
-                            isRequired: false,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: _buildStandardField(
-                            controller: _rateController,
-                            hint: "Interest %",
-                            icon: Icons.percent,
-                            isNumber: true,
-                            isRequired: false,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.xl2),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
 
-                    // TIMELINE
-                    Text(
-                      'Timeline (Optional)',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                _buildLabel('TIMELINE (OPTIONAL)'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildDatePicker(
+                        "Start Date",
+                        _startDate,
+                        (d) => setState(() => _startDate = d),
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildDatePicker(
-                            "Start Date",
-                            _startDate,
-                            (d) => setState(() => _startDate = d),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: _buildDatePicker(
-                            "End Date",
-                            _dueDate,
-                            (d) => setState(() => _dueDate = d),
-                          ),
-                        ),
-                      ],
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: _buildDatePicker(
+                        "End Date",
+                        _dueDate,
+                        (d) => setState(() => _dueDate = d),
+                      ),
                     ),
-                    const SizedBox(height: AppSpacing.xl2),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl2),
 
-                    // SAVE BUTTON
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _saveDebt,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                          foregroundColor: AppColors.white,
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             vertical: AppSpacing.lg,
                           ),
+                          backgroundColor: AppColors.darkSurfaceElevated,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.radiusMd,
+                            borderRadius: AppSpacing.borderRadiusSm,
+                            side: const BorderSide(
+                              color: AppColors.borderSubtleDark,
                             ),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: AppTypography.labelLarge.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _saveDebt,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.lg,
+                          ),
+                          backgroundColor: AppColors.error,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppSpacing.borderRadiusSm,
                           ),
                         ),
                         child: _isLoading
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
+                                height: 18,
+                                width: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: AppColors.white,
+                                  color: Colors.white,
                                 ),
                               )
                             : Text(
-                                widget.debtToEdit != null
-                                    ? "Save Changes"
-                                    : "Save Liability",
-                                style: AppTypography.titleSmall.copyWith(
-                                  color: AppColors.white,
+                                isEditing ? 'Save Changes' : 'Add Liability',
+                                style: AppTypography.labelLarge.copyWith(
+                                  color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                       ),
                     ),
-                    const SizedBox(height: 100),
                   ],
                 ),
-              ),
+              ],
             ),
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Text(
+        text,
+        style: AppTypography.labelSmall.copyWith(
+          color: AppColors.textTertiary,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.1,
+        ),
       ),
     );
   }
@@ -310,28 +413,30 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
   Widget _buildTypeChip(String label, DebtType type) {
     final isSelected = _selectedType == type;
     return GestureDetector(
-      onTap: () => setState(() => _selectedType = type),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _selectedType = type);
+      },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: AppAnimations.standard,
         margin: const EdgeInsets.only(right: AppSpacing.sm),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.sm,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.error : AppColors.cardElevated,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          color: isSelected
+              ? AppColors.error.withValues(alpha: 0.15)
+              : AppColors.darkSurfaceElevated,
+          borderRadius: AppSpacing.borderRadiusSm,
           border: Border.all(
-            color: isSelected ? AppColors.error : Colors.transparent,
+            color: isSelected ? AppColors.error : AppColors.borderSubtleDark,
+            width: isSelected ? 1.5 : 1.0,
           ),
         ),
         child: Center(
           child: Text(
             label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : AppColors.textSecondary,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
+            style: AppTypography.labelSmall.copyWith(
+              color: isSelected ? AppColors.error : AppColors.textSecondary,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
         ),
@@ -339,46 +444,60 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
     );
   }
 
-  Widget _buildStandardField({
+  Widget _buildField({
     required TextEditingController controller,
     required String hint,
-    IconData? icon,
+    required IconData icon,
     bool isNumber = false,
-    bool isRequired = true,
+    String? prefix,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: isNumber
           ? const TextInputType.numberWithOptions(decimal: true)
           : TextInputType.text,
-      style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+      style: AppTypography.bodyMedium.copyWith(
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: AppColors.textTertiary),
-        filled: true,
-        fillColor: AppColors.cardElevated,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          borderSide: BorderSide.none,
+        prefixText: prefix != null ? "$prefix " : null,
+        prefixStyle: const TextStyle(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.bold,
         ),
+        hintStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.textTertiary,
+        ),
+        filled: true,
+        fillColor: AppColors.darkSurfaceElevated,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.md,
         ),
-        prefixIcon: icon != null
-            ? Padding(
-                padding: const EdgeInsets.only(
-                  left: AppSpacing.md,
-                  right: AppSpacing.sm,
-                ),
-                child: Icon(icon, color: AppColors.textSecondary, size: 20),
-              )
-            : null,
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(
+            left: AppSpacing.md,
+            right: AppSpacing.sm,
+          ),
+          child: Icon(icon, color: AppColors.textSecondary, size: 20),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+        ),
       ),
-      validator: (value) {
-        if (isRequired && (value == null || value.isEmpty)) { return "Required"; }
-        return null;
-      },
+      validator: validator,
     );
   }
 
@@ -394,30 +513,40 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
           initialDate: date ?? DateTime.now(),
           firstDate: DateTime(2000),
           lastDate: DateTime(2050),
+          builder: (context, child) {
+            return Theme(
+              data: ThemeData.dark().copyWith(
+                colorScheme: const ColorScheme.dark(
+                  primary: AppColors.error,
+                  surface: AppColors.darkSurfaceElevated,
+                ),
+              ),
+              child: child!,
+            );
+          },
         );
-        if (picked != null) { onSelect(picked); }
+        if (picked != null) onSelect(picked);
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
         decoration: BoxDecoration(
-          color: AppColors.cardElevated,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          color: AppColors.darkSurfaceElevated,
+          borderRadius: AppSpacing.borderRadiusSm,
+          border: Border.all(color: AppColors.borderSubtleDark),
         ),
         child: Row(
           children: [
             const Icon(
-              Icons.calendar_today,
+              Icons.calendar_today_outlined,
               color: AppColors.textSecondary,
               size: 18,
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(
-                date != null ? DateFormat('MMM yyyy').format(date) : hint,
-                style: AppTypography.bodyLarge.copyWith(
+                date != null ? DateFormat('MMM dd, yyyy').format(date) : hint,
+                style: AppTypography.bodySmall.copyWith(
                   color: date != null
                       ? AppColors.textPrimary
                       : AppColors.textTertiary,
@@ -430,63 +559,15 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
       ),
     );
   }
-
-  Future<void> _saveDebt() async {
-    if (!_formKey.currentState!.validate()) { return; }
-    setState(() => _isLoading = true);
-
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) { return; }
-
-      final balance = double.parse(_balanceController.text);
-      final emi = double.tryParse(_emiController.text);
-      final rate = double.tryParse(_rateController.text);
-
-      final debt = Debt(
-        id:
-            widget.debtToEdit?.id ??
-            DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: user.uid,
-        name: _nameController.text.trim(),
-        type: _selectedType,
-        originalAmount: widget.debtToEdit?.originalAmount ?? balance,
-        currentBalance: balance,
-        monthlyEMI: emi,
-        interestRate: rate,
-        lenderName: _lenderController.text.isNotEmpty
-            ? _lenderController.text
-            : null,
-        startDate: _startDate,
-        dueDate: _dueDate,
-        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-        createdAt: widget.debtToEdit?.createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      final provider = Provider.of<DebtProvider>(context, listen: false);
-      if (widget.debtToEdit != null) {
-        await provider.updateDebt(debt);
-      } else {
-        await provider.addDebt(debt);
-      }
-
-      if (mounted) {
-        Navigator.pop(context);
-        showTopSnackBar(context, 'Liability saved successfully');
-      }
-    } catch (e) {
-      if (mounted) { showTopSnackBar(context, 'Error: $e', isError: true); }
-    } finally {
-      if (mounted) { setState(() => _isLoading = false); }
-    }
-  }
 }
 
+// Navigation Helpers & Backward Compatibility
 Future<void> navToAddDebtScreen(BuildContext context, {Debt? debtToEdit}) {
-  return Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) => ModernAddDebtScreen(debtToEdit: debtToEdit),
-    ),
-  );
+  return ModernAddDebtScreen.show(context, debtToEdit: debtToEdit);
 }
+
+Future<void> showAddDebtModal(BuildContext context, {Debt? debtToEdit}) {
+  return ModernAddDebtScreen.show(context, debtToEdit: debtToEdit);
+}
+
+typedef AddDebtModal = ModernAddDebtScreen;

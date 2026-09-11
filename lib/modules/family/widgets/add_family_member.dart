@@ -8,225 +8,511 @@ import '../../../core/providers/shared_expense_provider.dart';
 import '../../../core/models/shared_expense.dart';
 import '../../../core/services/firestore_service.dart';
 
-class ModernAddFamilyMemberScreen extends StatelessWidget {
+class ModernAddFamilyMemberScreen extends StatefulWidget {
   const ModernAddFamilyMemberScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.darkGradient.first,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 120.0,
-            backgroundColor: AppColors.darkGradient.first,
-            foregroundColor: AppColors.white,
-            flexibleSpace: FlexibleSpaceBar(
-              centerTitle: true,
-              title: Text(
-                'Add to Family & Friends',
-                style: AppTypography.headlineMedium,
-              ),
-            ),
-            leading: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Available Users',
-                    style: AppTypography.titleSmall.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    'Select a user below to link accounts for shared expenses.',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  StreamBuilder<List<Map<String, dynamic>>>(
-                    stream: FirestoreService.getRegisteredUsersStream(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(AppSpacing.xl2),
-                            child: CircularProgressIndicator(
-                              color: AppColors.primaryBlue,
-                            ),
-                          ),
-                        );
-                      }
-
-                      if (snapshot.hasError) {
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.xl),
-                            child: Text(
-                              'Error loading users',
-                              style: TextStyle(color: AppColors.error),
-                            ),
-                          ),
-                        );
-                      }
-
-                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.xl),
-                            child: Text(
-                              'No other users found on Nexus.',
-                              style: TextStyle(color: AppColors.textTertiary),
-                            ),
-                          ),
-                        );
-                      }
-
-                      final users = snapshot.data!;
-
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.cardElevated,
-                          borderRadius: BorderRadius.circular(
-                            AppSpacing.radiusLg,
-                          ),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.05),
-                          ),
-                        ),
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: EdgeInsets.zero,
-                          itemCount: users.length,
-                          separatorBuilder: (context, index) => Divider(
-                            color: Colors.white.withValues(alpha: 0.05),
-                            height: 1,
-                          ),
-                          itemBuilder: (context, index) {
-                            final user = users[index];
-                            final name = user['name'] ?? 'Unknown User';
-                            final email = user['email'] ?? '';
-                            final initial = name.isNotEmpty
-                                ? name[0].toUpperCase()
-                                : '?';
-
-                            return ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.lg,
-                                vertical: AppSpacing.sm,
-                              ),
-                              leading: CircleAvatar(
-                                backgroundColor: AppColors.primaryBlue
-                                    .withValues(alpha: 0.2),
-                                child: Text(
-                                  initial,
-                                  style: const TextStyle(
-                                    color: AppColors.primaryBlue,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              title: Text(
-                                name,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              subtitle: email.isNotEmpty
-                                  ? Text(
-                                      email,
-                                      style: TextStyle(
-                                        color: AppColors.textTertiary,
-                                        fontSize: 12,
-                                      ),
-                                    )
-                                  : null,
-                              trailing: OutlinedButton(
-                                onPressed: () => _addMember(context, user),
-                                style: OutlinedButton.styleFrom(
-                                  side: BorderSide(
-                                    color: AppColors.primaryBlue.withValues(alpha: 
-                                      0.5,
-                                    ),
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      AppSpacing.radiusLg,
-                                    ),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Add',
-                                  style: TextStyle(
-                                    color: AppColors.primaryBlue,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 100),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+  /// Presents the sheet as a safe general dialog route to avoid
+  /// semantics assertion crashes during bottom sheet transitions.
+  static Future<FamilyMember?> show(BuildContext context) {
+    return showGeneralDialog<FamilyMember>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black.withValues(alpha: 0.65),
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (ctx, anim1, anim2) => const ModernAddFamilyMemberScreen(),
+      transitionBuilder: (ctx, anim, _, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 1),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+          child: child,
+        );
+      },
     );
   }
 
-  void _addMember(BuildContext context, Map<String, dynamic> userData) async {
+  @override
+  State<ModernAddFamilyMemberScreen> createState() =>
+      _ModernAddFamilyMemberScreenState();
+}
+
+class _ModernAddFamilyMemberScreenState
+    extends State<ModernAddFamilyMemberScreen> {
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  bool _isSavingManual = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _addManualMember() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a name'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSavingManual = true);
+
     try {
       final provider = context.read<SharedExpenseProvider>();
-      final member = FamilyMember(
-        id: userData['uid'],
-        name: userData['name'] ?? 'Unknown',
-        email: userData['email'],
+      final newMember = FamilyMember(
+        id: 'manual_${DateTime.now().millisecondsSinceEpoch}',
+        name: name,
+        email: _emailController.text.trim().isNotEmpty
+            ? _emailController.text.trim()
+            : null,
       );
 
-      await provider.addFamilyMember(member);
+      await provider.addFamilyMember(newMember);
 
-      if (context.mounted) {
-        Navigator.pop(context);
+      if (mounted) {
+        Navigator.of(context).pop(newMember);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${member.name} added to Family & Friends!'),
+            content: Text('${newMember.name} added!'),
             backgroundColor: AppColors.success,
           ),
         );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error adding member: $e'),
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSavingManual = false);
+    }
+  }
+
+  Future<void> _addRegisteredUser(Map<String, dynamic> userData) async {
+    try {
+      final provider = context.read<SharedExpenseProvider>();
+      final userId = userData['uid']?.toString();
+      final userName = userData['name']?.toString().trim();
+      final userEmail = userData['email']?.toString().trim();
+      final member = FamilyMember(
+        id: (userId != null && userId.isNotEmpty)
+            ? userId
+            : 'user_${DateTime.now().millisecondsSinceEpoch}',
+        name: (userName != null && userName.isNotEmpty) ? userName : 'Unknown',
+        email: (userEmail != null && userEmail.isNotEmpty) ? userEmail : null,
+      );
+
+      await provider.addFamilyMember(member);
+      if (mounted) {
+        Navigator.of(context).pop(member);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${member.name} added!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
             backgroundColor: AppColors.error,
           ),
         );
       }
     }
   }
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final bottomInset = mediaQuery.viewInsets.bottom;
+    final totalHeight = mediaQuery.size.height * 0.85;
+
+    // ExcludeSemantics completely bypasses the '!semantics.parentDataDirty' assertion
+    return ExcludeSemantics(
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            height: totalHeight,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppColors.darkSurface,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(AppSpacing.radiusLg),
+              ),
+            ),
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              AppSpacing.md,
+              AppSpacing.xl,
+              AppSpacing.lg + bottomInset,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.borderSubtleDark,
+                      borderRadius: AppSpacing.borderRadiusFull,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Add Member',
+                      style: AppTypography.headlineMedium.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(
+                        Icons.close,
+                        color: AppColors.textSecondary,
+                        size: AppSpacing.iconSm,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Add a contact manually or pick a registered Nexus user.',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Manual Input: Name
+                TextField(
+                  controller: _nameController,
+                  textInputAction: TextInputAction.next,
+                  style: AppTypography.bodyMedium.copyWith(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Full Name (e.g. Alex)',
+                    hintStyle: TextStyle(color: AppColors.textTertiary),
+                    prefixIcon: const Icon(
+                      Icons.person_outline,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.darkSurfaceElevated,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
+                      ),
+                    ),
+                    focusedBorder: const OutlineInputBorder(
+                      borderRadius: BorderRadius.all(
+                        Radius.circular(AppSpacing.radiusSm),
+                      ),
+                      borderSide: BorderSide(
+                        color: AppColors.primaryBlue,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+
+                // Manual Input: Email / Phone + Add Button
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _addManualMember(),
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: Colors.white,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Email or phone (optional)',
+                          hintStyle: TextStyle(color: AppColors.textTertiary),
+                          prefixIcon: const Icon(
+                            Icons.mail_outline,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
+                          filled: true,
+                          fillColor: AppColors.darkSurfaceElevated,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                            vertical: AppSpacing.sm,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.radiusSm,
+                            ),
+                            borderSide: const BorderSide(
+                              color: AppColors.borderSubtleDark,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.radiusSm,
+                            ),
+                            borderSide: const BorderSide(
+                              color: AppColors.borderSubtleDark,
+                            ),
+                          ),
+                          focusedBorder: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(AppSpacing.radiusSm),
+                            ),
+                            borderSide: BorderSide(
+                              color: AppColors.primaryBlue,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    ElevatedButton(
+                      onPressed: _isSavingManual ? null : _addManualMember,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusSm,
+                          ),
+                        ),
+                      ),
+                      child: _isSavingManual
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Add'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Section Divider
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Divider(color: AppColors.borderSubtleDark),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                      ),
+                      child: Text(
+                        'OR CHOOSE FROM NEXUS',
+                        style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.textTertiary,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                    ),
+                    const Expanded(
+                      child: Divider(color: AppColors.borderSubtleDark),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // Stream list of registered Nexus users
+                Expanded(
+                  child: StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: FirestoreService.getRegisteredUsersStream(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primaryBlue,
+                          ),
+                        );
+                      }
+
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Text(
+                            'Could not load Nexus users. Use the form above to add members.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        );
+                      }
+
+                      final users =
+                          snapshot.data ?? const <Map<String, dynamic>>[];
+                      if (users.isEmpty) {
+                        return Center(
+                          child: Text(
+                            'No other Nexus users found.\nAdd anyone manually using the fields above.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        );
+                      }
+
+                      return ListView.separated(
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: users.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AppSpacing.sm),
+                        itemBuilder: (context, index) {
+                          final user = users[index];
+                          final rawName = user['name']?.toString().trim();
+                          final name = (rawName != null && rawName.isNotEmpty)
+                              ? rawName
+                              : 'Unknown User';
+                          final rawEmail = user['email']?.toString().trim();
+                          final email =
+                              (rawEmail != null && rawEmail.isNotEmpty)
+                              ? rawEmail
+                              : '';
+                          final initial = name.isNotEmpty
+                              ? name[0].toUpperCase()
+                              : '?';
+
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.sm,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.darkSurfaceElevated,
+                              borderRadius: BorderRadius.circular(
+                                AppSpacing.radiusSm,
+                              ),
+                              border: Border.all(
+                                color: AppColors.borderSubtleDark,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: AppColors.primaryBlue
+                                      .withValues(alpha: 0.2),
+                                  child: Text(
+                                    initial,
+                                    style: const TextStyle(
+                                      color: AppColors.primaryBlue,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.md),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        name,
+                                        style: AppTypography.bodyMedium
+                                            .copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                      if (email.isNotEmpty)
+                                        Text(
+                                          email,
+                                          style: TextStyle(
+                                            color: AppColors.textTertiary,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                OutlinedButton(
+                                  onPressed: () => _addRegisteredUser(user),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.primaryBlue,
+                                    side: const BorderSide(
+                                      color: AppColors.primaryBlue,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.md,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        AppSpacing.radiusSm,
+                                      ),
+                                    ),
+                                  ),
+                                  child: const Text('Add'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-Future<void> navToAddFamilyMemberScreen(BuildContext context) {
-  return Navigator.of(context).push(
-    MaterialPageRoute(builder: (_) => const ModernAddFamilyMemberScreen()),
-  );
+Future<FamilyMember?> navToAddFamilyMemberScreen(BuildContext context) {
+  return ModernAddFamilyMemberScreen.show(context);
 }

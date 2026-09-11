@@ -1,5 +1,4 @@
 import '../models/detected_transaction.dart';
-import '../services/ai_categorization_service.dart';
 
 class NewSmsParser {
   static Future<DetectedTransaction?> parse(
@@ -7,7 +6,7 @@ class NewSmsParser {
     String body,
     String sender,
     DateTime date, {
-    AICategorizationService? aiCategorizationService,
+    Object? aiCategorizationService,
   }) async {
     // 1. CLEAN
     final cleanBody = body.replaceAll(RegExp(r'[\n\r]'), ' ').trim();
@@ -42,23 +41,6 @@ class NewSmsParser {
 
     // 6. AI CATEGORIZATION
     String? detectedCategory;
-    if (aiCategorizationService != null) {
-      try {
-        final categorySuggestion = await aiCategorizationService
-            .suggestCategory(
-              merchantName: merchant,
-              description: null,
-              amount: amount,
-              transactionType: type,
-              fullMessageBody: body,
-            );
-        detectedCategory = categorySuggestion.category;
-      } catch (e) {
-        // Fallback to null if AI fails
-        detectedCategory = null;
-      }
-    }
-
     return DetectedTransaction(
       fingerprint: id,
       id: id,

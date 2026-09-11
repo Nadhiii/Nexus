@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/models/goal.dart';
 import '../../core/widgets/app_dialog.dart';
@@ -38,13 +37,11 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
   Stream<List<Goal>> _getGoalsStream() {
     if (_userId == null) return Stream.value([]);
 
-    return _goalsCollection!
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => Goal.fromMap({'id': doc.id, ...doc.data()}))
-              .toList(),
-        );
+    return _goalsCollection!.snapshots().map(
+      (snapshot) => snapshot.docs
+          .map((doc) => Goal.fromMap({'id': doc.id, ...doc.data()}))
+          .toList(),
+    );
   }
 
   Future<void> _addGoal(Goal goal) async {
@@ -61,7 +58,8 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
         if (mounted) showTopSnackBar(context, 'Goal added successfully');
       }
     } catch (e) {
-      if (mounted) showTopSnackBar(context, 'Error adding goal: $e', isError: true);
+      if (mounted)
+        showTopSnackBar(context, 'Error adding goal: $e', isError: true);
     }
   }
 
@@ -74,7 +72,8 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
       await goals.doc(goal.id).update(goal.toMap());
       if (mounted) showTopSnackBar(context, 'Goal updated successfully');
     } catch (e) {
-      if (mounted) showTopSnackBar(context, 'Error updating goal: $e', isError: true);
+      if (mounted)
+        showTopSnackBar(context, 'Error updating goal: $e', isError: true);
     }
   }
 
@@ -87,37 +86,17 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
       await goals.doc(goal.id).delete();
       if (mounted) showTopSnackBar(context, 'Goal deleted successfully');
     } catch (e) {
-      if (mounted) showTopSnackBar(context, 'Error deleting goal: $e', isError: true);
+      if (mounted)
+        showTopSnackBar(context, 'Error deleting goal: $e', isError: true);
     }
   }
 
   void _showEditGoalModal(Goal goal) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.cardElevated,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppSpacing.radiusLg),
-        ),
-      ),
-      builder: (context) =>
-          ModernAddGoalScreen(onGoalAdded: _updateGoal, goalToEdit: goal),
-    );
+    ModernAddGoalScreen.show(context, _updateGoal, goalToEdit: goal);
   }
 
   void showAddGoalModal(BuildContext context, Function(Goal) onGoalAdded) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.cardElevated,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppSpacing.radiusLg),
-        ),
-      ),
-      builder: (context) => ModernAddGoalScreen(onGoalAdded: onGoalAdded),
-    );
+    ModernAddGoalScreen.show(context, onGoalAdded);
   }
 
   void _showDeleteConfirmation(Goal goal) async {
@@ -173,7 +152,9 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 10),
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
                     child: _buildOverviewCard(context, goals),
                   ),
                 ),
@@ -216,13 +197,18 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
   // ── Overview Card (unchanged) ─────────────────────────────────────────────
 
   Widget _buildOverviewCard(BuildContext context, List<Goal> goals) {
-    final totalTarget =
-        goals.fold<double>(0, (sum, goal) => sum + goal.targetAmount);
-    final totalSaved =
-        goals.fold<double>(0, (sum, goal) => sum + goal.currentAmount);
+    final totalTarget = goals.fold<double>(
+      0,
+      (sum, goal) => sum + goal.targetAmount,
+    );
+    final totalSaved = goals.fold<double>(
+      0,
+      (sum, goal) => sum + goal.currentAmount,
+    );
     final progress = totalTarget > 0 ? (totalSaved / totalTarget) : 0.0;
-    final completedGoals =
-        goals.where((g) => g.currentAmount >= g.targetAmount).length;
+    final completedGoals = goals
+        .where((g) => g.currentAmount >= g.targetAmount)
+        .length;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -237,8 +223,7 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
           ],
         ),
         borderRadius: BorderRadius.circular(28),
-        border:
-            Border.all(color: AppColors.accentTeal.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.accentTeal.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
             color: AppColors.accentTeal.withValues(alpha: 0.15),
@@ -263,19 +248,25 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.accentTeal.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: AppColors.accentTeal.withValues(alpha: 0.3)),
+                    color: AppColors.accentTeal.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.flag_rounded,
-                        color: AppColors.accentTeal, size: 12),
+                    Icon(
+                      Icons.flag_rounded,
+                      color: AppColors.accentTeal,
+                      size: 12,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '$completedGoals/${goals.length} Done',
@@ -351,11 +342,15 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
               Text(
                 'Remaining: ₹${_formatAmount(totalTarget - totalSaved)}',
                 style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 12,
+                ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.accentTeal.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
@@ -393,61 +388,103 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
         index++;
       } else if (remaining == 2) {
         if (index == 0) {
-          rows.add(Row(children: [
-            Expanded(
-                child:
-                    _buildBentoTile(context, sorted[index], isLarge: true)),
-            const SizedBox(width: 12),
-            Expanded(
-                child: _buildBentoTile(context, sorted[index + 1],
-                    isLarge: true)),
-          ]));
+          rows.add(
+            Row(
+              children: [
+                Expanded(
+                  child: _buildBentoTile(context, sorted[index], isLarge: true),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildBentoTile(
+                    context,
+                    sorted[index + 1],
+                    isLarge: true,
+                  ),
+                ),
+              ],
+            ),
+          );
         } else {
-          rows.add(Row(children: [
-            Expanded(
-                child: _buildBentoTile(context, sorted[index],
-                    isCompact: true)),
-            const SizedBox(width: 12),
-            Expanded(
-                child: _buildBentoTile(context, sorted[index + 1],
-                    isCompact: true)),
-          ]));
+          rows.add(
+            Row(
+              children: [
+                Expanded(
+                  child: _buildBentoTile(
+                    context,
+                    sorted[index],
+                    isCompact: true,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildBentoTile(
+                    context,
+                    sorted[index + 1],
+                    isCompact: true,
+                  ),
+                ),
+              ],
+            ),
+          );
         }
         index += 2;
       } else if (remaining >= 3 && index == 0) {
-        rows.add(Row(children: [
-          Expanded(
-              child: _buildBentoTile(context, sorted[index], isLarge: true)),
-          const SizedBox(width: 12),
-          Expanded(
-              child:
-                  _buildBentoTile(context, sorted[index + 1], isLarge: true)),
-        ]));
-        index += 2;
-      } else if (remaining >= 3) {
-        rows.add(IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        rows.add(
+          Row(
             children: [
               Expanded(
-                  flex: 3,
-                  child: _buildBentoTile(context, sorted[index], isWide: true)),
+                child: _buildBentoTile(context, sorted[index], isLarge: true),
+              ),
               const SizedBox(width: 12),
               Expanded(
-                flex: 2,
-                child: Column(children: [
-                  Expanded(
-                      child: _buildBentoTile(context, sorted[index + 1],
-                          isCompact: true)),
-                  const SizedBox(height: 12),
-                  Expanded(
-                      child: _buildBentoTile(context, sorted[index + 2],
-                          isCompact: true)),
-                ]),
+                child: _buildBentoTile(
+                  context,
+                  sorted[index + 1],
+                  isLarge: true,
+                ),
               ),
             ],
           ),
-        ));
+        );
+        index += 2;
+      } else if (remaining >= 3) {
+        rows.add(
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: _buildBentoTile(context, sorted[index], isWide: true),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: _buildBentoTile(
+                          context,
+                          sorted[index + 1],
+                          isCompact: true,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: _buildBentoTile(
+                          context,
+                          sorted[index + 2],
+                          isCompact: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
         index += 3;
       }
 
@@ -464,8 +501,9 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
     bool isWide = false,
     bool isCompact = false,
   }) {
-    final progress =
-        goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) : 0.0;
+    final progress = goal.targetAmount > 0
+        ? (goal.currentAmount / goal.targetAmount)
+        : 0.0;
     final percentage = (progress * 100).clamp(0, 100).round();
     final isCompleted = percentage >= 100;
     final goalColor = _getGoalColor(goal.name);
@@ -485,17 +523,16 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                 colors: isCompleted
                     ? [
                         AppColors.success.withValues(alpha: 0.2),
-                        AppColors.cardSurface
+                        AppColors.cardSurface,
                       ]
-                    : [
-                        goalColor.withValues(alpha: 0.2),
-                        AppColors.cardSurface
-                      ],
+                    : [goalColor.withValues(alpha: 0.2), AppColors.cardSurface],
               ),
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
-                  color: (isCompleted ? AppColors.success : goalColor)
-                      .withValues(alpha: 0.2)),
+                color: (isCompleted ? AppColors.success : goalColor).withValues(
+                  alpha: 0.2,
+                ),
+              ),
               boxShadow: [
                 BoxShadow(
                   color: (isCompleted ? AppColors.success : goalColor)
@@ -526,11 +563,11 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: (isCompleted
-                                ? AppColors.success
-                                : goalColor)
+                        color: (isCompleted ? AppColors.success : goalColor)
                             .withValues(alpha: isCompleted ? 0.2 : 0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -588,10 +625,11 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                           borderRadius: BorderRadius.circular(3),
                           boxShadow: [
                             BoxShadow(
-                              color: (isCompleted
-                                      ? AppColors.success
-                                      : AppColors.accentTeal)
-                                  .withValues(alpha: 0.5),
+                              color:
+                                  (isCompleted
+                                          ? AppColors.success
+                                          : AppColors.accentTeal)
+                                      .withValues(alpha: 0.5),
                               blurRadius: 8,
                             ),
                           ],
@@ -632,14 +670,16 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
               colors: isCompleted
                   ? [
                       AppColors.success.withValues(alpha: 0.15),
-                      AppColors.cardSurface
+                      AppColors.cardSurface,
                     ]
                   : [goalColor.withValues(alpha: 0.15), AppColors.cardSurface],
             ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-                color: (isCompleted ? AppColors.success : goalColor)
-                    .withValues(alpha: 0.15)),
+              color: (isCompleted ? AppColors.success : goalColor).withValues(
+                alpha: 0.15,
+              ),
+            ),
           ),
           child: Row(
             children: [
@@ -662,28 +702,34 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(goal.name,
-                        style: AppTypography.titleMedium.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold)),
+                    Text(
+                      goal.name,
+                      style: AppTypography.titleMedium.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Stack(
                       children: [
                         Container(
-                            height: 6,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(3))),
+                          height: 6,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
                         FractionallySizedBox(
                           widthFactor: progress.clamp(0.0, 1.0),
                           child: Container(
                             height: 6,
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                  colors: isCompleted
-                                      ? [AppColors.success, AppColors.success]
-                                      : [goalColor, AppColors.accentTeal]),
+                                colors: isCompleted
+                                    ? [AppColors.success, AppColors.success]
+                                    : [goalColor, AppColors.accentTeal],
+                              ),
                               borderRadius: BorderRadius.circular(3),
                             ),
                           ),
@@ -694,17 +740,20 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                     Text(
                       '₹${_formatAmount(goal.currentAmount)} of ₹${_formatAmount(goal.targetAmount)}',
                       style: TextStyle(
-                          color: AppColors.textTertiary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500),
+                        color: AppColors.textTertiary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 12),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: (isCompleted ? AppColors.success : goalColor)
                       .withValues(alpha: isCompleted ? 0.2 : 0.15),
@@ -733,8 +782,10 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
             color: AppColors.cardSurface,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-                color: (isCompleted ? AppColors.success : goalColor)
-                    .withValues(alpha: 0.15)),
+              color: (isCompleted ? AppColors.success : goalColor).withValues(
+                alpha: 0.15,
+              ),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -743,18 +794,22 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
               Row(
                 children: [
                   Icon(
-                      isCompleted ? Icons.check_circle : Icons.flag_rounded,
-                      color: isCompleted ? AppColors.success : goalColor,
-                      size: 18),
+                    isCompleted ? Icons.check_circle : Icons.flag_rounded,
+                    color: isCompleted ? AppColors.success : goalColor,
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(goal.name,
-                        style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
+                    child: Text(
+                      goal.name,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
@@ -762,18 +817,21 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
               Stack(
                 children: [
                   Container(
-                      height: 4,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(2))),
+                    height: 4,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                   FractionallySizedBox(
                     widthFactor: progress.clamp(0.0, 1.0),
                     child: Container(
                       height: 4,
                       decoration: BoxDecoration(
-                          color: isCompleted ? AppColors.success : goalColor,
-                          borderRadius: BorderRadius.circular(2)),
+                        color: isCompleted ? AppColors.success : goalColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
                 ],
@@ -782,14 +840,19 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('₹${_formatAmount(goal.targetAmount)}',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14)),
+                  Text(
+                    '₹${_formatAmount(goal.targetAmount)}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: (isCompleted ? AppColors.success : goalColor)
                           .withValues(alpha: 0.15),
@@ -798,9 +861,10 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                     child: Text(
                       isCompleted ? '✓' : '$percentage%',
                       style: TextStyle(
-                          color: isCompleted ? AppColors.success : goalColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10),
+                        color: isCompleted ? AppColors.success : goalColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
                     ),
                   ),
                 ],
@@ -846,33 +910,45 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                 ),
                 borderRadius: BorderRadius.circular(32),
                 border: Border.all(
-                    color: AppColors.accentTeal.withValues(alpha: 0.2)),
+                  color: AppColors.accentTeal.withValues(alpha: 0.2),
+                ),
               ),
-              child: Icon(Icons.flag_rounded,
-                  size: 56,
-                  color: AppColors.accentTeal.withValues(alpha: 0.6)),
+              child: Icon(
+                Icons.flag_rounded,
+                size: 56,
+                color: AppColors.accentTeal.withValues(alpha: 0.6),
+              ),
             ),
             const SizedBox(height: 32),
-            Text('No Goals Yet',
-                style: AppTypography.headlineSmall.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.bold)),
+            Text(
+              'No Goals Yet',
+              style: AppTypography.headlineSmall.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 12),
-            Text('Set savings targets and track\nyour progress to financial freedom',
-                textAlign: TextAlign.center,
-                style: AppTypography.bodyMedium
-                    .copyWith(color: AppColors.textTertiary, height: 1.5)),
+            Text(
+              'Set savings targets and track\nyour progress to financial freedom',
+              textAlign: TextAlign.center,
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.textTertiary,
+                height: 1.5,
+              ),
+            ),
             const SizedBox(height: 32),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                    colors: [AppColors.accentTeal, AppColors.accentPurple]),
+                  colors: [AppColors.accentTeal, AppColors.accentPurple],
+                ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                      color: AppColors.accentTeal.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4))
+                    color: AppColors.accentTeal.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
                 ],
               ),
               child: Material(
@@ -882,17 +958,25 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
                   borderRadius: BorderRadius.circular(16),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.add_circle_outline,
-                            color: Colors.white, size: 22),
+                        const Icon(
+                          Icons.add_circle_outline,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                         const SizedBox(width: 12),
-                        Text('Create Your First Goal',
-                            style: AppTypography.labelLarge.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
+                        Text(
+                          'Create Your First Goal',
+                          style: AppTypography.labelLarge.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -925,19 +1009,21 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(20),
-          border:
-              Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 16, color: AppColors.textTertiary),
             const SizedBox(width: 6),
-            Text(label,
-                style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500)),
+            Text(
+              label,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),
@@ -953,12 +1039,15 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
           children: [
             const Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 16),
-            Text('Error loading goals',
-                style: TextStyle(color: AppColors.textPrimary)),
-            Text(error,
-                style: TextStyle(
-                    color: AppColors.textTertiary, fontSize: 12),
-                textAlign: TextAlign.center),
+            Text(
+              'Error loading goals',
+              style: TextStyle(color: AppColors.textPrimary),
+            ),
+            Text(
+              error,
+              style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
@@ -1016,8 +1105,7 @@ class _GoalSipInsightsSection extends StatelessWidget {
             const SizedBox(width: 8),
             if (analysis.hasUrgentItems)
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppColors.error.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
@@ -1042,18 +1130,20 @@ class _GoalSipInsightsSection extends StatelessWidget {
 
         // ── Recommendations ───────────────────────────────────────────────
         if (analysis.recommendations.isNotEmpty) ...[
-          ...analysis.recommendations.take(3).map(
-                (r) => _buildRecommendationCard(r),
-              ),
+          ...analysis.recommendations
+              .take(3)
+              .map((r) => _buildRecommendationCard(r)),
         ],
 
         // ── On-track insights ─────────────────────────────────────────────
         if (analysis.insights.isNotEmpty) ...[
           const SizedBox(height: 4),
           ...analysis.insights
-              .where((i) =>
-                  i.type == InsightType.onTrack ||
-                  i.type == InsightType.aheadOfSchedule)
+              .where(
+                (i) =>
+                    i.type == InsightType.onTrack ||
+                    i.type == InsightType.aheadOfSchedule,
+              )
               .take(2)
               .map((i) => _buildInsightTile(i)),
         ],
@@ -1219,10 +1309,7 @@ class _GoalSipInsightsSection extends StatelessWidget {
           Expanded(
             child: Text(
               insight.message,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
             ),
           ),
         ],

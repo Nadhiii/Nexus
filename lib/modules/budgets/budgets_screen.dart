@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../core/widgets/collapsible_fab.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
@@ -200,7 +200,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
         foregroundColor: AppColors.accentPurple,
         icon: Icon(Icons.add, color: AppColors.accentPurple),
         label: 'New Budget',
-        onPressed: () => showAddBudgetModal(context),
+        onPressed: () => ModernAddBudgetScreen.show(context),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
@@ -263,38 +263,40 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
               ),
               Flexible(
                 child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isOver
-                          ? Icons.warning_amber
-                          : (percentSpent > 0.8
-                                ? Icons.info
-                                : Icons.check_circle),
-                      color: statusColor,
-                      size: 12,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.3),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${(percentSpent * 100).clamp(0, 999).toStringAsFixed(0)}% Used',
-                      style: TextStyle(
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isOver
+                            ? Icons.warning_amber
+                            : (percentSpent > 0.8
+                                  ? Icons.info
+                                  : Icons.check_circle),
                         color: statusColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
+                        size: 12,
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${(percentSpent * 100).clamp(0, 999).toStringAsFixed(0)}% Used',
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -574,7 +576,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
     if (isLarge) {
       // Large square tile (like subscription large tile)
       return GestureDetector(
-        onTap: () => showAddBudgetModal(context, budget: budget),
+        onTap: () => ModernAddBudgetScreen.show(context, budget: budget),
         onLongPress: () => _showDeleteConfirmation(context, budget),
         child: AspectRatio(
           aspectRatio: 1,
@@ -712,7 +714,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
     } else if (isWide) {
       // Wide horizontal tile
       return GestureDetector(
-        onTap: () => showAddBudgetModal(context, budget: budget),
+        onTap: () => ModernAddBudgetScreen.show(context, budget: budget),
         onLongPress: () => _showDeleteConfirmation(context, budget),
         child: Container(
           height: 120,
@@ -838,7 +840,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
     } else {
       // Compact tile
       return GestureDetector(
-        onTap: () => showAddBudgetModal(context, budget: budget),
+        onTap: () => ModernAddBudgetScreen.show(context, budget: budget),
         onLongPress: () => _showDeleteConfirmation(context, budget),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -1069,7 +1071,7 @@ class _ModernBudgetsScreenState extends State<ModernBudgetsScreen> {
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      onTap: () => showAddBudgetModal(context),
+                      onTap: () => ModernAddBudgetScreen.show(context),
                       borderRadius: BorderRadius.circular(16),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(

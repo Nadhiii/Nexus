@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_types_as_parameter_names
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
 import '../models/challan.dart';
 import 'package:flutter/foundation.dart';
@@ -53,8 +54,11 @@ class ChallanService {
   /// Fetch all challans for a vehicle
   Future<List<Challan>> getVehicleChallans(String bikeId) async {
     try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return [];
       final snapshot = await _firestore
           .collection(_challansCollection)
+          .where('userId', isEqualTo: userId)
           .where('bikeId', isEqualTo: bikeId)
           .orderBy('violationDate', descending: true)
           .get();
@@ -71,8 +75,11 @@ class ChallanService {
   /// Fetch unpaid challans for a vehicle
   Future<List<Challan>> getUnpaidChallans(String bikeId) async {
     try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return [];
       final snapshot = await _firestore
           .collection(_challansCollection)
+          .where('userId', isEqualTo: userId)
           .where('bikeId', isEqualTo: bikeId)
           .where('isPaid', isEqualTo: false)
           .orderBy('violationDate', descending: true)
@@ -117,8 +124,12 @@ class ChallanService {
   List<Challan> getOverdueChallans(List<Challan> challans) {
     final now = DateTime.now();
     return challans.where((challan) {
-      if (challan.isPaid) { return false; }
-      if (challan.paymentDeadline == null) { return false; }
+      if (challan.isPaid) {
+        return false;
+      }
+      if (challan.paymentDeadline == null) {
+        return false;
+      }
       return challan.paymentDeadline!.isBefore(now);
     }).toList();
   }
@@ -132,8 +143,12 @@ class ChallanService {
     final warningDate = now.add(Duration(days: daysWarning));
 
     return challans.where((challan) {
-      if (challan.isPaid) { return false; }
-      if (challan.paymentDeadline == null) { return false; }
+      if (challan.isPaid) {
+        return false;
+      }
+      if (challan.paymentDeadline == null) {
+        return false;
+      }
       return challan.paymentDeadline!.isBefore(warningDate) &&
           challan.paymentDeadline!.isAfter(now);
     }).toList();

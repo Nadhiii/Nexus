@@ -1,925 +1,94 @@
-// ignore_for_file: invalid_use_of_protected_member
-import 'dart:io' show Platform;
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:nfc_manager/nfc_manager.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/providers/account_provider.dart';
+import '../../core/theme/app_animations.dart';
 import '../../core/models/account.dart';
-import '../../core/widgets/nexus_switch.dart';
+import '../../core/providers/account_provider.dart';
 import '../../core/widgets/top_snackbar.dart';
-import '../../core/services/secure_card_service.dart';
-import '../../core/utils/logo_utils.dart';
 
 class ModernAddAccountScreen extends StatefulWidget {
   final Account? accountToEdit;
 
   const ModernAddAccountScreen({super.key, this.accountToEdit});
 
+  /// Opens this form as a native, bottom-up modal sheet
+  static Future<void> show(BuildContext context, {Account? accountToEdit}) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.65),
+      builder: (_) => ModernAddAccountScreen(accountToEdit: accountToEdit),
+    );
+  }
+
   @override
   State<ModernAddAccountScreen> createState() => _ModernAddAccountScreenState();
 }
 
-class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
-    with TickerProviderStateMixin {
-  late AnimationController _logoAnimationController;
-  late Animation<Offset> _logoSlideAnimation;
-  String _previousBankName = '';
-
-  // Single Form Key for the entire screen
+class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Basic Account Controllers
   final _nameController = TextEditingController();
   final _balanceController = TextEditingController();
   final _bankNameController = TextEditingController();
-  final _accountNumberController = TextEditingController();
-  final _ifscCodeController = TextEditingController();
-
-  // Card Controllers & Focus
-  final _cardNumberController = TextEditingController();
-  final _cardExpiryController = TextEditingController();
-  final _cardCvvController = TextEditingController();
-  final _cardHolderController = TextEditingController();
-  final _cardNumberFocus = FocusNode();
-
-  bool _hasCardDetails = false;
-  final SecureCardService _secureCardService = SecureCardService();
+  final _last4Controller = TextEditingController();
 
   AccountType _selectedType = AccountType.savings;
-  Color _selectedColor = AppColors.primaryBlue;
-  IconData _selectedIcon = Icons.account_balance;
   bool _isLoading = false;
-
-  final List<Color> _colorPalette = [
-    AppColors.primaryBlue,
-    const Color(0xFF00E676),
-    const Color(0xFFFFEA00),
-    const Color(0xFFFF3D00),
-    const Color(0xFFD500F9),
-    const Color(0xFF2979FF),
-    const Color(0xFF607D8B),
-    const Color(0xFF37474F),
-  ];
-
-  final List<IconData> _iconPalette = [
-    Icons.account_balance,
-    Icons.savings,
-    Icons.credit_card,
-    Icons.wallet,
-    Icons.pie_chart,
-    Icons.attach_money,
-    Icons.diamond,
-    Icons.lock,
-  ];
 
   @override
   void initState() {
     super.initState();
-
-    _logoAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-    _logoSlideAnimation =
-        Tween<Offset>(begin: const Offset(0.5, 0), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _logoAnimationController,
-            curve: Curves.easeOut,
-          ),
-        );
-
     if (widget.accountToEdit != null) {
-      final account = widget.accountToEdit!;
-      _nameController.text = account.name;
-      _balanceController.text = account.balance.toString();
-      _bankNameController.text = account.bankName ?? '';
-      _accountNumberController.text = account.accountNumber ?? '';
-      _ifscCodeController.text = account.ifscCode ?? '';
-      _cardNumberController.text = account.cardNumber ?? '';
-      _cardExpiryController.text = account.cardExpiry ?? '';
-      _loadSecureCvv(account.id);
-      _cardHolderController.text = account.cardHolderName ?? '';
-      if (_cardNumberController.text.isNotEmpty) {
-        _hasCardDetails = true;
-      }
-
-      _selectedType = account.type;
-      _selectedColor = account.color;
-      _selectedIcon = account.icon;
-    }
-
-    // Add listeners to update the Live Card in real-time
-    _nameController.addListener(() => setState(() {}));
-    _balanceController.addListener(() => setState(() {}));
-    _accountNumberController.addListener(() => setState(() {}));
-    _cardNumberController.addListener(() => setState(() {}));
-    _cardExpiryController.addListener(() => setState(() {}));
-
-    _bankNameController.addListener(() {
-      final currentBank = _bankNameController.text;
-      if (currentBank != _previousBankName) {
-        _previousBankName = currentBank;
-        _logoAnimationController.forward(from: 0.0);
-      }
-      setState(() {});
-    });
-  }
-
-  Future<void> _loadSecureCvv(String accountId) async {
-    final cvv = await _secureCardService.getCvv(accountId);
-    if (cvv != null && mounted) {
-      setState(() => _cardCvvController.text = cvv);
+      final a = widget.accountToEdit!;
+      _nameController.text = a.name;
+      _balanceController.text = a.balance.toStringAsFixed(0);
+      _bankNameController.text = a.bankName ?? '';
+      _last4Controller.text = a.accountNumber ?? '';
+      _selectedType = a.type;
     }
   }
 
   @override
   void dispose() {
-    _logoAnimationController.dispose();
     _nameController.dispose();
     _balanceController.dispose();
     _bankNameController.dispose();
-    _accountNumberController.dispose();
-    _ifscCodeController.dispose();
-    _cardNumberController.dispose();
-    _cardExpiryController.dispose();
-    _cardCvvController.dispose();
-    _cardHolderController.dispose();
-    _cardNumberFocus.dispose();
+    _last4Controller.dispose();
     super.dispose();
   }
 
-  Future<void> _startNfcScan() async {
-    if (!Platform.isAndroid) return;
-
-    final availability = await NfcManager.instance.checkAvailability();
-    if (availability != NfcAvailability.enabled) {
-      if (mounted) {
-        showTopSnackBar(context, "NFC is not available", isError: true);
-      }
-      return;
+  IconData _iconForAccountType(AccountType type) {
+    switch (type) {
+      case AccountType.savings:
+        return Icons.savings_outlined;
+      case AccountType.salary:
+        return Icons.account_balance_wallet_outlined;
+      case AccountType.checking:
+        return Icons.account_balance_outlined;
+      case AccountType.investment:
+        return Icons.trending_up_outlined;
+      case AccountType.cash:
+        return Icons.payments_outlined;
+      case AccountType.other:
+        return Icons.category_outlined;
     }
-
-    if (mounted) {
-      showModalBottomSheet(
-        context: context,
-        backgroundColor: AppColors.cardElevated,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppSpacing.radiusLg),
-          ),
-        ),
-        builder: (ctx) => Container(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          height: 300,
-          child: Column(
-            children: [
-              const Icon(
-                Icons.contactless,
-                size: 64,
-                color: AppColors.primaryBlue,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                "Hold Card to Back",
-                style: AppTypography.titleLarge.copyWith(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              const Text(
-                "Searching for banking chip...",
-                style: TextStyle(color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: () {
-                  NfcManager.instance.stopSession();
-                  Navigator.pop(ctx);
-                },
-                child: const Text("Cancel"),
-              ),
-            ],
-          ),
-        ),
-      ).whenComplete(() => NfcManager.instance.stopSession());
-    }
-
-    NfcManager.instance.startSession(
-      pollingOptions: const {NfcPollingOption.iso14443},
-      onDiscovered: (NfcTag tag) async {
-        try {
-          final tagUid = _extractTagUid(tag.data);
-          if (tagUid != null && mounted) {
-            setState(() {
-              _cardNumberController.text = tagUid;
-              _cardExpiryController.text = _cardExpiryController.text.isEmpty
-                  ? "--/--"
-                  : _cardExpiryController.text;
-              _cardHolderController.text = _cardHolderController.text.isEmpty
-                  ? "NFC Card"
-                  : _cardHolderController.text;
-              _hasCardDetails = true;
-            });
-          }
-          if (mounted) {
-            Navigator.pop(context);
-            showTopSnackBar(
-              context,
-              tagUid != null
-                  ? "Card detected! UID saved."
-                  : "Card detected! (no UID found)",
-            );
-          }
-          NfcManager.instance.stopSession();
-        } catch (e) {
-          NfcManager.instance.stopSession();
-        }
-      },
-    );
-  }
-
-  String? _extractTagUid(dynamic data) {
-    if (data is! Map) return null;
-    final candidates = [
-      data['id'],
-      data['identifier'],
-      (data['nfca'] is Map ? (data['nfca'] as Map)['identifier'] : null),
-      (data['mifareclassic'] is Map
-          ? (data['mifareclassic'] as Map)['identifier']
-          : null),
-      (data['mifareultralight'] is Map
-          ? (data['mifareultralight'] as Map)['identifier']
-          : null),
-    ];
-    for (final candidate in candidates) {
-      final hex = _bytesToHex(candidate);
-      if (hex != null && hex.isNotEmpty) return hex;
-    }
-    return null;
-  }
-
-  String? _bytesToHex(dynamic value) {
-    if (value is List) {
-      final bytes = value.whereType<int>().toList();
-      if (bytes.isEmpty) return null;
-      return bytes
-          .map((b) => b.toRadixString(16).padLeft(2, '0'))
-          .join()
-          .toUpperCase();
-    }
-    return null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final title = widget.accountToEdit != null ? 'Edit Account' : 'New Account';
-
-    return Scaffold(
-      backgroundColor: AppColors.backgroundBlack,
-      appBar: AppBar(
-        backgroundColor: AppColors.backgroundBlack,
-        surfaceTintColor: AppColors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          title,
-          style: AppTypography.headlineMedium.copyWith(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new,
-            color: AppColors.textPrimary,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Fixed Live Card at the top
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xl,
-                vertical: AppSpacing.sm,
-              ),
-              child: _buildLiveCard(),
-            ),
-            const SizedBox(height: AppSpacing.md),
-
-            // Single Scrollable Form
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader('Current Balance'),
-                      _buildBalanceField(),
-                      const SizedBox(height: AppSpacing.xl2),
-
-                      _buildSectionHeader('Account Type'),
-                      _buildAccountTypeSelector(),
-                      const SizedBox(height: AppSpacing.xl2),
-
-                      _buildSectionHeader('Primary Details'),
-                      _buildStandardTextField(
-                        controller: _nameController,
-                        hint: "Account Name (e.g. Personal Savings)",
-                        icon: Icons.label_outline,
-                        validator: (val) =>
-                            val == null || val.isEmpty ? "Required" : null,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      _buildStandardTextField(
-                        controller: _bankNameController,
-                        hint: "Bank Name",
-                        icon: Icons.account_balance,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildStandardTextField(
-                              controller: _accountNumberController,
-                              hint: "A/C Last 4",
-                              icon: Icons.numbers,
-                              isNumber: true,
-                              maxLength: 4,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: _buildStandardTextField(
-                              controller: _ifscCodeController,
-                              hint: "IFSC Code",
-                              icon: Icons.code,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.xl2),
-
-                      // Card Section
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildSectionHeader(
-                            'Link Card (Optional)',
-                            paddingBottom: 0,
-                          ),
-                          NexusSwitch(
-                            value: _hasCardDetails,
-                            activeThumbColor: _selectedColor,
-                            onChanged: (val) =>
-                                setState(() => _hasCardDetails = val),
-                          ),
-                        ],
-                      ),
-                      if (_hasCardDetails) ...[
-                        const SizedBox(height: AppSpacing.md),
-                        if (Platform.isAndroid) ...[
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: _startNfcScan,
-                              icon: const Icon(Icons.nfc),
-                              label: const Text("Scan Card via NFC"),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.white,
-                                side: BorderSide(
-                                  color: AppColors.white.withValues(alpha: 0.3),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: AppSpacing.md,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppSpacing.radiusMd,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                        ],
-                        _buildStandardTextField(
-                          controller: _cardNumberController,
-                          focusNode: _cardNumberFocus,
-                          hint: "Card Number",
-                          icon: Icons.credit_card,
-                          maxLength: 19,
-                          isNumber: true,
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildStandardTextField(
-                                controller: _cardExpiryController,
-                                hint: "Expiry (MM/YY)",
-                                icon: Icons.calendar_today,
-                                maxLength: 5,
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: _buildStandardTextField(
-                                controller: _cardCvvController,
-                                hint: "CVV",
-                                icon: Icons.lock_outline,
-                                maxLength: 4,
-                                isNumber: true,
-                                obscureText: true,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        _buildStandardTextField(
-                          controller: _cardHolderController,
-                          hint: "Card Holder Name",
-                          icon: Icons.person_outline,
-                        ),
-                      ],
-                      const SizedBox(height: AppSpacing.xl2),
-
-                      _buildSectionHeader('Appearance'),
-                      _buildColorSelector(),
-                      const SizedBox(height: AppSpacing.xl),
-                      _buildIconSelector(),
-
-                      // Extra padding for smooth scrolling above keyboard
-                      const SizedBox(height: 100),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // Fixed Bottom Bar for Save Button
-            _buildBottomBar(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(
-    String title, {
-    double paddingBottom = AppSpacing.sm,
-  }) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: paddingBottom),
-      child: Text(
-        title,
-        style: AppTypography.titleSmall.copyWith(
-          color: AppColors.textPrimary,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBalanceField() {
-    return TextFormField(
-      controller: _balanceController,
-      style: AppTypography.displayMedium.copyWith(
-        color: AppColors.textPrimary,
-        fontWeight: FontWeight.bold,
-      ),
-      decoration: InputDecoration(
-        hintText: '0.00',
-        prefixText: '₹ ',
-        prefixStyle: AppTypography.displayMedium.copyWith(
-          color: _selectedColor,
-          fontWeight: FontWeight.bold,
-        ),
-        hintStyle: TextStyle(color: AppColors.textTertiary),
-        filled: true,
-        fillColor: AppColors.cardElevated,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          borderSide: BorderSide.none,
-        ),
-      ),
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) return 'Balance is required';
-        if (double.tryParse(value.trim()) == null) {
-          return 'Please enter a valid number';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildAccountTypeSelector() {
-    return SizedBox(
-      height: 40,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: AccountType.values.map((type) {
-          final isSelected = _selectedType == type;
-          final typeString = type.toString().split('.').last;
-          final typeName = typeString.isNotEmpty
-              ? '${typeString[0].toUpperCase()}${typeString.substring(1)}'
-              : '';
-
-          return Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.sm),
-            child: ChoiceChip(
-              label: Text(typeName),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) setState(() => _selectedType = type);
-              },
-              selectedColor: _selectedColor.withValues(alpha: 0.2),
-              backgroundColor: AppColors.cardElevated,
-              labelStyle: TextStyle(
-                color: isSelected ? _selectedColor : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-              side: BorderSide(
-                color: isSelected ? _selectedColor : AppColors.transparent,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildColorSelector() {
-    return SizedBox(
-      height: 50,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: _colorPalette.length,
-        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
-        itemBuilder: (context, index) {
-          final color = _colorPalette[index];
-          final isSelected = _selectedColor == color;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedColor = color),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? Colors.white : AppColors.transparent,
-                  width: 3,
-                ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.6),
-                          blurRadius: 12,
-                        ),
-                      ]
-                    : [],
-              ),
-              child: isSelected
-                  ? const Icon(Icons.check, color: AppColors.white)
-                  : null,
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildIconSelector() {
-    return SizedBox(
-      height: 50,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: _iconPalette.length,
-        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
-        itemBuilder: (context, index) {
-          final icon = _iconPalette[index];
-          final isSelected = _selectedIcon == icon;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedIcon = icon),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: isSelected ? _selectedColor : AppColors.cardElevated,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                border: Border.all(
-                  color: isSelected
-                      ? AppColors.white.withValues(alpha: 0.5)
-                      : AppColors.transparent,
-                ),
-              ),
-              child: Icon(
-                icon,
-                color: isSelected ? Colors.white : AppColors.textSecondary,
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildBottomBar() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundBlack,
-        border: Border(
-          top: BorderSide(color: AppColors.white.withValues(alpha: 0.05)),
-        ),
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
-          height: AppSpacing.buttonHeightLg,
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _saveAccount,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _selectedColor,
-              foregroundColor: AppColors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              ),
-            ),
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.white,
-                    ),
-                  )
-                : Text(
-                    widget.accountToEdit != null
-                        ? 'Save Changes'
-                        : 'Create Account',
-                    style: AppTypography.titleSmall.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStandardTextField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    FocusNode? focusNode,
-    bool isNumber = false,
-    int? maxLength,
-    bool obscureText = false,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      focusNode: focusNode,
-      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      maxLength: maxLength,
-      obscureText: obscureText,
-      style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(color: AppColors.textTertiary),
-        filled: true,
-        fillColor: AppColors.cardElevated,
-        counterText: "",
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          borderSide: BorderSide.none,
-        ),
-        prefixIcon: Padding(
-          padding: const EdgeInsets.only(
-            left: AppSpacing.md,
-            right: AppSpacing.sm,
-          ),
-          child: Icon(icon, color: AppColors.textSecondary),
-        ),
-      ),
-      validator: validator,
-    );
-  }
-
-  Widget _buildLiveCard() {
-    final hasCardData = _cardNumberController.text.isNotEmpty;
-    String displayCardNum = "**** **** **** ****";
-    if (hasCardData) {
-      displayCardNum = _cardNumberController.text;
-    } else if (_accountNumberController.text.isNotEmpty) {
-      displayCardNum =
-          "**** **** **** ${_accountNumberController.text.padRight(4, '*').substring(0, 4.clamp(0, 4))}";
-    }
-
-    final bankLogo = LogoUtils.bankLogoFor(_bankNameController.text);
-    final logoScale = LogoUtils.bankLogoScale(_bankNameController.text);
-
-    return Container(
-      height: 180,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF1A1A1A),
-            const Color(0xFF111111),
-            AppColors.black.withValues(alpha: 0.8),
-            const Color(0xFF0A0A0A).withValues(alpha: 0.9),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: _selectedColor.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-        border: Border.all(
-          color: _selectedColor.withValues(alpha: 0.3),
-          width: 1.5,
-        ),
-      ),
-      child: Stack(
-        children: [
-          if (bankLogo != null)
-            Positioned.fill(
-              child: ImageFiltered(
-                imageFilter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-                child: Opacity(
-                  opacity: 0.15,
-                  child: Center(
-                    child: LogoUtils.buildLogo(bankLogo, size: 200 * logoScale),
-                  ),
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _nameController.text.isNotEmpty
-                            ? _nameController.text.toUpperCase()
-                            : (_bankNameController.text.isNotEmpty
-                                  ? _bankNameController.text.toUpperCase()
-                                  : "NEW ACCOUNT"),
-                        style: const TextStyle(
-                          color: AppColors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    SlideTransition(
-                      position: _logoSlideAnimation,
-                      child: bankLogo != null
-                          ? SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: LogoUtils.buildLogo(bankLogo, size: 24),
-                            )
-                          : Icon(
-                              _selectedIcon,
-                              color: AppColors.white.withValues(alpha: 0.8),
-                              size: 24,
-                            ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    const Icon(Icons.sim_card, color: AppColors.premiumAmber, size: 28),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.wifi,
-                      color: AppColors.white.withValues(alpha: 0.5),
-                      size: 20,
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayCardNum,
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontFamily: "Monospace",
-                        fontSize: 16,
-                        letterSpacing: 2,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 2,
-                            color: AppColors.black.withValues(alpha: 0.45),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "BALANCE",
-                              style: TextStyle(
-                                color: AppColors.white.withValues(alpha: 0.6),
-                                fontSize: 8,
-                              ),
-                            ),
-                            Text(
-                              "₹${_balanceController.text.isEmpty ? '0.00' : _balanceController.text}",
-                              style: const TextStyle(
-                                color: AppColors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              "EXPIRY",
-                              style: TextStyle(
-                                color: AppColors.white.withValues(alpha: 0.6),
-                                fontSize: 8,
-                              ),
-                            ),
-                            Text(
-                              _cardExpiryController.text.isEmpty
-                                  ? "MM/YY"
-                                  : _cardExpiryController.text,
-                              style: const TextStyle(
-                                color: AppColors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   void _saveAccount() async {
-    // Validate the entire form at once
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
 
     try {
       final balance = double.tryParse(_balanceController.text.trim()) ?? 0.0;
-      final now = DateTime.now();
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final now = DateTime.now();
 
       final account = Account(
         id: widget.accountToEdit?.id ?? '',
@@ -927,64 +96,34 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
         name: _nameController.text.trim(),
         type: _selectedType,
         balance: balance,
-        color: _selectedColor,
-        iconCodePoint: _selectedIcon.codePoint,
-        iconFontFamily: _selectedIcon.fontFamily ?? 'MaterialIcons',
-        bankName: _bankNameController.text.trim().isEmpty
-            ? null
-            : _bankNameController.text.trim(),
-        accountNumber: _accountNumberController.text.trim().isEmpty
-            ? null
-            : _accountNumberController.text.trim(),
-        ifscCode: _ifscCodeController.text.trim().isEmpty
-            ? null
-            : _ifscCodeController.text.trim(),
-        cardNumber: _hasCardDetails && _cardNumberController.text.isNotEmpty
-            ? _cardNumberController.text.trim()
+        bankName: _bankNameController.text.trim().isNotEmpty
+            ? _bankNameController.text.trim()
             : null,
-        cardExpiry: _hasCardDetails && _cardExpiryController.text.isNotEmpty
-            ? _cardExpiryController.text.trim()
+        accountNumber: _last4Controller.text.trim().isNotEmpty
+            ? _last4Controller.text.trim()
             : null,
-        cardHolderName: _hasCardDetails && _cardHolderController.text.isNotEmpty
-            ? _cardHolderController.text.trim()
-            : null,
+        color: AppColors.primaryBlue,
+        iconCodePoint: _iconForAccountType(_selectedType).codePoint,
+        iconFontFamily: 'MaterialIcons',
         createdAt: widget.accountToEdit?.createdAt ?? now,
         updatedAt: now,
       );
 
       final provider = context.read<AccountProvider>();
-
-      String accountId;
       if (widget.accountToEdit != null) {
         await provider.updateAccount(account);
-        accountId = account.id;
       } else {
         await provider.addAccount(account);
-        accountId = provider.accounts
-            .firstWhere(
-              (a) => a.name == account.name && a.userId == account.userId,
-              orElse: () => account,
-            )
-            .id;
-      }
-
-      if (_hasCardDetails && _cardCvvController.text.isNotEmpty) {
-        await _secureCardService.storeCvv(
-          accountId,
-          _cardCvvController.text.trim(),
-        );
-      } else if (accountId.isNotEmpty) {
-        await _secureCardService.deleteCvv(accountId);
       }
 
       if (mounted) {
+        Navigator.pop(context);
         showTopSnackBar(
           context,
           widget.accountToEdit != null
               ? "Account Updated"
               : "Account Created Successfully",
         );
-        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) showTopSnackBar(context, "Error: $e", isError: true);
@@ -992,15 +131,390 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen>
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isEditing = widget.accountToEdit != null;
+
+    return Material(
+      color: AppColors.darkSurface,
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(AppSpacing.radiusLg),
+      ),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.90,
+        ),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.xl,
+          AppSpacing.md,
+          AppSpacing.xl,
+          AppSpacing.xl + bottomInset,
+        ),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Pull handle
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.borderSubtleDark,
+                      borderRadius: AppSpacing.borderRadiusFull,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      isEditing ? 'Edit Account' : 'New Account',
+                      style: AppTypography.headlineMedium.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.close,
+                        color: AppColors.textSecondary,
+                        size: AppSpacing.iconSm,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl),
+
+                // Balance
+                _buildFieldLabel('INITIAL BALANCE'),
+                _buildBalanceInputField(),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Account Type Grid
+                _buildFieldLabel('ACCOUNT TYPE'),
+                _buildAccountTypeGrid(),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Account Name
+                _buildFieldLabel('ACCOUNT NAME'),
+                _buildStandardField(
+                  controller: _nameController,
+                  hint: "e.g. HDFC Salary, Emergency Fund",
+                  icon: Icons.label_outline,
+                  validator: (val) => (val == null || val.trim().isEmpty)
+                      ? "Name is required"
+                      : null,
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // Institution & Last 4 Digits
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildFieldLabel('INSTITUTION (OPTIONAL)'),
+                          _buildStandardField(
+                            controller: _bankNameController,
+                            hint: "e.g. SBI, Zerodha",
+                            icon: Icons.account_balance_outlined,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildFieldLabel('LAST 4 DIGITS'),
+                          _buildStandardField(
+                            controller: _last4Controller,
+                            hint: "####",
+                            icon: Icons.pin_outlined,
+                            isNumber: true,
+                            maxLength: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl2),
+
+                // Actions
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.lg,
+                          ),
+                          backgroundColor: AppColors.darkSurfaceElevated,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppSpacing.borderRadiusSm,
+                            side: const BorderSide(
+                              color: AppColors.borderSubtleDark,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: AppTypography.labelLarge.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _saveAccount,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.lg,
+                          ),
+                          backgroundColor: AppColors.primaryBlue,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppSpacing.borderRadiusSm,
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.white,
+                                ),
+                              )
+                            : Text(
+                                isEditing ? 'Save Changes' : 'Create Account',
+                                style: AppTypography.labelLarge.copyWith(
+                                  color: AppColors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFieldLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Text(
+        text,
+        style: AppTypography.labelSmall.copyWith(
+          color: AppColors.textTertiary,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBalanceInputField() {
+    return TextFormField(
+      controller: _balanceController,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      style: AppTypography.currencyMedium.copyWith(
+        color: AppColors.textPrimary,
+      ),
+      decoration: InputDecoration(
+        hintText: "0.00",
+        hintStyle: AppTypography.currencyMedium.copyWith(
+          color: AppColors.textTertiary,
+        ),
+        prefixText: "₹ ",
+        prefixStyle: AppTypography.currencyMedium.copyWith(
+          color: AppColors.primaryBlue,
+        ),
+        filled: true,
+        fillColor: AppColors.darkSurfaceElevated,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: const BorderSide(
+            color: AppColors.primaryBlue,
+            width: 1.5,
+          ),
+        ),
+      ),
+      validator: (val) {
+        if (val == null || val.trim().isEmpty)
+          return "Initial balance required";
+        if (double.tryParse(val.trim()) == null) return "Enter a valid number";
+        return null;
+      },
+    );
+  }
+
+  Widget _buildStandardField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool isNumber = false,
+    int? maxLength,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      maxLength: maxLength,
+      style: AppTypography.bodyMedium.copyWith(
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w500,
+      ),
+      decoration: InputDecoration(
+        hintText: hint,
+        counterText: "",
+        hintStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.textTertiary,
+        ),
+        filled: true,
+        fillColor: AppColors.darkSurfaceElevated,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(
+            left: AppSpacing.md,
+            right: AppSpacing.sm,
+          ),
+          child: Icon(icon, color: AppColors.textSecondary, size: 20),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusSm,
+          borderSide: const BorderSide(
+            color: AppColors.primaryBlue,
+            width: 1.5,
+          ),
+        ),
+      ),
+      validator: validator,
+    );
+  }
+
+  Widget _buildAccountTypeGrid() {
+    final types = AccountType.values;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 1.35,
+        crossAxisSpacing: AppSpacing.sm,
+        mainAxisSpacing: AppSpacing.sm,
+      ),
+      itemCount: types.length,
+      itemBuilder: (context, index) {
+        final type = types[index];
+        final isSelected = _selectedType == type;
+
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            setState(() => _selectedType = type);
+          },
+          child: AnimatedContainer(
+            duration: AppAnimations.standard,
+            curve: AppAnimations.standardCurve,
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? AppColors.primaryBlue.withValues(alpha: 0.15)
+                  : AppColors.darkSurfaceElevated,
+              borderRadius: AppSpacing.borderRadiusSm,
+              border: Border.all(
+                color: isSelected
+                    ? AppColors.primaryBlue
+                    : AppColors.borderSubtleDark,
+                width: isSelected ? 1.5 : 1.0,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  _iconForAccountType(type),
+                  size: 22,
+                  color: isSelected
+                      ? AppColors.primaryBlue
+                      : AppColors.textSecondary,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  type.name[0].toUpperCase() + type.name.substring(1),
+                  style: AppTypography.labelSmall.copyWith(
+                    color: isSelected
+                        ? AppColors.primaryBlue
+                        : AppColors.textSecondary,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
+// Global Navigation Helper
 Future<void> navToAddAccountScreen(
   BuildContext context, {
   Account? accountToEdit,
 }) {
-  return Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) => ModernAddAccountScreen(accountToEdit: accountToEdit),
-    ),
-  );
+  return ModernAddAccountScreen.show(context, accountToEdit: accountToEdit);
 }

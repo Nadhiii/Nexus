@@ -78,12 +78,9 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
               ),
               IconButton(
                 icon: const Icon(Icons.edit, color: AppColors.white),
-                onPressed: () => Navigator.push(
+                onPressed: () => ModernAddAccountScreen.show(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        ModernAddAccountScreen(accountToEdit: widget.account),
-                  ),
+                  accountToEdit: widget.account,
                 ),
               ),
               IconButton(
@@ -662,7 +659,9 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                 Expanded(
                   child: Container(
                     width: 2,
-                    color: isLast ? AppColors.transparent : AppColors.cardSurface,
+                    color: isLast
+                        ? AppColors.transparent
+                        : AppColors.cardSurface,
                   ),
                 ),
               ],
@@ -688,52 +687,52 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
                   borderRadius: BorderRadius.circular(16),
                   onTap: () => _editTransaction(t),
                   child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardSurface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.white.withValues(alpha: 0.05),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardSurface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.white.withValues(alpha: 0.05),
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              t.description ??
-                                  (t.type == TransactionType.transfer
-                                      ? "Transfer"
-                                      : "Transaction"),
-                              style: AppTypography.bodyLarge.copyWith(
-                                fontWeight: FontWeight.bold,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                t.description ??
+                                    (t.type == TransactionType.transfer
+                                        ? "Transfer"
+                                        : "Transaction"),
+                                style: AppTypography.bodyLarge.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              DateFormat('MMM dd, hh:mm a').format(t.date),
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.textTertiary,
+                              const SizedBox(height: 4),
+                              Text(
+                                DateFormat('MMM dd, hh:mm a').format(t.date),
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: AppColors.textTertiary,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        "$sign₹${AppCurrency.format(t.amount)}",
-                        style: AppTypography.titleMedium.copyWith(
-                          color: color,
-                          fontWeight: FontWeight.bold,
+                        const SizedBox(width: 8),
+                        Text(
+                          "$sign₹${AppCurrency.format(t.amount)}",
+                          style: AppTypography.titleMedium.copyWith(
+                            color: color,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -745,11 +744,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
   }
 
   void _editTransaction(Transaction t) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ModernAddTransactionScreen(transaction: t),
-      ),
-    );
+    ModernAddTransactionScreen.show(context, transaction: t);
   }
 
   Future<void> _confirmAndDeleteAccount() async {
@@ -757,12 +752,12 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.cardSurface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Delete ${widget.account.name}?',
-          style: AppTypography.titleLarge.copyWith(color: AppColors.textPrimary),
+          style: AppTypography.titleLarge.copyWith(
+            color: AppColors.textPrimary,
+          ),
         ),
         content: Text(
           'This will also delete every transaction linked to this account. '
@@ -805,9 +800,7 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
     // Snapshot this account's transactions BEFORE deleting so undo has
     // something to restore.
     final relatedTransactions = transactionProvider.transactions
-        .where(
-          (t) => t.accountId == account.id || t.toAccountId == account.id,
-        )
+        .where((t) => t.accountId == account.id || t.toAccountId == account.id)
         .toList();
     accountProvider.stageForUndo(account, relatedTransactions);
 
@@ -845,7 +838,9 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
 
       if (parseData.transactions.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No transactions found in that statement')),
+          const SnackBar(
+            content: Text('No transactions found in that statement'),
+          ),
         );
         return;
       }
@@ -868,9 +863,9 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Import failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Import failed: $e')));
     } finally {
       if (mounted) setState(() => _isImporting = false);
     }
@@ -911,13 +906,10 @@ class _ModernAccountDetailScreenState extends State<ModernAccountDetailScreen>
   }
 
   void _addTransaction(TransactionType type) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ModernAddTransactionScreen(
-          accountId: widget.account.id,
-          initialType: type,
-        ),
-      ),
+    ModernAddTransactionScreen.show(
+      context,
+      accountId: widget.account.id,
+      initialType: type,
     );
   }
 }
