@@ -421,4 +421,3 @@ Future<void> showLogSubscriptionPaymentModal(
     ),
   );
 }
-flutter 
