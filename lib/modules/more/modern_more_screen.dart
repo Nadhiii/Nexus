@@ -201,7 +201,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         children: [
@@ -216,7 +216,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
                     ? (v) => bio.setAllBiometricFeatures(v)
                     : null,
                 activeThumbColor: AppColors.primaryBlue,
-                activeTrackColor: AppColors.primaryBlue.withOpacity(0.4),
+                activeTrackColor: AppColors.primaryBlue.withValues(alpha: 0.4),
               ),
             ),
           ),
@@ -252,7 +252,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         children: [
@@ -292,7 +292,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, color: color, size: 20),
@@ -313,7 +313,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
 
   Widget _divider() => Divider(
     height: 1,
-    color: Colors.white.withOpacity(0.05),
+    color: Colors.white.withValues(alpha: 0.05),
     indent: 56,
     endIndent: 16,
   );
@@ -328,7 +328,7 @@ class _ModernMoreScreenState extends State<ModernMoreScreen> {
         },
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          backgroundColor: AppColors.error.withOpacity(0.1),
+          backgroundColor: AppColors.error.withValues(alpha: 0.1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -364,7 +364,7 @@ class _ToolCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Column(
           children: [

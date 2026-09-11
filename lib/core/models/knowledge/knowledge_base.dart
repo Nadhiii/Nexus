@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'merchant_knowledge.dart';
 
 /// Central repository for all Nexus knowledge

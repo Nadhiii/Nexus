@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/models/bike.dart';
@@ -11,7 +10,6 @@ import '../../../core/models/transaction_draft.dart';
 import '../../../core/providers/bike_provider.dart';
 import '../../../core/providers/account_provider.dart';
 import '../../../core/providers/transaction_provider.dart';
-import '../../../core/providers/notification_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -57,7 +55,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
   final _rateController = TextEditingController();
   final _notesController = TextEditingController();
 
-  DateTime _selectedDate = DateTime.now();
+  final DateTime _selectedDate = DateTime.now();
   String _selectedCategory = 'maintenance';
   bool _isLoading = false;
 
@@ -293,10 +291,12 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
                     ),
                   ),
                   validator: (val) {
-                    if (val == null || val.trim().isEmpty)
+                    if (val == null || val.trim().isEmpty) {
                       return "Cost is required";
-                    if (double.tryParse(val.trim()) == null)
+                    }
+                    if (double.tryParse(val.trim()) == null) {
                       return "Enter a valid cost";
+                    }
                     return null;
                   },
                 ),

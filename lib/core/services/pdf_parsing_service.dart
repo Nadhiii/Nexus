@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../models/pdf_statement.dart';
-import '../models/transaction.dart';
 
 class PDFParsingService extends ChangeNotifier {
   // ... (keep existing state variables like _lastParseResult)
@@ -33,13 +32,11 @@ class PDFParsingService extends ChangeNotifier {
         // ... (Keep your existing password retry logic here) ...
         // ... Assuming you find the password and set 'validPassword' ...
 
-        if (validPassword == null) {
-          return PDFParseResult(
-            success: false,
-            errors: ['Password required'],
-            requiresPassword: true,
-          );
-        }
+        return PDFParseResult(
+          success: false,
+          errors: ['Password required'],
+          requiresPassword: true,
+        );
 
         // Decrypt for Gemini
         tempUnlockedFile = await _createUnlockedTempFile(
@@ -86,9 +83,9 @@ class PDFParsingService extends ChangeNotifier {
       return PDFParseResult(success: false, errors: [e.toString()]);
     } finally {
       // Clean up temp file
-      if (tempUnlockedFile != null && tempUnlockedFile!.path != filePath) {
-        if (await tempUnlockedFile!.exists()) {
-          await tempUnlockedFile!.delete();
+      if (tempUnlockedFile != null && tempUnlockedFile.path != filePath) {
+        if (await tempUnlockedFile.exists()) {
+          await tempUnlockedFile.delete();
         }
       }
     }

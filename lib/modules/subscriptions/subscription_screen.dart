@@ -14,6 +14,7 @@ import '../../core/widgets/collapsible_fab.dart';
 import '../../core/widgets/nexus_card.dart';
 import '../../core/utils/logo_utils.dart';
 import 'widgets/add_subscription.dart';
+import 'widgets/log_subscription_payment_modal.dart';
 
 enum SubscriptionFilter { active, history }
 
@@ -62,7 +63,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
         final hasMatchingTxn = recentTransactions.any((t) {
           final desc = (t.description ?? '').toLowerCase();
           final subName = sub.name.toLowerCase();
-          // Match if description contains subscription name or vice versa
           return desc.contains(subName) ||
               subName.contains(desc) ||
               _fuzzyMatch(desc, subName);
@@ -83,7 +83,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
 
   /// Simple fuzzy matching for subscription names
   bool _fuzzyMatch(String a, String b) {
-    // Common abbreviations
     final abbrevMap = {
       'netflix': ['nflx', 'netflix'],
       'spotify': ['spotify', 'spot'],
@@ -125,13 +124,9 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
     } else if (days <= 3) {
       return (text: '${days}d', color: AppColors.pastelOrange, urgent: false);
     } else if (days <= 7) {
-      return (
-        text: '${days}d',
-        color: AppColors.pastelYellow,
-        urgent: false,
-      ); // Amber/Yellow
+      return (text: '${days}d', color: AppColors.pastelYellow, urgent: false);
     }
-    return null; // Don't show badge for > 7 days
+    return null;
   }
 
   @override
@@ -147,7 +142,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
           final allSubs = provider.subscriptions;
           final activeSubs = allSubs.where((s) => s.isActive).toList();
 
-          // Sort Active by Amount (High to Low) for the Bento Grid hierarchy
           activeSubs.sort((a, b) => b.amount.compareTo(a.amount));
 
           final historySubs = allSubs.where((s) => !s.isActive).toList();
@@ -156,7 +150,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
             slivers: [
               _buildAppBar(context, activeSubs.length),
 
-              // Filter Pills
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
@@ -167,20 +160,18 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                 ),
               ),
 
-              // --- BODY CONTENT ---
               if (_filter == SubscriptionFilter.active)
                 ..._buildActiveBentoView(context, provider, activeSubs)
               else
                 _buildHistoryListView(context, provider, historySubs),
 
-              // Bottom Padding for FAB
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           );
         },
       ),
       floatingActionButton: CollapsibleFab(
-        onPressed: () => ModernAddSubscriptionScreen.show(context),
+        onPressed: () => showAddSubscription(context),
         backgroundColor: AppColors.primaryBlue,
         icon: const Icon(Icons.add, color: Colors.white),
         label: 'New Sub',
@@ -203,7 +194,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
     final totalMonthly = provider.totalMonthlyCost;
     final totalYearly = provider.totalYearlyCost;
 
-    // Collect alerts
     final overdueSubs = subs.where((s) => s.isOverdue).toList();
     final dueSoonSubs = subs.where((s) {
       final days = _daysUntilDue(s.nextDueDate);
@@ -228,7 +218,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
     );
 
     return [
-      // 0. TOTAL SUMMARY CARD (At Top) - Dark Theme
       SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
@@ -236,7 +225,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
         ),
       ),
 
-      // 1. ALERTS BANNER (if any)
       if (hasAlerts)
         SliverToBoxAdapter(
           child: Padding(
@@ -245,7 +233,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
           ),
         ),
 
-      // 2. DYNAMIC BENTO ROWS
       SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -470,18 +457,14 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
         : '0';
 
     final bgLogoSize = isLarge ? 140.0 : (isCompact ? 70.0 : 100.0);
-
-    // Due status for badge
     final dueStatus = _getDueStatus(sub);
     final isZombie = _zombieSubIds.contains(sub.id);
 
     return GestureDetector(
-      onTap: () =>
-          ModernAddSubscriptionScreen.show(context, subscriptionToEdit: sub),
+      onTap: () => showAddSubscriptionModal(context, subscriptionToEdit: sub),
+      onLongPress: () => showLogSubscriptionPaymentModal(context, sub),
       child: Container(
-        height: isLarge
-            ? 180
-            : (isWide ? null : null), // Let Expanded handle compact height
+        height: isLarge ? 180 : null,
         constraints: isCompact ? const BoxConstraints(minHeight: 70) : null,
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
@@ -507,7 +490,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
         clipBehavior: Clip.hardEdge,
         child: Stack(
           children: [
-            // Blurred logo background (inside Container so it renders on top of cardSurface)
             if (logoPath != null)
               Positioned.fill(
                 child: ImageFiltered(
@@ -555,13 +537,37 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                         )
                       else
                         const SizedBox.shrink(),
-                      // Right side: percentage or due badge
                       if (!isCompact)
                         Flexible(
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // Due Soon Badge
+                              GestureDetector(
+                                onTap: () => showLogSubscriptionPaymentModal(
+                                  context,
+                                  sub,
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryBlue.withValues(
+                                      alpha: 0.2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: AppColors.primaryBlue.withValues(
+                                        alpha: 0.4,
+                                      ),
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.autorenew,
+                                    size: 13,
+                                    color: AppColors.primaryBlue,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
                               if (dueStatus != null) ...[
                                 Tooltip(
                                   message: dueStatus.text,
@@ -589,7 +595,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                                 ),
                                 const SizedBox(width: 8),
                               ],
-                              // Percentage badge
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10,
@@ -611,7 +616,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                           ),
                         )
                       else if (dueStatus != null)
-                        // Compact due badge
                         Flexible(
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -697,7 +701,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                          // Zombie warning text for large tiles
                           if (isZombie && isLarge)
                             Padding(
                               padding: const EdgeInsets.only(top: 4),
@@ -718,7 +721,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
                 ],
               ),
             ),
-            // Pulsing indicator for urgent due
             if (dueStatus?.urgent == true)
               Positioned(
                 top: 8,
@@ -832,7 +834,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             children: [
               Icon(
@@ -864,7 +865,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Alert Items
           if (overdue.isNotEmpty)
             _buildAlertItem(
               icon: Icons.error_outline,
@@ -961,7 +961,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
               Text(
                 "₹${monthly.toStringAsFixed(0)}",
                 style: AppTypography.currencyLarge.copyWith(
-                  color: AppColors.textPrimary, // White text
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
@@ -986,7 +986,7 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
               Text(
                 "₹${yearly.toStringAsFixed(0)}",
                 style: AppTypography.headlineSmall.copyWith(
-                  color: AppColors.pastelTeal, // Subtle pop of color
+                  color: AppColors.pastelTeal,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1086,7 +1086,6 @@ class _ModernSubscriptionScreenState extends State<ModernSubscriptionScreen> {
   }
 }
 
-// Helper Extension
 extension ListExtension<T> on List<T> {
   T? elementAtOrNull(int index) {
     return index < length ? this[index] : null;

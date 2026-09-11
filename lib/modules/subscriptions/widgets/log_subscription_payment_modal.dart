@@ -79,7 +79,9 @@ class _LogSubscriptionPaymentModalState
                 decoration: BoxDecoration(
                   color: AppColors.backgroundBlack,
                   borderRadius: BorderRadius.circular(32),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.accentOrange.withValues(alpha: 0.2),
@@ -149,7 +151,6 @@ class _LogSubscriptionPaymentModalState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. Amount
         Text("RENEWAL COST", style: _labelStyle()),
         const SizedBox(height: 8),
         Container(
@@ -182,7 +183,6 @@ class _LogSubscriptionPaymentModalState
 
         const SizedBox(height: 20),
 
-        // 2. Account Selector
         Text("PAID VIA", style: _labelStyle()),
         const SizedBox(height: 8),
         Consumer<AccountProvider>(
@@ -255,7 +255,6 @@ class _LogSubscriptionPaymentModalState
 
         const SizedBox(height: 20),
 
-        // 3. New Due Date Preview
         Text("NEXT CYCLE STARTS", style: _labelStyle()),
         const SizedBox(height: 8),
         Container(
@@ -263,7 +262,9 @@ class _LogSubscriptionPaymentModalState
           decoration: BoxDecoration(
             color: AppColors.accentOrange.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.accentOrange.withValues(alpha: 0.3)),
+            border: Border.all(
+              color: AppColors.accentOrange.withValues(alpha: 0.3),
+            ),
           ),
           child: Row(
             children: [
@@ -359,9 +360,10 @@ class _LogSubscriptionPaymentModalState
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) { throw Exception("User not logged in"); }
+      if (user == null) {
+        throw Exception("User not logged in");
+      }
 
-      // 1. Create Transaction (Updates Account Balance)
       final transaction = Transaction(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         userId: user.uid,
@@ -383,12 +385,13 @@ class _LogSubscriptionPaymentModalState
       final txnProvider = context.read<TransactionProvider>();
       final subProvider = context.read<SubscriptionProvider>();
 
-      // 2. Update Subscription Next Due Date
       final updatedSub = widget.subscription.copyWith(
         nextDueDate: widget.subscription.calculateNextDueDate(),
       );
 
-      await txnProvider.commitDraft(TransactionDraft.fromTransaction(transaction));
+      await txnProvider.commitDraft(
+        TransactionDraft.fromTransaction(transaction),
+      );
       await subProvider.updateSubscription(updatedSub);
 
       if (mounted) {
@@ -396,9 +399,13 @@ class _LogSubscriptionPaymentModalState
         showTopSnackBar(context, "Subscription renewed!");
       }
     } catch (e) {
-      if (mounted) { showTopSnackBar(context, "Error: $e", isError: true); }
+      if (mounted) {
+        showTopSnackBar(context, "Error: $e", isError: true);
+      }
     } finally {
-      if (mounted) { setState(() => _isLoading = false); }
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 }
@@ -410,8 +417,8 @@ Future<void> showLogSubscriptionPaymentModal(
   return Navigator.of(context).push(
     PageRouteBuilder(
       opaque: false,
-      pageBuilder: (_, _, _) =>
-          LogSubscriptionPaymentModal(subscription: sub),
+      pageBuilder: (_, _, _) => LogSubscriptionPaymentModal(subscription: sub),
     ),
   );
 }
+flutter 

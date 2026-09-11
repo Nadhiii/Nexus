@@ -753,7 +753,7 @@ class _DashboardAppBar extends StatelessWidget {
                         child: ListView.separated(
                           shrinkWrap: true,
                           itemCount: widgets.length,
-                          separatorBuilder: (_, __) => Divider(
+                          separatorBuilder: (_, _) => Divider(
                             height: 1,
                             color: Colors.white.withValues(alpha: 0.05),
                           ),
@@ -761,7 +761,7 @@ class _DashboardAppBar extends StatelessWidget {
                             final item = widgets[index];
                             return SwitchListTile(
                               contentPadding: EdgeInsets.zero,
-                              activeColor: AppColors.primaryBlue,
+                              activeThumbColor: AppColors.primaryBlue,
                               secondary: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(

@@ -56,8 +56,9 @@ class TransactionUnderstanding {
     if (duplicateTransactionIds.isNotEmpty || knowledgeConflict) return false;
     if (confidenceFor('entity') < 0.90 ||
         confidenceFor('purpose') < 0.90 ||
-        confidenceFor('account') < 0.90)
+        confidenceFor('account') < 0.90) {
       return false;
+    }
     if (isTransfer && confidenceFor('destination') < 0.90) return false;
     return true;
   }

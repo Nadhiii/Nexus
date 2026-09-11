@@ -380,8 +380,9 @@ class _ModernAddAccountScreenState extends State<ModernAddAccountScreen> {
         ),
       ),
       validator: (val) {
-        if (val == null || val.trim().isEmpty)
+        if (val == null || val.trim().isEmpty) {
           return "Initial balance required";
+        }
         if (double.tryParse(val.trim()) == null) return "Enter a valid number";
         return null;
       },

@@ -300,7 +300,7 @@ class TransactionBrainService {
 
       _knowledgeBase = _knowledgeBase.copyWith(
         merchants: Map<String, MerchantKnowledge>.from(_knowledgeBase.merchants)
-          ..[merchantId] = knowledge!,
+          ..[merchantId] = knowledge,
       );
 
       _knowledgeEventController.add(
@@ -346,7 +346,7 @@ class TransactionBrainService {
 
       _knowledgeBase = _knowledgeBase.copyWith(
         merchants: Map<String, MerchantKnowledge>.from(_knowledgeBase.merchants)
-          ..[merchantId] = knowledge!,
+          ..[merchantId] = knowledge,
       );
 
       debugPrint(

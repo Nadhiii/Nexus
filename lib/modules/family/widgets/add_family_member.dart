@@ -408,7 +408,7 @@ class _ModernAddFamilyMemberScreenState
                       return ListView.separated(
                         physics: const BouncingScrollPhysics(),
                         itemCount: users.length,
-                        separatorBuilder: (_, __) =>
+                        separatorBuilder: (_, _) =>
                             const SizedBox(height: AppSpacing.sm),
                         itemBuilder: (context, index) {
                           final user = users[index];

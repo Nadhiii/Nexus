@@ -18,10 +18,6 @@ class GoogleDriveService {
   Future<drive.DriveApi?> _getDriveApi() async {
     try {
       final account = await _googleSignIn.authenticate();
-      if (account == null) {
-        print('❌ Google Sign-In failed');
-        return null;
-      }
 
       final authorization = await account.authorizationClient.authorizeScopes(
         <String>['https://www.googleapis.com/auth/drive.file'],
@@ -29,10 +25,6 @@ class GoogleDriveService {
       final auth = authorization.authClient(
         scopes: <String>['https://www.googleapis.com/auth/drive.file'],
       );
-      if (auth == null) {
-        print('❌ Failed to get authenticated client');
-        return null;
-      }
 
       return drive.DriveApi(auth);
     } catch (e) {

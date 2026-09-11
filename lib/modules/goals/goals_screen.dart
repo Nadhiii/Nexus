@@ -58,8 +58,9 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
         if (mounted) showTopSnackBar(context, 'Goal added successfully');
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         showTopSnackBar(context, 'Error adding goal: $e', isError: true);
+      }
     }
   }
 
@@ -72,8 +73,9 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
       await goals.doc(goal.id).update(goal.toMap());
       if (mounted) showTopSnackBar(context, 'Goal updated successfully');
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         showTopSnackBar(context, 'Error updating goal: $e', isError: true);
+      }
     }
   }
 
@@ -86,8 +88,9 @@ class _ModernGoalsScreenState extends State<ModernGoalsScreen> {
       await goals.doc(goal.id).delete();
       if (mounted) showTopSnackBar(context, 'Goal deleted successfully');
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         showTopSnackBar(context, 'Error deleting goal: $e', isError: true);
+      }
     }
   }
 

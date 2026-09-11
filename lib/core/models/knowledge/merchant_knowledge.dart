@@ -100,8 +100,8 @@ class MerchantKnowledge {
       : (typicalAmount != null &&
             (amount - typicalAmount!).abs() > typicalAmount! * .5);
   String getExplanation() => inferredCategory == null
-      ? 'Learned from ${transactionCount} observed transaction(s).'
-      : 'Categorized as $inferredCategory from ${transactionCount} observed transaction(s).';
+      ? 'Learned from $transactionCount observed transaction(s).'
+      : 'Categorized as $inferredCategory from $transactionCount observed transaction(s).';
 
   /// Is this a recognized/recurring merchant?
   bool get isRecognized => transactionCount >= 3 || defaultCategoryId != null;

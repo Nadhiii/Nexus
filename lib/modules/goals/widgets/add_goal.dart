@@ -411,8 +411,9 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
                         );
                       },
                     );
-                    if (picked != null)
+                    if (picked != null) {
                       setState(() => _selectedDeadline = picked);
+                    }
                   },
                   child: Container(
                     height: 52,
@@ -456,7 +457,7 @@ class _ModernAddGoalScreenState extends State<ModernAddGoalScreen> {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: _colorOptions.length,
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (_, _) =>
                         const SizedBox(width: AppSpacing.md),
                     itemBuilder: (context, index) {
                       final color = _colorOptions[index];

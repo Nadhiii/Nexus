@@ -466,7 +466,7 @@ class _KnowledgeScreenState extends State<KnowledgeScreen> {
           ), //[cite: 11]
           sliver: SliverList.separated(
             itemCount: merchants.length,
-            separatorBuilder: (_, __) =>
+            separatorBuilder: (_, _) =>
                 const SizedBox(height: AppSpacing.md), //[cite: 11]
             itemBuilder: (context, index) {
               final merchant = merchants[index];

@@ -238,10 +238,12 @@ class _ModernAddDebtScreenState extends State<ModernAddDebtScreen> {
                     ),
                   ),
                   validator: (val) {
-                    if (val == null || val.trim().isEmpty)
+                    if (val == null || val.trim().isEmpty) {
                       return "Balance is required";
-                    if (double.tryParse(val.trim()) == null)
+                    }
+                    if (double.tryParse(val.trim()) == null) {
                       return "Enter a valid amount";
+                    }
                     return null;
                   },
                 ),

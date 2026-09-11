@@ -15,7 +15,6 @@ import '../../core/providers/category_provider.dart';
 import '../../core/models/detected_transaction.dart';
 import '../../core/providers/nbox_provider.dart';
 import '../../core/providers/knowledge_provider.dart';
-import '../../core/models/knowledge_entry.dart';
 import '../../core/widgets/top_snackbar.dart';
 import '../../core/services/transaction_intelligence_service.dart';
 import '../../core/utils/logo_utils.dart';
@@ -464,10 +463,12 @@ class _ModernAddTransactionScreenState
                     ),
                   ),
                   validator: (val) {
-                    if (val == null || val.trim().isEmpty)
+                    if (val == null || val.trim().isEmpty) {
                       return "Amount is required";
-                    if (double.tryParse(val.trim()) == null)
+                    }
+                    if (double.tryParse(val.trim()) == null) {
                       return "Enter a valid amount";
+                    }
                     return null;
                   },
                 ),

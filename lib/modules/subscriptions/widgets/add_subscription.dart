@@ -335,8 +335,9 @@ class _ModernAddSubscriptionScreenState
                                   const Duration(days: 365 * 5),
                                 ),
                               );
-                              if (picked != null)
+                              if (picked != null) {
                                 setState(() => _nextDueDate = picked);
+                              }
                             },
                             child: Container(
                               height: 52,
