@@ -1,16 +1,16 @@
 # Graph Report - Nexus  (2026-09-12)
 
 ## Corpus Check
-- 377 files · ~323,206 words
+- 378 files · ~323,458 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 7682 nodes · 10542 edges · 350 communities (321 shown, 29 thin omitted)
+- 7686 nodes · 10549 edges · 362 communities (334 shown, 28 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 49 edges (avg confidence: 0.6)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `26c985c6`
+- Built from commit: `e9b126dd`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -22,10 +22,10 @@
 - nbox_screen.dart
 - payday_screen.dart
 - WidgetMethodChannelHandler
-- StatefulWidget
+- add_budget_screen.dart
 - add_entry_dialog.dart
 - bike_provider.dart
-- VoidCallback
+- total_balance_card.dart
 - app_constants.dart
 - notification_service.dart
 - smart_approval_sheet.dart
@@ -35,14 +35,14 @@
 - sms_parser.dart
 - subscription_provider.dart
 - widget_sync_service.dart
-- add_subscription.dart
+- add_goal.dart
 - add_transaction_screen.dart
 - app_spacing.dart
 - app_router.dart
 - add_bike.dart
 - vehicle_rc_card.dart
 - dashboard_preferences_provider.dart
-- package:firebase_auth/firebase_auth.dart
+- package:cloud_firestore/cloud_firestore.dart
 - knowledge_provider.dart
 - Tailwind CSS Utility Reference
 - debt.dart
@@ -51,7 +51,7 @@
 - wallet_screen.dart
 - budget_provider.dart
 - slide_search_core.py
-- nbox_sync_screen.dart
+- main.dart
 - quick_pay_emi_sheet.dart
 - app_animations.dart
 - Nexus Master Plan
@@ -74,7 +74,7 @@
 - bool get
 - scripts
 - bike.dart
-- package:provider/provider.dart
+- subscription_screen.dart
 - account_provider.dart
 - backup_service.dart
 - budget_service.dart
@@ -118,10 +118,10 @@
 - detected_transaction.dart
 - investment.dart
 - family_debt_provider.dart
-- add_debt_screen.dart
+- add_debt_modal.dart
 - expense_splitter_screen.dart
 - package:flutter/material.dart
-- insights_screen.dart
+- package:provider/provider.dart
 - nexus_card.dart
 - Asset Approval Checklist
 - Logo AI Prompt Engineering
@@ -135,7 +135,7 @@
 - BM25
 - States and Variants
 - UI Styling Skill
-- log_subscription_payment_modal.dart
+- statement_import_review_screen.dart
 - Nexus – GitHub Copilot Instructions
 - biometric_provider.dart
 - transaction_relationship_provider.dart
@@ -144,7 +144,7 @@
 - firestore_repository.dart
 - Workflow
 - backup_settings_screen.dart
-- String? get
+- List
 - notification.dart
 - gmail_parser.dart
 - investment_screen.dart
@@ -156,7 +156,7 @@
 - main_screen.dart
 - fuel_price_provider.dart
 - bike_service.dart
-- payday_checklist_service.dart
+- auth_gate.dart
 - collapsible_fab.dart
 - account_detail_screen.dart
 - DateTime
@@ -190,15 +190,15 @@
 - rto_service.dart
 - secure_card_service.dart
 - win32_window.cpp
-- FlutterWindow
+- MessageHandler
 - TestShadcnInstaller
 - transaction_brain_service.dart
 - pay_debt_modal.dart
 - knowledge_base.dart
 - idfc_statement_parser.dart
 - home_screen_widget_service.dart
-- MaterialPageRoute
-- garage_dashboard_widget.dart
+- firestore_service.dart
+- add_debt_screen.dart
 - add_family_member.dart
 - Design Principles
 - Design Principles
@@ -221,7 +221,7 @@
 - index.ts
 - transaction_relationship.dart
 - nexus_button.dart
-- package:flutter/foundation.dart
+- package:firebase_auth/firebase_auth.dart
 - Banner Design - Multi-Format Creative Banner System
 - Messaging Framework
 - Brand Voice Framework
@@ -233,18 +233,18 @@
 - radius
 - Layout Patterns
 - ShadcnInstaller
-- about_screen.dart
-- sbi_statement_parser.dart
-- .application
-- package:cloud_firestore/cloud_firestore.dart
+- ../core/theme/app_typography.dart
+- slice_statement_parser.dart
+- ios/RunnerTests/RunnerTests.swift
+- ../models/transaction.dart
 - widgets.dart
-- DetectedTransaction
+- package:flutter/foundation.dart
 - update.md
 - Logo Design Reference
 - Token Architecture
 - design-tokens-starter.json
 - ai_config.dart
-- knowledge_learning_service.dart
+- notifications_screen.dart
 - detect_domain
 - CodeRabbit Code Review
 - BalanceWidgetProvider
@@ -295,18 +295,18 @@
 - Slides
 - Pre-Delivery Checklist
 - transaction_draft.dart
-- AppDelegate
+- .application
 - Nexus — Integration Status
 - google_drive_service.dart
 - Brand Guidelines Template
-- budgets_screen.dart
-- List
+- add_account_screen.dart
+- statement_reconciliation_service.dart
 - radius
 - spring_tap.dart
 - Common Rules for Professional UI
 - Example Workflow
 - Nexus Remediation Log
-- recurring_detector_widget.dart
+- upcoming_week_widget.dart
 - xl
 - lg
 - validate_data.py
@@ -317,17 +317,17 @@
 - padding-y
 - none
 - 16
-- 1
-- transaction_automation_service.dart
+- String? get
+- edit_entry_dialog.dart
 - CodeRabbit Code Review
-- NewNboxProvider
+- add_subscription.dart
 - dart:async
 - 3
 - 8
 - .__init__
 - copilot-instructions.md
 - fix_issues.sh
-- ModernGoalsScreen
+- VoidCallback
 - AGENTS.md
 - slides-create.md
 - create.md
@@ -353,12 +353,24 @@
 - transaction_understanding_test.dart
 - destructive
 - destructive-foreground
-- ../models/detected_transaction.dart
+- log_subscription_payment_modal.dart
 - muted
 - primary-foreground
 - ring
 - secondary-foreground
-- ExpenseSplitterScreen
+- debts_screen.dart
+- Widget
+- top_notification.dart
+- manage_categories_screen.dart
+- gmail_sync_settings.dart
+- StatefulWidget
+- apple_floating_action_button.dart
+- sbi_statement_parser.dart
+- ../../core/utils/logo_utils.dart
+- package:flutter/services.dart
+- package:intl/intl.dart
+- 0
+- GoRouterNavigation
 
 ## God Nodes (most connected - your core abstractions)
 1. `TransactionProvider` - 64 edges
@@ -387,19 +399,19 @@
 ## Import Cycles
 - None detected.
 
-## Communities (350 total, 29 thin omitted)
+## Communities (362 total, 28 thin omitted)
 
 ### Community 0 - "../core/theme/app_spacing.dart"
 Cohesion: 0.05
-Nodes (46): ../../core/models/bike.dart, ../../core/providers/bike_provider.dart, ../core/theme/app_spacing.dart, ../../../core/utils/bike_image_utils.dart, build, _buildListTile, createState, GarageManagementScreen (+38 more)
+Nodes (40): ../../core/models/bike.dart, ../../core/providers/bike_provider.dart, ../core/theme/app_spacing.dart, ../../../core/utils/bike_image_utils.dart, build, _buildListTile, createState, GarageManagementScreen (+32 more)
 
 ### Community 1 - "app_colors.dart"
 Cohesion: 0.01
 Nodes (133): accentIndigo, accentOrange, accentPink, accentPurple, accentTeal, accentViolet, accentVioletLight, accentYellow (+125 more)
 
 ### Community 2 - "State"
-Cohesion: 0.06
-Nodes (90): biometric_auth_wrapper.dart, ChangeNotifier, AuthenticatedApp, _AuthenticatedAppState, AuthGate, _AuthGateState, _biometricInitializationComplete, build (+82 more)
+Cohesion: 0.08
+Nodes (74): ChangeNotifier, _AuthenticatedAppState, _AuthGateState, _clearAllProviders, _initializeCriticalProviders, _initializeDeferredProviders, AccountProvider, BikeProvider (+66 more)
 
 ### Community 3 - "nbox_provider.dart"
 Cohesion: 0.03
@@ -407,39 +419,39 @@ Nodes (78): category_provider.dart, dart:isolate, gmail_provider.dart, knowledge
 
 ### Community 4 - "nbox_screen.dart"
 Cohesion: 0.03
-Nodes (63): ../../core/widgets/top_notification.dart, _animating, _attemptQueuedApproval, _buildActionButton, _buildAnalysisChip, _buildConfidenceBadge, _buildDateHeader, _buildEmptyState (+55 more)
+Nodes (74): ../../core/widgets/top_notification.dart, NewNboxProvider, _animating, _attemptQueuedApproval, build, _buildActionButton, _buildAnalysisChip, _buildAutoRecordedSection (+66 more)
 
 ### Community 5 - "payday_screen.dart"
-Cohesion: 0.03
-Nodes (70): core/auth/auth_gate.dart, ../../core/models/payday_checklist.dart, ../../core/providers/account_provider.dart, ../../core/providers/debt_provider.dart, ../../core/providers/family_debt_provider.dart, ../../core/providers/goal_provider.dart, ../../core/providers/knowledge_provider.dart, ../../core/providers/subscription_provider.dart (+62 more)
+Cohesion: 0.04
+Nodes (51): ../../core/models/payday_checklist.dart, ../../core/providers/account_provider.dart, ../../core/providers/debt_provider.dart, ../../core/providers/family_debt_provider.dart, ../../core/providers/goal_provider.dart, ../../core/providers/subscription_provider.dart, ../../core/services/payday_checklist_service.dart, build (+43 more)
 
 ### Community 6 - "WidgetMethodChannelHandler"
-Cohesion: 0.06
-Nodes (25): AndroidAutoMethodChannelHandler, DisplayMode, DASHBOARD, GARAGE, GarageDisplayData, FlutterEngine, MethodChannel, NexusAndroidAutoScreen (+17 more)
+Cohesion: 0.05
+Nodes (32): AndroidAutoMethodChannelHandler, DisplayMode, DASHBOARD, GARAGE, GarageDisplayData, FlutterEngine, MethodChannel, NexusAndroidAutoScreen (+24 more)
 
-### Community 7 - "StatefulWidget"
+### Community 7 - "add_budget_screen.dart"
 Cohesion: 0.04
-Nodes (46): AddEntryDialog, _allocatedAmountController, budget, build, _buildCommitmentDetail, _buildCommitmentsWidget, _buildLabel, _categories (+38 more)
+Nodes (54): ../../core/providers/budget_provider.dart, BudgetProvider, _budgetPriorityScore, build, _buildBentoBudgetGrid, _buildBentoTile, _buildEmptyState, _buildMiniStat (+46 more)
 
 ### Community 8 - "add_entry_dialog.dart"
-Cohesion: 0.04
-Nodes (55): app_animations.dart, app_colors.dart, app_spacing.dart, app_typography.dart, ../../../core/models/account.dart, AppTheme, theme, accountToEdit (+47 more)
+Cohesion: 0.08
+Nodes (25): AddEntryDialog, bike, build, _buildField, _buildLabel, _buildModeButton, _costController, createState (+17 more)
 
 ### Community 9 - "bike_provider.dart"
 Cohesion: 0.03
 Nodes (61): FirebaseAuth get, addBike, addBikeEntry, addTrip, _auth, _bikes, _bikeService, _bikesSubscription (+53 more)
 
-### Community 10 - "VoidCallback"
-Cohesion: 0.05
-Nodes (48): IconData, build, DashboardCard, icon, onTap, subtitle, title, trend (+40 more)
+### Community 10 - "total_balance_card.dart"
+Cohesion: 0.07
+Nodes (29): IconData, build, DashboardCard, icon, onTap, subtitle, title, trend (+21 more)
 
 ### Community 11 - "app_constants.dart"
 Cohesion: 0.03
 Nodes (57): accentGreen, accountSubTypeBank, accountSubTypeCash, accountSubTypeCreditCard, accountSubTypeInvestment, accountSubTypeLoan, accountTypeAsset, accountTypeLiability (+49 more)
 
 ### Community 12 - "notification_service.dart"
-Cohesion: 0.04
-Nodes (55): dart:developer, FirebaseMessaging, _approvalRequestController, approvalRequestStream, channelDescription, channelId, channelName, checkUpcomingPayments (+47 more)
+Cohesion: 0.03
+Nodes (58): @pragma, dart:developer, FirebaseMessaging, nboxBackgroundSmsHandler, _approvalRequestController, approvalRequestStream, channelDescription, channelId (+50 more)
 
 ### Community 13 - "smart_approval_sheet.dart"
 Cohesion: 0.04
@@ -450,8 +462,8 @@ Cohesion: 0.05
 Nodes (53): $type, $value, $type, $value, $type, $value, $type, $value (+45 more)
 
 ### Community 15 - "dashboard_screen.dart"
-Cohesion: 0.04
-Nodes (65): AutomaticKeepAliveClientMixin, ../../../core/models/budget.dart, ../../core/providers/dashboard_preferences_provider.dart, ../../core/widgets/animated_list_item.dart, DashboardPreferencesProvider, _ActionBar, _BentoBudgetsCard, _BentoCardContainer (+57 more)
+Cohesion: 0.03
+Nodes (90): AutomaticKeepAliveClientMixin, ../bike/ui/bike_screen.dart, ../budgets/budgets_screen.dart, ../../../core/models/budget.dart, ../../core/providers/dashboard_preferences_provider.dart, ../../core/widgets/animated_list_item.dart, ../../core/widgets/total_balance_card.dart, ../debts/screens/liabilities_screen.dart (+82 more)
 
 ### Community 16 - "expense_trend_service.dart"
 Cohesion: 0.04
@@ -463,15 +475,15 @@ Nodes (48): accountNumber, _accountPattern, amount, amountPattern, balance, _bal
 
 ### Community 18 - "subscription_provider.dart"
 Cohesion: 0.04
-Nodes (47): activeSubscriptionCount, addSubscription, _checkSubscriptionReminders, clear, clearAllData, deleteSubscription, dispose, _dueToday (+39 more)
+Nodes (48): Future, activeSubscriptionCount, addSubscription, _checkSubscriptionReminders, clear, clearAllData, deleteSubscription, dispose (+40 more)
 
 ### Community 19 - "widget_sync_service.dart"
 Cohesion: 0.10
 Nodes (20): home_screen_widget_service.dart, _accountProvider, _debouncedSync, _debounceTimer, _debtProvider, dispose, initialize, _instance (+12 more)
 
-### Community 20 - "add_subscription.dart"
-Cohesion: 0.04
-Nodes (50): ../../../core/models/subscription.dart, ../core/widgets/top_snackbar.dart, FormState, build, _buildLabel, _categories, _colorOptions, _createGoal (+42 more)
+### Community 20 - "add_goal.dart"
+Cohesion: 0.07
+Nodes (28): Color, ../../../core/models/goal.dart, AppColorsExtension, Goal, build, goal, GoalTrackerWidget, build (+20 more)
 
 ### Community 21 - "add_transaction_screen.dart"
 Cohesion: 0.07
@@ -482,8 +494,8 @@ Cohesion: 0.04
 Nodes (46): appBarExpandedHeight, appBarTitlePadding, AppSpacing, borderRadiusFull, borderRadiusLg, borderRadiusMd, borderRadiusSm, borderRadiusXl (+38 more)
 
 ### Community 23 - "app_router.dart"
-Cohesion: 0.04
-Nodes (45): BuildContext, AppRouter, AppRoutes, bike, budgets, build, dashboard, debts (+37 more)
+Cohesion: 0.05
+Nodes (43): AppRouter, AppRoutes, bike, budgets, build, dashboard, debts, _ErrorScreen (+35 more)
 
 ### Community 24 - "add_bike.dart"
 Cohesion: 0.08
@@ -497,13 +509,13 @@ Nodes (20): add_bike.dart, dart:math, Bike, _animation, bike, build, _buildBack,
 Cohesion: 0.05
 Nodes (42): DashboardPreferences get, copyWith, DashboardPreferences, DashboardWidget, DashboardWidgetSize, DashboardWidgetType, fromMap, getDefault (+34 more)
 
-### Community 27 - "package:firebase_auth/firebase_auth.dart"
-Cohesion: 0.05
-Nodes (36): FirebaseAuth, addCategory, _auth, _categories, _categorySubscription, clear, deleteCategory, dispose (+28 more)
+### Community 27 - "package:cloud_firestore/cloud_firestore.dart"
+Cohesion: 0.06
+Nodes (34): FirebaseAuth, FirebaseFirestore, CascadeService, deleteAccountAndTransactions, _firestore, addInvestment, deleteInvestment, _firestore (+26 more)
 
 ### Community 28 - "knowledge_provider.dart"
-Cohesion: 0.07
-Nodes (28): autoApprovalEligible, clear, deleteMerchantKnowledge, dispose, _entries, _error, _firestore, forget (+20 more)
+Cohesion: 0.05
+Nodes (37): knowledge_service.dart, autoApprovalEligible, clear, deleteMerchantKnowledge, dispose, _entries, _error, _firestore (+29 more)
 
 ### Community 29 - "Tailwind CSS Utility Reference"
 Cohesion: 0.05
@@ -514,16 +526,16 @@ Cohesion: 0.05
 Nodes (44): accountNumber, copyWith, createdAt, currentBalance, customTypeName, DebtType, DebtTypeExtension, dueDate (+36 more)
 
 ### Community 31 - "top_snackbar.dart"
-Cohesion: 0.05
-Nodes (42): build, _controller, createState, dispose, initState, isError, message, _offsetAnimation (+34 more)
+Cohesion: 0.08
+Nodes (25): action, backgroundColor, build, _controller, createState, dispose, duration, _fadeAnimation (+17 more)
 
 ### Community 32 - "add_loan_sheet.dart"
 Cohesion: 0.07
-Nodes (28): AddLoanModal, _AddLoanModalState, AddLoanSheet, _amountController, _balanceController, build, _buildDirectionTab, _buildField (+20 more)
+Nodes (28): AddLoanModal, AddLoanSheet, _amountController, _balanceController, build, _buildDirectionTab, _buildField, _buildLabel (+20 more)
 
 ### Community 33 - "wallet_screen.dart"
 Cohesion: 0.04
-Nodes (47): ../accounts/account_detail_screen.dart, ../accounts/add_account_screen.dart, ../../core/widgets/total_balance_card.dart, _animation, _applyInitialTab, _BalanceStatus, build, _buildAccountsList (+39 more)
+Nodes (46): ../accounts/account_detail_screen.dart, ../accounts/add_account_screen.dart, _animation, _applyInitialTab, _BalanceStatus, build, _buildAccountsList, _buildBack (+38 more)
 
 ### Community 34 - "budget_provider.dart"
 Cohesion: 0.05
@@ -533,9 +545,9 @@ Nodes (42): activeBudgets, _analytics, averageProgress, budgetCount, _budgets, _
 Cohesion: 0.09
 Nodes (36): format_context(), format_result(), main(), Format a single search result for display, Format contextual recommendations for display., BM25, calculate_pattern_break(), detect_domain() (+28 more)
 
-### Community 36 - "nbox_sync_screen.dart"
-Cohesion: 0.10
-Nodes (23): ../../core/models/gmail_sync_settings.dart, ../../core/providers/gmail_provider.dart, ../core/providers/nbox_provider.dart, GmailProvider, build, NexusApp, build, _buildAutoApprovalSection (+15 more)
+### Community 36 - "main.dart"
+Cohesion: 0.06
+Nodes (41): core/auth/auth_gate.dart, ../../core/models/gmail_sync_settings.dart, ../../core/providers/gmail_provider.dart, ../../core/providers/knowledge_provider.dart, ../core/providers/nbox_provider.dart, core/providers/theme_provider.dart, core/providers/transaction_relationship_provider.dart, ../../core/providers/user_provider.dart (+33 more)
 
 ### Community 37 - "quick_pay_emi_sheet.dart"
 Cohesion: 0.12
@@ -558,16 +570,16 @@ Cohesion: 0.09
 Nodes (23): activeColor, activeThumbColor, _animateToTarget, build, _controller, createState, didUpdateWidget, dispose (+15 more)
 
 ### Community 42 - "goal.dart"
-Cohesion: 0.05
-Nodes (37): Duration get, autoApproveHighConfidence, autoApproveLowValue, autoSyncEnabled, copyWith, daysToScan, displayName, excludedSenders (+29 more)
+Cohesion: 0.09
+Nodes (22): color, copyWith, createdAt, currentAmount, description, fromFirestore, fromJson, fromMap (+14 more)
 
 ### Community 43 - "transaction_match_service.dart"
-Cohesion: 0.06
-Nodes (33): actualAmount, amount, amountDifference, analyzeTransaction, bestMatch, _calculateMatchScore, _calculatePatternConfidence, _capitalize (+25 more)
+Cohesion: 0.04
+Nodes (47): CollectionReference, addDebt, addRepayment, clearAllDebts, _debtsCollection, DebtService, deleteDebt, getDebtTypeDisplayName (+39 more)
 
 ### Community 44 - "more_screen.dart"
 Cohesion: 0.04
-Nodes (53): about_screen.dart, ../backup/backup_settings_screen.dart, ../bike/ui/bike_screen.dart, ../core/services/auth_service.dart, ../../core/widgets/spring_tap.dart, ../family/screens/expense_splitter_screen.dart, ../family/screens/family_dashboard_screen.dart, ../gmail/nbox_sync_screen.dart (+45 more)
+Nodes (59): about_screen.dart, ../backup/backup_settings_screen.dart, ../../core/widgets/spring_tap.dart, ../family/screens/expense_splitter_screen.dart, ../family/screens/family_dashboard_screen.dart, ../gmail/nbox_sync_screen.dart, ../knowledge/knowledge_screen.dart, _importStatement (+51 more)
 
 ### Community 45 - "gmail_provider.dart"
 Cohesion: 0.06
@@ -625,13 +637,13 @@ Nodes (34): eslint, eslint-config-google, eslint-plugin-import, firebase-admin, 
 Cohesion: 0.06
 Nodes (34): bikeName, category, chassisNumber, copyWith, createdAt, currentOdometer, date, displayOrder (+26 more)
 
-### Community 59 - "package:provider/provider.dart"
-Cohesion: 0.03
-Nodes (67): ../../../../core/models/category.dart, ../../core/providers/category_provider.dart, ../core/theme/app_colors.dart, ../../core/widgets/collapsible_fab.dart, BiometricAuthWrapper, build, child, _activeFilter (+59 more)
+### Community 59 - "subscription_screen.dart"
+Cohesion: 0.07
+Nodes (27): build, _buildActiveBentoView, _buildAlertItem, _buildAlertsBanner, _buildAppBar, _buildBentoTile, _buildDynamicSubscriptionRows, _buildEmptyState (+19 more)
 
 ### Community 60 - "account_provider.dart"
-Cohesion: 0.04
-Nodes (48): Future, _accounts, _accountService, _accountSubscription, addAccount, _auth, _cascadeService, clear (+40 more)
+Cohesion: 0.06
+Nodes (33): _accounts, _accountService, _accountSubscription, addAccount, _auth, _cascadeService, clear, clearAllData (+25 more)
 
 ### Community 61 - "backup_service.dart"
 Cohesion: 0.06
@@ -654,24 +666,24 @@ Cohesion: 0.06
 Nodes (32): 1. Mobile-First Design, 2. Consistent Breakpoint Usage, 3. Test at Breakpoint Boundaries, 4. Use Container for Content Width, 5. Progressive Enhancement, 6. Avoid Too Many Breakpoints, Best Practices, Breakpoint System (+24 more)
 
 ### Community 66 - "transaction_intelligence_service.dart"
-Cohesion: 0.10
-Nodes (19): _amountAnomaly, analyze, _containsAny, _contextMatches, _entityConfidence, _findTransferPeer, frequency, _historicalMatches (+11 more)
+Cohesion: 0.05
+Nodes (37): analyze, _findTransferPeer, _intelligence, resolveAccount, resolveDestinationAccount, TransactionAutomationService, tryAutoRecord, _amountAnomaly (+29 more)
 
 ### Community 67 - "app_typography.dart"
 Cohesion: 0.06
 Nodes (32): AppTypography, body, bodyFont, bodyLarge, bodyMedium, bodySmall, caption, controlLabel (+24 more)
 
 ### Community 68 - "bike_entry_ui.dart"
-Cohesion: 0.04
-Nodes (56): ../../core/models/notification.dart, ../../core/providers/notification_provider.dart, ../core/theme/app_typography.dart, NotificationProvider, bike, build, _buildExpenseLinkingSection, _buildModeBtn (+48 more)
+Cohesion: 0.06
+Nodes (32): bike, build, _buildExpenseLinkingSection, _buildModeBtn, _buildStandardField, _calculatedOdo, _calculatedTrip, _calculateExactMileage (+24 more)
 
 ### Community 69 - "design_system.py"
 Cohesion: 0.09
 Nodes (28): ansi_ljust(), _detect_page_type(), format_ascii_box(), format_markdown(), format_master_md(), format_page_override_md(), generate_design_system(), _generate_intelligent_overrides() (+20 more)
 
 ### Community 70 - "nbox_background_service.dart"
-Cohesion: 0.08
-Nodes (23): @pragma, _detectionController, detectionKey, detectionStream, handleIncomingSms, loadPendingTransactions, NboxBackgroundService, nboxBackgroundSmsHandler (+15 more)
+Cohesion: 0.10
+Nodes (20): _detectionController, detectionKey, detectionStream, handleIncomingSms, loadPendingTransactions, NboxBackgroundService, nboxForegroundSmsHandler, notifiedDetectionsStorageKey (+12 more)
 
 ### Community 71 - "recurring_template.dart"
 Cohesion: 0.06
@@ -682,8 +694,8 @@ Cohesion: 0.06
 Nodes (31): activeDebts, amount, copyWith, createdAt, creatorId, creditorId, creditorName, currentAmount (+23 more)
 
 ### Community 73 - "emi_dot_calendar.dart"
-Cohesion: 0.05
-Nodes (44): Animation, AnimationController, AnimatedListItem, _AnimatedListItemState, build, child, _controller, createState (+36 more)
+Cohesion: 0.07
+Nodes (29): Animation, AnimationController, AnimatedListItem, _AnimatedListItemState, build, child, _controller, createState (+21 more)
 
 ### Community 74 - "Typography Specifications"
 Cohesion: 0.06
@@ -703,7 +715,7 @@ Nodes (29): _challans, _challanService, createChallan, deleteChallan, _error, ex
 
 ### Community 78 - "add_credit_card_sheet.dart"
 Cohesion: 0.07
-Nodes (29): AddCreditCardModal, _AddCreditCardModalState, AddCreditCardSheet, _balanceController, _bankController, build, _buildGlassTextField, _buildLabel (+21 more)
+Nodes (29): AddCreditCardModal, AddCreditCardSheet, _balanceController, _bankController, build, _buildGlassTextField, _buildLabel, _buildLivePreview (+21 more)
 
 ### Community 79 - "add_shared_expense.dart"
 Cohesion: 0.08
@@ -726,8 +738,8 @@ Cohesion: 0.12
 Nodes (16): addContribution, addGoal, clear, clearAllData, deleteGoal, _error, _goals, _goalService (+8 more)
 
 ### Community 84 - "liabilities_screen.dart"
-Cohesion: 0.04
-Nodes (54): ../add_debt_screen.dart, ../../core/models/debt.dart, ../../core/utils/logo_utils.dart, build, _buildAppBar, _buildDebtCard, _buildEmptyState, _buildFilterPills (+46 more)
+Cohesion: 0.07
+Nodes (28): _BentoTileType, build, _buildBentoTile, _buildDebtAvatar, _buildDynamicBentoGrid, _buildEmptyState, _buildFAB, _buildFilterPills (+20 more)
 
 ### Community 85 - "Logo Usage Rules"
 Cohesion: 0.07
@@ -746,20 +758,20 @@ Cohesion: 0.07
 Nodes (15): Test adding colors multiple times., Test adding full color palette., Test adding custom breakpoints., Test TailwindConfigGenerator class., Test that adding same plugin twice doesn't duplicate., Test plugin recommendations for Next.js., Test initialization with default settings., Test generating JavaScript configuration. (+7 more)
 
 ### Community 89 - "cross_module_notification_hub.dart"
-Cohesion: 0.07
-Nodes (27): CollectionReference, CrossModuleNotificationHub, _generateBudgetNotifications, _generateCrossModuleNotifications, _generateDebtNotifications, _generateGoalNotifications, _generateInvestmentNotifications, generateNotifications (+19 more)
+Cohesion: 0.14
+Nodes (13): CrossModuleNotificationHub, _generateBudgetNotifications, _generateCrossModuleNotifications, _generateDebtNotifications, _generateGoalNotifications, _generateInvestmentNotifications, generateNotifications, _generateSubscriptionNotifications (+5 more)
 
 ### Community 90 - "BiometricProvider"
 Cohesion: 0.08
-Nodes (30): ../../core/providers/biometric_provider.dart, _initializeAuthenticatedApp, BiometricProvider, BiometricProtectedAction, BiometricProtectedButton, build, child, confirmationMessage (+22 more)
+Nodes (29): ../../core/providers/biometric_provider.dart, _initializeAuthenticatedApp, BiometricProvider, BiometricProtectedAction, BiometricProtectedButton, build, child, confirmationMessage (+21 more)
 
 ### Community 91 - "export_reports_screen.dart"
 Cohesion: 0.07
 Nodes (28): ../../core/services/report_export_service.dart, build, _buildChip, _buildDateRangeSelector, _buildExportButton, _buildFormatCard, _buildFormatSelector, _buildPreviewCard (+20 more)
 
 ### Community 92 - "investment_provider.dart"
-Cohesion: 0.07
-Nodes (27): addInvestment, clear, deleteInvestment, _error, getInvestmentById, _init, initialize, _investments (+19 more)
+Cohesion: 0.11
+Nodes (18): addInvestment, clear, deleteInvestment, _error, getInvestmentById, _init, initialize, _investments (+10 more)
 
 ### Community 93 - "debt_reminder_service.dart"
 Cohesion: 0.07
@@ -775,7 +787,7 @@ Nodes (24): get_context(), is_allowed_exception(), is_allowed_rgba(), is_inside_
 
 ### Community 96 - "goals_screen.dart"
 Cohesion: 0.07
-Nodes (27): ../../core/services/goal_sip_linking_service.dart, _addGoal, _auth, build, _buildBentoGoalsGrid, _buildBentoTile, _buildEmptyState, _buildErrorState (+19 more)
+Nodes (29): ../../core/services/goal_sip_linking_service.dart, _addGoal, _auth, build, _buildBentoGoalsGrid, _buildBentoTile, _buildEmptyState, _buildErrorState (+21 more)
 
 ### Community 97 - "transaction_understanding.dart"
 Cohesion: 0.07
@@ -786,8 +798,8 @@ Cohesion: 0.07
 Nodes (27): copyWith, create, data, delete, descending, error, field, getAll (+19 more)
 
 ### Community 99 - "report_export_service.dart"
-Cohesion: 0.08
-Nodes (24): expense_trend_service.dart, _buildBudgetPerformanceSection, _buildCategorySection, _buildMonthlySummarySection, _buildPdfFooter, _buildPdfHeader, _buildSummaryItem, _buildSummarySection (+16 more)
+Cohesion: 0.06
+Nodes (32): dart:io, expense_trend_service.dart, _createUnlockedTempFile, _geminiApiKey, parsePDF, PDFParsingService, _buildBudgetPerformanceSection, _buildCategorySection (+24 more)
 
 ### Community 100 - "detected_transaction.dart"
 Cohesion: 0.05
@@ -795,27 +807,27 @@ Nodes (40): account, accountId, accountNumber, amount, analysis, balanceAfter, b
 
 ### Community 101 - "investment.dart"
 Cohesion: 0.07
-Nodes (27): copyWith, currentAmount, folioNumber, fromFirestore, id, investedAmount, Investment, InvestmentType (+19 more)
+Nodes (26): copyWith, currentAmount, folioNumber, fromFirestore, id, investedAmount, Investment, isActive (+18 more)
 
 ### Community 102 - "family_debt_provider.dart"
 Cohesion: 0.07
 Nodes (26): addDebt, _auth, _debts, debtsIOweTo, debtsOwedToMe, _debtSubscription, deleteDebt, dispose (+18 more)
 
-### Community 103 - "add_debt_screen.dart"
-Cohesion: 0.04
-Nodes (53): AddDebtModal, _balanceController, build, _buildDatePicker, _buildField, _buildLabel, _buildTypeChip, createState (+45 more)
+### Community 103 - "add_debt_modal.dart"
+Cohesion: 0.07
+Nodes (28): AddDebtModal, AddDebtModal, _balanceController, build, _buildDatePicker, _buildField, _buildLabel, _buildTypeChip (+20 more)
 
 ### Community 104 - "expense_splitter_screen.dart"
 Cohesion: 0.08
-Nodes (25): ../../core/widgets/nexus_switch.dart, _addParticipantFromInput, _amountController, build, _buildActionButton, _buildAmountInput, _buildHeader, _buildHelperText (+17 more)
+Nodes (26): _addParticipantFromInput, _amountController, build, _buildActionButton, _buildAmountInput, _buildHeader, _buildHelperText, _buildParticipantsSection (+18 more)
 
 ### Community 105 - "package:flutter/material.dart"
-Cohesion: 0.08
-Nodes (23): Color, ../../../core/models/goal.dart, AppColorsExtension, Category, color, emoji, fromMap, id (+15 more)
+Cohesion: 0.05
+Nodes (35): ../../../../core/models/category.dart, FormState, Category, color, emoji, fromMap, id, isCustom (+27 more)
 
-### Community 106 - "insights_screen.dart"
-Cohesion: 0.10
-Nodes (20): ../budgets/budgets_screen.dart, ../debts/screens/liabilities_screen.dart, ../goals/goals_screen.dart, ../investments/investment_screen.dart, accentColor, build, _buildBentoGrid, _buildBurnRateTicker (+12 more)
+### Community 106 - "package:provider/provider.dart"
+Cohesion: 0.07
+Nodes (26): ../../core/models/transaction.dart, ../../core/providers/transaction_provider.dart, ../../../core/services/expense_trend_service.dart, ../core/theme/app_colors.dart, build, _buildBudgetGuidance, _buildCompactView, _buildEmptyState (+18 more)
 
 ### Community 107 - "nexus_card.dart"
 Cohesion: 0.14
@@ -846,8 +858,8 @@ Cohesion: 0.07
 Nodes (28): build, _buildAddMemberAvatar, _buildEmptyState, _buildExpenseCard, _buildExpensesTab, _buildHeader, _buildMemberAvatar, _buildMemberAvatarRow (+20 more)
 
 ### Community 114 - "ota_update_service.dart"
-Cohesion: 0.06
-Nodes (32): CancelToken?, dart:io, Dio, FlutterLocalNotificationsPlugin, cancelOTA, _cancelToken, checkForUpdate, _dio (+24 more)
+Cohesion: 0.08
+Nodes (24): CancelToken?, Dio, FlutterLocalNotificationsPlugin, cancelOTA, _cancelToken, checkForUpdate, _dio, dispose (+16 more)
 
 ### Community 115 - "Color Palette Management"
 Cohesion: 0.08
@@ -869,9 +881,9 @@ Nodes (24): Accessibility, Accessibility Requirements, ARIA States, Color Contra
 Cohesion: 0.08
 Nodes (24): Accessibility Patterns, Alternative: Tailwind-Only Setup, Best Practices, Common Patterns, Component Layer: shadcn/ui, Component Library Guide, Component + Styling Setup, Core Stack (+16 more)
 
-### Community 120 - "log_subscription_payment_modal.dart"
-Cohesion: 0.04
-Nodes (55): ../../core/models/detected_transaction.dart, ../../core/models/transaction.dart, ../../core/models/transaction_draft.dart, account, _bankName, build, _buildBottomBar, _buildRow (+47 more)
+### Community 120 - "statement_import_review_screen.dart"
+Cohesion: 0.08
+Nodes (25): ../../core/models/detected_transaction.dart, ../../core/models/transaction_draft.dart, account, _bankName, build, _buildBottomBar, _buildRow, _buildSummaryHeader (+17 more)
 
 ### Community 121 - "Nexus – GitHub Copilot Instructions"
 Cohesion: 0.08
@@ -905,9 +917,9 @@ Nodes (23): Art Direction Styles (Reuse from Banner), Color & Contrast, Design B
 Cohesion: 0.09
 Nodes (23): ../../core/services/backup_service.dart, ../../core/widgets/nexus_button.dart, BackupService, _autoBackupEnabled, _autoRestoreEnabled, _backups, _backupService, BackupSettingsScreen (+15 more)
 
-### Community 129 - "String? get"
-Cohesion: 0.05
-Nodes (36): double get, addDebt, _auth, clear, clearAllData, _debts, deleteDebt, _error (+28 more)
+### Community 129 - "List"
+Cohesion: 0.06
+Nodes (34): double get, addDebt, _auth, clear, clearAllData, _debts, deleteDebt, _error (+26 more)
 
 ### Community 130 - "notification.dart"
 Cohesion: 0.08
@@ -919,7 +931,7 @@ Nodes (23): _balancePattern, _bankKeywords, BankPattern, bankPatterns, _buildTra
 
 ### Community 132 - "investment_screen.dart"
 Cohesion: 0.09
-Nodes (22): add_investment_screen.dart, ../../core/models/investment.dart, ../../core/providers/investment_provider.dart, ../../core/widgets/animated_number_text.dart, _assetPriorityScore, build, _buildAssetBentoGrid, _buildEmptyState (+14 more)
+Nodes (23): add_investment_screen.dart, ../../core/models/investment.dart, ../../core/providers/investment_provider.dart, ../../core/widgets/animated_number_text.dart, InvestmentType, _assetPriorityScore, build, _buildAssetBentoGrid (+15 more)
 
 ### Community 133 - "Design System"
 Cohesion: 0.09
@@ -943,19 +955,19 @@ Nodes (22): $type, $value, $type, $value, $type, $value, $type, $value (+14 more
 
 ### Community 138 - "main_screen.dart"
 Cohesion: 0.10
-Nodes (20): ../core/services/intent_navigation_service.dart, ../core/services/notification_service.dart, _approvalSub, build, _buildDockNavItems, _buildKuveraFloatingDock, createState, _currentIndex (+12 more)
+Nodes (21): ../core/services/intent_navigation_service.dart, ../core/services/notification_service.dart, _approvalSub, build, _buildDockNavItems, _buildKuveraFloatingDock, createState, _currentIndex (+13 more)
 
 ### Community 139 - "fuel_price_provider.dart"
 Cohesion: 0.09
-Nodes (22): FuelPrice? get, _autoDetectLocation, _currentPrice, detectAndLoadCity, _error, _fuelPriceService, _initSafely, _isLoading (+14 more)
+Nodes (21): FuelPrice? get, _autoDetectLocation, _currentPrice, detectAndLoadCity, _error, _fuelPriceService, _initSafely, _isLoading (+13 more)
 
 ### Community 140 - "bike_service.dart"
 Cohesion: 0.09
 Nodes (21): addBike, addBikeEntry, addTrip, BikeService, calculateMileage, calculateTotalDistanceFromTrips, deleteBike, deleteBikeEntry (+13 more)
 
-### Community 141 - "payday_checklist_service.dart"
-Cohesion: 0.09
-Nodes (21): budgetProvider, debtProvider, familyDebtProvider, generateChecklist, _getBudgetItems, _getDebtItems, _getDebtTypeLabel, _getFamilyDebtItems (+13 more)
+### Community 141 - "auth_gate.dart"
+Cohesion: 0.05
+Nodes (43): biometric_auth_wrapper.dart, _biometricInitializationComplete, build, createState, _deferredInitializationScheduled, _initializedNotifications, initState, _maybeAutoBackupAndRestore (+35 more)
 
 ### Community 142 - "collapsible_fab.dart"
 Cohesion: 0.10
@@ -963,7 +975,7 @@ Nodes (21): backgroundColor, build, _collapseTimer, CollapsibleFab, _Collapsible
 
 ### Community 143 - "account_detail_screen.dart"
 Cohesion: 0.08
-Nodes (24): add_account_screen.dart, ../../core/services/pdf_statement_import_service.dart, ../../core/services/statement_import_review_screen.dart, ../../core/utils/currency_formatter.dart, account, _addTransaction, build, _buildActionButton (+16 more)
+Nodes (23): add_account_screen.dart, ../../core/services/pdf_statement_import_service.dart, ../../core/services/statement_import_review_screen.dart, ../../core/utils/currency_formatter.dart, account, _addTransaction, build, _buildActionButton (+15 more)
 
 ### Community 144 - "DateTime"
 Cohesion: 0.14
@@ -991,7 +1003,7 @@ Nodes (17): isDarkMode, _loadPreferences, _themeMode, ThemeProvider, toggleTheme
 
 ### Community 150 - "fuel_price_service.dart"
 Cohesion: 0.10
-Nodes (19): _cacheKey, _cachePrice, _cacheValidity, city, clearCache, _defaultPrices, diesel, _fetchFromAPI (+11 more)
+Nodes (20): _cacheKey, _cachePrice, _cacheValidity, city, clearCache, _defaultPrices, diesel, _fetchFromAPI (+12 more)
 
 ### Community 151 - "merchant_knowledge.dart"
 Cohesion: 0.04
@@ -1074,8 +1086,8 @@ Cohesion: 0.17
 Nodes (17): generate_css_for_background(), get_background_image(), get_curated_images(), get_overlay_css(), get_pexels_search_url(), load_backgrounds_config(), load_brand_colors(), main() (+9 more)
 
 ### Community 171 - "bike_list_widget.dart"
-Cohesion: 0.11
-Nodes (17): ../../../core/models/trip.dart, ../../core/widgets/swipe_to_delete.dart, edit_entry_dialog.dart, BikeEntry, _ActivityType, _ActivityWrapper, BikeListWidget, build (+9 more)
+Cohesion: 0.12
+Nodes (16): ../../../core/models/trip.dart, edit_entry_dialog.dart, BikeEntry, _ActivityType, _ActivityWrapper, BikeListWidget, build, _buildEntryItem (+8 more)
 
 ### Community 172 - "rto_service.dart"
 Cohesion: 0.11
@@ -1086,12 +1098,12 @@ Cohesion: 0.11
 Nodes (17): FlutterSecureStorage, _cvvKey, deleteAllForAccount, deleteCvv, deletePin, getCvv, getPin, hasCvv (+9 more)
 
 ### Community 174 - "win32_window.cpp"
-Cohesion: 0.18
-Nodes (14): Point, Size, wchar_t, Scale(), Create, Destroy, UpdateTheme, Win32Window::Win32Window() (+6 more)
+Cohesion: 0.15
+Nodes (16): Point, Size, wchar_t, Scale(), Create, Destroy, SetQuitOnClose, Show (+8 more)
 
-### Community 175 - "FlutterWindow"
-Cohesion: 0.13
-Nodes (13): unique_ptr, DartProject, HWND, LPARAM, LRESULT, UINT, WPARAM, FlutterWindow (+5 more)
+### Community 175 - "MessageHandler"
+Cohesion: 0.33
+Nodes (6): HWND, LPARAM, LRESULT, UINT, WPARAM, MessageHandler
 
 ### Community 176 - "TestShadcnInstaller"
 Cohesion: 0.12
@@ -1102,8 +1114,8 @@ Cohesion: 0.05
 Nodes (42): KnowledgeBase get, _accountProvider, autoApproveTransaction, _bikeProvider, _budgetProvider, _debtProvider, details, dispose (+34 more)
 
 ### Community 178 - "pay_debt_modal.dart"
-Cohesion: 0.05
-Nodes (35): ../../core/providers/transaction_provider.dart, ../../../core/services/expense_trend_service.dart, build, _buildBudgetGuidance, _buildCompactView, _buildEmptyState, _buildForecastCard, _buildFullView (+27 more)
+Cohesion: 0.10
+Nodes (19): _amountController, build, _buildActions, _buildContent, _buildHeader, _controller, createState, debt (+11 more)
 
 ### Community 179 - "knowledge_base.dart"
 Cohesion: 0.06
@@ -1114,16 +1126,16 @@ Cohesion: 0.12
 Nodes (16): _amountTailA, _amountTailB, bankLabel, canParse, _descA, _descB, _entryStartA, _entryStartB (+8 more)
 
 ### Community 181 - "home_screen_widget_service.dart"
-Cohesion: 0.11
-Nodes (17): areWidgetsSupported, _channel, data, getGarageWidgetCount, HomeScreenWidgetService, refreshAllWidgets, requestPinBalanceWidget, requestPinGarageWidget (+9 more)
-
-### Community 182 - "MaterialPageRoute"
-Cohesion: 0.18
-Nodes (11): _importStatement, _navigateToGarageManagement, _showEditEntryDialog, build, _buildSettingsSection, _buildSupportSection, _buildToolsGrid, _navigate (+3 more)
-
-### Community 183 - "garage_dashboard_widget.dart"
 Cohesion: 0.12
-Nodes (16): build, color, _EmptyGarageCard, _formatCost, _formatOdo, fuelEntries, GarageDashboardWidget, icon (+8 more)
+Nodes (16): areWidgetsSupported, _channel, data, getGarageWidgetCount, HomeScreenWidgetService, refreshAllWidgets, requestPinBalanceWidget, requestPinGarageWidget (+8 more)
+
+### Community 182 - "firestore_service.dart"
+Cohesion: 0.07
+Nodes (27): AccountService, addAccount, clearAllAccounts, deleteAccount, _firestore, _getAccountsCollection, getDefaultColor, getDefaultIcon (+19 more)
+
+### Community 183 - "add_debt_screen.dart"
+Cohesion: 0.07
+Nodes (26): _balanceController, build, _buildDatePicker, _buildField, _buildLabel, _buildTypeChip, createState, debtToEdit (+18 more)
 
 ### Community 184 - "add_family_member.dart"
 Cohesion: 0.13
@@ -1163,7 +1175,7 @@ Nodes (15): compileOnSave, compilerOptions, esModuleInterop, module, moduleResol
 
 ### Community 193 - "static const String"
 Cohesion: 0.12
-Nodes (14): EnvConfig, geminiApiKey, hasGeminiKey, isStaging, otaUpdateUrl, baseUrl, enrichInvestmentsWithNav, enrichInvestmentWithNav (+6 more)
+Nodes (15): EnvConfig, geminiApiKey, hasGeminiKey, isStaging, otaUpdateUrl, baseUrl, enrichInvestmentsWithNav, enrichInvestmentWithNav (+7 more)
 
 ### Community 194 - "transaction_display.dart"
 Cohesion: 0.12
@@ -1198,8 +1210,8 @@ Cohesion: 0.13
 Nodes (8): main(), Add custom font families. Args: fonts: Dict of font_type: [font_names] e.g.,…, Add custom spacing values. Args: spacing: Dict of name: value e.g., {'18':…, Add custom breakpoints. Args: breakpoints: Dict of name: width e.g., {'3xl':…, Add plugin requirements. Args: plugins: List of plugin names e.g.,…, Get plugin recommendations based on configuration. Returns: List of recommended…, Validate configuration. Returns: Tuple of (valid, message), Add custom colors to theme. Args: colors: Dict of color_name: color_value Value…
 
 ### Community 202 - "../core/theme/app_animations.dart"
-Cohesion: 0.10
-Nodes (25): ../../../core/providers/fuel_price_provider.dart, ../core/theme/app_animations.dart, ../../core/widgets/nexus_inline_loading.dart, FuelPriceProvider, _apiKeyController, build, _buildGlassField, _buildLabel (+17 more)
+Cohesion: 0.09
+Nodes (26): ../../../core/providers/fuel_price_provider.dart, ../core/theme/app_animations.dart, ../../core/widgets/nexus_inline_loading.dart, FuelPriceProvider, _apiKeyController, build, _buildGlassField, _buildLabel (+18 more)
 
 ### Community 203 - "index.ts"
 Cohesion: 0.14
@@ -1213,9 +1225,9 @@ Nodes (14): active, confidence, createdAt, _date, fromFirestore, id, reason, toM
 Cohesion: 0.14
 Nodes (13): build, _buildButton, child, emphasizedPrimary, icon, isLoading, label, NexusButton (+5 more)
 
-### Community 206 - "package:flutter/foundation.dart"
-Cohesion: 0.08
-Nodes (23): isPopupActiveNotifier, _auth, AuthService, authStateChanges, currentUser, ensureGoogleSignInInitialized, _googleSignInInitialized, signInAnonymously (+15 more)
+### Community 206 - "package:firebase_auth/firebase_auth.dart"
+Cohesion: 0.10
+Nodes (19): _loadUser, _user, _auth, AuthService, authStateChanges, currentUser, ensureGoogleSignInInitialized, ensureUserProfile (+11 more)
 
 ### Community 207 - "Banner Design - Multi-Format Creative Banner System"
 Cohesion: 0.14
@@ -1261,29 +1273,29 @@ Nodes (13): Card Styles, Component Variants, CSS Structures, Feature Grid (3 col
 Cohesion: 0.14
 Nodes (8): Handle shadcn/ui component installation., ShadcnInstaller, Test adding components that are already installed., Test initialization with default project root., Test initialization with custom project root., Test checking for non-existent shadcn config., Test getting installed components when none exist., Test getting installed components when files exist.
 
-### Community 218 - "about_screen.dart"
-Cohesion: 0.15
-Nodes (13): ../../core/widgets/nexus_card.dart, AboutScreen, _AboutScreenState, build, _buildActionRow, _buildDevRow, _buildGlassCard, _buildSectionHeader (+5 more)
+### Community 218 - "../core/theme/app_typography.dart"
+Cohesion: 0.10
+Nodes (21): ../core/services/auth_service.dart, ../core/theme/app_typography.dart, ../core/widgets/top_snackbar.dart, AboutScreen, _AboutScreenState, build, _buildActionRow, _buildDevRow (+13 more)
 
-### Community 219 - "sbi_statement_parser.dart"
-Cohesion: 0.07
-Nodes (27): bank_statement_parser.dart, double?, BankStatementParser, IdfcStatementParser, bankLabel, canParse, closingBalance, _dateOnlyPattern (+19 more)
+### Community 219 - "slice_statement_parser.dart"
+Cohesion: 0.13
+Nodes (14): bank_statement_parser.dart, BankStatementParser, IdfcStatementParser, SbiStatementParser, bankLabel, canParse, _dateStart, _extractMerchant (+6 more)
 
-### Community 220 - ".application"
-Cohesion: 0.15
-Nodes (9): Flutter, AppDelegate, Any, Bool, RunnerTests, RunnerTests, UIApplication, UIKit (+1 more)
+### Community 220 - "ios/RunnerTests/RunnerTests.swift"
+Cohesion: 0.24
+Nodes (6): Flutter, FlutterSceneDelegate, SceneDelegate, RunnerTests, UIKit, XCTestCase
 
-### Community 221 - "package:cloud_firestore/cloud_firestore.dart"
-Cohesion: 0.04
-Nodes (54): FirebaseFirestore, ledger_service.dart, CascadeService, deleteAccountAndTransactions, _firestore, createAccount, createDebt, currentUserId (+46 more)
+### Community 221 - "../models/transaction.dart"
+Cohesion: 0.06
+Nodes (31): ledger_service.dart, addTransactionAndUpdateBalance, addTransferAndUpdateBalances, _applyBudgetUpdate, deleteTransactionAndUpdateBalances, _firestore, LedgerService, updateTransactionAndUpdateBalances (+23 more)
 
 ### Community 222 - "widgets.dart"
-Cohesion: 0.05
-Nodes (37): dart:ui, amount, backgroundColor, balance, borderRadius, build, child, currency (+29 more)
+Cohesion: 0.08
+Nodes (25): amount, backgroundColor, balance, borderRadius, build, child, currency, _formatAmount (+17 more)
 
-### Community 223 - "DetectedTransaction"
-Cohesion: 0.18
-Nodes (10): @immutable, DetectedTransaction, TransactionConfidence, GmailSyncSettings, copyWith, fromJson, NboxSettings, smsReadingEnabled (+2 more)
+### Community 223 - "package:flutter/foundation.dart"
+Cohesion: 0.14
+Nodes (12): @immutable, DetectedTransaction, TransactionConfidence, GmailSyncSettings, copyWith, fromJson, NboxSettings, smsReadingEnabled (+4 more)
 
 ### Community 224 - "update.md"
 Cohesion: 0.15
@@ -1305,9 +1317,9 @@ Nodes (12): component, $type, $value, dark, semantic, $schema, $type, $value (+4
 Cohesion: 0.15
 Nodes (12): AIConfig, AIProvider, AITaskType, gemmaLocal, getClaudeApiKey, getGeminiApiKey, getModelChain, getPrimaryModelFor (+4 more)
 
-### Community 229 - "knowledge_learning_service.dart"
-Cohesion: 0.20
-Nodes (9): knowledge_service.dart, KnowledgeLearningService, _knowledgeService, _learn, learnCategory, learnCounterpartyRole, learnPurpose, KnowledgeService (+1 more)
+### Community 229 - "notifications_screen.dart"
+Cohesion: 0.10
+Nodes (24): ../../core/models/notification.dart, ../../core/providers/notification_provider.dart, ../../core/widgets/nexus_switch.dart, NotificationProvider, build, _buildCard, _buildSectionHeader, _buildSwitch (+16 more)
 
 ### Community 230 - "detect_domain"
 Cohesion: 0.43
@@ -1366,8 +1378,8 @@ Cohesion: 0.17
 Nodes (11): bikeId, copyWith, createdAt, date, distanceKm, fromFirestore, id, notes (+3 more)
 
 ### Community 244 - "Win32Window"
-Cohesion: 0.20
-Nodes (14): RECT, OnCreate, OnDestroy, HWND, Win32Window, child_content_, GetClientArea, OnCreate (+6 more)
+Cohesion: 0.13
+Nodes (19): RECT, unique_ptr, DartProject, FlutterWindow, flutter_controller_, FlutterWindow::FlutterWindow(), OnCreate, OnDestroy (+11 more)
 
 ### Community 245 - "bike_image_utils.dart"
 Cohesion: 0.33
@@ -1442,8 +1454,8 @@ Cohesion: 0.22
 Nodes (6): Any, Path, Initialize generator. Args: typescript: If True, generate .ts config, else .js…, Determine default output path., Create base configuration structure., Get default content paths for framework.
 
 ### Community 263 - "macos/RunnerTests/RunnerTests.swift"
-Cohesion: 0.24
-Nodes (6): Cocoa, FlutterMacOS, FlutterViewController, MainFlutterWindow, NSWindow, XCTest
+Cohesion: 0.20
+Nodes (7): Cocoa, FlutterMacOS, FlutterViewController, MainFlutterWindow, RunnerTests, NSWindow, XCTest
 
 ### Community 264 - "$type"
 Cohesion: 0.60
@@ -1509,9 +1521,9 @@ Nodes (6): Accessibility, Interaction, Layout, Light/Dark Mode, Pre-Delivery Che
 Cohesion: 0.09
 Nodes (21): detected_transaction.dart, accountId, amount, categoryId, confidence, date, description, destinationAccountId (+13 more)
 
-### Community 280 - "AppDelegate"
-Cohesion: 0.47
-Nodes (4): FlutterAppDelegate, AppDelegate, Bool, NSApplication
+### Community 280 - ".application"
+Cohesion: 0.22
+Nodes (8): FlutterAppDelegate, AppDelegate, Any, Bool, AppDelegate, Bool, NSApplication, UIApplication
 
 ### Community 281 - "Nexus — Integration Status"
 Cohesion: 0.33
@@ -1525,13 +1537,13 @@ Nodes (19): GoogleSignIn, _challansFolderId, _challansFolderName, _createSubfold
 Cohesion: 0.40
 Nodes (4): Brand Guidelines Template, Document Structure, Extractable Fields, Usage
 
-### Community 284 - "budgets_screen.dart"
-Cohesion: 0.11
-Nodes (19): ../../core/providers/budget_provider.dart, _budgetPriorityScore, build, _buildBentoBudgetGrid, _buildBentoTile, _buildEmptyState, _buildMiniStat, _buildOverviewCard (+11 more)
-
-### Community 285 - "List"
+### Community 284 - "add_account_screen.dart"
 Cohesion: 0.09
-Nodes (20): adjustment, alreadyReconciled, AmbiguousMatch, _asTransaction, _buildAdjustment, candidates, confirmed, existingTransaction (+12 more)
+Nodes (23): ../../../core/models/account.dart, accountToEdit, _balanceController, _bankNameController, build, _buildAccountTypeGrid, _buildBalanceInputField, _buildFieldLabel (+15 more)
+
+### Community 285 - "statement_reconciliation_service.dart"
+Cohesion: 0.12
+Nodes (15): adjustment, alreadyReconciled, AmbiguousMatch, _asTransaction, _buildAdjustment, candidates, confirmed, existingTransaction (+7 more)
 
 ### Community 286 - "radius"
 Cohesion: 0.60
@@ -1553,9 +1565,9 @@ Nodes (5): Example Workflow, Step 1: Analyze Requirements, Step 2: Generate Desi
 Cohesion: 0.20
 Nodes (9): 2026-09-05 — canonical commit and Family & Friends pass, 2026-09-05 — P0 foundation pass, 2026-09-06 — repository cleanup and validation pass, Nexus Remediation Log, Remaining blockers, Remaining work, Validation, Validation (+1 more)
 
-### Community 291 - "recurring_detector_widget.dart"
-Cohesion: 0.07
-Nodes (29): build, _buildDialogDetailRow, _buildLoadingState, _buildPatternTile, createState, _createSubscription, _detectedPatterns, _getConfidenceColor (+21 more)
+### Community 291 - "upcoming_week_widget.dart"
+Cohesion: 0.12
+Nodes (15): _AllCaughtUp, amount, build, _buildItems, daysUntil, dueDate, item, name (+7 more)
 
 ### Community 292 - "xl"
 Cohesion: 0.67
@@ -1589,21 +1601,21 @@ Nodes (4): $type, $value, none, none
 Cohesion: 0.67
 Nodes (3): $type, $value, 16
 
-### Community 302 - "1"
-Cohesion: 0.67
-Nodes (3): $type, $value, 1
+### Community 302 - "String? get"
+Cohesion: 0.08
+Nodes (22): addCategory, _auth, _categories, _categorySubscription, clear, deleteCategory, dispose, _error (+14 more)
 
-### Community 303 - "transaction_automation_service.dart"
-Cohesion: 0.15
-Nodes (12): analyze, _findTransferPeer, _intelligence, resolveAccount, resolveDestinationAccount, TransactionAutomationService, tryAutoRecord, TransactionIntelligenceService (+4 more)
+### Community 303 - "edit_entry_dialog.dart"
+Cohesion: 0.09
+Nodes (22): build, _buildStandardTextField, _categories, _confirmDelete, _costController, createState, dispose, EditEntryDialog (+14 more)
 
 ### Community 304 - "CodeRabbit Code Review"
 Cohesion: 0.17
 Nodes (11): 1. Check Prerequisites, 2. Run Review, 3. Present Results, 4. Fix Issues (Autonomous Workflow), 5. Review Specific Changes, Capabilities, CodeRabbit Code Review, Documentation (+3 more)
 
-### Community 305 - "NewNboxProvider"
-Cohesion: 0.17
-Nodes (12): NewNboxProvider, build, _buildAutoRecordedSection, _buildUnderstandingSection, _importPdf, initState, _onNboxChanged, _refreshGmail (+4 more)
+### Community 305 - "add_subscription.dart"
+Cohesion: 0.10
+Nodes (21): ../../../core/models/subscription.dart, _amountController, _brandColor, build, _buildLabel, createState, dispose, _formKey (+13 more)
 
 ### Community 306 - "dart:async"
 Cohesion: 0.18
@@ -1617,6 +1629,10 @@ Nodes (3): $type, $value, 3
 Cohesion: 0.67
 Nodes (3): $type, $value, 8
 
+### Community 312 - "VoidCallback"
+Cohesion: 0.10
+Nodes (19): build, icon, inCard, message, NexusEmptyState, onPrimary, onSecondary, primaryLabel (+11 more)
+
 ### Community 341 - "transaction_understanding_test.dart"
 Cohesion: 0.18
 Nodes (9): package:flutter_test/flutter_test.dart, package:nexus/core/models/detected_transaction.dart, package:nexus/core/models/transaction.dart, package:nexus/core/models/transaction_draft.dart, package:nexus/core/models/transaction_understanding.dart, package:nexus/core/services/transaction_router.dart, _detected, main (+1 more)
@@ -1629,9 +1645,9 @@ Nodes (3): destructive, $type, $value
 Cohesion: 0.67
 Nodes (3): destructive-foreground, $type, $value
 
-### Community 344 - "../models/detected_transaction.dart"
-Cohesion: 0.33
-Nodes (5): _extractMerchant, _isIgnorable, NewSmsParser, parse, ../models/detected_transaction.dart
+### Community 344 - "log_subscription_payment_modal.dart"
+Cohesion: 0.10
+Nodes (20): _amountController, build, _buildActions, _buildContent, _buildHeader, _controller, createState, dispose (+12 more)
 
 ### Community 345 - "muted"
 Cohesion: 0.67
@@ -1649,10 +1665,58 @@ Nodes (3): ring, $type, $value
 Cohesion: 0.67
 Nodes (3): secondary-foreground, $type, $value
 
+### Community 349 - "debts_screen.dart"
+Cohesion: 0.11
+Nodes (18): ../add_debt_screen.dart, build, _buildAppBar, _buildDebtCard, _buildEmptyState, _buildFilterPills, _buildPill, _buildSummaryCard (+10 more)
+
+### Community 350 - "Widget"
+Cohesion: 0.11
+Nodes (17): dart:ui, BiometricAuthWrapper, build, child, actions, automaticallyImplyLeading, bottom, build (+9 more)
+
+### Community 351 - "top_notification.dart"
+Cohesion: 0.12
+Nodes (17): build, _controller, createState, dispose, initState, isError, message, _offsetAnimation (+9 more)
+
+### Community 352 - "manage_categories_screen.dart"
+Cohesion: 0.13
+Nodes (15): ../../core/providers/category_provider.dart, ../../core/widgets/collapsible_fab.dart, ../../core/widgets/nexus_card.dart, ../../core/widgets/swipe_to_delete.dart, _activeFilter, build, _buildCategoryTile, _buildFilterChip (+7 more)
+
+### Community 353 - "gmail_sync_settings.dart"
+Cohesion: 0.12
+Nodes (15): Duration get, autoApproveHighConfidence, autoApproveLowValue, autoSyncEnabled, copyWith, daysToScan, displayName, excludedSenders (+7 more)
+
+### Community 354 - "StatefulWidget"
+Cohesion: 0.12
+Nodes (16): AuthenticatedApp, AuthGate, _AppInitializer, ModernAccountDetailScreen, ModernAddBudgetScreen, ModernAddEntryScreen, ExportReportsScreen, ModernMoreScreen (+8 more)
+
+### Community 355 - "apple_floating_action_button.dart"
+Cohesion: 0.13
+Nodes (15): _animationController, AppleFloatingActionButton, _AppleFloatingActionButtonState, build, createState, dispose, _handleTapCancel, _handleTapDown (+7 more)
+
+### Community 356 - "sbi_statement_parser.dart"
+Cohesion: 0.14
+Nodes (13): double?, bankLabel, canParse, closingBalance, _dateOnlyPattern, _extractMerchant, _looksNumeric, openingBalance (+5 more)
+
+### Community 357 - "../../core/utils/logo_utils.dart"
+Cohesion: 0.20
+Nodes (9): ../../core/models/debt.dart, ../../core/utils/logo_utils.dart, bankIdentityForDebt, bankIdentityFromParts, bankLogoForDebt, bankLogoForParts, bankLogoScaleForDebt, bankLogoScaleForParts (+1 more)
+
+### Community 358 - "package:flutter/services.dart"
+Cohesion: 0.22
+Nodes (8): app_animations.dart, app_colors.dart, app_spacing.dart, app_typography.dart, AppTheme, theme, package:flutter/services.dart, static ThemeData get
+
+### Community 359 - "package:intl/intl.dart"
+Cohesion: 0.25
+Nodes (7): AppCurrency, CurrencyFormatting, _format, toAppCurrency, num, package:intl/intl.dart, static final NumberFormat
+
+### Community 360 - "0"
+Cohesion: 0.67
+Nodes (3): $type, $value, 0
+
 ## Knowledge Gaps
-- **5235 isolated node(s):** `fs`, `path`, `fs`, `path`, `fs` (+5230 more)
+- **5236 isolated node(s):** `fs`, `path`, `fs`, `path`, `fs` (+5231 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **29 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **28 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -1661,13 +1725,13 @@ _Questions this graph is uniquely positioned to answer:_
   _High betweenness centrality (0.013) - this node is a cross-community bridge._
 - **Why does `DesignSystemGenerator` connect `DesignSystemGenerator` to `_resolve_color_mode`, `design_system.py`, `detect_domain`, `BM25`, `_filter_anti_patterns_for_mode`, `test_design_system_mode.py`, `search`?**
   _High betweenness centrality (0.009) - this node is a cross-community bridge._
-- **Why does `DebtProvider` connect `State` to `add_loan_sheet.dart`, `String? get`, `recurring_detector_widget.dart`, `payday_screen.dart`, `quick_pay_emi_sheet.dart`, `StatefulWidget`, `add_debt_screen.dart`, `payday_checklist_service.dart`, `add_credit_card_sheet.dart`, `dashboard_screen.dart`, `smart_approval_sheet.dart`, `transaction_brain_service.dart`, `pay_debt_modal.dart`, `widget_sync_service.dart`, `liabilities_screen.dart`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
 - **What connects `fs`, `path`, `fs` to the rest of the system?**
-  _5235 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _5236 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `../core/theme/app_spacing.dart` be split into smaller, more focused modules?**
-  _Cohesion score 0.045068027210884355 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05094130675526024 - nodes in this community are weakly interconnected._
 - **Should `app_colors.dart` be split into smaller, more focused modules?**
   _Cohesion score 0.014925373134328358 - nodes in this community are weakly interconnected._
 - **Should `State` be split into smaller, more focused modules?**
-  _Cohesion score 0.06227106227106227 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07783783783783783 - nodes in this community are weakly interconnected._
+- **Should `nbox_provider.dart` be split into smaller, more focused modules?**
+  _Cohesion score 0.02531645569620253 - nodes in this community are weakly interconnected._

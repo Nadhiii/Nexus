@@ -51,7 +51,7 @@ List<Map<String, dynamic>> _parseSmsInIsolate(_SmsBatchPayload payload) {
         'type': parsed.type,
         'source': parsed.source,
         'body': parsed.body,
-        'confidence': parsed.confidence,
+        'confidence': parsed.confidence.overall,
         'warnings': parsed.warnings,
         'detectedCategory': parsed.detectedCategory,
       });

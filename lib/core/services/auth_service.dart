@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -13,6 +14,42 @@ class AuthService {
 
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  /// Ensures every authenticated Nexus user has a discoverable profile
+  /// document at /users/{uid}. This is intentionally idempotent so it is safe
+  /// to call after every authentication event.
+  Future<void> ensureUserProfile([User? authenticatedUser]) async {
+    final user = authenticatedUser ?? _auth.currentUser;
+    if (user == null) return;
+
+    final ref = FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final existing = await ref.get();
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    final data = <String, dynamic>{
+      'uid': user.uid,
+      'email': user.email ?? '',
+      'isAnonymous': user.isAnonymous,
+      'updatedAt': now,
+    };
+
+    // Do not replace a user-edited display name with an empty Auth value.
+    if (user.displayName != null && user.displayName!.trim().isNotEmpty) {
+      data['displayName'] = user.displayName!.trim();
+    } else if (!existing.exists || !(existing.data()?['displayName'] is String)) {
+      data['displayName'] = user.email?.split('@').first ?? 'Nexus User';
+    }
+
+    if (user.photoURL != null && user.photoURL!.trim().isNotEmpty) {
+      data['photoUrl'] = user.photoURL;
+    }
+
+    if (!existing.exists) {
+      data['createdAt'] = now;
+    }
+
+    await ref.set(data, SetOptions(merge: true));
+  }
 
   // Public + static so any part of the app (GmailProvider included) can call
   // this safely regardless of call order, and it only ever runs once.
@@ -29,7 +66,9 @@ class AuthService {
         provider.addScope('email');
         provider.addScope('profile');
         final userCredential = await _auth.signInWithPopup(provider);
-        return userCredential.user;
+        final user = userCredential.user;
+        await ensureUserProfile(user);
+        return user;
       }
 
       try {
@@ -72,7 +111,9 @@ class AuthService {
         debugPrint(
           'Firebase sign-in successful: ${userCredential.user?.email}',
         );
-        return userCredential.user;
+        final user = userCredential.user;
+        await ensureUserProfile(user);
+        return user;
       } catch (e) {
         debugPrint('Google Sign-In v7 error: $e');
 
@@ -113,7 +154,9 @@ class AuthService {
   Future<User?> signInAnonymously() async {
     try {
       final UserCredential userCredential = await _auth.signInAnonymously();
-      return userCredential.user;
+      final user = userCredential.user;
+      await ensureUserProfile(user);
+      return user;
     } catch (e) {
       debugPrint('Error signing in anonymously: $e');
       return null;

@@ -20,6 +20,7 @@ import '../providers/notification_provider.dart';
 import '../providers/biometric_provider.dart';
 import 'biometric_auth_wrapper.dart';
 import '../services/notification_service.dart';
+import '../services/auth_service.dart';
 import '../services/backup_service.dart';
 import '../services/legacy_data_migration_service.dart';
 
@@ -130,6 +131,14 @@ class _AuthenticatedAppState extends State<AuthenticatedApp> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return;
+    }
+
+    // Repair/create the top-level user profile before the authenticated shell
+    // starts. Family member discovery depends on these documents existing.
+    try {
+      await AuthService().ensureUserProfile(user);
+    } catch (e) {
+      debugPrint('User profile initialization error: $e');
     }
 
     final accountProvider = Provider.of<AccountProvider>(

@@ -11,25 +11,16 @@ import '../../../core/services/firestore_service.dart';
 class ModernAddFamilyMemberScreen extends StatefulWidget {
   const ModernAddFamilyMemberScreen({super.key});
 
-  /// Presents the sheet as a safe general dialog route to avoid
-  /// semantics assertion crashes during bottom sheet transitions.
+  /// Presents the sheet as a standard modal bottom sheet (same pattern as
+  /// ModernAddSharedExpenseScreen), which handles the slide transition and
+  /// barrier itself.
   static Future<FamilyMember?> show(BuildContext context) {
-    return showGeneralDialog<FamilyMember>(
+    return showModalBottomSheet<FamilyMember>(
       context: context,
-      barrierDismissible: true,
-      barrierLabel: 'Dismiss',
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.65),
-      transitionDuration: const Duration(milliseconds: 250),
-      pageBuilder: (ctx, anim1, anim2) => const ModernAddFamilyMemberScreen(),
-      transitionBuilder: (ctx, anim, _, child) {
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 1),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
-          child: child,
-        );
-      },
+      builder: (_) => const ModernAddFamilyMemberScreen(),
     );
   }
 
@@ -43,6 +34,34 @@ class _ModernAddFamilyMemberScreenState
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   bool _isSavingManual = false;
+
+  // Don't attach the live Firestore-backed user list until the sheet's
+  // entrance transition has settled. Rebuilding a StreamBuilder mid-animation
+  // is what was triggering the '!semantics.parentDataDirty' assertion crash.
+  bool _showNexusUsersList = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final route = ModalRoute.of(context);
+      if (route?.animation != null) {
+        void onStatus(AnimationStatus status) {
+          if (status == AnimationStatus.completed) {
+            route!.animation!.removeStatusListener(onStatus);
+            if (mounted) setState(() => _showNexusUsersList = true);
+          }
+        }
+
+        route!.animation!.addStatusListener(onStatus);
+        if (route.animation!.isCompleted) {
+          onStatus(AnimationStatus.completed);
+        }
+      } else {
+        setState(() => _showNexusUsersList = true);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -104,7 +123,7 @@ class _ModernAddFamilyMemberScreenState
     try {
       final provider = context.read<SharedExpenseProvider>();
       final userId = userData['uid']?.toString();
-      final userName = userData['name']?.toString().trim();
+      final userName = (userData['displayName'] ?? userData['name'])?.toString().trim();
       final userEmail = userData['email']?.toString().trim();
       final member = FamilyMember(
         id: (userId != null && userId.isNotEmpty)
@@ -142,28 +161,22 @@ class _ModernAddFamilyMemberScreenState
     final bottomInset = mediaQuery.viewInsets.bottom;
     final totalHeight = mediaQuery.size.height * 0.85;
 
-    // ExcludeSemantics completely bypasses the '!semantics.parentDataDirty' assertion
-    return ExcludeSemantics(
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            height: totalHeight,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppColors.darkSurface,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(AppSpacing.radiusLg),
-              ),
-            ),
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.xl,
-              AppSpacing.md,
-              AppSpacing.xl,
-              AppSpacing.lg + bottomInset,
-            ),
-            child: Column(
+    return Container(
+      height: totalHeight,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.darkSurface,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.radiusLg),
+        ),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.md,
+        AppSpacing.xl,
+        AppSpacing.lg + bottomInset,
+      ),
+      child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Drag handle
@@ -366,7 +379,13 @@ class _ModernAddFamilyMemberScreenState
 
                 // Stream list of registered Nexus users
                 Expanded(
-                  child: StreamBuilder<List<Map<String, dynamic>>>(
+                  child: !_showNexusUsersList
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primaryBlue,
+                          ),
+                        )
+                      : StreamBuilder<List<Map<String, dynamic>>>(
                     stream: FirestoreService.getRegisteredUsersStream(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
@@ -506,9 +525,6 @@ class _ModernAddFamilyMemberScreenState
                 ),
               ],
             ),
-          ),
-        ),
-      ),
     );
   }
 }

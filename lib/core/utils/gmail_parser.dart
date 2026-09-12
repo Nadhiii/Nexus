@@ -77,7 +77,18 @@ class GmailParser {
           r'.*?(?:from|to)\s+(?<merchant>.*?)\s+rrn',
     ),
 
-    // 9. SALARY & GENERAL CREDITS (kept last — broadest pattern, so
+    // 9. CARD PURCHASE ("You have made a purchase for ₹X on <date> at
+    // <merchant> using <bank> Debit/Credit Card"). Seen from IDFC FIRST
+    // Bank; phrasing doesn't contain debited/credited so it needs its own
+    // pattern rather than relying on the action-based ones above.
+    BankPattern(
+      name: 'Card Purchase',
+      regex:
+          r'made a purchase for\s+(?:₹|Rs\.?|INR)\s*(?<amount>[\d,.]+)\s+on\s+'
+          r'(?<date>[\d/-]+(?:\s+[\d:]+)?)\s+at\s+(?<merchant>.*?)\s+using',
+    ),
+
+    // 10. SALARY & GENERAL CREDITS (kept last — broadest pattern, so
     // specific bank formats above get first shot at matching).
     BankPattern(
       name: 'Salary/Credit Alert',
@@ -182,6 +193,19 @@ class GmailParser {
   }
 
   static bool _isIgnorable(String lower) {
+    // Scheduled / future debits — nothing has moved yet, this is a setup
+    // confirmation (e.g. "₹1,000 will be debited ... next debit scheduled
+    // on 01 Oct" from a slice/UPI auto-save or autopay mandate setup).
+    // Without this guard these get recorded as real transactions that
+    // haven't actually happened.
+    final isFutureScheduled =
+        RegExp(r'\bwill be (?:debited|charged|deducted)\b').hasMatch(lower) &&
+        (lower.contains('scheduled') ||
+            lower.contains('auto save') ||
+            lower.contains('autopay') ||
+            lower.contains('has been set up'));
+    if (isFutureScheduled) return true;
+
     // These are payment/subscription notices, not evidence that money moved.
     // In particular, Google Play can contain an amount and words like
     // "payment"/"subscription" while explicitly saying no charge happened.
@@ -196,8 +220,9 @@ class GmailParser {
       'cancel subscription',
     ];
     if (noMoneyMovement.any(lower.contains) &&
-        !RegExp(r'\b(debited|credited|received|spent|withdrawn|purchase of|paid)\b')
-            .hasMatch(lower)) {
+        !RegExp(
+          r'\b(debited|credited|received|spent|withdrawn|purchase of|paid)\b',
+        ).hasMatch(lower)) {
       return true;
     }
 
@@ -251,8 +276,18 @@ class GmailParser {
   }
 
   static const Map<String, int> _monthAbbreviations = {
-    'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
-    'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
+    'jan': 1,
+    'feb': 2,
+    'mar': 3,
+    'apr': 4,
+    'may': 5,
+    'jun': 6,
+    'jul': 7,
+    'aug': 8,
+    'sep': 9,
+    'oct': 10,
+    'nov': 11,
+    'dec': 12,
   };
 
   // Turns a captured date string into a real DateTime, trying each
@@ -482,8 +517,7 @@ class GmailParser {
     String merchant,
     DateTime date,
     String type,
-    String body,
-    {
+    String body, {
     double confidence = 0.8,
     List<String> warnings = const [],
     String? bankName,

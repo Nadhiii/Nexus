@@ -96,7 +96,16 @@ class FirestoreService {
     return _firestore.collection('users').snapshots().map((snapshot) {
       return snapshot.docs
           .where((doc) => doc.id != currentUid) // Exclude yourself
-          .map((doc) => {'uid': doc.id, ...doc.data()})
+          .map((doc) {
+            final data = doc.data();
+            // Family UI uses `name`; auth-backed profiles use `displayName`.
+            // Normalize here so all callers receive one stable shape.
+            return {
+              'uid': doc.id,
+              ...data,
+              'name': (data['displayName'] ?? data['name'] ?? '').toString(),
+            };
+          })
           .toList();
     });
   }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'core/services/ota_update_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -194,6 +195,17 @@ class _AppInitializerState extends State<_AppInitializer> {
         // ONLY initialize notifications here — version check lives in More Screen
         // to avoid the "Reply already submitted" crash during login/SMS scan.
         await _otaService.initNotifications();
+
+        // Scan-on-open: safe here because it runs post-first-frame (not
+        // during Provider tree construction, which is what previously
+        // caused the permission deadlock/ANR — see the comment on
+        // NewNboxProvider's ChangeNotifierProxyProvider2 above).
+        // scanSmsInbox() already has its own IPC shield delay before
+        // touching the native ContentResolver, and scanEmails() only runs
+        // if Gmail is already linked, so this is non-blocking either way.
+        if (mounted) {
+          unawaited(context.read<NewNboxProvider>().scanAll());
+        }
       });
     }
   }

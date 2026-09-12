@@ -1,0 +1,348 @@
+Launching lib\main.dart on Pixel 8 Pro in debug mode...
+Running Gradle task 'assembleDebug'...                          
+Warning: Flutter support for your project's Android Gradle Plugin version (Android Gradle Plugin version 8.11.1) will soon be dropped. Please upgrade your Android Gradle Plugin version to a version of at least Android Gradle Plugin version 9.0.1 soon.
+Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+
+Potential fix: Your project's AGP version is typically defined in the plugins block of the `settings.gradle` file (E:\Github\Nexus\android/settings.gradle), by a plugin with the id of com.android.application. 
+If you don't see a plugins block, your project was likely created with an older template version. In this case it is most likely defined in the top-level build.gradle file (E:\Github\Nexus\android/build.gradle) by the following line in the dependencies block of the buildscript: "classpath 'com.android.tools.build:gradle:<version>'".
+
+Warning: Flutter support for your project's Kotlin version (2.2.20) will soon be dropped. Please upgrade your Kotlin version to a version of at least 2.3.20 soon.
+Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+
+Potential fix: Your project's KGP version is typically defined in the plugins block of the `settings.gradle` file (E:\Github\Nexus\android/settings.gradle), by a plugin with the id of org.jetbrains.kotlin.android. 
+If you don't see a plugins block, your project was likely created with an older template version, in which case it is most likely defined in the top-level build.gradle file (E:\Github\Nexus\android/build.gradle) by the ext.kotlin_version property.
+
+WARNING: [Processor] Library 'C:\Users\mahan\.gradle\caches\modules-2\files-2.1\androidx.car.app\app\1.4.0\406ebf5913d8c23ff636e5ef54d306560e2b5de5\app-1.4.0.aar' contains references to both AndroidX and old support library. This seems like the library is partially migrated. Jetifier will try to rewrite the library anyway.
+ Example of androidX reference: 'androidx/car/app/media/IMediaPlaybackHost'
+ Example of support library reference: 'android/support/v4/media/session/MediaSessionCompat$Token'
+Note: C:\Users\mahan\AppData\Local\Pub\Cache\hosted\pub.dev\cloud_firestore-6.9.0\android\src\main\java\io\flutter\plugins\firebase\firestore\utils\PipelineStageHandlers.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Running Gradle task 'assembleDebug'...                            509.1s
+ΓêÜ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...           5.0s
+I/FlutterActivityAndFragmentDelegate(19981): If you are attempting to set --enable-dart-profiling via Intent extras to launch a Flutter component outside of using the Flutter CLI, note that support for setting engine flags on Android via Intent will soon be dropped; see https://github.com/flutter/flutter/issues/180686 for more information on this breaking change. To migrate, set --enable-dart-profiling or any other flags specified via Intent extras on the command line instead or see https://github.com/flutter/flutter/blob/main/docs/engine/Flutter-Android-Engine-Flags.md for alternative methods.
+D/FlutterJNI(19981): Beginning load of flutter...
+D/FlutterJNI(19981): flutter (null) was loaded normally!
+I/flutter (19981): [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(62)] Using the Impeller rendering backend (Vulkan).
+D/FlutterGeolocator(19981): Attaching Geolocator to activity
+D/FlutterRenderer(19981): Width is zero. 0,0
+D/FlutterRenderer(19981): Width is zero. 0,0
+D/FlutterJNI(19981): Sending viewport metrics to the engine.
+D/FlutterGeolocator(19981): Creating service.
+D/FlutterGeolocator(19981): Binding to location service.
+D/FlutterGeolocator(19981): Geolocator foreground service connected
+D/FlutterGeolocator(19981): Initializing Geolocator services
+D/FlutterGeolocator(19981): Flutter engine connected. Connected engine count 1
+D/FlutterJNI(19981): Sending viewport metrics to the engine.
+I/flutter (19981): ≡ƒöä Updating Quick Transaction Widget: Today: Γé╣0.0, Week: Γé╣0.0
+I/flutter (19981): ≡ƒöä Updating Balance Widget: Balance: Γé╣0.0, Savings: 0.0%
+I/Choreographer(19981): Skipped 30 frames!  The application may be doing too much work on its main thread.
+Syncing files to device Pixel 8 Pro...                          
+I/HWUI    (19981): Using FreeType backend (prop=Auto)
+W/DynamiteModule(19981): Local module descriptor class for com.google.android.gms.providerinstaller.dynamite not found.
+I/DynamiteModule(19981): Considering local module com.google.android.gms.providerinstaller.dynamite:0 and remote module com.google.android.gms.providerinstaller.dynamite:0
+W/ProviderInstaller(19981): Failed to load providerinstaller module: No acceptable module com.google.android.gms.providerinstaller.dynamite found. Local version is 0 and remote version is 0.
+D/ApplicationLoaders(19981): Returning zygote-cached class loader: /system/framework/org.apache.http.legacy.jar
+I/flutter (19981): Γ£à Quick Transaction widget updated: true
+I/flutter (19981): ≡ƒô▒ Quick Transaction widget synced
+I/flutter (19981): Γ£à Balance widget updated: true
+I/flutter (19981): ≡ƒô▒ Balance widget synced
+D/nativeloader(19981): Configuring clns-11 for other apk /system_ext/framework/org.carconnectivity.android.digitalkey.timesync.jar. target_sdk_version=37, uses_libraries=ALL, library_path=/data/app/~~gv4q6m26duEbAdHtCJ1_Ow==/com.google.android.gms-avgIomUPyyrFlLRLQ8LkzA==/lib/arm64:/data/app/~~gv4q6m26duEbAdHtCJ1_Ow==/com.google.android.gms-avgIomUPyyrFlLRLQ8LkzA==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.gms
+D/ApplicationLoaders(19981): Returning zygote-cached class loader: /system/framework/com.android.location.provider.jar
+D/ApplicationLoaders(19981): Returning zygote-cached class loader: /system/framework/com.android.media.remotedisplay.jar
+D/ApplicationLoaders(19981): Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+D/ApplicationLoaders(19981): Returning zygote-cached class loader: /system_ext/framework/androidx.window.sidecar.jar
+I/flutter (19981): Found available biometrics: [BiometricType.weak, BiometricType.strong]
+W/mahanadhi.nexus(19981): Loading /data/app/~~gv4q6m26duEbAdHtCJ1_Ow==/com.google.android.gms-avgIomUPyyrFlLRLQ8LkzA==/oat/arm64/base.odex non-executable as it requires an image which we failed to load
+D/nativeloader(19981): Configuring clns-12 for other apk /data/app/~~gv4q6m26duEbAdHtCJ1_Ow==/com.google.android.gms-avgIomUPyyrFlLRLQ8LkzA==/base.apk. target_sdk_version=37, uses_libraries=, library_path=/data/app/~~gv4q6m26duEbAdHtCJ1_Ow==/com.google.android.gms-avgIomUPyyrFlLRLQ8LkzA==/lib/arm64:/data/app/~~gv4q6m26duEbAdHtCJ1_Ow==/com.google.android.gms-avgIomUPyyrFlLRLQ8LkzA==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.gms
+D/InsetsController(19981): hide(ime())
+I/ImeTracker(19981): com.mahanadhi.nexus:1e6482b6: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+E/GoogleApiManager(19981): Failed to get service from broker. 
+E/GoogleApiManager(19981): java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+E/GoogleApiManager(19981): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3376)
+E/GoogleApiManager(19981): 	at android.os.Parcel.createException(Parcel.java:3360)
+E/GoogleApiManager(19981): 	at android.os.Parcel.readException(Parcel.java:3343)
+E/GoogleApiManager(19981): 	at android.os.Parcel.readException(Parcel.java:3287)
+E/GoogleApiManager(19981): 	at bnaj.a(:com.google.android.gms@263363035@26.33.63 (260400-975893338):36)
+E/GoogleApiManager(19981): 	at bmyc.y(:com.google.android.gms@263363035@26.33.63 (260400-975893338):143)
+E/GoogleApiManager(19981): 	at bmdz.run(:com.google.android.gms@263363035@26.33.63 (260400-975893338):42)
+E/GoogleApiManager(19981): 	at android.os.Handler.handleCallback(Handler.java:1080)
+E/GoogleApiManager(19981): 	at android.os.Handler.dispatchMessageImpl(Handler.java:135)
+E/GoogleApiManager(19981): 	at android.os.Handler.dispatchMessage(Handler.java:126)
+E/GoogleApiManager(19981): 	at dicg.lL(:com.google.android.gms@263363035@26.33.63 (260400-975893338):1)
+E/GoogleApiManager(19981): 	at dicg.dispatchMessage(:com.google.android.gms@263363035@26.33.63 (260400-975893338):5)
+E/GoogleApiManager(19981): 	at android.os.Looper.loopOnce(Looper.java:285)
+E/GoogleApiManager(19981): 	at android.os.Looper.loop(Looper.java:390)
+E/GoogleApiManager(19981): 	at android.os.HandlerThread.run(HandlerThread.java:140)
+I/flutter (19981): ΓÅ▒∩╕Å  Widget sync debounced (500ms)
+W/GoogleApiManager(19981): Not showing notification since connectionResult is not user-facing: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null, clientMethodKey=null}
+W/FlagRegistrar(19981): Failed to register com.google.android.gms.providerinstaller#com.mahanadhi.nexus
+W/FlagRegistrar(19981): gwoc: 17: 17: API: Phenotype.API is not available on this device. Connection failed with: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null, clientMethodKey=null}
+W/FlagRegistrar(19981): 	at gwoe.a(:com.google.android.gms@263363035@26.33.63 (260400-975893338):13)
+W/FlagRegistrar(19981): 	at hxnu.d(:com.google.android.gms@263363035@26.33.63 (260400-975893338):3)
+W/FlagRegistrar(19981): 	at hxnw.run(:com.google.android.gms@263363035@26.33.63 (260400-975893338):139)
+W/FlagRegistrar(19981): 	at hxqe.execute(:com.google.android.gms@263363035@26.33.63 (260400-975893338):1)
+W/FlagRegistrar(19981): 	at hxoe.f(:com.google.android.gms@263363035@26.33.63 (260400-975893338):1)
+W/FlagRegistrar(19981): 	at hxoe.m(:com.google.android.gms@263363035@26.33.63 (260400-975893338):101)
+W/FlagRegistrar(19981): 	at hxoe.q(:com.google.android.gms@263363035@26.33.63 (260400-975893338):16)
+W/FlagRegistrar(19981): 	at gpxc.jd(:com.google.android.gms@263363035@26.33.63 (260400-975893338):35)
+W/FlagRegistrar(19981): 	at gbvs.run(:com.google.android.gms@263363035@26.33.63 (260400-975893338):12)
+W/FlagRegistrar(19981): 	at hxqe.execute(:com.google.android.gms@263363035@26.33.63 (260400-975893338):1)
+W/FlagRegistrar(19981): 	at gbvt.b(:com.google.android.gms@263363035@26.33.63 (260400-975893338):18)
+W/FlagRegistrar(19981): 	at gbwi.b(:com.google.android.gms@263363035@26.33.63 (260400-975893338):34)
+W/FlagRegistrar(19981): 	at gbwk.c(:com.google.android.gms@263363035@26.33.63 (260400-975893338):23)
+W/FlagRegistrar(19981): 	at bmbh.e(:com.google.android.gms@263363035@26.33.63 (260400-975893338):9)
+W/FlagRegistrar(19981): 	at bmdx.r(:com.google.android.gms@263363035@26.33.63 (260400-975893338):48)
+W/FlagRegistrar(19981): 	at bmdx.d(:com.google.android.gms@263363035@26.33.63 (260400-975893338):10)
+W/FlagRegistrar(19981): 	at bmdx.g(:com.google.android.gms@263363035@26.33.63 (260400-975893338):191)
+W/FlagRegistrar(19981): 	at bmdz.run(:com.google.android.gms@263363035@26.33.63 (260400-975893338):74)
+W/FlagRegistrar(19981): 	at android.os.Handler.handleCallback(Handler.java:1080)
+W/FlagRegistrar(19981): 	at android.os.Handler.dispatchMessageImpl(Handler.java:135)
+W/FlagRegistrar(19981): 	at android.os.Handler.dispatchMessage(Handler.java:126)
+W/FlagRegistrar(19981): 	at dicg.lL(:com.google.android.gms@263363035@26.33.63 (260400-975893338):1)
+W/FlagRegistrar(19981): 	at dicg.dispatchMessage(:com.google.android.gms@263363035@26.33.63 (260400-975893338):5)
+W/FlagRegistrar(19981): 	at android.os.Looper.loopOnce(Looper.java:285)
+W/FlagRegistrar(19981): 	at android.os.Looper.loop(Looper.java:390)
+W/FlagRegistrar(19981): 	at android.os.HandlerThread.run(HandlerThread.java:140)
+W/FlagRegistrar(19981): Caused by: blzl: 17: API: Phenotype.API is not available on this device. Connection failed with: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null, clientMethodKey=null}
+W/FlagRegistrar(19981): 	at bmxo.a(:com.google.android.gms@263363035@26.33.63 (260400-975893338):15)
+W/FlagRegistrar(19981): 	at bmbk.a(:com.google.android.gms@263363035@26.33.63 (260400-975893338):1)
+W/FlagRegistrar(19981): 	at bmbh.e(:com.google.android.gms@263363035@26.33.63 (260400-975893338):5)
+W/FlagRegistrar(19981): 	... 12 more
+W/FlagStore(19981): Unable to update local snapshot for com.google.android.gms.providerinstaller#com.mahanadhi.nexus, may result in stale flags.
+W/FlagStore(19981): java.util.concurrent.ExecutionException: gwoc: 17: 17: API: Phenotype.API is not available on this device. Connection failed with: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null, clientMethodKey=null}
+W/FlagStore(19981): 	at hxoe.j(:com.google.android.gms@263363035@26.33.63 (260400-975893338):21)
+W/FlagStore(19981): 	at hxom.t(:com.google.android.gms@263363035@26.33.63 (260400-975893338):24)
+W/FlagStore(19981): 	at hxoe.get(:com.google.android.gms@263363035@26.33.63 (260400-975893338):1)
+W/FlagStore(19981): 	at hxst.a(:com.google.android.gms@263363035@26.33.63 (260400-975893338):2)
+W/FlagStore(19981): 	at hxrj.s(:com.google.android.gms@263363035@26.33.63 (260400-975893338):10)
+W/FlagStore(19981): 	at gwtk.d(:com.google.android.gms@263363035@26.33.63 (260400-975893338):1)
+W/FlagStore(19981): 	at gwso.run(:com.google.android.gms@263363035@26.33.63 (260400-975893338):5)
+W/FlagStore(19981): 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:520)
+W/FlagStore(19981): 	at java.util.concurrent.FutureTask.run(FutureTask.java:328)
+W/FlagStore(19981): 	at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:323)
+W/FlagStore(19981): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1100)
+W/FlagStore(19981): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+W/FlagStore(19981): 	at java.lang.Thread.run(Thread.java:1571)
+W/FlagStore(19981): Caused by: gwoc: 17: 17: API: Phenotype.API is not available on this device. Connection failed with: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null, clientMethodKey=null}
+W/FlagStore(19981): 	at gwoe.a(:com.google.android.gms@263363035@26.33.63 (260400-975893338):13)
+W/FlagStore(19981): 	at hxnu.d(:com.google.android.gms@263363035@26.33.63 (260400-975893338):3)
+W/FlagStore(19981): 	at hxnw.run(:com.google.android.gms@263363035@26.33.63 (260400-975893338):139)
+W/FlagStore(19981): 	at hxqe.execute(:com.google.android.gms@263363035@26.33.63 (260400-975893338):1)
+W/FlagStore(19981): 	at hxoe.f(:com.google.android.gms@263363035@26.33.63 (260400-975893338):1)
+W/FlagStore(19981): 	at hxoe.m(:com.google.android.gms@263363035@26.33.63 (260400-975893338):101)
+W/FlagStore(19981): 	at hxoe.q(:com.google.android.gms@263363035@26.33.63 (260400-975893338):16)
+W/FlagStore(19981): 	at gpxc.jd(:com.google.android.gms@263363035@26.33.63 (260400-975893338):35)
+W/FlagStore(19981): 	at gbvs.run(:com.google.android.gms@263363035@26.33.63 (260400-975893338):12)
+W/FlagStore(19981): 	at hxqe.execute(:com.google.android.gms@263363035@26.33.63 (260400-975893338):1)
+W/FlagStore(19981): 	at gbvt.b(:com.google.android.gms@263363035@26.33.63 (260400-975893338):18)
+W/FlagStore(19981): 	at gbwi.b(:com.google.android.gms@263363035@26.33.63 (260400-975893338):34)
+W/FlagStore(19981): 	at gbwp.B(:com.google.android.gms@263363035@26.33.63 (260400-975893338):17)
+W/FlagStore(19981): 	at gbvk.run(:com.google.android.gms@263363035@26.33.63 (260400-975893338):60)
+W/FlagStore(19981): 	at hxqe.execute(:com.google.android.gms@263363035@26.33.63 (260400-975893338):1)
+W/FlagStore(19981): 	at gbvl.b(:com.google.android.gms@263363035@26.33.63 (260400-975893338):8)
+W/FlagStore(19981): 	at gbwi.b(:com.google.android.gms@263363035@26.33.63 (260400-975893338):34)
+W/FlagStore(19981): 	at gbwk.c(:com.google.android.gms@263363035@26.33.63 (260400-975893338):23)
+W/FlagStore(19981): 	at bmbh.e(:com.google.android.gms@263363035@26.33.63 (260400-975893338):9)
+W/FlagStore(19981): 	at bmdx.r(:com.google.android.gms@263363035@26.33.63 (260400-975893338):48)
+W/FlagStore(19981): 	at bmdx.d(:com.google.android.gms@263363035@26.33.63 (260400-975893338):10)
+W/FlagStore(19981): 	at bmdx.g(:com.google.android.gms@263363035@26.33.63 (260400-975893338):191)
+W/FlagStore(19981): 	at bmdz.run(:com.google.android.gms@263363035@26.33.63 (260400-975893338):74)
+W/FlagStore(19981): 	at android.os.Handler.handleCallback(Handler.java:1080)
+W/FlagStore(19981): 	at android.os.Handler.dispatchMessageImpl(Handler.java:135)
+W/FlagStore(19981): 	at android.os.Handler.dispatchMessage(Handler.java:126)
+W/FlagStore(19981): 	at dicg.lL(:com.google.android.gms@263363035@26.33.63 (260400-975893338):1)
+W/FlagStore(19981): 	at dicg.dispatchMessage(:com.google.android.gms@263363035@26.33.63 (260400-975893338):5)
+W/FlagStore(19981): 	at android.os.Looper.loopOnce(Looper.java:285)
+W/FlagStore(19981): 	at android.os.Looper.loop(Looper.java:390)
+W/FlagStore(19981): 	at android.os.HandlerThread.run(HandlerThread.java:140)
+W/FlagStore(19981): Caused by: blzl: 17: API: Phenotype.API is not available on this device. Connection failed with: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null, clientMethodKey=null}
+W/FlagStore(19981): 	at bmxo.a(:com.google.android.gms@263363035@26.33.63 (260400-975893338):15)
+W/FlagStore(19981): 	at bmbk.a(:com.google.android.gms@263363035@26.33.63 (260400-975893338):1)
+W/FlagStore(19981): 	at bmbh.e(:com.google.android.gms@263363035@26.33.63 (260400-975893338):5)
+W/FlagStore(19981): 	... 12 more
+I/ProviderInstaller(19981): Installed default security provider AndroidOpenSSL (via CompatProvider)
+I/flutter (19981): ΓÅ▒∩╕Å  Widget sync debounced (500ms)
+I/flutter (19981): ΓÅ▒∩╕Å  Widget sync debounced (500ms)
+I/flutter (19981): ≡ƒÜÇ Executing debounced widget sync
+I/flutter (19981): ≡ƒöä Updating Balance Widget: Balance: Γé╣22.5, Savings: 0.0%
+I/flutter (19981): Γ£à Balance widget updated: true
+I/flutter (19981): ≡ƒô▒ Balance widget synced
+I/flutter (19981): ΓÅ▒∩╕Å  Widget sync debounced (500ms)
+I/flutter (19981): BikeService: Found 1 active bikes
+I/flutter (19981): ≡ƒôè BikeProvider: loadBikeEntries called for bikeId: V5Go8xBSe0hVaabMkgi1
+I/flutter (19981): ≡ƒöä Updating Garage Widget: Grisha, Odometer: 136911.0km, Mileage: 0.0km/L
+I/flutter (19981): BikeService: Found 1 total bikes (including deleted)
+I/flutter (19981):   - Grisha: isActive=true
+I/flutter (19981): BikeProvider: Found 0 deleted bikes
+I/flutter (19981): Γ£à Garage widget updated: true
+I/flutter (19981): ≡ƒôè TransactionProvider: Loaded 2 transactions
+I/flutter (19981): ΓÅ▒∩╕Å  Widget sync debounced (500ms)
+I/flutter (19981): ΓÅ▒∩╕Å  Widget sync debounced (500ms)
+I/flutter (19981): ΓÅ▒∩╕Å  Widget sync debounced (500ms)
+I/flutter (19981): ≡ƒöä Synced bike data to widgets: Grisha
+I/flutter (19981): ≡ƒÜÇ Executing debounced widget sync
+I/flutter (19981): ≡ƒöä Updating Balance Widget: Balance: Γé╣22.5, Savings: 0.2%
+I/flutter (19981): ≡ƒôè BikeProvider: Received 50 entries
+I/flutter (19981):   [0] 2026-09-12T04:05:05.199196 | fuel, Γé╣221.0, 1.95L
+I/flutter (19981):   [1] 2026-09-12T04:03:45.869956 | fuel, Γé╣200.0, 1.8L
+I/flutter (19981):   [2] 2026-09-05T21:23:15.465377 | fuel, Γé╣201.0, 1.81L
+I/flutter (19981):   [3] 2026-08-31T17:18:06.259456 | fuel, Γé╣763.94, 6.87L
+I/flutter (19981):   [4] 2026-08-31T17:17:38.565839 | fuel, Γé╣333.6, 3.0L
+I/flutter (19981):   [5] 2026-08-28T00:00:00.000 | fuel, Γé╣433.42, 3.91L
+I/flutter (19981):   [6] 2026-08-27T00:00:00.000 | fuel, Γé╣444.0, 4.01L
+I/flutter (19981):   [7] 2026-08-22T13:19:11.831175 | fuel, Γé╣251.0, 2.26L
+I/flutter (19981):   [8] 2026-08-21T00:00:00.000 | fuel, Γé╣510.0, 4.59L
+I/flutter (19981):   [9] 2026-08-17T00:00:00.000 | fuel, Γé╣978.26, 8.81L
+I/flutter (19981):   [10] 2026-08-15T00:00:00.000 | fuel, Γé╣975.0, 8.7L
+I/flutter (19981):   [11] 2026-08-15T00:00:00.000 | fuel, Γé╣362.0, 3.24L
+I/flutter (19981):   [12] 2026-08-14T04:02:35.264203 | fuel, Γé╣1028.6, 9.25L
+I/flutter (19981):   [13] 2026-08-14T04:01:55.559576 | fuel, Γé╣200.0, 1.8L
+I/flutter (19981):   [14] 2026-08-03T00:00:00.000 | fuel, Γé╣231.0, 2.08L
+I/flutter (19981):   [15] 2026-08-02T21:44:29.911035 | fuel, Γé╣940.75, 8.46L
+I/flutter (19981):   [16] 2026-07-30T00:00:00.000 | fuel, Γé╣384.0, 3.0L
+I/flutter (19981):   [17] 2026-07-28T17:23:16.946440 | fuel, Γé╣1195.5, 10.76L
+I/flutter (19981):   [18] 2026-07-25T23:36:38.386303 | fuel, Γé╣960.0, 7.94L
+I/flutter (19981):   [19] 2026-07-13T11:14:48.762897 | fuel, Γé╣241.0, 2.0L
+I/flutter (19981):   [20] 2026-06-27T20:05:04.568910 | fuel, Γé╣1095.43, 9.09L
+I/flutter (19981):   [21] 2026-06-23T23:35:18.186267 | fuel, Γé╣222.06, 2.0L
+I/flutter (19981):   [22] 2026-06-20T20:46:17.803003 | fuel, Γé╣1086.0, 9.62L
+I/flutter (19981):   [23] 2026-06-08T00:00:00.000 | fuel, Γé╣909.42, 7.85L
+I/flutter (19981):   [24] 2026-06-05T00:00:00.000 | fuel, Γé╣210.0, 1.81L
+I/flutter (19981):   [25] 2026-06-02T00:00:00.000 | fuel, Γé╣510.0, 4.6L
+I/flutter (19981):   [26] 2026-05-27T00:00:00.000 | fuel, Γé╣1235.21, 10.63L
+I/flutter (19981):   [27] 2026-05-21T00:00:00.000 | fuel, Γé╣1356.38, 10.95L
+I/flutter (19981):   [28] 2026-05-20T00:00:00.000 | maintenance, Γé╣4095.1, 0.0L
+I/flutter (19981):   [29] 2026-05-18T00:00:00.000 | fuel, Γé╣491.0, 4.0L
+I/flutter (19981):   [30] 2026-05-14T00:00:00.000 | fuel, Γé╣359.0, 3.0L
+I/flutter (19981):   [31] 2026-05-10T00:00:00.000 | fuel, Γé╣285.86, 2.24L
+I/flutter (19981):   [32] 2026-05-08T00:00:00.000 | fuel, Γé╣961.2, 8.02L
+I/flutter (19981):   [33] 2026-05-08T00:00:00.000 | fuel, Γé╣359.0, 3.0L
+I/flutter (19981):   [34] 2026-05-06T00:00:00.000 | fuel, Γé╣483.0, 4.03L
+I/flutter (19981):   [35] 2026-05-04T00:00:00.000 | fuel, Γé╣325.0, 2.71L
+I/flutter (19981):   [36] 2026-05-02T00:00:00.000 | fuel, Γé╣1072.66, 8.95L
+I/flutter (19981):   [37] 2026-04-29T00:00:00.000 | fuel, Γé╣837.75, 6.99L
+I/flutter (19981):   [38] 2026-04-25T00:00:00.000 | fuel, Γé╣1100.0, 9.18L
+I/flutter (19981):   [39] 2026-04-22T00:00:00.000 | fuel, Γé╣804.0, 7.84L
+I/flutter (19981):   [40] 2026-04-20T00:00:00.000 | fuel, Γé╣674.0, 6.56L
+I/flutter (19981):   [41] 2026-04-19T00:00:00.000 | fuel, Γé╣733.0, 7.12L
+I/flutter (19981):   [42] 2026-04-18T00:00:00.000 | fuel, Γé╣794.0, 6.65L
+I/flutter (19981):   [43] 2026-04-17T00:00:00.000 | fuel, Γé╣630.9, 6.13L
+I/flutter (19981):   [44] 2026-04-16T00:00:00.000 | fuel, Γé╣310.0, 2.59L
+I/flutter (19981):   [45] 2026-04-13T00:00:00.000 | fuel, Γé╣150.0, 1.25L
+I/flutter (19981):   [46] 2026-04-11T00:00:00.000 | fuel, Γé╣795.0, 6.63L
+I/flutter (19981):   [47] 2026-04-10T00:00:00.000 | fuel, Γé╣312.0, 2.6L
+I/flutter (19981):   [48] 2026-04-09T00:00:00.000 | fuel, Γé╣425.0, 3.55L
+I/flutter (19981):   [49] 2026-04-04T00:00:00.000 | fuel, Γé╣1013.0, 8.45L
+I/flutter (19981): ≡ƒöä Updating Garage Widget: Grisha, Odometer: 136911.0km, Mileage: 0.0km/L
+I/flutter (19981): Γ£à Balance widget updated: true
+I/flutter (19981): ≡ƒô▒ Balance widget synced
+I/flutter (19981): Γ£à Garage widget updated: true
+I/flutter (19981): ≡ƒöä Synced bike data to widgets: Grisha
+I/flutter (19981): ΓÅ▒∩╕Å  Widget sync debounced (500ms)
+I/flutter (19981): ΓÅ▒∩╕Å  Widget sync debounced (500ms)
+I/flutter (19981): ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FOUNDATION LIBRARY Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+I/flutter (19981): The following assertion was thrown while dispatching notifications for NotificationProvider:
+I/flutter (19981): setState() or markNeedsBuild() called during build.
+I/flutter (19981): This _InheritedProviderScope<NotificationProvider?> widget cannot be marked as needing to build
+I/flutter (19981): because the framework is already in the process of building widgets. A widget can be marked as
+I/flutter (19981): needing to be built during the build phase only if one of its ancestors is currently building. This
+I/flutter (19981): exception is allowed because the framework builds parent widgets before children, which means a
+I/flutter (19981): dirty descendant will always be built. Otherwise, the framework might not visit this widget during
+I/flutter (19981): this build phase.
+I/flutter (19981): The widget on which setState() or markNeedsBuild() was called was:
+I/flutter (19981):   _InheritedProviderScope<NotificationProvider?>
+I/flutter (19981): The widget which was currently being built when the offending call was made was:
+I/flutter (19981):   _InheritedProviderScope<SubscriptionProvider?>
+I/flutter (19981): 
+I/flutter (19981): When the exception was thrown, this was the stack:
+I/flutter (19981): #0      Element.markNeedsBuild.<anonymous closure> (package:flutter/src/widgets/framework.dart:5386:9)
+I/flutter (19981): #1      Element.markNeedsBuild (package:flutter/src/widgets/framework.dart:5398:6)
+I/flutter (19981): #2      _InheritedProviderScopeElement.markNeedsNotifyDependents (package:provider/src/inherited_provider.dart:590:5)
+I/flutter (19981): #3      ChangeNotifier.notifyListeners (package:flutter/src/foundation/change_notifier.dart:435:24)
+I/flutter (19981): #4      NotificationProvider.addNotification (package:nexus/core/providers/notification_provider.dart:115:5)
+I/flutter (19981): #5      NotificationProvider.checkSubscriptionReminders (package:nexus/core/providers/notification_provider.dart:245:9)
+I/flutter (19981): #6      SubscriptionProvider._checkSubscriptionReminders (package:nexus/core/providers/subscription_provider.dart:131:30)
+I/flutter (19981): #7      SubscriptionProvider.update (package:nexus/core/providers/subscription_provider.dart:32:5)
+I/flutter (19981): #8      NexusApp.build.<anonymous closure> (package:nexus/main.dart:111:35)
+I/flutter (19981): #9      new ListenableProxyProvider.<anonymous closure> (package:provider/src/listenable_provider.dart:122:48)
+I/flutter (19981): #10     _CreateInheritedProviderState.build (package:provider/src/inherited_provider.dart:865:34)
+I/flutter (19981): #11     _InheritedProviderScopeElement.build (package:provider/src/inherited_provider.dart:559:20)
+I/flutter (19981): #12     ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5830:15)
+I/flutter (19981): #13     Element.rebuild (package:flutter/src/widgets/framework.dart:5542:7)
+I/flutter (19981): #14     BuildScope._tryRebuild (package:flutter/src/widgets/framework.dart:2763:15)
+I/flutter (19981): #15     BuildScope._flushDirtyElements (package:flutter/src/widgets/framework.dart:2820:11)
+I/flutter (19981): #16     BuildOwner.buildScope (package:flutter/src/widgets/framework.dart:3124:18)
+I/flutter (19981): #17     WidgetsBinding.drawFrame (package:flutter/src/widgets/binding.dart:1571:21)
+I/flutter (19981): #18     RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:558:5)
+I/flutter (19981): #19     SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1430:15)
+I/flutter (19981): #20     SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1345:9)
+I/flutter (19981): #21     SchedulerBinding._handleDrawFrame (package:flutter/src/scheduler/binding.dart:1198:5)
+I/flutter (19981): #22     _invoke (dart:ui/hooks.dart:441:13)
+I/flutter (19981): #23     PlatformDispatcher._drawFrame (dart:ui/platform_dispatcher.dart:450:5)
+I/flutter (19981): #24     _drawFrame (dart:ui/hooks.dart:413:31)
+I/flutter (19981): 
+I/flutter (19981): The NotificationProvider sending notification was:
+I/flutter (19981):   Instance of 'NotificationProvider'
+I/flutter (19981): ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+I/flutter (19981): ΓÅ▒∩╕Å  Widget sync debounced (500ms)
+I/flutter (19981): BikeService: Found 1 active bikes
+I/flutter (19981): ≡ƒöä Updating Garage Widget: Grisha, Odometer: 136911.0km, Mileage: 0.0km/L
+I/flutter (19981): BikeService: Found 1 total bikes (including deleted)
+I/flutter (19981):   - Grisha: isActive=true
+I/flutter (19981): BikeProvider: Found 0 deleted bikes
+I/flutter (19981): Γ£à Garage widget updated: true
+I/flutter (19981): ≡ƒöä Synced bike data to widgets: Grisha
+I/flutter (19981): ≡ƒÜÇ Executing debounced widget sync
+I/flutter (19981): ≡ƒöä Updating Balance Widget: Balance: Γé╣22.5, Savings: 0.2%
+I/flutter (19981): Γ£à Balance widget updated: true
+I/flutter (19981): ≡ƒô▒ Balance widget synced
+Syncing files to device Pixel 8 Pro...                           2,192ms
+
+Flutter run key commands.
+r Hot reload. 
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on Pixel 8 Pro is available at: http://127.0.0.1:59288/X1Uobof0Ycc=/
+The Flutter DevTools debugger and profiler on Pixel 8 Pro is available at: http://127.0.0.1:59288/X1Uobof0Ycc=/devtools/?uri=ws://127.0.0.1:59288/X1Uobof0Ycc=/ws
+I/flutter (19981): [NewNboxProvider] SMS permission: PermissionStatus.granted
+I/flutter (19981): === [NBOX DEBUG] Starting Native SMS Fetch ===
+I/flutter (19981): === [NBOX DEBUG] Fetching SMS window 1-2 ===
+I/flutter (19981): === [NBOX DEBUG] SMS window fetched 6 msgs ===
+I/flutter (19981): === [NBOX DEBUG] Fetching SMS window 3-4 ===
+I/flutter (19981): === [NBOX DEBUG] SMS window fetched 6 msgs ===
+I/flutter (19981): === [NBOX DEBUG] Fetching SMS window 5-6 ===
+I/flutter (19981): === [NBOX DEBUG] SMS window fetched 6 msgs ===
+I/flutter (19981): === [NBOX DEBUG] Fetching SMS window 7-7 ===
+I/flutter (19981): === [NBOX DEBUG] SMS window fetched 0 msgs ===
+I/flutter (19981): === [NBOX DEBUG] Total SMS Fetched: 18 ===
+I/flutter (19981): === [NBOX DEBUG] Filtered down to 12 potential transactions ===
+I/flutter (19981): === [NBOX DEBUG] Offloading parsing to Dart Isolate ===
+I/flutter (19981): === [NBOX DEBUG] Isolate completed. Mapping objects... ===
+I/flutter (19981): === [NBOX DEBUG] Successfully mapped 11 transactions ===
+I/flutter (19981): === [NBOX DEBUG] Scan Lifecycle Complete ===
+D/ProfileInstaller(19981): Installing profile for com.mahanadhi.nexus
+E/GoogleApiManager(19981): Failed to get service from broker. 
+E/GoogleApiManager(19981): java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+E/GoogleApiManager(19981): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3376)
+E/GoogleApiManager(19981): 	at android.os.Parcel.createException(Parcel.java:3360)
+E/GoogleApiManager(19981): 	at android.os.Parcel.readException(Parcel.java:3343)
+E/GoogleApiManager(19981): 	at android.os.Parcel.readException(Parcel.java:3287)
+E/GoogleApiManager(19981): 	at bnaj.a(:com.google.android.gms@263363035@26.33.63 (260400-975893338):36)
+E/GoogleApiManager(19981): 	at bmyc.y(:com.google.android.gms@263363035@26.33.63 (260400-975893338):143)
+E/GoogleApiManager(19981): 	at bmdz.run(:com.google.android.gms@263363035@26.33.63 (260400-975893338):42)
+E/GoogleApiManager(19981): 	at android.os.Handler.handleCallback(Handler.java:1080)
+E/GoogleApiManager(19981): 	at android.os.Handler.dispatchMessageImpl(Handler.java:135)
+E/GoogleApiManager(19981): 	at android.os.Handler.dispatchMessage(Handler.java:126)
+E/GoogleApiManager(19981): 	at dicg.lL(:com.google.android.gms@263363035@26.33.63 (260400-975893338):1)
+E/GoogleApiManager(19981): 	at dicg.dispatchMessage(:com.google.android.gms@263363035@26.33.63 (260400-975893338):5)
+E/GoogleApiManager(19981): 	at android.os.Looper.loopOnce(Looper.java:285)
+E/GoogleApiManager(19981): 	at android.os.Looper.loop(Looper.java:390)
+E/GoogleApiManager(19981): 	at android.os.HandlerThread.run(HandlerThread.java:140)
+W/GoogleApiManager(19981): Not showing notification since connectionResult is not user-facing: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null, clientMethodKey=null}

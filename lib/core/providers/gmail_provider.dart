@@ -25,6 +25,13 @@ class GmailProvider extends ChangeNotifier {
   GmailSyncSettings _settings = const GmailSyncSettings();
   Timer? _syncTimer;
   StreamSubscription<GoogleSignInAuthenticationEvent>? _authSubscription;
+  // Guards against the authenticationEvents listener (below) racing with an
+  // in-flight linkAccount() call. Both paths set _hasGmailAccess after a
+  // sign-in; without this flag the listener's cached-only scope check can
+  // fire after linkAccount()'s real authorizeScopes() result and silently
+  // overwrite it back to false, which is what caused Gmail sync to need a
+  // second manual trigger.
+  bool _isLinking = false;
 
   GoogleSignInAccount? get currentUser => _currentUser;
   bool get isLinked => _currentUser != null && _hasGmailAccess;
@@ -52,16 +59,21 @@ class GmailProvider extends ChangeNotifier {
       (event) {
         if (event is GoogleSignInAuthenticationEventSignIn) {
           _currentUser = event.user;
-          Future.microtask(() async {
-            final existing = await event.user.authorizationClient
-                .authorizationForScopes(_gmailScopes);
-            _hasGmailAccess = existing != null;
-            if (_hasGmailAccess) {
-              scanEmails();
-              _startAutoSync();
-            }
-            notifyListeners();
-          });
+          // Skip this cached-only scope check while linkAccount() is
+          // actively requesting a fresh grant — its result is authoritative
+          // and would otherwise get clobbered by this racing, stale read.
+          if (!_isLinking) {
+            Future.microtask(() async {
+              final existing = await event.user.authorizationClient
+                  .authorizationForScopes(_gmailScopes);
+              _hasGmailAccess = existing != null;
+              if (_hasGmailAccess) {
+                scanEmails();
+                _startAutoSync();
+              }
+              notifyListeners();
+            });
+          }
         } else if (event is GoogleSignInAuthenticationEventSignOut) {
           _currentUser = null;
           _hasGmailAccess = false;
@@ -134,6 +146,7 @@ class GmailProvider extends ChangeNotifier {
   }
 
   Future<void> linkAccount() async {
+    _isLinking = true;
     try {
       await ensureInitialized();
       _currentUser ??= await GoogleSignIn.instance.authenticate();
@@ -150,6 +163,8 @@ class GmailProvider extends ChangeNotifier {
     } catch (e) {
       _error = 'Failed to link Gmail account: $e';
       _hasGmailAccess = false;
+    } finally {
+      _isLinking = false;
     }
     notifyListeners();
   }
