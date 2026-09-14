@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:workmanager/workmanager.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'core/providers/theme_provider.dart';
@@ -31,8 +34,40 @@ import 'core/auth/auth_gate.dart';
 import 'core/services/crash_reporting_service.dart';
 import 'core/services/widget_sync_service.dart';
 import 'core/services/intent_navigation_service.dart';
-import 'package:another_telephony/telephony.dart';
+import 'package:another_telephony/telephony.dart' hide NetworkType;
 import 'core/services/nbox_background_service.dart';
+
+// ---------------------------------------------------------------------
+// Background OTA check (workmanager)
+// ---------------------------------------------------------------------
+
+const String otaBackgroundTaskName = 'nexus-ota-check';
+
+/// Reads the running app's version as "<version>+<buildNumber>", matching
+/// the format used by the GitHub release tags (e.g. v1.2.0+5).
+Future<String> _currentAppVersionString() async {
+  final info = await PackageInfo.fromPlatform();
+  return '${info.version}+${info.buildNumber}';
+}
+
+/// Entry point for background work. Must stay top-level (not a class
+/// method) since workmanager runs it in a separate background isolate
+/// with no access to the running app's state.
+@pragma('vm:entry-point')
+void callbackDispatcher() {
+  Workmanager().executeTask((task, inputData) async {
+    try {
+      final otaService = OTAUpdateService();
+      await otaService.initNotifications();
+
+      final currentVersion = await _currentAppVersionString();
+      await otaService.checkAndNotifyOnStartup(currentVersion);
+    } catch (e) {
+      debugPrint('OTA: Background check failed — $e');
+    }
+    return Future.value(true);
+  });
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,6 +88,24 @@ void main() async {
   // Initialize Crashlytics for error reporting
   await CrashReportingService().initialize();
   IntentNavigationService.initialize();
+
+  // Register periodic background OTA check (Android only — workmanager's
+  // iOS support is opportunistic/unreliable for polling use cases).
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    await Workmanager().initialize(
+      callbackDispatcher,
+    );
+    await Workmanager().registerPeriodicTask(
+      otaBackgroundTaskName,
+      otaBackgroundTaskName,
+      frequency: const Duration(hours: 6),
+      constraints: Constraints(
+        networkType: NetworkType.connected,
+        requiresBatteryNotLow: true,
+      ),
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+    );
+  }
 
   runApp(const NexusApp());
 }
@@ -180,6 +233,23 @@ class _AppInitializerState extends State<_AppInitializer> {
 
         await CrashReportingService().initialize();
         await _otaService.initNotifications();
+
+        // Notification permission is required on Android 13+ (API 33+) for
+        // any notification, including the OTA "update available" one below.
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+          final status = await Permission.notification.status;
+          if (!status.isGranted) {
+            await Permission.notification.request();
+          }
+        }
+
+        // Startup OTA check — runs every time the app is opened, in
+        // addition to the periodic background check registered in main().
+        unawaited(
+          _currentAppVersionString().then(
+            (version) => _otaService.checkAndNotifyOnStartup(version),
+          ),
+        );
 
         // Restore Google session and Gmail permissions on startup
         if (mounted) {

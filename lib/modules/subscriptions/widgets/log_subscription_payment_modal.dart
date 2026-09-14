@@ -480,8 +480,9 @@ class _LogSubscriptionPaymentModalState
 
       final txnProvider = context.read<TransactionProvider>();
       final ok = await txnProvider.updateTransaction(updated, existing);
-      if (!ok)
+      if (!ok) {
         throw Exception(txnProvider.error ?? 'Could not update transaction');
+      }
 
       final updatedSub = widget.subscription.copyWith(
         nextDueDate: widget.subscription.calculateNextDueDate(),

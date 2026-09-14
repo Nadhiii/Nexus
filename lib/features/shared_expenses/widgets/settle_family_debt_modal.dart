@@ -230,7 +230,7 @@ class _SettleFamilyDebtModalState extends State<SettleFamilyDebtModal> {
                     ),
                   ),
                   value: _recordInBank,
-                  activeColor: AppColors.primaryBlue,
+                  activeThumbColor: AppColors.primaryBlue,
                   onChanged: (val) => setState(() => _recordInBank = val),
                 ),
               ),

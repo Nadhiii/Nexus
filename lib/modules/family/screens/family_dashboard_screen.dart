@@ -1165,7 +1165,7 @@ class _FamilyDashboardScreenState extends State<FamilyDashboardScreen>
                           ),
                         ),
                         value: recordInBank,
-                        activeColor: AppColors.primaryBlue,
+                        activeThumbColor: AppColors.primaryBlue,
                         onChanged: (val) =>
                             setModalState(() => recordInBank = val),
                       ),

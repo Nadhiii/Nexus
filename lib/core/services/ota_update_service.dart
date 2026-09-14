@@ -13,12 +13,8 @@ class OTAUpdateService {
   // ---------------------------------------------------------------------
   // GitHub Releases configuration
   // ---------------------------------------------------------------------
-  // Replace with your actual GitHub username/org and repo name.
-  // The repo must have Releases published with the .apk attached as a
-  // release asset (either uploaded manually or via a CI step) for this
-  // to find anything.
-  static const String _githubOwner = 'YOUR_GITHUB_USERNAME';
-  static const String _githubRepo = 'YOUR_REPO_NAME';
+  static const String _githubOwner = 'Nadhiii';
+  static const String _githubRepo = 'Nexus-APK';
 
   static const String _latestReleaseUrl =
       'https://api.github.com/repos/$_githubOwner/$_githubRepo/releases/latest';
@@ -44,8 +40,6 @@ class OTAUpdateService {
   // Beta channel preference
   // -----------------------------------------------------------------------
 
-  /// Whether the user has opted in to receiving pre-release ("beta") builds.
-  /// Persisted so the setting survives app restarts.
   Future<bool> isBetaEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_betaPrefKey) ?? false;
@@ -86,45 +80,51 @@ class OTAUpdateService {
     );
   }
 
+  /// Runs [checkForUpdate] and, if a newer release exists, shows a
+  /// notification via [showSimpleNotification]. Never throws — safe to call
+  /// from app startup or from a background isolate (e.g. workmanager), where
+  /// an uncaught exception would otherwise crash the task silently.
+  Future<void> checkAndNotifyOnStartup(String currentVersion) async {
+    try {
+      final result = await checkForUpdate(currentVersion);
+      if (result != null) {
+        final version = result['latest_version'];
+        await showSimpleNotification(
+          'Update available',
+          'Nexus $version is ready to download.',
+        );
+      }
+    } catch (e) {
+      debugPrint('OTA: checkAndNotifyOnStartup failed silently — $e');
+    }
+  }
+
   /// Checks GitHub Releases for a newer version than [currentVersion].
   ///
-  /// - Stable channel (`betaEnabled: false`, the default) hits
-  ///   `/releases/latest`, which GitHub guarantees excludes pre-releases.
-  /// - Beta channel (`betaEnabled: true`) hits `/releases` (all releases,
-  ///   newest first) and takes the first usable entry — this includes
-  ///   pre-releases, so beta-opted-in users see them as soon as they're
-  ///   published, stable users never do.
+  /// - Stable channel (`betaEnabled: false`, the default) hits `/releases/latest`.
+  ///   If that 404s (e.g. a transient GitHub propagation gap, or a moment
+  ///   where only pre-releases exist), it falls back to scanning the full
+  ///   `/releases` list for the newest non-draft, non-prerelease entry.
+  /// - Beta channel (`betaEnabled: true`) hits `/releases` and takes the
+  ///   first usable entry (draft-excluded, must have an .apk asset).
   ///
   /// Returns a map with `latest_version` and `apk_url` if a newer release
   /// is found, or `null` if already up to date / nothing usable was found.
-  /// The return shape matches the previous JSON-manifest version so
-  /// existing call sites (e.g. the More screen) don't need to change.
   Future<Map<String, dynamic>?> checkForUpdate(
     String currentVersion, {
     bool? betaEnabled,
   }) async {
     try {
       final useBeta = betaEnabled ?? await isBetaEnabled();
-      final url = useBeta ? _allReleasesUrl : _latestReleaseUrl;
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: const {'Accept': 'application/vnd.github+json'},
-      );
+      Map<String, dynamic>? release;
 
-      if (response.statusCode != 200) {
-        debugPrint('OTA: GitHub API error ${response.statusCode}');
-        return null;
+      if (!useBeta) {
+        release = await _fetchLatestStableRelease(timestamp);
+      } else {
+        release = await _fetchLatestBetaRelease(timestamp);
       }
-
-      debugPrint('OTA: Raw GitHub Response: ${response.body}');
-      final decoded = json.decode(response.body);
-
-      // /releases/latest returns a single object; /releases returns a
-      // list ordered newest-first. Normalize to a single "release" map.
-      final Map<String, dynamic>? release = useBeta
-          ? _firstUsableRelease(decoded as List<dynamic>)
-          : decoded as Map<String, dynamic>;
 
       if (release == null) {
         debugPrint('OTA: No usable release found.');
@@ -139,20 +139,15 @@ class OTAUpdateService {
         return null;
       }
 
-      // Strip a leading "v" (GitHub tags are commonly "v1.2.0") and any
-      // build metadata suffix ("1.2.0+4") before comparing, same as the
-      // JSON-manifest version did.
-      final String normalizedLatest = _normalizeVersion(rawTag);
-      final String normalizedCurrent = _normalizeVersion(currentVersion);
+      final bool updateAvailable = _isNewerVersion(rawTag, currentVersion);
 
       debugPrint(
-        'OTA: Parsed Latest Version: "$normalizedLatest" | Local Version: "$normalizedCurrent" | beta=$useBeta',
+        'OTA: Latest Tag: "$rawTag" | Current Version: "$currentVersion" | Update Available: $updateAvailable | beta=$useBeta',
       );
 
-      if (normalizedLatest.isNotEmpty &&
-          normalizedLatest != normalizedCurrent) {
+      if (updateAvailable) {
         return {
-          'latest_version': normalizedLatest,
+          'latest_version': rawTag,
           'apk_url': apkUrl,
           'is_prerelease': release['prerelease'] == true,
           'release_notes': release['body'] ?? '',
@@ -165,15 +160,70 @@ class OTAUpdateService {
     return null;
   }
 
-  /// Picks the newest release from `/releases` that actually has a usable
-  /// .apk asset attached. Skips draft releases outright (GitHub includes
-  /// drafts in this endpoint for repo collaborators, but they're not
-  /// meant to be installed by end users) and falls through to older
-  /// entries if the newest one has no APK attached yet (e.g. release
-  /// notes published before a CI build finished uploading the asset).
-  Map<String, dynamic>? _firstUsableRelease(List<dynamic> releases) {
-    for (final item in releases) {
-      final release = item as Map<String, dynamic>;
+  Future<Map<String, dynamic>?> _fetchLatestStableRelease(int timestamp) async {
+    final latestResponse = await http.get(
+      Uri.parse('$_latestReleaseUrl?t=$timestamp'),
+      headers: const {'Accept': 'application/vnd.github+json'},
+    );
+
+    if (latestResponse.statusCode == 200) {
+      debugPrint('OTA: Raw GitHub Response: ${latestResponse.body}');
+      return json.decode(latestResponse.body) as Map<String, dynamic>;
+    }
+
+    if (latestResponse.statusCode == 404) {
+      debugPrint(
+        'OTA: /releases/latest returned 404, falling back to /releases list.',
+      );
+
+      final allResponse = await http.get(
+        Uri.parse('$_allReleasesUrl?t=$timestamp'),
+        headers: const {'Accept': 'application/vnd.github+json'},
+      );
+
+      if (allResponse.statusCode != 200) {
+        debugPrint(
+          'OTA: GitHub API error ${allResponse.statusCode} on fallback list.',
+        );
+        return null;
+      }
+
+      debugPrint(
+        'OTA: Raw GitHub Response (fallback list): ${allResponse.body}',
+      );
+      final list = json.decode(allResponse.body) as List<dynamic>;
+      final stableOnly = list
+          .cast<Map<String, dynamic>>()
+          .where((r) => r['prerelease'] != true)
+          .toList();
+
+      return _firstUsableRelease(stableOnly);
+    }
+
+    debugPrint('OTA: GitHub API error ${latestResponse.statusCode}');
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> _fetchLatestBetaRelease(int timestamp) async {
+    final response = await http.get(
+      Uri.parse('$_allReleasesUrl?t=$timestamp'),
+      headers: const {'Accept': 'application/vnd.github+json'},
+    );
+
+    if (response.statusCode != 200) {
+      debugPrint('OTA: GitHub API error ${response.statusCode}');
+      return null;
+    }
+
+    debugPrint('OTA: Raw GitHub Response: ${response.body}');
+    final decoded = json.decode(response.body) as List<dynamic>;
+    return _firstUsableRelease(decoded.cast<Map<String, dynamic>>());
+  }
+
+  Map<String, dynamic>? _firstUsableRelease(
+    List<Map<String, dynamic>> releases,
+  ) {
+    for (final release in releases) {
       if (release['draft'] == true) continue;
       if (_findApkAssetUrl(release) != null) return release;
     }
@@ -192,7 +242,11 @@ class OTAUpdateService {
     return null;
   }
 
-  String _normalizeVersion(String raw) {
+  // -----------------------------------------------------------------------
+  // Version comparison helpers
+  // -----------------------------------------------------------------------
+
+  String _extractBaseVersion(String raw) {
     var value = raw.trim();
     if (value.startsWith('v') || value.startsWith('V')) {
       value = value.substring(1);
@@ -200,8 +254,40 @@ class OTAUpdateService {
     return value.split('+').first.trim();
   }
 
+  int _extractBuildNumber(String raw) {
+    if (!raw.contains('+')) return 0;
+    return int.tryParse(raw.split('+').last.trim()) ?? 0;
+  }
+
+  bool _isNewerVersion(String remoteTag, String localVersion) {
+    final remoteBase = _extractBaseVersion(remoteTag);
+    final localBase = _extractBaseVersion(localVersion);
+
+    final remoteParts = remoteBase
+        .split('.')
+        .map((part) => int.tryParse(part) ?? 0)
+        .toList();
+    final localParts = localBase
+        .split('.')
+        .map((part) => int.tryParse(part) ?? 0)
+        .toList();
+
+    while (remoteParts.length < 3) remoteParts.add(0);
+    while (localParts.length < 3) localParts.add(0);
+
+    for (int i = 0; i < 3; i++) {
+      if (remoteParts[i] > localParts[i]) return true;
+      if (remoteParts[i] < localParts[i]) return false;
+    }
+
+    final remoteBuild = _extractBuildNumber(remoteTag);
+    final localBuild = _extractBuildNumber(localVersion);
+
+    return remoteBuild > localBuild;
+  }
+
   // -----------------------------------------------------------------------
-  // Download + install (unchanged from the JSON-manifest version)
+  // Download + install
   // -----------------------------------------------------------------------
 
   Future<void> startOTAUpdate(
@@ -213,9 +299,6 @@ class OTAUpdateService {
       _showingNotification = showNotification;
       _cancelToken = CancelToken();
 
-      // External storage, not getTemporaryDirectory() — Android's package
-      // installer cannot access internal app cache paths, which caused
-      // the install to silently fail after a successful download.
       final dir = await getExternalStorageDirectory();
       if (dir == null) {
         debugPrint('OTA: External storage unavailable.');
@@ -225,13 +308,11 @@ class OTAUpdateService {
       }
       final savePath = '${dir.path}/Nexus_Update.apk';
 
-      // Clean up any old partial downloads
       final file = File(savePath);
       if (await file.exists()) {
         await file.delete();
       }
 
-      // Start the download with Dio
       await _dio.download(
         apkUrl,
         savePath,
@@ -249,7 +330,6 @@ class OTAUpdateService {
         },
       );
 
-      // Download finished successfully
       debugPrint('OTA: Download complete. Triggering install...');
       _progressController.add(100);
       showSimpleNotification(
@@ -257,11 +337,6 @@ class OTAUpdateService {
         'Tap to install the Nexus update.',
       );
 
-      // Open the APK to trigger Android's package installer.
-      // Note: on Android 8+ the user must have granted this app the
-      // "install unknown apps" permission at least once, or OpenFile.open
-      // will surface Android's own permission prompt instead of the
-      // installer directly — that's expected OS behaviour, not a bug.
       final result = await OpenFile.open(savePath);
       debugPrint('OTA Install Result: ${result.message}');
     } catch (e) {

@@ -79,6 +79,9 @@ dependencies:
   
   # NFC
   nfc_manager: ^4.1.1
+
+  # Background Tasks
+  workmanager: ^0.10.10
   
   # Google APIs
   google_sign_in: ^7.2.0

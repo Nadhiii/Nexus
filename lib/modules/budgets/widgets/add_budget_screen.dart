@@ -148,8 +148,9 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
     _recommendedGoalContribution = 0;
     for (final g in goals) {
       final months = g.targetDate.difference(DateTime.now()).inDays / 30;
-      if (months > 0)
+      if (months > 0) {
         _recommendedGoalContribution += g.remainingAmount / months;
+      }
     }
     if (mounted) setState(() {});
   }
@@ -320,10 +321,12 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
                     ),
                   ),
                   validator: (val) {
-                    if (val == null || val.trim().isEmpty)
+                    if (val == null || val.trim().isEmpty) {
                       return "Limit is required";
-                    if (double.tryParse(val.trim()) == null)
+                    }
+                    if (double.tryParse(val.trim()) == null) {
                       return "Enter a valid amount";
+                    }
                     return null;
                   },
                 ),
@@ -671,8 +674,9 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
     _recommendedGoalContribution = 0;
     for (final g in goals) {
       final months = g.targetDate.difference(DateTime.now()).inDays / 30;
-      if (months > 0)
+      if (months > 0) {
         _recommendedGoalContribution += g.remainingAmount / months;
+      }
     }
     if (mounted) setState(() {});
   }

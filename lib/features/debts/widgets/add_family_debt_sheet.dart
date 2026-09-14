@@ -288,8 +288,9 @@ class _AddFamilyDebtModalState extends State<AddFamilyDebtModal> {
                 // Quick Contact Chips (Optional selection)
                 Consumer<FamilyDebtProvider>(
                   builder: (context, provider, _) {
-                    if (provider.familyMembers.isEmpty)
+                    if (provider.familyMembers.isEmpty) {
                       return const SizedBox.shrink();
+                    }
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
