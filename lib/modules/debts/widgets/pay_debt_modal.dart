@@ -306,10 +306,7 @@ class _PayDebtModalState extends State<PayDebtModal>
                           bankLogo != null
                               ? LogoUtils.buildLogo(bankLogo, size: 18)
                               : Icon(
-                                  IconData(
-                                    account.iconCodePoint,
-                                    fontFamily: account.iconFontFamily,
-                                  ),
+                                  account.icon,
                                   color: account.color,
                                   size: 18,
                                 ),
