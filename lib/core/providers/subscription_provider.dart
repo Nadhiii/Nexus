@@ -29,7 +29,14 @@ class SubscriptionProvider extends ChangeNotifier {
 
   void update(NotificationProvider? notification) {
     _notificationProvider = notification;
-    _checkSubscriptionReminders();
+    // Defer: this `update` runs during the widget tree build phase (it's a
+    // ProxyProvider callback), so calling notifyListeners() on
+    // NotificationProvider synchronously here throws
+    // "setState() or markNeedsBuild() called during build." Scheduling it
+    // for after the current frame lets it run safely once build is done.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkSubscriptionReminders();
+    });
   }
 
   // Filtered subscriptions

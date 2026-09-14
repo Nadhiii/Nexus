@@ -9,6 +9,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/models/transaction.dart';
 import '../../core/models/transaction_draft.dart';
+import '../../core/models/knowledge_entry.dart';
 import '../../core/providers/transaction_provider.dart';
 import '../../core/providers/account_provider.dart';
 import '../../core/providers/category_provider.dart';
@@ -80,6 +81,17 @@ class _ModernAddTransactionScreenState
   bool _isLoading = false;
   bool get _isEditMode => widget.transaction != null;
 
+  /// Returns [id] only if it matches a category that actually exists,
+  /// otherwise null. A plain DropdownButton (unlike DropdownButtonFormField)
+  /// re-validates its `value` against `items` on every build, so passing
+  /// through a stale/foreign category id (e.g. an old "general" default)
+  /// crashes the screen immediately and permanently.
+  String? _sanitizeCategoryId(String? id) {
+    if (id == null) return null;
+    final categories = context.read<CategoryProvider>().categories;
+    return categories.any((c) => c.id == id) ? id : null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -91,7 +103,7 @@ class _ModernAddTransactionScreenState
       _selectedType = transaction.type;
       _selectedAccountId = transaction.accountId;
       _toAccountId = transaction.toAccountId;
-      _selectedCategory = transaction.categoryId;
+      _selectedCategory = _sanitizeCategoryId(transaction.categoryId);
       _selectedDate = transaction.date;
     } else {
       _selectedType = widget.initialType ?? TransactionType.expense;
@@ -111,11 +123,12 @@ class _ModernAddTransactionScreenState
           history: context.read<TransactionProvider>().transactions,
           knowledge: context.read<KnowledgeProvider>().entries,
         );
-        _selectedCategory =
-            widget.categoryId ??
-            understanding.categoryId ??
-            detected.detectedCategory ??
-            'other';
+        _selectedCategory = _sanitizeCategoryId(
+          widget.categoryId ??
+              understanding.categoryId ??
+              detected.detectedCategory ??
+              'other',
+        );
       }
     }
 
@@ -320,6 +333,28 @@ class _ModernAddTransactionScreenState
           }
         }
 
+        // A manually-created transaction is also an explicit user decision.
+        // Offer to teach the Knowledge Brain, but only for new, non-transfer
+        // transactions. NBox approvals have their own equivalent prompt.
+        if (!_isEditMode &&
+            widget.detectedTransaction == null &&
+            transaction.type != TransactionType.transfer) {
+          try {
+            await _offerToRememberDecision(
+              merchant: transaction.description ?? '',
+              categoryId: transaction.categoryId,
+              purpose: transaction.type == TransactionType.income
+                  ? 'income'
+                  : 'expense',
+              role: transaction.type == TransactionType.income
+                  ? 'payer'
+                  : 'payee',
+            );
+          } catch (e) {
+            debugPrint('Knowledge learning skipped after manual save: $e');
+          }
+        }
+
         showTopSnackBar(
           context,
           _selectedType == TransactionType.transfer
@@ -349,6 +384,78 @@ class _ModernAddTransactionScreenState
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _offerToRememberDecision({
+    required String merchant,
+    required String? categoryId,
+    required String purpose,
+    required String role,
+  }) async {
+    final knowledge = context.read<KnowledgeProvider>();
+    final normalized = merchant.trim().toLowerCase();
+    if (normalized.isEmpty || !mounted) return;
+
+    final alreadyKnown = knowledge.entries.any(
+      (entry) =>
+          entry.active &&
+          entry.subject == normalized &&
+          (entry.predicate == 'category' || entry.predicate == 'purpose'),
+    );
+    if (alreadyKnown) return;
+
+    final categories = context.read<CategoryProvider>().categories;
+    final matches = categoryId == null
+        ? const []
+        : categories.where((c) => c.id == categoryId).toList();
+    final categoryName = matches.isNotEmpty ? matches.first.name : null;
+    final detail = categoryName == null
+        ? merchant
+        : '$merchant → $categoryName';
+
+    final remember = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remember this?'),
+        content: Text(
+          '$detail\n\nUse this decision for similar transactions in the future?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('No'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Remember'),
+          ),
+        ],
+      ),
+    );
+
+    if (remember != true || !mounted) return;
+
+    const evidence = ['User saved this transaction manually.'];
+    if (categoryId != null && categoryId.isNotEmpty) {
+      await knowledge.learnCategory(
+        subject: merchant,
+        categoryId: categoryId,
+        source: KnowledgeSource.explicit,
+        evidence: evidence,
+      );
+    }
+    await knowledge.learnPurpose(
+      subject: merchant,
+      purpose: purpose,
+      source: KnowledgeSource.explicit,
+      evidence: evidence,
+    );
+    await knowledge.learnCounterpartyRole(
+      subject: merchant,
+      role: role,
+      source: KnowledgeSource.explicit,
+      evidence: evidence,
+    );
   }
 
   @override
@@ -515,6 +622,10 @@ class _ModernAddTransactionScreenState
                   Consumer<CategoryProvider>(
                     builder: (context, categoryProvider, _) {
                       final categories = categoryProvider.categories;
+                      final safeValue =
+                          categories.any((c) => c.id == _selectedCategory)
+                          ? _selectedCategory
+                          : null;
                       return Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md,
@@ -526,7 +637,7 @@ class _ModernAddTransactionScreenState
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
-                            value: _selectedCategory,
+                            value: safeValue,
                             isExpanded: true,
                             dropdownColor: AppColors.darkSurfaceElevated,
                             hint: Text(

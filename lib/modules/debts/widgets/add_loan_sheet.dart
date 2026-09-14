@@ -34,7 +34,7 @@ class _AddLoanModalState extends State<AddLoanModal> {
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
-  final _amountController = TextEditingController();
+  final _originalAmountController = TextEditingController();
   final _balanceController = TextEditingController();
   final _emiController = TextEditingController();
   final _rateController = TextEditingController();
@@ -45,7 +45,7 @@ class _AddLoanModalState extends State<AddLoanModal> {
   int _paymentDay = 5;
   DateTime _loanStartDate = DateTime(DateTime.now().year, DateTime.now().month);
   bool _isLoading = false;
-  bool _isBorrowed = true; // Segment: Borrowed vs Lent
+  bool _isOngoingLoan = false;
 
   bool get _isEditMode => widget.debtToEdit != null;
 
@@ -55,7 +55,7 @@ class _AddLoanModalState extends State<AddLoanModal> {
     if (_isEditMode) {
       final d = widget.debtToEdit!;
       _nameController.text = d.name;
-      _amountController.text = d.originalAmount.toStringAsFixed(0);
+      _originalAmountController.text = d.originalAmount.toStringAsFixed(0);
       _balanceController.text = d.currentBalance.toStringAsFixed(0);
       _emiController.text = d.monthlyEMI?.toStringAsFixed(0) ?? '';
       _rateController.text = d.interestRate?.toString() ?? '';
@@ -65,13 +65,14 @@ class _AddLoanModalState extends State<AddLoanModal> {
       _paymentDay = d.paymentDay ?? 5;
       final start = d.startDate ?? DateTime.now();
       _loanStartDate = DateTime(start.year, start.month);
+      _isOngoingLoan = (d.originalAmount != d.currentBalance);
     }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _amountController.dispose();
+    _originalAmountController.dispose();
     _balanceController.dispose();
     _emiController.dispose();
     _rateController.dispose();
@@ -81,7 +82,8 @@ class _AddLoanModalState extends State<AddLoanModal> {
   }
 
   void _calculateEMI() {
-    final principal = double.tryParse(_amountController.text.trim()) ?? 0;
+    final principal =
+        double.tryParse(_originalAmountController.text.trim()) ?? 0;
     final rate = double.tryParse(_rateController.text.trim()) ?? 0;
     final tenure = int.tryParse(_tenureController.text.trim()) ?? 0;
 
@@ -109,9 +111,13 @@ class _AddLoanModalState extends State<AddLoanModal> {
       final provider = context.read<DebtProvider>();
       final now = DateTime.now();
 
-      final originalAmount =
-          double.tryParse(_amountController.text.trim()) ?? 0;
-      final currentBalance = double.parse(_balanceController.text.trim());
+      final originalAmount = double.parse(
+        _originalAmountController.text.trim(),
+      );
+      final currentBalance = _isOngoingLoan
+          ? (double.tryParse(_balanceController.text.trim()) ?? originalAmount)
+          : originalAmount;
+
       final emi = double.tryParse(_emiController.text.trim());
       final rate = double.tryParse(_rateController.text.trim());
       final tenure = int.tryParse(_tenureController.text.trim());
@@ -123,7 +129,7 @@ class _AddLoanModalState extends State<AddLoanModal> {
         userId: user.uid,
         name: _nameController.text.trim(),
         type: _selectedType,
-        originalAmount: originalAmount > 0 ? originalAmount : currentBalance,
+        originalAmount: originalAmount,
         currentBalance: currentBalance,
         monthlyEMI: emi,
         interestRate: rate,
@@ -160,7 +166,7 @@ class _AddLoanModalState extends State<AddLoanModal> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final activeColor = _isBorrowed ? AppColors.warning : AppColors.success;
+    const activeColor = AppColors.primaryBlue;
 
     return Material(
       color: AppColors.darkSurface,
@@ -201,7 +207,7 @@ class _AddLoanModalState extends State<AddLoanModal> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      _isEditMode ? 'Edit Loan' : 'Add Loan',
+                      _isEditMode ? 'Edit Formal Loan' : 'Record Formal Loan',
                       style: AppTypography.headlineMedium.copyWith(
                         color: AppColors.textPrimary,
                       ),
@@ -220,7 +226,7 @@ class _AddLoanModalState extends State<AddLoanModal> {
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
-                // Direction Toggle: Lent vs Borrowed
+                // Loan State Mode Toggle
                 Container(
                   decoration: BoxDecoration(
                     color: AppColors.darkSurfaceElevated,
@@ -229,34 +235,24 @@ class _AddLoanModalState extends State<AddLoanModal> {
                   ),
                   child: Row(
                     children: [
+                      Expanded(child: _buildModeTab("New Loan", false)),
                       Expanded(
-                        child: _buildDirectionTab(
-                          "You Lent (Gave)",
-                          Icons.arrow_outward,
-                          false,
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildDirectionTab(
-                          "You Borrowed",
-                          Icons.arrow_downward,
-                          true,
-                        ),
+                        child: _buildModeTab("Already Paying Off", true),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
 
-                _buildLabel('PRINCIPAL AMOUNT'),
+                _buildLabel('ORIGINAL LOAN AMOUNT BORROWED'),
                 TextFormField(
-                  controller: _amountController,
+                  controller: _originalAmountController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  onChanged: (_) {
-                    if (_balanceController.text.isEmpty) {
-                      _balanceController.text = _amountController.text;
+                  onChanged: (val) {
+                    if (!_isOngoingLoan) {
+                      _balanceController.text = val;
                     }
                     _calculateEMI();
                   },
@@ -292,7 +288,10 @@ class _AddLoanModalState extends State<AddLoanModal> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: AppSpacing.borderRadiusSm,
-                      borderSide: BorderSide(color: activeColor, width: 1.5),
+                      borderSide: const BorderSide(
+                        color: activeColor,
+                        width: 1.5,
+                      ),
                     ),
                   ),
                   validator: (val) =>
@@ -300,45 +299,56 @@ class _AddLoanModalState extends State<AddLoanModal> {
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
-                _buildLabel('LOAN PURPOSE / TITLE'),
+                if (_isOngoingLoan) ...[
+                  _buildLabel('OUTSTANDING BALANCE REMAINING TODAY'),
+                  _buildField(
+                    controller: _balanceController,
+                    hint: "Current unpaid balance",
+                    icon: Icons.account_balance_wallet_outlined,
+                    isNumber: true,
+                    validator: (val) {
+                      if (!_isOngoingLoan) return null;
+                      if (val == null || val.trim().isEmpty) return "Required";
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
+
+                _buildLabel('LOAN TYPE'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildTypeChip('Personal', DebtType.personalLoan),
+                    _buildTypeChip('Home Loan', DebtType.homeLoan),
+                    _buildTypeChip('Car Loan', DebtType.carLoan),
+                    _buildTypeChip('Education', DebtType.educationLoan),
+                    _buildTypeChip('Two-Wheeler', DebtType.twoWheelerLoan),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                _buildLabel('LOAN TITLE / PURPOSE'),
                 _buildField(
                   controller: _nameController,
-                  hint: "e.g. Personal Loan, Car Loan, Lent to Friend",
+                  hint: "e.g. HDFC Home Loan, Axis Auto Loan",
                   icon: Icons.title_outlined,
                   validator: (val) =>
                       (val == null || val.trim().isEmpty) ? "Required" : null,
                 ),
                 const SizedBox(height: AppSpacing.md),
 
-                _buildLabel('COUNTERPARTY / LENDER (OPTIONAL)'),
+                _buildLabel('LENDER / BANK NAME'),
                 _buildField(
                   controller: _lenderController,
-                  hint: "e.g. Bank of Baroda, John",
-                  icon: Icons.person_outline,
+                  hint: "e.g. State Bank of India, HDFC Bank",
+                  icon: Icons.account_balance_outlined,
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
                 Row(
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildLabel('CURRENT BALANCE'),
-                          _buildField(
-                            controller: _balanceController,
-                            hint: "₹ Remaining",
-                            icon: Icons.account_balance_wallet_outlined,
-                            isNumber: true,
-                            validator: (val) =>
-                                (val == null || val.trim().isEmpty)
-                                ? "Required"
-                                : null,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -346,29 +356,8 @@ class _AddLoanModalState extends State<AddLoanModal> {
                           _buildLabel('INTEREST % P.A.'),
                           _buildField(
                             controller: _rateController,
-                            hint: "e.g. 10.5",
+                            hint: "e.g. 8.5",
                             icon: Icons.percent_outlined,
-                            isNumber: true,
-                            onChanged: (_) => _calculateEMI(),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.lg),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildLabel('TENURE (MONTHS)'),
-                          _buildField(
-                            controller: _tenureController,
-                            hint: "e.g. 12",
-                            icon: Icons.timer_outlined,
                             isNumber: true,
                             onChanged: (_) => _calculateEMI(),
                           ),
@@ -380,17 +369,27 @@ class _AddLoanModalState extends State<AddLoanModal> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildLabel('MONTHLY EMI'),
+                          _buildLabel('TENURE (MONTHS)'),
                           _buildField(
-                            controller: _emiController,
-                            hint: "Auto or manual",
-                            icon: Icons.calendar_month_outlined,
+                            controller: _tenureController,
+                            hint: "e.g. 60",
+                            icon: Icons.timer_outlined,
                             isNumber: true,
+                            onChanged: (_) => _calculateEMI(),
                           ),
                         ],
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                _buildLabel('SCHEDULED MONTHLY EMI'),
+                _buildField(
+                  controller: _emiController,
+                  hint: "Calculated or custom EMI",
+                  icon: Icons.calendar_month_outlined,
+                  isNumber: true,
                 ),
                 const SizedBox(height: AppSpacing.xl2),
 
@@ -462,6 +461,64 @@ class _AddLoanModalState extends State<AddLoanModal> {
     );
   }
 
+  Widget _buildModeTab(String label, bool isOngoing) {
+    final isSelected = _isOngoingLoan == isOngoing;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _isOngoingLoan = isOngoing;
+          if (!isOngoing) {
+            _balanceController.text = _originalAmountController.text;
+          }
+        });
+      },
+      child: AnimatedContainer(
+        duration: AppAnimations.standard,
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryBlue.withValues(alpha: 0.15)
+              : Colors.transparent,
+          borderRadius: AppSpacing.borderRadiusSm,
+          border: Border.all(
+            color: isSelected ? AppColors.primaryBlue : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: AppTypography.labelSmall.copyWith(
+              color: isSelected
+                  ? AppColors.primaryBlue
+                  : AppColors.textSecondary,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeChip(String label, DebtType type) {
+    final isSelected = _selectedType == type;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) => setState(() => _selectedType = type),
+      selectedColor: AppColors.primaryBlue.withValues(alpha: 0.2),
+      backgroundColor: AppColors.darkSurfaceElevated,
+      labelStyle: TextStyle(
+        color: isSelected ? AppColors.primaryBlue : AppColors.textSecondary,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        fontSize: 12,
+      ),
+      side: BorderSide(
+        color: isSelected ? AppColors.primaryBlue : AppColors.borderSubtleDark,
+      ),
+    );
+  }
+
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
@@ -471,46 +528,6 @@ class _AddLoanModalState extends State<AddLoanModal> {
           color: AppColors.textTertiary,
           fontWeight: FontWeight.w800,
           letterSpacing: 1.1,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDirectionTab(String label, IconData icon, bool isBorrowed) {
-    final isSelected = _isBorrowed == isBorrowed;
-    final color = isBorrowed ? AppColors.warning : AppColors.success;
-    return GestureDetector(
-      onTap: () => setState(() => _isBorrowed = isBorrowed),
-      child: AnimatedContainer(
-        duration: AppAnimations.standard,
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? color.withValues(alpha: 0.15)
-              : Colors.transparent,
-          borderRadius: AppSpacing.borderRadiusSm,
-          border: Border.all(
-            color: isSelected ? color : Colors.transparent,
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? color : AppColors.textSecondary,
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            Text(
-              label,
-              style: AppTypography.labelSmall.copyWith(
-                color: isSelected ? color : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -559,8 +576,8 @@ class _AddLoanModalState extends State<AddLoanModal> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppSpacing.borderRadiusSm,
-          borderSide: BorderSide(
-            color: _isBorrowed ? AppColors.warning : AppColors.success,
+          borderSide: const BorderSide(
+            color: AppColors.primaryBlue,
             width: 1.5,
           ),
         ),

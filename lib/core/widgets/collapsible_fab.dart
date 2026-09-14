@@ -94,8 +94,15 @@ class _CollapsibleFabState extends State<CollapsibleFab>
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
+          // `easeOutBack` (the reverseCurve) intentionally overshoots past
+          // 1.0 and dips below 0.0 as part of its spring effect, so clamp
+          // it before using it for a physical size — otherwise `width` can
+          // briefly exceed `expandedWidth`, which then conflicts with the
+          // OverflowBox's fixed maxWidth below (minWidth > maxWidth =
+          // "non-normalized width constraints").
+          final widthFactorValue = _widthFactor.value.clamp(0.0, 1.0);
           final width =
-              fabSize + (expandedWidth - fabSize) * _widthFactor.value;
+              fabSize + (expandedWidth - fabSize) * widthFactorValue;
           return GestureDetector(
             onTap: _handlePressed,
             child: Container(
@@ -114,8 +121,13 @@ class _CollapsibleFabState extends State<CollapsibleFab>
                 ],
               ),
               child: OverflowBox(
-                // Gives the Row infinite space to prevent layout errors
-                maxWidth: double.infinity,
+                // Explicit, fixed bounds on both ends so this never inherits
+                // a stray minWidth from the parent Container's own (possibly
+                // overshot) width — that mismatch is what produced
+                // "BoxConstraints forces an infinite width" and
+                // "non-normalized width constraints" above.
+                minWidth: 0,
+                maxWidth: expandedWidth,
                 alignment: Alignment.center,
                 child: Row(
                   mainAxisSize: MainAxisSize

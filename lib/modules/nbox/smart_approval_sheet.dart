@@ -24,6 +24,7 @@ import '../../core/models/transaction_draft.dart';
 import '../../core/services/transaction_intent_classifier.dart';
 import '../../core/services/transaction_router.dart';
 import '../../core/services/transaction_automation_service.dart';
+import '../../core/services/transaction_link_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_animations.dart';
@@ -85,6 +86,12 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
   String? _selectedAccountId;
   String? _selectedDestinationAccountId;
   String? _selectedCategoryId;
+
+  // ── Link-to-existing (manual entry logged before detection) ────────────────
+  final TransactionLinkService _linkService = const TransactionLinkService();
+  List<LinkCandidate> _linkCandidates = [];
+  bool _linkSuggestionDismissed = false;
+  bool _isLinking = false;
 
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
@@ -150,8 +157,20 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
             : null;
         _selectedAccountId =
             intelligence.accountId ?? (matched ?? accounts.first).id;
-        _selectedCategoryId =
+        final proposedCategoryId =
             intelligence.categoryId ?? widget.detected.detectedCategory;
+        // Guard against a category id that doesn't exist in this user's
+        // category list (e.g. a stale/foreign default like "general" from
+        // elsewhere in the app, or a bad SMS/email guess). Assigning an
+        // invalid id here — even briefly — can crash DropdownButtonFormField
+        // on rebuild, since it only re-syncs to a new initialValue on the
+        // very first build.
+        final categoryIds = context.read<CategoryProvider>().categories.map(
+          (c) => c.id,
+        );
+        _selectedCategoryId = categoryIds.contains(proposedCategoryId)
+            ? proposedCategoryId
+            : null;
 
         // Try to identify a transfer destination from the source message.
         if (result == TransactionIntent.transfer) {
@@ -174,6 +193,28 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
           }
         }
       }
+    });
+    _refreshLinkCandidates();
+  }
+
+  /// Looks for manually-logged transactions this detection might actually be,
+  /// so the user can link instead of creating a duplicate. Re-run whenever
+  /// the selected subscription/debt/investment changes, since that narrows
+  /// (and strengthens) the search.
+  void _refreshLinkCandidates() {
+    final candidates = _linkService.findCandidates(
+      detected: widget.detected,
+      history: context.read<TransactionProvider>().transactions,
+      subscriptionId: _selectedSubscription?.id,
+      debtId: _selectedDebt?.id,
+      investmentId: _selectedInvestment?.id,
+    );
+    // Only worth surfacing reasonably confident suggestions.
+    final worthShowing = candidates.where((c) => c.confidence >= 0.35).toList();
+    if (!mounted) return;
+    setState(() {
+      _linkCandidates = worthShowing;
+      if (worthShowing.isEmpty) _linkSuggestionDismissed = false;
     });
   }
 
@@ -231,6 +272,22 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
     if (error != null) {
       showTopSnackBar(context, error, isError: true);
       return;
+    }
+
+    // Don't let the primary Save button silently bypass a possible match.
+    // The strict check further down only catches exact description matches,
+    // so a manually-logged "Renewal: Netflix" wouldn't stop a detected
+    // "Netflix" SMS from becoming a second transaction unless we force the
+    // user to explicitly resolve the suggestion first.
+    if (_linkCandidates.isNotEmpty && !_linkSuggestionDismissed) {
+      final choice = await _confirmLinkBeforeSave();
+      if (choice == null) return; // user backed out
+      if (choice) {
+        await _linkToExisting(_linkCandidates.first.transaction);
+        return;
+      }
+      // choice == false → user explicitly chose to create a new one anyway.
+      setState(() => _linkSuggestionDismissed = true);
     }
 
     setState(() => _isSaving = true);
@@ -351,8 +408,9 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
             description: widget.detected.merchant,
             categoryId: isTransfer ? 'transfer' : categoryId,
             accountId: _selectedAccountId!,
-            destinationAccountId:
-                isTransfer ? _selectedDestinationAccountId : null,
+            destinationAccountId: isTransfer
+                ? _selectedDestinationAccountId
+                : null,
             date: widget.detected.date,
             metadata: {
               'source': widget.detected.source,
@@ -415,6 +473,35 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
         setState(() => _isSaving = false);
       }
     }
+  }
+
+  /// Blocks a direct Save when there's an unresolved possible match, and
+  /// makes the user explicitly choose. Returns true=link, false=create new
+  /// anyway, null=cancelled (stay on the sheet).
+  Future<bool?> _confirmLinkBeforeSave() async {
+    final tx = _linkCandidates.first.transaction;
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Possible duplicate'),
+        content: Text(
+          'You already have "${tx.description ?? tx.metadata?['entity'] ?? 'a transaction'}" '
+          '· ₹${tx.amount.toStringAsFixed(0)} on '
+          '${DateFormat('d MMM').format(tx.date)}.\n\n'
+          'Link this detection to it, or create a separate transaction?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Create new anyway'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Link instead'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<String?> _findExistingTransactionId() async {
@@ -601,6 +688,11 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
                   children: [
                     _buildHeader(),
                     const SizedBox(height: 20),
+                    if (_linkCandidates.isNotEmpty &&
+                        !_linkSuggestionDismissed) ...[
+                      _buildLinkSuggestionCard(),
+                      const SizedBox(height: 20),
+                    ],
                     if (_classified) ...[
                       _buildIntentSelector(),
                       const SizedBox(height: 24),
@@ -720,6 +812,214 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
         ),
       ],
     );
+  }
+
+  // ── Link-to-existing suggestion ─────────────────────────────────────────
+
+  Widget _buildLinkSuggestionCard() {
+    final top = _linkCandidates.first;
+    final tx = top.transaction;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.accentOrange.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.accentOrange.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.link_rounded,
+                color: AppColors.accentOrange,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Already logged this?',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.accentOrange,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "${tx.description ?? tx.metadata?['entity'] ?? 'A transaction'} · "
+            '₹${tx.amount.toStringAsFixed(0)} on '
+            '${DateFormat('d MMM').format(tx.date)}',
+            style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+          ),
+          if (_linkCandidates.length > 1) ...[
+            const SizedBox(height: 4),
+            Text(
+              '+${_linkCandidates.length - 1} other possible match(es)',
+              style: TextStyle(color: AppColors.textTertiary, fontSize: 11),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: _isLinking
+                      ? null
+                      : () => setState(() => _linkSuggestionDismissed = true),
+                  child: Text(
+                    "No, it's different",
+                    style: TextStyle(color: AppColors.textTertiary),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isLinking ? null : () => _linkToExisting(tx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accentOrange,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: _isLinking
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Link, not new',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Merges this detection into an existing, manually-logged transaction
+  /// instead of creating a second entry. The detected data (from the bank
+  /// SMS/email) is treated as the source of truth for amount/date/merchant,
+  /// while any subscription/debt/investment linkage already present on the
+  /// manual entry is preserved. Side effects (advancing a due date,
+  /// decrementing a loan balance, etc.) are only (re-)applied if the manual
+  /// entry wasn't already tied to that entity — otherwise the manual log
+  /// already accounted for them and re-applying would double-count.
+  Future<void> _linkToExisting(transaction_models.Transaction existing) async {
+    setState(() => _isLinking = true);
+    try {
+      final detected = widget.detected;
+      final hadSubscriptionLink = existing.metadata?['subscriptionId'] != null;
+      final hadDebtLink = existing.metadata?['debtId'] != null;
+      final hadInvestmentLink = existing.metadata?['investmentId'] != null;
+      final hadAnyIntentLink =
+          hadSubscriptionLink || hadDebtLink || hadInvestmentLink;
+
+      final mergedMetadata = <String, dynamic>{
+        ...?existing.metadata,
+        'source': detected.source,
+        'sourceId': detected.id,
+        'sourceFingerprint': detected.fingerprint,
+        'linkedFromDetection': true,
+        'linkedAt': DateTime.now().toIso8601String(),
+      };
+
+      final updated = existing.copyWith(
+        amount: detected.amount,
+        date: detected.date,
+        description: existing.description ?? detected.merchant,
+        categoryId: _selectedCategoryId ?? existing.categoryId,
+        metadata: mergedMetadata,
+        updatedAt: DateTime.now(),
+      );
+
+      final txnProvider = context.read<TransactionProvider>();
+      final ok = await txnProvider.updateTransaction(updated, existing);
+      if (!ok) {
+        throw Exception(txnProvider.error ?? 'Could not update transaction');
+      }
+
+      // Only apply side effects if the manual entry wasn't already tied to
+      // this subscription/debt/investment (which would mean it already ran).
+      if (!hadAnyIntentLink) {
+        if (_activeIntent == TransactionIntent.emiPayment &&
+            _selectedDebt != null) {
+          final debt = _selectedDebt!;
+          final newBalance =
+              (debt.currentBalance - (debt.monthlyEMI ?? detected.amount))
+                  .clamp(0.0, double.infinity);
+          await context.read<DebtProvider>().updateDebt(
+            debt.copyWith(
+              currentBalance: newBalance,
+              paidMonths: (debt.paidMonths ?? 0) + 1,
+              nextPaymentDate: debt.nextPaymentDate != null
+                  ? DateTime(
+                      debt.nextPaymentDate!.year,
+                      debt.nextPaymentDate!.month + 1,
+                      debt.nextPaymentDate!.day,
+                    )
+                  : null,
+            ),
+          );
+          mergedMetadata['debtId'] = debt.id;
+          mergedMetadata['debtName'] = debt.name;
+        } else if (_activeIntent == TransactionIntent.subscriptionPayment &&
+            _selectedSubscription != null) {
+          final sub = _selectedSubscription!;
+          await context.read<SubscriptionProvider>().updateSubscription(
+            sub.copyWith(nextDueDate: sub.calculateNextDueDate()),
+          );
+          mergedMetadata['subscriptionId'] = sub.id;
+          mergedMetadata['subscriptionName'] = sub.name;
+        } else if (_activeIntent == TransactionIntent.investmentSip &&
+            _selectedInvestment != null) {
+          final inv = _selectedInvestment!;
+          await context.read<InvestmentProvider>().updateInvestment(
+            inv.copyWith(investedAmount: inv.investedAmount + detected.amount),
+          );
+          mergedMetadata['investmentId'] = inv.id;
+          mergedMetadata['investmentName'] = inv.name;
+        }
+        // Persist the entity id we just stamped on, if any changed above.
+        await txnProvider.updateTransaction(
+          updated.copyWith(metadata: mergedMetadata),
+          updated,
+        );
+      }
+
+      if (!mounted) return;
+      await context.read<NewNboxProvider>().markAsApproved(
+        detected.id,
+        detected.source,
+      );
+
+      if (mounted) {
+        showTopSnackBar(context, 'Linked to your existing entry');
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        showTopSnackBar(context, 'Could not link: $e', isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _isLinking = false);
+    }
   }
 
   Widget _buildDestinationAccountSelector() {
@@ -1089,7 +1389,10 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
                 ),
               )
               .toList(),
-          onChanged: (v) => setState(() => _selectedDebt = v),
+          onChanged: (v) {
+            setState(() => _selectedDebt = v);
+            _refreshLinkCandidates();
+          },
         ),
       ],
     );
@@ -1121,7 +1424,10 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
                 ),
               )
               .toList(),
-          onChanged: (v) => setState(() => _selectedSubscription = v),
+          onChanged: (v) {
+            setState(() => _selectedSubscription = v);
+            _refreshLinkCandidates();
+          },
         ),
       ],
     );
@@ -1153,7 +1459,10 @@ class _SmartApprovalSheetState extends State<SmartApprovalSheet>
                 ),
               )
               .toList(),
-          onChanged: (v) => setState(() => _selectedInvestment = v),
+          onChanged: (v) {
+            setState(() => _selectedInvestment = v);
+            _refreshLinkCandidates();
+          },
         ),
       ],
     );

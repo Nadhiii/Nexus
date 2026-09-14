@@ -19,7 +19,7 @@ android {
     defaultConfig {
         applicationId = "com.mahanadhi.nexus"
         minSdk = flutter.minSdkVersion
-        targetSdk = 37
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

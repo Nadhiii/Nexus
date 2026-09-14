@@ -36,7 +36,7 @@ class AuthService {
     // Do not replace a user-edited display name with an empty Auth value.
     if (user.displayName != null && user.displayName!.trim().isNotEmpty) {
       data['displayName'] = user.displayName!.trim();
-    } else if (!existing.exists || !(existing.data()?['displayName'] is String)) {
+    } else if (!existing.exists || existing.data()?['displayName'] is! String) {
       data['displayName'] = user.email?.split('@').first ?? 'Nexus User';
     }
 

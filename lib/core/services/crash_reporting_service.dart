@@ -46,6 +46,11 @@ class CrashReportingService {
     PlatformDispatcher.instance.onError = (error, stack) {
       if (kReleaseMode) {
         FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      } else {
+        // Previously this branch did nothing and still returned true below,
+        // which silently discarded every async error in debug mode too.
+        debugPrint('🔴 Uncaught async error: $error');
+        debugPrint(stack.toString());
       }
       return true;
     };

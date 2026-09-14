@@ -1,3 +1,16 @@
+@file:Suppress("UNCHECKED_CAST")
+
+try {
+    val peClass = Class.forName("java.lang.ProcessEnvironment")
+    val peField = peClass.getDeclaredField("theEnvironment")
+    peField.isAccessible = true
+    (peField.get(null) as? MutableMap<String, String>)?.remove("ANDROID_PREFS_ROOT")
+
+    val ciPeField = peClass.getDeclaredField("theCaseInsensitiveEnvironment")
+    ciPeField.isAccessible = true
+    (ciPeField.get(null) as? MutableMap<String, String>)?.remove("ANDROID_PREFS_ROOT")
+} catch (_: Exception) {}
+
 pluginManagement {
     val flutterSdkPath = run {
         val properties = java.util.Properties()

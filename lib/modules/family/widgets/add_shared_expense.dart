@@ -8,7 +8,6 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/providers/shared_expense_provider.dart';
 import '../../../core/models/shared_expense.dart';
 import '../../../core/widgets/top_snackbar.dart';
-import 'add_family_member.dart';
 
 class ModernAddSharedExpenseScreen extends StatefulWidget {
   final SharedExpense? expense;
@@ -100,7 +99,57 @@ class _ModernAddSharedExpenseScreenState
   }
 
   Future<void> _openAddNewMember() async {
-    final newMember = await ModernAddFamilyMemberScreen.show(context);
+    final nameCtrl = TextEditingController();
+    final newMember = await showDialog<FamilyMember>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: AppColors.cardElevated,
+        title: const Text('Add Member', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: nameCtrl,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Full Name (e.g. Alex)',
+            hintStyle: TextStyle(color: AppColors.textTertiary),
+            filled: true,
+            fillColor: AppColors.darkSurfaceElevated,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white54),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+            ),
+            onPressed: () async {
+              final name = nameCtrl.text.trim();
+              if (name.isEmpty) return;
+              final member = FamilyMember(
+                id: 'manual_${DateTime.now().millisecondsSinceEpoch}',
+                name: name,
+              );
+              await context.read<SharedExpenseProvider>().addFamilyMember(
+                member,
+              );
+              if (dialogCtx.mounted) Navigator.pop(dialogCtx, member);
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+
     if (newMember != null && mounted) {
       setState(() {
         _selectedParticipants.add(newMember.id);
@@ -272,11 +321,11 @@ class _ModernAddSharedExpenseScreenState
                   color: AppColors.primaryBlue,
                 ),
                 decoration: InputDecoration(
-                  hintText: "0.00",
+                  hintText: '0.00',
                   hintStyle: AppTypography.currencyMedium.copyWith(
                     color: AppColors.textTertiary,
                   ),
-                  prefixText: "₹ ",
+                  prefixText: '₹ ',
                   prefixStyle: AppTypography.currencyMedium.copyWith(
                     color: AppColors.primaryBlue,
                   ),
@@ -318,7 +367,7 @@ class _ModernAddSharedExpenseScreenState
                   color: AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
-                  hintText: "e.g. Dinner, Rent, Groceries",
+                  hintText: 'e.g. Dinner, Rent, Groceries',
                   hintStyle: AppTypography.bodyMedium.copyWith(
                     color: AppColors.textTertiary,
                   ),
@@ -364,7 +413,6 @@ class _ModernAddSharedExpenseScreenState
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              // Payer & Participant Selection
               Consumer<SharedExpenseProvider>(
                 builder: (context, provider, _) {
                   return Column(
@@ -587,8 +635,4 @@ class _ModernAddSharedExpenseScreenState
       ),
     );
   }
-}
-
-Future<void> navToAddSharedExpenseScreen(BuildContext context) {
-  return ModernAddSharedExpenseScreen.show(context);
 }

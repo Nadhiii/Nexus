@@ -14,6 +14,7 @@ import '../../../core/providers/transaction_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/top_snackbar.dart';
+import '../../../core/services/transaction_link_service.dart';
 import '../../../core/utils/logo_utils.dart';
 
 class LogSubscriptionPaymentModal extends StatefulWidget {
@@ -36,6 +37,7 @@ class _LogSubscriptionPaymentModalState
   Account? _selectedAccount;
   final DateTime _paymentDate = DateTime.now();
   bool _isLoading = false;
+  final TransactionLinkService _linkService = const TransactionLinkService();
 
   @override
   void initState() {
@@ -356,6 +358,31 @@ class _LogSubscriptionPaymentModalState
       return;
     }
 
+    // Scenario 2: the user may have already manually logged this renewal
+    // (e.g. as a plain expense, or from an SMS they approved separately)
+    // before opening this "Renew" sheet. Offer to link instead of creating
+    // a second transaction.
+    final candidates = _linkService.findCandidatesForPayment(
+      amount: amount,
+      date: _paymentDate,
+      isIncome: false,
+      merchant: widget.subscription.name,
+      history: context.read<TransactionProvider>().transactions,
+      subscriptionId: widget.subscription.id,
+      dateWindowDays: 5,
+    );
+    final worthShowing = candidates.where((c) => c.confidence >= 0.35).toList();
+    if (worthShowing.isNotEmpty) {
+      final choice = await _confirmLinkBeforeSave(
+        worthShowing.first.transaction,
+      );
+      if (choice == null) return;
+      if (choice) {
+        await _linkToExistingAndRenew(worthShowing.first.transaction);
+        return;
+      }
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -406,6 +433,74 @@ class _LogSubscriptionPaymentModalState
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  /// Returns true=link, false=create new anyway, null=cancelled.
+  Future<bool?> _confirmLinkBeforeSave(Transaction existing) {
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Already logged this renewal?'),
+        content: Text(
+          'You have "${existing.description ?? widget.subscription.name}" · '
+          '₹${existing.amount.toStringAsFixed(0)} on '
+          '${DateFormat('d MMM').format(existing.date)}.\n\n'
+          'Link this renewal to it, or record a separate transaction?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Record new anyway'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Link instead'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Links this renewal to an existing transaction instead of creating a
+  /// second one. `nextDueDate` is safe to always recompute — it only rolls
+  /// forward while overdue, so calling it again when already advanced is a
+  /// no-op (see calculateNextDueDate).
+  Future<void> _linkToExistingAndRenew(Transaction existing) async {
+    setState(() => _isLoading = true);
+    try {
+      final mergedMetadata = <String, dynamic>{
+        ...?existing.metadata,
+        'source': existing.metadata?['source'] ?? 'subscription',
+        'subscriptionId': widget.subscription.id,
+        'subscriptionName': widget.subscription.name,
+        'linkedAt': DateTime.now().toIso8601String(),
+      };
+      final updated = existing.copyWith(
+        metadata: mergedMetadata,
+        updatedAt: DateTime.now(),
+      );
+
+      final txnProvider = context.read<TransactionProvider>();
+      final ok = await txnProvider.updateTransaction(updated, existing);
+      if (!ok)
+        throw Exception(txnProvider.error ?? 'Could not update transaction');
+
+      final updatedSub = widget.subscription.copyWith(
+        nextDueDate: widget.subscription.calculateNextDueDate(),
+      );
+      await context.read<SubscriptionProvider>().updateSubscription(updatedSub);
+
+      if (mounted) {
+        Navigator.pop(context);
+        showTopSnackBar(context, "Linked to your existing entry");
+      }
+    } catch (e) {
+      if (mounted) {
+        showTopSnackBar(context, "Could not link: $e", isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 }

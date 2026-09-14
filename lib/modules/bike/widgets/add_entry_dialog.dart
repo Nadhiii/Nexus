@@ -136,7 +136,7 @@ class _AddEntryDialogState extends State<AddEntryDialog> {
             description: _isFuelMode
                 ? '${widget.bike.name} - Fuel (${currentFuelQty.toStringAsFixed(1)}L)'
                 : '${widget.bike.name} - $category',
-            categoryId: 'transportation',
+            categoryId: 'transport',
             accountId: _selectedAccount!.id,
             date: _selectedDate,
             metadata: {

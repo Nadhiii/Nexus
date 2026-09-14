@@ -16,7 +16,10 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/top_snackbar.dart';
 import '../../../core/utils/logo_utils.dart';
+import '../../../core/services/transaction_link_service.dart';
 import '../utils/debt_logo_utils.dart';
+
+enum PaymentKind { emi, extraPrincipal, fullBalance }
 
 class PayDebtModal extends StatefulWidget {
   final Debt debt;
@@ -35,9 +38,11 @@ class _PayDebtModalState extends State<PayDebtModal>
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
 
+  PaymentKind _paymentKind = PaymentKind.emi;
   Account? _selectedAccount;
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
+  final TransactionLinkService _linkService = const TransactionLinkService();
 
   @override
   void initState() {
@@ -51,12 +56,28 @@ class _PayDebtModalState extends State<PayDebtModal>
     );
     _controller.forward();
 
-    // Default amount to EMI if available, else current balance
-    double defaultAmount = widget.debt.monthlyEMI ?? 0;
-    if (defaultAmount == 0 || defaultAmount > widget.debt.currentBalance) {
-      defaultAmount = widget.debt.currentBalance;
+    _syncDefaultAmount(PaymentKind.emi);
+  }
+
+  void _syncDefaultAmount(PaymentKind kind) {
+    _paymentKind = kind;
+    double amount = 0;
+    switch (kind) {
+      case PaymentKind.emi:
+        amount = widget.debt.monthlyEMI ?? widget.debt.currentBalance;
+        if (amount > widget.debt.currentBalance) {
+          amount = widget.debt.currentBalance;
+        }
+        break;
+      case PaymentKind.fullBalance:
+        amount = widget.debt.currentBalance;
+        break;
+      case PaymentKind.extraPrincipal:
+        amount = 10000;
+        break;
     }
-    _amountController.text = defaultAmount.toStringAsFixed(0);
+    _amountController.text = amount.toStringAsFixed(0);
+    setState(() {});
   }
 
   @override
@@ -73,7 +94,6 @@ class _PayDebtModalState extends State<PayDebtModal>
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Blur Backdrop
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(color: Colors.black.withValues(alpha: 0.6)),
@@ -82,8 +102,8 @@ class _PayDebtModalState extends State<PayDebtModal>
             child: ScaleTransition(
               scale: _scaleAnimation,
               child: Container(
-                width: MediaQuery.of(context).size.width * 0.9,
-                constraints: const BoxConstraints(maxWidth: 400),
+                width: MediaQuery.of(context).size.width * 0.92,
+                constraints: const BoxConstraints(maxWidth: 420),
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: AppColors.backgroundBlack,
@@ -93,22 +113,26 @@ class _PayDebtModalState extends State<PayDebtModal>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.error.withValues(alpha: 0.2),
+                      color: AppColors.primaryBlue.withValues(alpha: 0.15),
                       blurRadius: 40,
                       offset: const Offset(0, 20),
                     ),
                   ],
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 24),
-                    _buildContent(),
-                    const SizedBox(height: 32),
-                    _buildActions(),
-                  ],
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(),
+                      const SizedBox(height: 20),
+                      _buildPaymentKindSelector(),
+                      const SizedBox(height: 20),
+                      _buildContent(),
+                      const SizedBox(height: 28),
+                      _buildActions(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -125,35 +149,84 @@ class _PayDebtModalState extends State<PayDebtModal>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Record Payment",
-              style: AppTypography.headlineSmall.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Make Loan Payment",
+                style: AppTypography.headlineSmall.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            Text(
-              "for ${widget.debt.name}",
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textTertiary,
+              Text(
+                widget.debt.name,
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textTertiary,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.error.withValues(alpha: 0.1),
+            color: AppColors.primaryBlue.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: debtLogo != null
               ? LogoUtils.buildLogo(debtLogo, size: 20 * debtLogoScale)
-              : const Icon(Icons.payments_outlined, color: AppColors.error),
+              : const Icon(Icons.account_balance, color: AppColors.primaryBlue),
         ),
       ],
+    );
+  }
+
+  Widget _buildPaymentKindSelector() {
+    return Row(
+      children: [
+        if (widget.debt.monthlyEMI != null && widget.debt.monthlyEMI! > 0)
+          Expanded(child: _buildKindTab("Scheduled EMI", PaymentKind.emi)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildKindTab("Extra / Part", PaymentKind.extraPrincipal),
+        ),
+        const SizedBox(width: 8),
+        Expanded(child: _buildKindTab("Full Payoff", PaymentKind.fullBalance)),
+      ],
+    );
+  }
+
+  Widget _buildKindTab(String label, PaymentKind kind) {
+    final isSelected = _paymentKind == kind;
+    return GestureDetector(
+      onTap: () => _syncDefaultAmount(kind),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryBlue.withValues(alpha: 0.15)
+              : AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primaryBlue
+                : Colors.white.withValues(alpha: 0.05),
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : AppColors.textTertiary,
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -161,15 +234,14 @@ class _PayDebtModalState extends State<PayDebtModal>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. Amount Input
-        Text("AMOUNT", style: _labelStyle()),
+        Text("PAYMENT AMOUNT", style: _labelStyle()),
         const SizedBox(height: AppSpacing.sm),
         TextFormField(
           controller: _amountController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 24,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
           ),
           decoration: InputDecoration(
@@ -188,22 +260,20 @@ class _PayDebtModalState extends State<PayDebtModal>
               vertical: AppSpacing.md,
             ),
             suffixText:
-                "Outstanding: ₹${widget.debt.currentBalance.toStringAsFixed(0)}",
+                "Balance: ₹${widget.debt.currentBalance.toStringAsFixed(0)}",
             suffixStyle: const TextStyle(
-              fontSize: 10,
+              fontSize: 11,
               color: AppColors.textTertiary,
             ),
           ),
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 18),
 
-        // 2. Source Account Selector
-        Text("PAY FROM", style: _labelStyle()),
+        Text("PAY FROM ACCOUNT", style: _labelStyle()),
         const SizedBox(height: AppSpacing.sm),
         Consumer<AccountProvider>(
           builder: (context, provider, _) {
-            // Auto-select first account if none selected
             if (_selectedAccount == null && provider.accounts.isNotEmpty) {
               _selectedAccount = provider.accounts.first;
             }
@@ -212,7 +282,7 @@ class _PayDebtModalState extends State<PayDebtModal>
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: AppColors.cardSurface,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
               ),
               child: DropdownButtonHideUnderline(
@@ -271,55 +341,47 @@ class _PayDebtModalState extends State<PayDebtModal>
           },
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 18),
 
-        // 3. Date Picker Pill
-        Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _selectedDate,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime.now(),
-                  );
-                  if (picked != null) { setState(() => _selectedDate = picked); }
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardSurface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.05),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        DateFormat('dd MMM yyyy').format(_selectedDate),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+        Text("PAYMENT DATE", style: _labelStyle()),
+        const SizedBox(height: AppSpacing.sm),
+        GestureDetector(
+          onTap: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: _selectedDate,
+              firstDate: DateTime(2020),
+              lastDate: DateTime.now(),
+            );
+            if (picked != null) {
+              setState(() => _selectedDate = picked);
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            decoration: BoxDecoration(
+              color: AppColors.cardSurface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.calendar_today,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  DateFormat('dd MMM yyyy').format(_selectedDate),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ],
     );
@@ -345,12 +407,11 @@ class _PayDebtModalState extends State<PayDebtModal>
             child: ElevatedButton(
               onPressed: _isLoading ? null : _processPayment,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
+                backgroundColor: AppColors.primaryBlue,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(25),
                 ),
-                elevation: 8,
-                shadowColor: AppColors.error.withValues(alpha: 0.4),
+                elevation: 4,
               ),
               child: _isLoading
                   ? const SizedBox(
@@ -362,7 +423,7 @@ class _PayDebtModalState extends State<PayDebtModal>
                       ),
                     )
                   : const Text(
-                      "Confirm Payment",
+                      "Record Payment",
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -377,9 +438,9 @@ class _PayDebtModalState extends State<PayDebtModal>
 
   TextStyle _labelStyle() => TextStyle(
     color: AppColors.textTertiary,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: FontWeight.bold,
-    letterSpacing: 1.0,
+    letterSpacing: 1.1,
   );
 
   Future<void> _processPayment() async {
@@ -393,28 +454,53 @@ class _PayDebtModalState extends State<PayDebtModal>
       return;
     }
 
+    final candidates = _linkService.findCandidatesForPayment(
+      amount: amount,
+      date: _selectedDate,
+      isIncome: false,
+      merchant: widget.debt.name,
+      history: context.read<TransactionProvider>().transactions,
+      debtId: widget.debt.id,
+      dateWindowDays: 7,
+    );
+    final worthShowing = candidates.where((c) => c.confidence >= 0.35).toList();
+    if (worthShowing.isNotEmpty) {
+      final choice = await _confirmLinkBeforeSave(
+        worthShowing.first.transaction,
+      );
+      if (choice == null) return;
+      if (choice) {
+        await _linkToExistingAndPay(worthShowing.first.transaction);
+        return;
+      }
+    }
+
     setState(() => _isLoading = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) { throw Exception("User not logged in"); }
+      if (user == null) throw Exception("User not logged in");
 
-      // 1. Create Transaction (This handles the Account Debit automatically!)
+      final isEmi = _paymentKind == PaymentKind.emi;
       final transaction = Transaction(
-        id: DateTime.now().millisecondsSinceEpoch.toString(), // Temp ID
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
         userId: user.uid,
-        type: TransactionType
-            .expense, // Expense because money leaves your net worth
+        type: TransactionType.expense,
         amount: amount,
-        description: "Payment for ${widget.debt.name}",
-        categoryId: "debt_repayment", // Or fetch ID for 'Debt'
+        description: isEmi
+            ? "EMI Payment for ${widget.debt.name}"
+            : "Loan Payment for ${widget.debt.name}",
+        categoryId: "other",
         accountId: _selectedAccount!.id,
         date: _selectedDate,
         metadata: {
           'intent': 'debt_repayment',
           'debtId': widget.debt.id,
           'debtName': widget.debt.name,
-          'paidMonthIndex': (widget.debt.paidMonths ?? 0) + 1,
+          'paymentKind': _paymentKind.name,
+          'paidMonthIndex': isEmi
+              ? (widget.debt.paidMonths ?? 0) + 1
+              : (widget.debt.paidMonths ?? 0),
         },
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -423,14 +509,10 @@ class _PayDebtModalState extends State<PayDebtModal>
       final txnProvider = context.read<TransactionProvider>();
       final debtProvider = context.read<DebtProvider>();
 
-      // Execute Bridge Actions
       await txnProvider.commitDraft(
         TransactionDraft.fromTransaction(transaction),
-      ); // Updates Account Balance
-      await debtProvider.payDebt(
-        widget.debt.id,
-        amount,
-      ); // Updates Debt Balance
+      );
+      await debtProvider.payDebt(widget.debt.id, amount);
 
       if (mounted) {
         Navigator.pop(context);
@@ -441,12 +523,77 @@ class _PayDebtModalState extends State<PayDebtModal>
         showTopSnackBar(context, "Transaction failed: $e", isError: true);
       }
     } finally {
-      if (mounted) { setState(() => _isLoading = false); }
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<bool?> _confirmLinkBeforeSave(Transaction existing) {
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Already logged this payment?'),
+        content: Text(
+          'Found "${existing.description ?? widget.debt.name}" · '
+          '₹${existing.amount.toStringAsFixed(0)} on '
+          '${DateFormat('d MMM').format(existing.date)}.\n\n'
+          'Link this payment to it, or record a separate transaction?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Record new anyway'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Link instead'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _linkToExistingAndPay(Transaction existing) async {
+    setState(() => _isLoading = true);
+    try {
+      final mergedMetadata = <String, dynamic>{
+        ...?existing.metadata,
+        'intent': existing.metadata?['intent'] ?? 'debt_repayment',
+        'debtId': widget.debt.id,
+        'debtName': widget.debt.name,
+        'linkedAt': DateTime.now().toIso8601String(),
+      };
+      final updated = existing.copyWith(
+        metadata: mergedMetadata,
+        updatedAt: DateTime.now(),
+      );
+
+      final txnProvider = context.read<TransactionProvider>();
+      final ok = await txnProvider.updateTransaction(updated, existing);
+      if (!ok)
+        throw Exception(txnProvider.error ?? 'Could not update transaction');
+
+      final alreadyAppliedToDebt = existing.metadata?['debtId'] != null;
+      if (!alreadyAppliedToDebt) {
+        await context.read<DebtProvider>().payDebt(
+          widget.debt.id,
+          existing.amount,
+        );
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+        showTopSnackBar(context, "Linked to existing entry");
+      }
+    } catch (e) {
+      if (mounted) {
+        showTopSnackBar(context, "Could not link: $e", isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 }
 
-// Wrapper for easy call
 Future<void> showPayDebtModal(BuildContext context, Debt debt) {
   return Navigator.of(context).push(
     PageRouteBuilder(

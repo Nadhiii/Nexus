@@ -25,12 +25,6 @@ class GmailProvider extends ChangeNotifier {
   GmailSyncSettings _settings = const GmailSyncSettings();
   Timer? _syncTimer;
   StreamSubscription<GoogleSignInAuthenticationEvent>? _authSubscription;
-  // Guards against the authenticationEvents listener (below) racing with an
-  // in-flight linkAccount() call. Both paths set _hasGmailAccess after a
-  // sign-in; without this flag the listener's cached-only scope check can
-  // fire after linkAccount()'s real authorizeScopes() result and silently
-  // overwrite it back to false, which is what caused Gmail sync to need a
-  // second manual trigger.
   bool _isLinking = false;
 
   GoogleSignInAccount? get currentUser => _currentUser;
@@ -44,10 +38,7 @@ class GmailProvider extends ChangeNotifier {
 
   bool _isInitialized = false;
 
-  GmailProvider() {
-    // FIX: Removed initialize() from constructor.
-    // It will now be called explicitly by AuthGate.
-  }
+  GmailProvider();
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -59,20 +50,8 @@ class GmailProvider extends ChangeNotifier {
       (event) {
         if (event is GoogleSignInAuthenticationEventSignIn) {
           _currentUser = event.user;
-          // Skip this cached-only scope check while linkAccount() is
-          // actively requesting a fresh grant — its result is authoritative
-          // and would otherwise get clobbered by this racing, stale read.
           if (!_isLinking) {
-            Future.microtask(() async {
-              final existing = await event.user.authorizationClient
-                  .authorizationForScopes(_gmailScopes);
-              _hasGmailAccess = existing != null;
-              if (_hasGmailAccess) {
-                scanEmails();
-                _startAutoSync();
-              }
-              notifyListeners();
-            });
+            _checkExistingGmailAccess(event.user);
           }
         } else if (event is GoogleSignInAuthenticationEventSignOut) {
           _currentUser = null;
@@ -80,8 +59,8 @@ class GmailProvider extends ChangeNotifier {
           _detectedTransactions.clear();
           _lastSyncTime = null;
           _stopAutoSync();
+          notifyListeners();
         }
-        notifyListeners();
       },
       onError: (e) {
         if (kDebugMode) debugPrint('[GmailProvider] Auth stream error: $e');
@@ -89,10 +68,31 @@ class GmailProvider extends ChangeNotifier {
     );
 
     try {
-      await GoogleSignIn.instance.attemptLightweightAuthentication();
+      final user = await GoogleSignIn.instance
+          .attemptLightweightAuthentication();
+      if (user != null) {
+        _currentUser = user;
+        await _checkExistingGmailAccess(user);
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('[GmailProvider] Auth init failed: $e');
     }
+  }
+
+  Future<void> _checkExistingGmailAccess(GoogleSignInAccount user) async {
+    try {
+      final existing = await user.authorizationClient.authorizationForScopes(
+        _gmailScopes,
+      );
+      _hasGmailAccess = existing != null;
+      if (_hasGmailAccess) {
+        _startAutoSync();
+      }
+    } catch (e) {
+      _hasGmailAccess = false;
+      if (kDebugMode) debugPrint('[GmailProvider] Scope check error: $e');
+    }
+    notifyListeners();
   }
 
   Future<void> ensureInitialized() => initialize();
@@ -218,9 +218,6 @@ class GmailProvider extends ChangeNotifier {
       final startDate =
           _lastSyncTime ??
           DateTime.now().subtract(Duration(days: _settings.daysToScan));
-      // Gmail's after: filter excludes the given day itself, so subtract
-      // one extra day to make sure we don't lose today's/this sync
-      // window's emails when startDate is "now" from a prior sync.
       final queryDate = startDate.subtract(const Duration(days: 1));
       final formattedDate = queryDate.toIso8601String().split('T').first;
 
@@ -248,12 +245,6 @@ class GmailProvider extends ChangeNotifier {
         maxResults: 40,
         q: finalQuery,
       );
-
-      if (kDebugMode) {
-        debugPrint(
-          '[GmailProvider] resultSizeEstimate: ${listResponse.resultSizeEstimate}, messages: ${listResponse.messages?.length}',
-        );
-      }
 
       final List<DetectedTransaction> freshTransactions = [];
 
@@ -315,11 +306,6 @@ class GmailProvider extends ChangeNotifier {
         }
       }
 
-      // Merge fresh detections into the existing list instead of
-      // overwriting it. scanEmails() only queries messages *after*
-      // _lastSyncTime, so a small/empty fresh batch is expected on
-      // repeat scans and must not wipe out previously detected,
-      // still-pending transactions.
       final Map<String, DetectedTransaction> merged = {
         for (final tx in _detectedTransactions)
           '${tx.source}:${tx.fingerprint}': tx,

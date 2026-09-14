@@ -53,14 +53,54 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
   double _recommendedGoalContribution = 0;
 
   final List<Map<String, dynamic>> _categories = [
-    {'id': 'housing', 'name': 'Housing', 'icon': Icons.home_outlined, 'color': AppColors.info},
-    {'id': 'food', 'name': 'Food', 'icon': Icons.restaurant_outlined, 'color': AppColors.success},
-    {'id': 'transportation', 'name': 'Transport', 'icon': Icons.directions_car_outlined, 'color': AppColors.warning},
-    {'id': 'shopping', 'name': 'Shopping', 'icon': Icons.shopping_bag_outlined, 'color': AppColors.error},
-    {'id': 'entertainment', 'name': 'Entertainment', 'icon': Icons.movie_outlined, 'color': AppColors.accentPink},
-    {'id': 'health', 'name': 'Health', 'icon': Icons.local_hospital_outlined, 'color': AppColors.accentTeal},
-    {'id': 'savings', 'name': 'Savings', 'icon': Icons.savings_outlined, 'color': AppColors.accentPurple},
-    {'id': 'miscellaneous', 'name': 'Misc', 'icon': Icons.more_horiz_outlined, 'color': AppColors.textSecondary},
+    {
+      'id': 'housing',
+      'name': 'Housing',
+      'icon': Icons.home_outlined,
+      'color': AppColors.info,
+    },
+    {
+      'id': 'food',
+      'name': 'Food',
+      'icon': Icons.restaurant_outlined,
+      'color': AppColors.success,
+    },
+    {
+      'id': 'transportation',
+      'name': 'Transport',
+      'icon': Icons.directions_car_outlined,
+      'color': AppColors.warning,
+    },
+    {
+      'id': 'shopping',
+      'name': 'Shopping',
+      'icon': Icons.shopping_bag_outlined,
+      'color': AppColors.error,
+    },
+    {
+      'id': 'entertainment',
+      'name': 'Entertainment',
+      'icon': Icons.movie_outlined,
+      'color': AppColors.accentPink,
+    },
+    {
+      'id': 'health',
+      'name': 'Health',
+      'icon': Icons.local_hospital_outlined,
+      'color': AppColors.accentTeal,
+    },
+    {
+      'id': 'savings',
+      'name': 'Savings',
+      'icon': Icons.savings_outlined,
+      'color': AppColors.accentPurple,
+    },
+    {
+      'id': 'miscellaneous',
+      'name': 'Misc',
+      'icon': Icons.more_horiz_outlined,
+      'color': AppColors.textSecondary,
+    },
   ];
 
   @override
@@ -87,12 +127,17 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
   void _loadCommitments() {
     final debtProvider = context.read<DebtProvider>();
     final debts = debtProvider.debts
-        .where((d) => d.currentBalance > 0 && d.monthlyEMI != null && d.monthlyEMI! > 0)
+        .where(
+          (d) =>
+              d.currentBalance > 0 && d.monthlyEMI != null && d.monthlyEMI! > 0,
+        )
         .toList();
     _totalEMIs = debts.fold(0.0, (sum, d) => sum + (d.monthlyEMI ?? 0));
 
     final invProvider = context.read<InvestmentProvider>();
-    final invs = invProvider.investments.where((i) => i.isActive && i.sipAmount > 0).toList();
+    final invs = invProvider.investments
+        .where((i) => i.isActive && i.sipAmount > 0)
+        .toList();
     _totalSIPs = invs.fold(0.0, (sum, i) => sum + i.sipAmount);
 
     final subProvider = context.read<SubscriptionProvider>();
@@ -103,7 +148,8 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
     _recommendedGoalContribution = 0;
     for (final g in goals) {
       final months = g.targetDate.difference(DateTime.now()).inDays / 30;
-      if (months > 0) _recommendedGoalContribution += g.remainingAmount / months;
+      if (months > 0)
+        _recommendedGoalContribution += g.remainingAmount / months;
     }
     if (mounted) setState(() {});
   }
@@ -119,7 +165,10 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
   }
 
   double get _totalCommitments =>
-      _totalEMIs + _totalSIPs + _totalSubscriptions + _recommendedGoalContribution;
+      _totalEMIs +
+      _totalSIPs +
+      _totalSubscriptions +
+      _recommendedGoalContribution;
 
   void _saveBudget() async {
     if (!_formKey.currentState!.validate()) return;
@@ -173,9 +222,13 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
 
     return Material(
       color: AppColors.darkSurface,
-      borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(AppSpacing.radiusLg),
+      ),
       child: Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.90),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.90,
+        ),
         padding: EdgeInsets.fromLTRB(
           AppSpacing.xl,
           AppSpacing.md,
@@ -207,7 +260,9 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
                   children: [
                     Text(
                       _isEditMode ? "Edit Budget" : "New Budget",
-                      style: AppTypography.headlineMedium.copyWith(color: AppColors.textPrimary),
+                      style: AppTypography.headlineMedium.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
@@ -226,13 +281,21 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
                 _buildLabel('MONTHLY SPENDING LIMIT'),
                 TextFormField(
                   controller: _allocatedAmountController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: AppTypography.currencyMedium.copyWith(color: activeColor),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  style: AppTypography.currencyMedium.copyWith(
+                    color: activeColor,
+                  ),
                   decoration: InputDecoration(
                     hintText: "0.00",
-                    hintStyle: AppTypography.currencyMedium.copyWith(color: AppColors.textTertiary),
+                    hintStyle: AppTypography.currencyMedium.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
                     prefixText: "₹ ",
-                    prefixStyle: AppTypography.currencyMedium.copyWith(color: activeColor),
+                    prefixStyle: AppTypography.currencyMedium.copyWith(
+                      color: activeColor,
+                    ),
                     filled: true,
                     fillColor: AppColors.darkSurfaceElevated,
                     contentPadding: const EdgeInsets.symmetric(
@@ -241,11 +304,15 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: AppSpacing.borderRadiusSm,
-                      borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: AppSpacing.borderRadiusSm,
-                      borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: AppSpacing.borderRadiusSm,
@@ -253,8 +320,10 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
                     ),
                   ),
                   validator: (val) {
-                    if (val == null || val.trim().isEmpty) return "Limit is required";
-                    if (double.tryParse(val.trim()) == null) return "Enter a valid amount";
+                    if (val == null || val.trim().isEmpty)
+                      return "Limit is required";
+                    if (double.tryParse(val.trim()) == null)
+                      return "Enter a valid amount";
                     return null;
                   },
                 ),
@@ -292,7 +361,9 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
                               : AppColors.darkSurfaceElevated,
                           borderRadius: AppSpacing.borderRadiusSm,
                           border: Border.all(
-                            color: isSelected ? color : AppColors.borderSubtleDark,
+                            color: isSelected
+                                ? color
+                                : AppColors.borderSubtleDark,
                             width: isSelected ? 1.5 : 1.0,
                           ),
                         ),
@@ -301,15 +372,21 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
                           children: [
                             Icon(
                               cat['icon'],
-                              color: isSelected ? color : AppColors.textSecondary,
+                              color: isSelected
+                                  ? color
+                                  : AppColors.textSecondary,
                               size: 22,
                             ),
                             const SizedBox(height: 4),
                             Text(
                               cat['name'],
                               style: AppTypography.labelSmall.copyWith(
-                                color: isSelected ? color : AppColors.textSecondary,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                color: isSelected
+                                    ? color
+                                    : AppColors.textSecondary,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -324,10 +401,14 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
                 _buildLabel('BUDGET NAME'),
                 TextFormField(
                   controller: _categoryNameController,
-                  style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary),
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
                   decoration: InputDecoration(
                     hintText: "e.g. Groceries, Dine Out",
-                    hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textTertiary),
+                    hintStyle: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
                     filled: true,
                     fillColor: AppColors.darkSurfaceElevated,
                     contentPadding: const EdgeInsets.symmetric(
@@ -335,24 +416,36 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
                       vertical: AppSpacing.md,
                     ),
                     prefixIcon: const Padding(
-                      padding: EdgeInsets.only(left: AppSpacing.md, right: AppSpacing.sm),
-                      child: Icon(Icons.label_outline, color: AppColors.textSecondary, size: 20),
+                      padding: EdgeInsets.only(
+                        left: AppSpacing.md,
+                        right: AppSpacing.sm,
+                      ),
+                      child: Icon(
+                        Icons.label_outline,
+                        color: AppColors.textSecondary,
+                        size: 20,
+                      ),
                     ),
                     border: OutlineInputBorder(
                       borderRadius: AppSpacing.borderRadiusSm,
-                      borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: AppSpacing.borderRadiusSm,
-                      borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+                      borderSide: const BorderSide(
+                        color: AppColors.borderSubtleDark,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: AppSpacing.borderRadiusSm,
                       borderSide: BorderSide(color: activeColor, width: 1.5),
                     ),
                   ),
-                  validator: (val) =>
-                      (val == null || val.trim().isEmpty) ? "Name is required" : null,
+                  validator: (val) => (val == null || val.trim().isEmpty)
+                      ? "Name is required"
+                      : null,
                 ),
 
                 if (!_isEditMode && _totalCommitments > 0) ...[
@@ -368,16 +461,22 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
                       child: TextButton(
                         onPressed: () => Navigator.pop(context),
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.lg,
+                          ),
                           backgroundColor: AppColors.darkSurfaceElevated,
                           shape: RoundedRectangleBorder(
                             borderRadius: AppSpacing.borderRadiusSm,
-                            side: const BorderSide(color: AppColors.borderSubtleDark),
+                            side: const BorderSide(
+                              color: AppColors.borderSubtleDark,
+                            ),
                           ),
                         ),
                         child: Text(
                           'Cancel',
-                          style: AppTypography.labelLarge.copyWith(color: AppColors.textSecondary),
+                          style: AppTypography.labelLarge.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ),
                     ),
@@ -387,7 +486,9 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _saveBudget,
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.lg,
+                          ),
                           backgroundColor: activeColor,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -450,7 +551,11 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.info_outline, color: AppColors.warning, size: 18),
+                const Icon(
+                  Icons.info_outline,
+                  color: AppColors.warning,
+                  size: 18,
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
@@ -471,8 +576,10 @@ class _ModernAddBudgetScreenState extends State<ModernAddBudgetScreen> {
             if (_showCommitments) ...[
               const SizedBox(height: AppSpacing.sm),
               if (_totalEMIs > 0) _buildCommitmentDetail("EMIs", _totalEMIs),
-              if (_totalSIPs > 0) _buildCommitmentDetail("SIP Investments", _totalSIPs),
-              if (_totalSubscriptions > 0) _buildCommitmentDetail("Subscriptions", _totalSubscriptions),
+              if (_totalSIPs > 0)
+                _buildCommitmentDetail("SIP Investments", _totalSIPs),
+              if (_totalSubscriptions > 0)
+                _buildCommitmentDetail("Subscriptions", _totalSubscriptions),
             ],
           ],
         ),
@@ -543,12 +650,17 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
   void _loadCommitments() {
     final debtProvider = context.read<DebtProvider>();
     final debts = debtProvider.debts
-        .where((d) => d.currentBalance > 0 && d.monthlyEMI != null && d.monthlyEMI! > 0)
+        .where(
+          (d) =>
+              d.currentBalance > 0 && d.monthlyEMI != null && d.monthlyEMI! > 0,
+        )
         .toList();
     _totalEMIs = debts.fold(0.0, (sum, d) => sum + (d.monthlyEMI ?? 0));
 
     final invProvider = context.read<InvestmentProvider>();
-    final invs = invProvider.investments.where((i) => i.isActive && i.sipAmount > 0).toList();
+    final invs = invProvider.investments
+        .where((i) => i.isActive && i.sipAmount > 0)
+        .toList();
     _totalSIPs = invs.fold(0.0, (sum, i) => sum + i.sipAmount);
 
     final subProvider = context.read<SubscriptionProvider>();
@@ -559,13 +671,17 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
     _recommendedGoalContribution = 0;
     for (final g in goals) {
       final months = g.targetDate.difference(DateTime.now()).inDays / 30;
-      if (months > 0) _recommendedGoalContribution += g.remainingAmount / months;
+      if (months > 0)
+        _recommendedGoalContribution += g.remainingAmount / months;
     }
     if (mounted) setState(() {});
   }
 
   double get _totalCommitments =>
-      _totalEMIs + _totalSIPs + _totalSubscriptions + _recommendedGoalContribution;
+      _totalEMIs +
+      _totalSIPs +
+      _totalSubscriptions +
+      _recommendedGoalContribution;
 
   void _runSmartSetup() async {
     final income = double.tryParse(_incomeController.text.trim());
@@ -576,7 +692,11 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
 
     final availableForBudgets = income - _totalCommitments;
     if (availableForBudgets <= 0) {
-      showTopSnackBar(context, 'Your commitments exceed your income!', isError: true);
+      showTopSnackBar(
+        context,
+        'Your commitments exceed your income!',
+        isError: true,
+      );
       return;
     }
 
@@ -594,7 +714,7 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
       final budgets = [
         Budget(
           id: '',
-          categoryId: 'housing',
+          categoryId: 'rent',
           categoryName: 'Housing & Rent',
           allocatedAmount: needsAmount * 0.30,
           period: 'monthly',
@@ -620,7 +740,7 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
         ),
         Budget(
           id: '',
-          categoryId: 'transportation',
+          categoryId: 'transport',
           categoryName: 'Transportation',
           allocatedAmount: needsAmount * 0.20,
           period: 'monthly',
@@ -673,9 +793,10 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
         if (_totalSIPs < savingsAmount * 0.5)
           Budget(
             id: '',
-            categoryId: 'savings',
+            categoryId: 'investment',
             categoryName: 'Savings & Emergency',
-            allocatedAmount: savingsAmount - _totalSIPs.clamp(0, savingsAmount * 0.5),
+            allocatedAmount:
+                savingsAmount - _totalSIPs.clamp(0, savingsAmount * 0.5),
             period: 'monthly',
             startDate: now,
             endDate: endDate,
@@ -707,9 +828,13 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
 
     return Material(
       color: AppColors.darkSurface,
-      borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(AppSpacing.radiusLg),
+      ),
       child: Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.90),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.90,
+        ),
         padding: EdgeInsets.fromLTRB(
           AppSpacing.xl,
           AppSpacing.md,
@@ -739,11 +864,17 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.auto_awesome, color: AppColors.accentPurple, size: 22),
+                      const Icon(
+                        Icons.auto_awesome,
+                        color: AppColors.accentPurple,
+                        size: 22,
+                      ),
                       const SizedBox(width: AppSpacing.sm),
                       Text(
                         'Quick Budget Setup',
-                        style: AppTypography.headlineMedium.copyWith(color: AppColors.textPrimary),
+                        style: AppTypography.headlineMedium.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ],
                   ),
@@ -762,7 +893,9 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
               const SizedBox(height: 4),
               Text(
                 'Calculates standard 50/30/20 budgets after your commitments',
-                style: AppTypography.bodySmall.copyWith(color: AppColors.textTertiary),
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textTertiary,
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
 
@@ -774,11 +907,17 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
                     decoration: BoxDecoration(
                       color: AppColors.warning.withValues(alpha: 0.1),
                       borderRadius: AppSpacing.borderRadiusSm,
-                      border: Border.all(color: AppColors.warning.withValues(alpha: 0.2)),
+                      border: Border.all(
+                        color: AppColors.warning.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          color: AppColors.warning,
+                          size: 20,
+                        ),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
@@ -790,7 +929,9 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
                           ),
                         ),
                         Icon(
-                          _showBreakdown ? Icons.expand_less : Icons.expand_more,
+                          _showBreakdown
+                              ? Icons.expand_less
+                              : Icons.expand_more,
                           color: AppColors.warning,
                           size: 18,
                         ),
@@ -812,13 +953,21 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
               const SizedBox(height: AppSpacing.xs),
               TextFormField(
                 controller: _incomeController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: AppTypography.currencyMedium.copyWith(color: AppColors.accentPurple),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                style: AppTypography.currencyMedium.copyWith(
+                  color: AppColors.accentPurple,
+                ),
                 decoration: InputDecoration(
                   hintText: "0.00",
-                  hintStyle: AppTypography.currencyMedium.copyWith(color: AppColors.textTertiary),
+                  hintStyle: AppTypography.currencyMedium.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
                   prefixText: "₹ ",
-                  prefixStyle: AppTypography.currencyMedium.copyWith(color: AppColors.accentPurple),
+                  prefixStyle: AppTypography.currencyMedium.copyWith(
+                    color: AppColors.accentPurple,
+                  ),
                   filled: true,
                   fillColor: AppColors.darkSurfaceElevated,
                   contentPadding: const EdgeInsets.symmetric(
@@ -827,15 +976,24 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
                   ),
                   border: OutlineInputBorder(
                     borderRadius: AppSpacing.borderRadiusSm,
-                    borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+                    borderSide: const BorderSide(
+                      color: AppColors.borderSubtleDark,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: AppSpacing.borderRadiusSm,
-                    borderSide: const BorderSide(color: AppColors.borderSubtleDark),
+                    borderSide: const BorderSide(
+                      color: AppColors.borderSubtleDark,
+                    ),
                   ),
                   focusedBorder: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(AppSpacing.radiusSm)),
-                    borderSide: BorderSide(color: AppColors.accentPurple, width: 1.5),
+                    borderRadius: BorderRadius.all(
+                      Radius.circular(AppSpacing.radiusSm),
+                    ),
+                    borderSide: BorderSide(
+                      color: AppColors.accentPurple,
+                      width: 1.5,
+                    ),
                   ),
                 ),
               ),
@@ -847,16 +1005,22 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
                     child: TextButton(
                       onPressed: () => Navigator.pop(context),
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.lg,
+                        ),
                         backgroundColor: AppColors.darkSurfaceElevated,
                         shape: RoundedRectangleBorder(
                           borderRadius: AppSpacing.borderRadiusSm,
-                          side: const BorderSide(color: AppColors.borderSubtleDark),
+                          side: const BorderSide(
+                            color: AppColors.borderSubtleDark,
+                          ),
                         ),
                       ),
                       child: Text(
                         'Cancel',
-                        style: AppTypography.labelLarge.copyWith(color: AppColors.textSecondary),
+                        style: AppTypography.labelLarge.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                   ),
@@ -866,7 +1030,9 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _runSmartSetup,
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.lg,
+                        ),
                         backgroundColor: AppColors.accentPurple,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -877,7 +1043,10 @@ class _SmartQuickSetupSheetState extends State<SmartQuickSetupSheet> {
                           ? const SizedBox(
                               height: 18,
                               width: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           : const Text(
                               'Generate Budgets',

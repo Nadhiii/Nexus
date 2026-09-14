@@ -20,6 +20,7 @@ import 'gmail_provider.dart';
 import '../models/nbox_settings.dart';
 import '../models/transaction_understanding.dart';
 import '../services/transaction_automation_service.dart';
+import '../services/transaction_link_service.dart';
 import 'category_provider.dart';
 
 // ---------------------------------------------------------------------------
@@ -78,6 +79,7 @@ class NewNboxProvider extends ChangeNotifier {
   KnowledgeProvider? _knowledgeProvider;
   final TransactionAutomationService _automationService =
       TransactionAutomationService();
+  final TransactionLinkService _linkService = const TransactionLinkService();
   final Map<String, TransactionUnderstanding> _understandings = {};
   final List<AutoRecordedTransaction> _autoRecorded = [];
   final Set<String> _automationInFlight = {};
@@ -546,7 +548,42 @@ class NewNboxProvider extends ChangeNotifier {
         // The understanding is UI state as well as automation state.
         notifyListeners();
 
-        if (understanding.canAutoRecord) {
+        // The strict duplicate check above only looks within a 24h window
+        // of the detected transaction's own date — which, for a detection
+        // arriving days after the real event (e.g. a delayed/forwarded/
+        // resent SMS), can miss an existing manual entry entirely and let
+        // this get silently auto-recorded as a duplicate. Run the more
+        // forgiving link matcher as an extra gate: if it finds a plausible
+        // existing match, force this into manual review instead, so the
+        // user gets a chance to link rather than getting a silent dupe.
+        final hasPossibleManualMatch =
+            _transactionProvider != null &&
+            _linkService
+                .findCandidates(
+                  detected: detected,
+                  history: _transactionProvider!.transactions,
+                )
+                .any((c) => c.confidence >= 0.35);
+
+        // Unknown merchants must go through explicit review once. This is
+        // what gives the Knowledge Brain a chance to ask the user whether
+        // this category/purpose should be remembered. Once the merchant has
+        // explicit Knowledge, subsequent matching transactions can still be
+        // auto-recorded as before.
+        final normalizedMerchant = detected.merchant.trim().toLowerCase();
+        final hasKnownMerchantKnowledge =
+            normalizedMerchant.isNotEmpty &&
+            knowledge.entries.any(
+              (entry) =>
+                  entry.active &&
+                  entry.subject == normalizedMerchant &&
+                  (entry.predicate == 'category' ||
+                      entry.predicate == 'purpose'),
+            );
+
+        if (understanding.canAutoRecord &&
+            hasKnownMerchantKnowledge &&
+            !hasPossibleManualMatch) {
           final recorded = await _automationService.tryAutoRecord(
             detected: detected,
             accountProvider: accounts,

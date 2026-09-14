@@ -87,7 +87,7 @@ class _ModernAddSubscriptionScreenState
         amount: double.parse(_amountController.text.trim()),
         frequency: _selectedFrequency,
         nextDueDate: _nextDueDate,
-        categoryId: 'general',
+        categoryId: 'entertainment',
         accountId: 'default',
         color: colorString,
         isActive: true,

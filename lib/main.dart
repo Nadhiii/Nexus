@@ -31,7 +31,6 @@ import 'core/auth/auth_gate.dart';
 import 'core/services/crash_reporting_service.dart';
 import 'core/services/widget_sync_service.dart';
 import 'core/services/intent_navigation_service.dart';
-// REMOVED: flutter_dotenv import — no env vars exist, migrated to --dart-define
 import 'package:another_telephony/telephony.dart';
 import 'core/services/nbox_background_service.dart';
 
@@ -48,8 +47,7 @@ void main() async {
     );
   }
 
-  // Only Firebase is truly required before runApp — and even this
-  // can be done faster with a loading screen
+  // Only Firebase is truly required before runApp
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Initialize Crashlytics for error reporting
@@ -97,9 +95,6 @@ class NexusApp extends StatelessWidget {
         >(
           create: (context) =>
               NewNboxProvider(gmailProvider: context.read<GmailProvider>()),
-          // update must ALWAYS return the existing instance — never create a
-          // second one. Creating a second NewNboxProvider triggers a parallel
-          // initialize()/scanSmsInbox() which causes a permission deadlock/ANR.
           update: (context, gmailProvider, categoryProvider, nboxProvider) {
             nboxProvider!.update(gmailProvider);
             return nboxProvider;
@@ -156,8 +151,6 @@ class NexusApp extends StatelessWidget {
   }
 }
 
-/// Initializes OTA notifications and secondary services once after the first frame,
-/// without causing unnecessary rebuilds of the widget tree.
 class _AppInitializer extends StatefulWidget {
   final Widget child;
   const _AppInitializer({required this.child});
@@ -185,24 +178,15 @@ class _AppInitializerState extends State<_AppInitializer> {
           debtProvider: context.read<DebtProvider>(),
         );
 
-        // Initialize secondary services after the first frame paints
         await CrashReportingService().initialize();
-
-        // Environment config: use --dart-define flags at build time
-        // e.g. flutter run --dart-define=GEMINI_API_KEY=xxx
-        // Access via: const String.fromEnvironment('GEMINI_API_KEY')
-
-        // ONLY initialize notifications here — version check lives in More Screen
-        // to avoid the "Reply already submitted" crash during login/SMS scan.
         await _otaService.initNotifications();
 
-        // Scan-on-open: safe here because it runs post-first-frame (not
-        // during Provider tree construction, which is what previously
-        // caused the permission deadlock/ANR — see the comment on
-        // NewNboxProvider's ChangeNotifierProxyProvider2 above).
-        // scanSmsInbox() already has its own IPC shield delay before
-        // touching the native ContentResolver, and scanEmails() only runs
-        // if Gmail is already linked, so this is non-blocking either way.
+        // Restore Google session and Gmail permissions on startup
+        if (mounted) {
+          await context.read<GmailProvider>().initialize();
+        }
+
+        // Trigger simultaneous scan for SMS and Gmail (if linked)
         if (mounted) {
           unawaited(context.read<NewNboxProvider>().scanAll());
         }

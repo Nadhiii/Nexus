@@ -944,7 +944,7 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.15),
+                      color: AppColors.primaryBlue.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Row(
@@ -953,13 +953,13 @@ class _LiabilitiesScreenState extends State<LiabilitiesScreen> {
                         Icon(
                           Icons.payments_outlined,
                           size: 11,
-                          color: AppColors.success,
+                          color: AppColors.primaryBlue,
                         ),
                         SizedBox(width: 4),
                         Text(
-                          'Pay',
+                          'Make Payment',
                           style: TextStyle(
-                            color: AppColors.success,
+                            color: AppColors.primaryBlue,
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                           ),

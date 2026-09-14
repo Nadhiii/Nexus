@@ -255,7 +255,7 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
             description: _isFuelMode
                 ? '${widget.bike.name} - Fuel (${currentFuelQty.toStringAsFixed(1)}L)'
                 : '${widget.bike.name} - $finalCategory',
-            categoryId: 'transportation',
+            categoryId: 'transport',
             accountId: _selectedAccount!.id,
             date: _selectedDate,
             metadata: {
@@ -269,7 +269,9 @@ class _ModernAddEntryScreenState extends State<ModernAddEntryScreen> {
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );
-          await txnProvider.commitDraft(TransactionDraft.fromTransaction(transaction));
+          await txnProvider.commitDraft(
+            TransactionDraft.fromTransaction(transaction),
+          );
         }
       }
 
